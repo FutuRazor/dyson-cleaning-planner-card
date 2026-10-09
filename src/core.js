@@ -9,7 +9,10 @@ export function normalizeConfig(config) {
     if (config[key] !== undefined && (!Array.isArray(config[key]) || config[key].some(x => typeof x !== 'string'))) throw new Error(`${key} must be a list of entity IDs.`);
   }
   if (config.room_entities !== undefined && (!config.room_entities || typeof config.room_entities !== 'object' || Array.isArray(config.room_entities) || Object.values(config.room_entities).some(x => typeof x !== 'string' || !x.startsWith('switch.')))) throw new Error('room_entities must map room names to switch entities.');
-  return { ...config, title: config.title ?? 'Plan a clean', unsupported_settings: config.unsupported_settings ?? 'disabled', excluded_rooms: config.excluded_rooms ?? [], room_order: config.room_order ?? [] };
+  if (config.show_camera !== undefined && typeof config.show_camera !== 'boolean') throw new Error('show_camera must be true or false.');
+  if (config.camera_rotation !== undefined && ![0, 90, 180, 270].includes(config.camera_rotation)) throw new Error('camera_rotation must be 0, 90, 180 or 270.');
+  if (config.camera_entity && (typeof config.camera_entity !== 'string' || !config.camera_entity.startsWith('camera.'))) throw new Error('Select a camera entity.');
+  return { ...config, title: config.title ?? 'Plan a clean', unsupported_settings: config.unsupported_settings ?? 'disabled', excluded_rooms: config.excluded_rooms ?? [], room_order: config.room_order ?? [], show_camera: config.show_camera ?? true, camera_rotation: config.camera_rotation ?? 0 };
 }
 
 // Entity IDs are user-editable. Match registry identity within ONE integration device.
@@ -25,6 +28,9 @@ export function discover(hass, registry, config) {
   };
   const modeEntity = pick(config.mode_entity, 'cleaning_mode', 'select');
   const startEntity = pick(config.start_entity, 'start_button', 'button');
+  const cameraEntity = pick(config.camera_entity, 'floor_map', 'camera');
+  const batteryEntity = pick(undefined, 'battery', 'sensor');
+  const chargingEntity = pick(undefined, 'charging', 'binary_sensor');
   if (!modeEntity) issues.push('The cleaning mode entity could not be identified. Check the editor mapping.');
   if (!startEntity) issues.push('The start button could not be identified. Check the editor mapping.');
   const managed = entries.filter(e => e.entity_id.startsWith('switch.') && String(e.unique_id).startsWith(`${serial}_room_`));
@@ -45,7 +51,56 @@ export function discover(hass, registry, config) {
   if (new Set(ids).size !== ids.length) issues.push('Multiple rooms map to the same switch.');
   const rank = id => { const i = config.room_order.indexOf(id); return i < 0 ? Number.MAX_SAFE_INTEGER : i; };
   rooms.sort((a, b) => rank(a.entity) - rank(b.entity));
-  return { rooms, managed: managed.map(e => e.entity_id), modeEntity, startEntity, issues };
+  return { rooms, managed: managed.map(e => e.entity_id), modeEntity, startEntity, cameraEntity, batteryEntity, chargingEntity, issues };
+}
+
+export function batteryStatus(hass, model) {
+  const battery = hass?.states?.[model?.batteryEntity];
+  const charging = hass?.states?.[model?.chargingEntity];
+  const connected = hass?.connected !== false;
+  const raw = battery?.state;
+  const value = (typeof raw === 'string' && raw.trim() !== '') || typeof raw === 'number' ? Number(raw) : NaN;
+  const percent = connected && available(battery) && Number.isFinite(value) && value >= 0 && value <= 100 ? Math.round(value) : null;
+  const chargeState = connected && available(charging) && ['on', 'off'].includes(charging.state) ? charging.state : null;
+  const level = percent === null ? 'unknown' : percent < 20 ? 'low' : percent < 50 ? 'medium' : 'high';
+  const label = `${percent === null ? 'Battery level unavailable' : `Battery: ${percent}%`}. ${chargeState === 'on' ? 'Charging' : chargeState === 'off' ? 'Not charging' : 'Charging status unavailable'}.`;
+  return { percent, charging: chargeState === 'on', level, label };
+}
+
+export function cleaningView(hass, entity, pendingStart = false) {
+  const state = hass?.states?.[entity];
+  if (!available(state) || hass?.connected === false) return { active: true, title: 'Robot unavailable', detail: 'Waiting for a connection to the robot.', live: false };
+  const states = {
+    cleaning: ['Cleaning session active', 'The integration may also report a paused clean as active.'],
+    paused: ['Cleaning paused', 'The current cleaning session is paused.'],
+    returning: ['Robot returning', 'The integration is reporting a return or mapping operation.'],
+    error: ['Robot needs attention', 'Check the robot or the Dyson app for details.']
+  };
+  if (states[state.state]) return { active: true, title: states[state.state][0], detail: states[state.state][1], live: true };
+  if (pendingStart) return { active: true, title: 'Starting clean', detail: 'Waiting for the robot to report its status.', live: false };
+  if (['docked', 'idle'].includes(state.state)) return { active: false, live: false };
+  return { active: true, title: 'Waiting for robot status', detail: 'The robot is not reporting a ready state.', live: false };
+}
+
+export function canControl(hass, entity, action) {
+  const state = hass?.states?.[entity];
+  const feature = { stop: 8, return_to_base: 16 }[action];
+  return !!(feature && hass?.connected !== false && available(state) &&
+    ['cleaning', 'paused', 'returning', 'error'].includes(state.state) &&
+    (Number(state.attributes?.supported_features) & feature) && hass.services?.vacuum?.[action]);
+}
+
+export async function controlCleaning(hass, entity, action) {
+  if (!canControl(hass, entity, action)) throw new Error('This action is not available for the current robot state.');
+  // Queue cancellation belongs to the integration. Do not toggle room switches here.
+  await hass.callService('vacuum', action, { entity_id: entity });
+}
+
+export function fitMap(width, height, boxWidth, rotation) {
+  if (![width, height, boxWidth].every(n => Number.isFinite(n) && n > 0)) return { width: 0, height: 0, frameHeight: 0 };
+  const sideways = rotation === 90 || rotation === 270;
+  const scale = boxWidth / (sideways ? height : width);
+  return { width: width * scale, height: height * scale, frameHeight: (sideways ? width : height) * scale };
 }
 
 export function createPlan(model, selected, mode) {
