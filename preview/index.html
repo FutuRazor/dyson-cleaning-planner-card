@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dyson Cleaning Planner · Vorschau</title><style>
+body{margin:0;background:#f1f4f6;color:#20272d;font-family:Arial,sans-serif;padding:28px 16px}main{max-width:580px;margin:auto}.demo{font-size:13px;line-height:1.6;margin:0 0 18px;color:#52616e}.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}button{padding:10px 14px;background:white;border:1px solid #ccd5db;border-radius:8px;cursor:pointer}body.dark{background:#14181d;color:#e9eef2;--primary-text-color:#e9eef2;--secondary-text-color:#abb8c4;--card-background-color:#20252b;--secondary-background-color:#292f36;--divider-color:#414953;--primary-color:#73d5f5;--text-primary-color:#09232e}.dark .demo{color:#abb8c4}#editor{margin-top:24px;padding:18px;border:1px solid #aaa;border-radius:14px}#log{white-space:pre-wrap;font-size:12px;overflow-wrap:anywhere}ha-icon::before{content:'◉';font-size:26px}
+</style></head><body><main><p class="demo">Interaktive Vorschau mit simulierten Home-Assistant-Entitäten. Kein Roboter verbunden.</p><div class="toolbar"><button id="theme">Hell / Dunkel</button><button id="settings">Karteneditor</button><button id="offline">Verfügbarkeit wechseln</button></div><dyson-cleaning-planner-card id="card"></dyson-cleaning-planner-card><div id="editor" hidden></div><pre id="log"></pre></main><script type="module">
+import '../dist/dyson-cleaning-planner-card.js';
+import { fixture } from '../tests/fixture.mjs';
+// Stand-in for Home Assistant's icon element, only used by this offline preview.
+customElements.define('ha-icon', class extends HTMLElement {
+  connectedCallback() {
+    this.attachShadow({ mode: 'open' }).innerHTML = '<style>:host{display:inline-flex;width:24px;height:24px}svg{width:24px;height:24px}</style><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M4 9h16M7 18h10"/><circle cx="12" cy="6" r="1"/><path d="M10 13h4"/></svg>';
+  }
+});
+const darkHintStyle = document.createElement('style');
+darkHintStyle.textContent = 'body.dark{--warning-color:#f2b45d}';
+document.head.append(darkHintStyle);
+const f = fixture();
+const card = document.querySelector('#card');
+card.setConfig({ type: 'custom:dyson-cleaning-planner-card', entity: f.entity });
+card.hass = f.hass;
+window.demo = { ...f, card };
+const original = f.hass.callService;
+f.hass.callService = async (...args) => { await new Promise(r => setTimeout(r, 80)); await original(...args); card.hass = { ...f.hass }; document.querySelector('#log').textContent = JSON.stringify(f.calls, null, 2); };
+document.querySelector('#theme').onclick = () => document.body.classList.toggle('dark');
+document.querySelector('#offline').onclick = () => { f.hass.states[f.entity].state = f.hass.states[f.entity].state === 'docked' ? 'unavailable' : 'docked'; card.hass = { ...f.hass }; };
+document.querySelector('#settings').onclick = () => {
+ const host = document.querySelector('#editor'); host.hidden = !host.hidden;
+ if (!host.firstChild) { const editor = document.createElement('dyson-cleaning-planner-card-editor'); editor.setConfig(card.config); editor.hass = f.hass; editor.addEventListener('config-changed', e => card.setConfig(e.detail.config)); host.append(editor); }
+};
+</script></body></html>
