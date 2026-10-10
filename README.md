@@ -2,19 +2,19 @@
 
 A Home Assistant Lovelace card for the Dyson Spot+Scrub integration.
 
-**v0.2.3 — prototype with per-room settings and batched Save/Start actions.**
+**v0.2.3 — Prototype**
 
 ## Requirements
 
 The [Dyson Spot+Scrub integration](https://github.com/UNsync3D/ha-dyson-spot-scrub) is required.
 
-The updated Dyson integration must provide:
+Needs at least v1.4.0
 
-- `dyson_spot_scrub.save_room_settings`
-- `dyson_spot_scrub.start_rooms_with_settings`
-- Per-room selects for `cleaning_mode`, `cleaning_strategy`, `water_level`, and `mop_repetitions`, with a `room_id` attribute.
+Working on full compatibility
 
-The card checks action availability. It does not fall back to individual select writes or the legacy start button.
+## Preview
+
+[Click here for a preview](https://futurazor.github.io/dyson-cleaning-planner-card/preview/index.html)
 
 ## Screenshots
 
