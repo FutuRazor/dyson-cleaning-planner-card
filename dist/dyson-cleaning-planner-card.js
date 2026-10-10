@@ -1,4 +1,4 @@
-/* Dyson Cleaning Planner Card v0.1.1 | MIT */
+/* Dyson Cleaning Planner Card v0.2.1 | MIT */
 const DOMAIN = 'dyson_spot_scrub';
 const available = state => !!state && !['unavailable', 'unknown'].includes(state.state) && !state.attributes?.restored;
 const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -10,7 +10,10 @@ function normalizeConfig(config) {
     if (config[key] !== undefined && (!Array.isArray(config[key]) || config[key].some(x => typeof x !== 'string'))) throw new Error(`${key} must be a list of entity IDs.`);
   }
   if (config.room_entities !== undefined && (!config.room_entities || typeof config.room_entities !== 'object' || Array.isArray(config.room_entities) || Object.values(config.room_entities).some(x => typeof x !== 'string' || !x.startsWith('switch.')))) throw new Error('room_entities must map room names to switch entities.');
-  return { ...config, title: config.title ?? 'Plan a clean', unsupported_settings: config.unsupported_settings ?? 'disabled', excluded_rooms: config.excluded_rooms ?? [], room_order: config.room_order ?? [] };
+  if (config.show_camera !== undefined && typeof config.show_camera !== 'boolean') throw new Error('show_camera must be true or false.');
+  if (config.camera_rotation !== undefined && ![0, 90, 180, 270].includes(config.camera_rotation)) throw new Error('camera_rotation must be 0, 90, 180 or 270.');
+  if (config.camera_entity && (typeof config.camera_entity !== 'string' || !config.camera_entity.startsWith('camera.'))) throw new Error('Select a camera entity.');
+  return { ...config, title: config.title ?? 'Plan a clean', unsupported_settings: config.unsupported_settings ?? 'disabled', excluded_rooms: config.excluded_rooms ?? [], room_order: config.room_order ?? [], show_camera: config.show_camera ?? true, camera_rotation: config.camera_rotation ?? 0 };
 }
 
 // Entity IDs are user-editable. Match registry identity within ONE integration device.
@@ -26,6 +29,9 @@ function discover(hass, registry, config) {
   };
   const modeEntity = pick(config.mode_entity, 'cleaning_mode', 'select');
   const startEntity = pick(config.start_entity, 'start_button', 'button');
+  const cameraEntity = pick(config.camera_entity, 'floor_map', 'camera');
+  const batteryEntity = pick(undefined, 'battery', 'sensor');
+  const chargingEntity = pick(undefined, 'charging', 'binary_sensor');
   if (!modeEntity) issues.push('The cleaning mode entity could not be identified. Check the editor mapping.');
   if (!startEntity) issues.push('The start button could not be identified. Check the editor mapping.');
   const managed = entries.filter(e => e.entity_id.startsWith('switch.') && String(e.unique_id).startsWith(`${serial}_room_`));
@@ -46,7 +52,56 @@ function discover(hass, registry, config) {
   if (new Set(ids).size !== ids.length) issues.push('Multiple rooms map to the same switch.');
   const rank = id => { const i = config.room_order.indexOf(id); return i < 0 ? Number.MAX_SAFE_INTEGER : i; };
   rooms.sort((a, b) => rank(a.entity) - rank(b.entity));
-  return { rooms, managed: managed.map(e => e.entity_id), modeEntity, startEntity, issues };
+  return { rooms, managed: managed.map(e => e.entity_id), modeEntity, startEntity, cameraEntity, batteryEntity, chargingEntity, issues };
+}
+
+function batteryStatus(hass, model) {
+  const battery = hass?.states?.[model?.batteryEntity];
+  const charging = hass?.states?.[model?.chargingEntity];
+  const connected = hass?.connected !== false;
+  const raw = battery?.state;
+  const value = (typeof raw === 'string' && raw.trim() !== '') || typeof raw === 'number' ? Number(raw) : NaN;
+  const percent = connected && available(battery) && Number.isFinite(value) && value >= 0 && value <= 100 ? Math.round(value) : null;
+  const chargeState = connected && available(charging) && ['on', 'off'].includes(charging.state) ? charging.state : null;
+  const level = percent === null ? 'unknown' : percent < 20 ? 'low' : percent < 50 ? 'medium' : 'high';
+  const label = `${percent === null ? 'Battery level unavailable' : `Battery: ${percent}%`}. ${chargeState === 'on' ? 'Charging' : chargeState === 'off' ? 'Not charging' : 'Charging status unavailable'}.`;
+  return { percent, charging: chargeState === 'on', level, label };
+}
+
+function cleaningView(hass, entity, pendingStart = false) {
+  const state = hass?.states?.[entity];
+  if (!available(state) || hass?.connected === false) return { active: true, title: 'Robot unavailable', detail: 'Waiting for a connection to the robot.', live: false };
+  const states = {
+    cleaning: ['Cleaning session active', 'The integration may also report a paused clean as active.'],
+    paused: ['Cleaning paused', 'The current cleaning session is paused.'],
+    returning: ['Robot returning', 'The integration is reporting a return or mapping operation.'],
+    error: ['Robot needs attention', 'Check the robot or the Dyson app for details.']
+  };
+  if (states[state.state]) return { active: true, title: states[state.state][0], detail: states[state.state][1], live: true };
+  if (pendingStart) return { active: true, title: 'Starting clean', detail: 'Waiting for the robot to report its status.', live: false };
+  if (['docked', 'idle'].includes(state.state)) return { active: false, live: false };
+  return { active: true, title: 'Waiting for robot status', detail: 'The robot is not reporting a ready state.', live: false };
+}
+
+function canControl(hass, entity, action) {
+  const state = hass?.states?.[entity];
+  const feature = { stop: 8, return_to_base: 16 }[action];
+  return !!(feature && hass?.connected !== false && available(state) &&
+    ['cleaning', 'paused', 'returning', 'error'].includes(state.state) &&
+    (Number(state.attributes?.supported_features) & feature) && hass.services?.vacuum?.[action]);
+}
+
+async function controlCleaning(hass, entity, action) {
+  if (!canControl(hass, entity, action)) throw new Error('This action is not available for the current robot state.');
+  // Queue cancellation belongs to the integration. Do not toggle room switches here.
+  await hass.callService('vacuum', action, { entity_id: entity });
+}
+
+function fitMap(width, height, boxWidth, rotation) {
+  if (![width, height, boxWidth].every(n => Number.isFinite(n) && n > 0)) return { width: 0, height: 0, frameHeight: 0 };
+  const sideways = rotation === 90 || rotation === 270;
+  const scale = boxWidth / (sideways ? height : width);
+  return { width: width * scale, height: height * scale, frameHeight: (sideways ? width : height) * scale };
 }
 
 function createPlan(model, selected, mode) {
@@ -137,11 +192,127 @@ async function executeLegacy({ getHass, getModel, config, plan, wait = waitForSt
 }
 
 
+// Owns image refresh independently from card rendering. No direct Dyson calls.
+class DysonPlannerMap extends HTMLElement {
+  constructor() {
+    super(); this.attachShadow({ mode: 'open' });
+    this.shadowRoot.innerHTML = `<style>
+      :host{display:block;min-width:0}.viewport{position:relative;width:100%;aspect-ratio:4/3;overflow:hidden;background:var(--secondary-background-color,#f5f7f9);isolation:isolate}
+      img{position:absolute;left:50%;top:50%;max-width:none;max-height:none;transform-origin:center;visibility:hidden}.placeholder{position:absolute;inset:0;display:grid;place-items:center;padding:16px;text-align:center;color:var(--secondary-text-color,#52616e);font:13px/1.5 Arial,sans-serif}
+      .caption{margin:8px 0 0;padding:0 var(--dp-padding,24px);color:var(--secondary-text-color,#52616e);font:12px/1.5 Arial,sans-serif}[hidden]{display:none}
+      </style><div class="viewport"><img alt="Live cleaning map"><div class="placeholder">Loading cleaning map …</div></div><p class="caption" role="status" aria-live="polite"></p>`;
+    this.img = this.shadowRoot.querySelector('img');
+    this.viewport = this.shadowRoot.querySelector('.viewport');
+    this.placeholder = this.shadowRoot.querySelector('.placeholder');
+    this.caption = this.shadowRoot.querySelector('.caption');
+    this.inView = false;
+    this.visibilityChanged = () => this.schedule();
+  }
+  connectedCallback() {
+    this.resizeObserver = new ResizeObserver(() => this.resize());
+    this.resizeObserver.observe(this.viewport);
+    this.intersectionObserver = new IntersectionObserver(entries => {
+      this.inView = entries.some(e => e.isIntersecting);
+      this.schedule();
+    });
+    this.intersectionObserver.observe(this);
+    document.addEventListener('visibilitychange', this.visibilityChanged);
+  }
+  disconnectedCallback() {
+    this.cancel(); this.resizeObserver?.disconnect(); this.intersectionObserver?.disconnect();
+    document.removeEventListener('visibilitychange', this.visibilityChanged);
+    if (this.objectUrl) URL.revokeObjectURL(this.objectUrl);
+    this.objectUrl = undefined; this.img.removeAttribute('src'); this.img.style.visibility = 'hidden';
+  }
+  setOptions(hass, entity, rotation, live) {
+    if (this.entity !== entity || this.hass?.connection !== hass.connection) {
+      this.cancel();
+      if (this.objectUrl) URL.revokeObjectURL(this.objectUrl);
+      this.objectUrl = undefined; this.img.removeAttribute('src'); this.img.style.visibility = 'hidden';
+      this.imageWidth = undefined; this.imageHeight = undefined;
+      this.lastAttempt = 0; this.placeholder.hidden = false;
+    }
+    this.hass = hass; this.entity = entity; this.rotation = rotation; this.live = live;
+    this.resize(); this.schedule();
+  }
+  cancel() {
+    clearTimeout(this.timer); this.timer = undefined;
+    this.abortController?.abort(); this.abortController = undefined;
+  }
+  schedule() {
+    clearTimeout(this.timer); this.timer = undefined;
+    if (!this.isConnected || !this.inView || document.hidden) { this.cancel(); return; }
+    if (!this.live) { this.cancel(); this.showMessage('Waiting for an active robot status.'); return; }
+    if (!this.entity || !available(this.hass?.states?.[this.entity])) {
+      this.cancel();
+      this.showMessage(this.entity ? 'Camera unavailable.' : 'No map camera found. Select one in the card editor.');
+      return;
+    }
+    if (this.abortController) return;
+    const delay = Math.max(0, 5000 - (Date.now() - (this.lastAttempt ?? 0)));
+    this.timer = setTimeout(() => this.refresh(), delay);
+  }
+  showMessage(message) {
+    this.placeholder.hidden = !!this.objectUrl;
+    this.placeholder.textContent = message;
+    this.caption.textContent = this.objectUrl ? `${message} Showing the last received image.` : message;
+  }
+  async refresh() {
+    if (!this.isConnected || !this.inView || document.hidden || !this.live) return;
+    const picture = this.hass.states[this.entity]?.attributes?.entity_picture;
+    this.lastAttempt = Date.now();
+    // Use the HA-provided proxy path/token; never save or log tokens in config.
+    if (typeof picture !== 'string' || !picture.startsWith('/api/camera_proxy/')) {
+      this.showMessage('The camera image is not available yet.'); this.schedule(); return;
+    }
+    const url = new URL(this.hass.hassUrl ? this.hass.hassUrl(picture) : picture, location.href);
+    url.searchParams.set('_planner', String(this.lastAttempt));
+    const controller = new AbortController(); this.abortController = controller;
+    const timeout = setTimeout(() => controller.abort(), 10000);
+    let objectUrl;
+    try {
+      const response = await fetch(url, { signal: controller.signal, cache: 'no-store', credentials: 'same-origin' });
+      if (!response.ok) throw new Error('Image request failed');
+      const blob = await response.blob();
+      if (!blob.type.startsWith('image/')) throw new Error('Invalid camera image');
+      objectUrl = URL.createObjectURL(blob);
+      const image = new Image(); image.src = objectUrl; await image.decode();
+      if (controller !== this.abortController || controller.signal.aborted || !this.isConnected) return;
+      const previous = this.objectUrl;
+      this.objectUrl = objectUrl; objectUrl = undefined;
+      this.imageWidth = image.naturalWidth; this.imageHeight = image.naturalHeight;
+      this.img.src = this.objectUrl; this.img.style.visibility = 'visible';
+      this.placeholder.hidden = true; this.resize();
+      this.caption.textContent = 'Live map · refreshes about every 5 seconds';
+      if (previous) URL.revokeObjectURL(previous);
+    } catch {
+      if (controller === this.abortController) this.showMessage('Map update unavailable.');
+    } finally {
+      clearTimeout(timeout);
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      if (controller === this.abortController) { this.abortController = undefined; this.schedule(); }
+    }
+  }
+  resize() {
+    const size = fitMap(this.imageWidth, this.imageHeight, this.viewport.getBoundingClientRect().width, this.rotation);
+    // The card sets the width; the complete rotated image determines the height.
+    // The CSS aspect ratio is only a placeholder until the first image arrives.
+    this.viewport.style.height = size.frameHeight > 0 ? `${size.frameHeight}px` : '';
+    this.img.style.width = `${size.width}px`; this.img.style.height = `${size.height}px`;
+    this.img.style.transform = `translate(-50%, -50%) rotate(${this.rotation ?? 0}deg)`;
+  }
+}
+if (!customElements.get('dyson-planner-map')) customElements.define('dyson-planner-map', DysonPlannerMap);
+
+
 const styles = `
+:host{--dp-padding:24px}.header-title{flex:1;min-width:0}.header-title h2{overflow-wrap:anywhere}.robot{flex-shrink:0}.battery{display:flex;align-items:center;gap:7px;flex-shrink:0;align-self:flex-start;margin-top:4px;font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}.battery svg{width:32px;height:20px;color:var(--dp-muted)}.battery[data-level=high] svg{color:var(--success-color,#2e7d32)}.battery[data-level=medium] svg{color:var(--warning-color,#ad6800)}.battery[data-level=low] svg{color:var(--error-color,#b3261e)}
 :host{display:block;color:var(--primary-text-color,#20272d);font-family:var(--paper-font-body1_-_font-family,Arial,sans-serif);--dp-bg:var(--ha-card-background,var(--card-background-color,#fff));--dp-line:var(--divider-color,#dde3e8);--dp-muted:var(--secondary-text-color,#52616e);--dp-accent:var(--primary-color,#007da5);--dp-soft:color-mix(in srgb,var(--dp-accent) 10%,var(--dp-bg))}
 *{box-sizing:border-box}ha-card{display:block;background:var(--dp-bg);border:1px solid var(--dp-line);border-radius:var(--ha-card-border-radius,22px);overflow:hidden;box-shadow:var(--ha-card-box-shadow,0 3px 18px #0000000a)}
 header{display:flex;gap:13px;align-items:center;padding:24px 24px 16px}.robot{background:var(--dp-soft);color:var(--dp-accent);padding:13px;border-radius:15px;display:flex}ha-icon{width:24px;height:24px}h2{font-size:22px;font-weight:500;margin:0 0 5px}p{margin:0;font-size:13px;line-height:1.5;color:var(--dp-muted)}.tag{display:inline-block;margin-left:6px;font-size:10px;padding:3px 6px;border:1px solid var(--dp-line);border-radius:6px;vertical-align:middle}.hint{padding:0 24px 16px}.rooms{padding:0 16px;display:grid;gap:10px}.room{border:1px solid var(--dp-line);border-radius:13px;overflow:hidden}.selected{background:var(--dp-soft)}.room-head{display:flex;align-items:center;gap:8px;padding:10px 12px;min-height:74px}.pick{display:flex;align-items:center;gap:11px;flex:1;min-width:0;min-height:44px}.name{display:block;font-size:15px;font-weight:500;margin-bottom:5px;overflow-wrap:anywhere}.summary{display:block;font-size:12px;color:var(--dp-muted);line-height:1.5}.fields{border-top:1px solid var(--dp-line);padding:14px;background:var(--dp-bg);display:grid;grid-template-columns:1fr 1fr;gap:14px}.field{display:flex;flex-direction:column;gap:7px;font-size:12px;color:var(--dp-muted)}.mode{grid-column:1/-1}.fine{grid-column:1/-1;border-top:1px solid var(--dp-line);padding-top:12px;margin-top:2px}.badge{color:var(--warning-color,#995000);font-size:11px;line-height:1.5}button,select,input{font:inherit}button,select{color:inherit;border:1px solid var(--dp-line);background:var(--dp-bg);border-radius:9px;min-height:42px;padding:9px 12px;font-size:13px}button{cursor:pointer}button:disabled{cursor:default;opacity:.5}select{width:100%;min-width:0;background:var(--secondary-background-color,#f5f7f9);font-size:14px}select:disabled{color:var(--dp-muted);opacity:.65}.mode select{background:var(--dp-soft)}input[type=checkbox]{width:19px;height:19px;accent-color:var(--dp-accent);flex-shrink:0}.expand{border:0;background:transparent;white-space:nowrap}.order{display:flex;gap:5px;margin-top:10px}.order button{min-width:42px}footer{padding:20px 24px 24px}.summary-line{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:15px;font-size:13px}.actions{display:flex;gap:10px}.actions button{flex:1;min-height:46px}.start{background:var(--dp-accent);border-color:transparent;color:var(--text-primary-color,#fff)}.notice{margin-top:12px}.error{color:var(--error-color,#b3261e)}.reset{margin-top:12px;background:transparent}.empty{padding:16px 24px}.status{color:var(--dp-muted)}button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--dp-accent);outline-offset:3px}[hidden]{display:none!important}
-@media(max-width:400px){header{padding:18px 15px}.hint{padding:0 15px 14px}.rooms{padding:0 10px}footer{padding:18px 15px}.expand span{display:none}.actions{flex-direction:column}select{font-size:16px}.fields{gap:12px}.tag{margin-left:0}}
+.session{padding:4px 24px 0}.session h3{margin:0 0 8px;font-size:20px;font-weight:500}.session .detail{margin-bottom:18px}.requested-label{font-size:12px;color:var(--dp-muted);margin-bottom:8px}.requested{display:flex;flex-wrap:wrap;gap:7px;list-style:none;padding:0;margin:0 0 10px}.requested li{background:var(--dp-soft);border:1px solid var(--dp-line);border-radius:18px;padding:7px 11px;font-size:13px;overflow-wrap:anywhere}.requested-note{margin-bottom:18px}.map-section{margin-top:20px}.map-title{font-size:13px;font-weight:500;margin:0 0 10px}.session-actions button{display:flex;align-items:center;justify-content:center;gap:8px}.session-actions ha-icon{width:20px;height:20px}.session-footer{padding-top:20px}
+.map-title{padding:0 var(--dp-padding)}
+@media(max-width:400px){:host{--dp-padding:15px}header{padding:18px 15px}.hint{padding:0 15px 14px}.rooms{padding:0 10px}footer{padding:18px 15px}.session{padding:4px 15px 0}.expand span{display:none}.actions{flex-direction:column}.session-actions{flex-direction:row}select{font-size:16px}.fields{gap:12px}.tag{margin-left:0}}
 `;
 
 // Each instance owns its draft. Registry refresh also catches disabled or renamed entities.
@@ -187,6 +358,7 @@ class DysonRegistryElement extends HTMLElement {
 class DysonCleaningPlannerCard extends DysonRegistryElement {
   constructor() {
     super(); this.selected = []; this.dirty = false; this.busy = false; this.expanded = new Set(); this.message = '';
+    this.controlBusy = false; this.pendingStart = false; this.requestedPlan = null;
     this.shadowRoot.addEventListener('change', event => this.onChange(event));
     this.shadowRoot.addEventListener('click', event => this.onClick(event));
   }
@@ -196,11 +368,17 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     return { type: 'custom:dyson-cleaning-planner-card', entity: entry?.entity_id ?? Object.keys(hass.states).find(id => id.startsWith('vacuum.') && Array.isArray(hass.states[id].attributes.rooms)) ?? '' };
   }
   setConfig(config) {
+    if (this.config?.entity !== config.entity) {
+      this.clearPendingStart(); this.requestedPlan = null; this.sessionObserved = false;
+    }
     this.config = normalizeConfig(config);
     this.initialized = false; this.dirty = false; this.selected = []; this.expanded.clear(); this.message = ''; this.lastRooms = [];
     this.update();
   }
-  getCardSize() { return 3 + (this.model?.rooms.length ?? 3); }
+  disconnectedCallback() { super.disconnectedCallback(); this.clearPendingStart(); }
+  clearPendingStart() { clearTimeout(this._startTimer); this.pendingStart = false; }
+  get view() { return cleaningView(this._hass, this.config?.entity, this.busy || this.pendingStart); }
+  getCardSize() { return this.view.active ? (this.config?.show_camera ? 9 : 5) : 3 + (this.model?.rooms.length ?? 3); }
   getGridOptions() { return { columns: 12, min_columns: 6 }; }
   getModel() { return discover(this._hass, this.registry, this.config); }
   resetDraft(clearMessage = true) {
@@ -215,15 +393,22 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
   update() {
     if (!this.config || !this._hass) return;
     this.model = this.getModel();
+    const reported = cleaningView(this._hass, this.config.entity);
+    if (reported.live) {
+      this.clearPendingStart(); this.sessionObserved = true;
+    } else if (!reported.active && !this.busy && !this.pendingStart && this.sessionObserved) {
+      // Docking can also occur between queued jobs. Do not claim the queue is finished.
+      this.requestedPlan = null; this.sessionObserved = false; this.message = ''; this.error = false;
+    }
     if (this.model.rooms.length) this.lastRooms = this.model.rooms;
     else if (!Array.isArray(this._hass.states[this.config.entity]?.attributes?.rooms)) this.model.rooms = (this.lastRooms ?? []).map(r => ({ ...r, available: false }));
-    if ((!this.initialized || !this.dirty) && !this.busy && this.model.modeEntity) {
+    if ((!this.initialized || !this.dirty) && !this.view.active && this.model.modeEntity) {
       this.resetDraft(false); this.initialized = true;
     }
     this.render();
   }
   onChange(event) {
-    if (this.busy) return;
+    if (this.busy || this.view.active) return;
     const el = event.target;
     if (el.dataset.room) {
       this.selected = this.selected.filter(id => id !== el.dataset.room);
@@ -234,7 +419,9 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
   }
   onClick(event) {
     const el = event.target.closest('button');
-    if (!el || el.disabled || this.busy) return;
+    if (!el || el.disabled || this.busy || this.controlBusy) return;
+    if (el.dataset.control) { this.control(el.dataset.control); return; }
+    if (this.view.active) return;
     if (el.dataset.expand !== undefined) {
       const id = el.dataset.expand;
       this.expanded.has(id) ? this.expanded.delete(id) : this.expanded.add(id);
@@ -248,7 +435,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     this.render();
   }
   async start() {
-    if (this.busy || !this.isConnected) return;
+    if (this.busy || this.view.active || !this.isConnected) return;
     this.busy = true; this.error = false;
     const config = this.config;
     try {
@@ -263,6 +450,19 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
         },
         onProgress: message => { this.message = message; this.render(); }
       });
+      this.requestedPlan = plan;
+      this.sessionObserved = cleaningView(this._hass, config.entity).live;
+      if (!this.sessionObserved) {
+        this.pendingStart = true;
+        this._startTimer = setTimeout(() => {
+          this.pendingStart = false;
+          if (!cleaningView(this._hass, config.entity).active) {
+            this.requestedPlan = null; this.error = true;
+            this.message = 'The start was sent, but the robot has not reported an active session. Check its status before trying again.';
+          }
+          this.update();
+        }, 30000);
+      }
       this.message = 'Start requested. The integration controls the order; the preferred order was not sent.';
       this.dirty = true;
       this.baseline = this.liveSignature();
@@ -271,8 +471,60 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       this.message = `${error.message} Settings already applied may remain in Home Assistant. The start will not be retried automatically.`;
     } finally { this.busy = false; this.render(); }
   }
+  async control(action) {
+    if (this.busy || this.controlBusy || !this.isConnected) return;
+    const entity = this.config.entity;
+    this.controlBusy = true; this.message = ''; this.error = false; this.render();
+    try {
+      await controlCleaning(this._hass, entity, action);
+      if (this.config.entity !== entity) return;
+      this.message = action === 'stop' ? 'Stop requested. Waiting for the robot status.' : 'Return to dock requested. Queued rooms may still resume.';
+    } catch (error) {
+      if (this.config.entity === entity) { this.error = true; this.message = error.message; }
+    } finally { this.controlBusy = false; this.render(); }
+  }
+  headerHtml() {
+    return `<header><div class="robot"><ha-icon icon="mdi:robot-vacuum"></ha-icon></div><div class="header-title"><h2>${escapeHtml(this.config.title)}</h2><p>Dyson Spot+Scrub <span class="tag">v0.2.1</span></p></div><div class="battery" role="img"><svg viewBox="0 0 32 20" aria-hidden="true"><rect x="1" y="3" width="26" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="29" y="7" width="3" height="6" rx="1" fill="currentColor"/><rect class="battery-fill" x="4" y="6" width="0" height="8" rx="1" fill="currentColor"/><path class="battery-bolt" d="M17 1 9 11h6l-2 8L23 8h-7Z" fill="var(--dp-bg)" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" hidden/></svg><span class="battery-value" aria-hidden="true">—</span></div></header>`;
+  }
+  updateBattery() {
+    const state = batteryStatus(this._hass, this.model);
+    const element = this.shadowRoot.querySelector('.battery');
+    element.dataset.level = state.level;
+    element.title = state.label; element.setAttribute('aria-label', state.label);
+    element.querySelector('.battery-value').textContent = state.percent === null ? '—' : `${state.percent}%`;
+    element.querySelector('.battery-fill').setAttribute('width', String((state.percent ?? 0) / 5));
+    element.querySelector('.battery-bolt').toggleAttribute('hidden', !state.charging);
+  }
+  renderSession(view) {
+    const h = escapeHtml;
+    // Keep the map element mounted across status and message updates so polling,
+    // the last good image and in-flight requests are independent of card renders.
+    this.paint(`<style>${styles}</style><ha-card>${this.headerHtml()}<section class="session"><h3 class="session-title" role="status" aria-live="polite"></h3><p class="detail"></p><div class="requested-label">Requested rooms</div><ul class="requested"></ul><p class="requested-note"></p></section>${this.config.show_camera ? '<div class="map-section"><div class="map-title">Cleaning map</div><dyson-planner-map></dyson-planner-map></div>' : ''}<footer class="session-footer"><div class="actions session-actions"><button data-control="stop" data-focus="stop"><ha-icon icon="mdi:stop"></ha-icon>Stop</button><button data-control="return_to_base" data-focus="home"><ha-icon icon="mdi:home-import-outline"></ha-icon>Home</button></div><p class="notice">Stop behavior is controlled by the integration. Home returns to dock; queued rooms may still resume.</p><p class="notice action-message" role="status" aria-live="polite"></p></footer></ha-card>`);
+    const root = this.shadowRoot;
+    this.updateBattery();
+    root.querySelector('.session-title').textContent = view.title;
+    root.querySelector('.detail').textContent = view.detail;
+    const known = !!this.requestedPlan;
+    root.querySelector('.requested-label').hidden = !known;
+    const chips = (this.requestedPlan?.rooms ?? []).map(r => `<li>${h(r.name)}</li>`).join('');
+    const list = root.querySelector('.requested');
+    if (list.innerHTML !== chips) list.innerHTML = chips;
+    root.querySelector('.requested-note').textContent = known
+      ? `${this.requestedPlan.mode} · Requested from this card. Room progress and sequence are not reported.`
+      : 'The rooms for this session are not reported by the integration.';
+    for (const button of root.querySelectorAll('[data-control]')) {
+      const supported = canControl(this._hass, this.config.entity, button.dataset.control);
+      button.disabled = this.busy || this.controlBusy || !supported;
+      button.title = supported ? '' : 'This action is not available in the current robot state.';
+    }
+    const message = root.querySelector('.action-message');
+    message.textContent = this.message;
+    message.classList.toggle('error', !!this.error);
+    root.querySelector('dyson-planner-map')?.setOptions(this._hass, this.model.cameraEntity, this.config.camera_rotation, view.live);
+  }
   render() {
     if (!this.model) return;
+    if (this.view.active) { this.renderSession(this.view); return; }
     const h = escapeHtml, model = this.model;
     const rooms = model.rooms.filter(r => !r.excluded);
     const options = this._hass.states[model.modeEntity]?.attributes?.options ?? [];
@@ -284,7 +536,8 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       const disabled = this.busy || !room.available;
       return `<section class="room ${selected ? 'selected' : ''}"><div class="room-head"><label class="pick"><input type="checkbox" data-focus="room-${n}" data-room="${h(room.entity)}" ${selected ? 'checked' : ''} ${disabled ? 'disabled' : ''}><span><span class="name">${h(room.name)} ${selected ? `<span class="status">(${order})</span>` : ''}</span><span class="summary">${!room.available ? h(room.error || 'Unavailable') : selected ? h(this.mode) + ' · Global' : 'Not selected'}</span></span></label><button class="expand" data-focus="expand-${n}" data-expand="${h(room.entity || room.name)}" aria-expanded="${open}" aria-controls="fields-${n}" aria-label="Settings for ${h(room.name)}"><span>Settings</span> ${open ? '⌃' : '⌄'}</button></div><div class="fields" id="fields-${n}" ${open ? '' : 'hidden'}><label class="field mode">Cleaning mode <span class="badge">Global · applies to all rooms</span><select data-mode data-focus="mode-${n}" aria-label="Cleaning mode ${h(room.name)}" ${disabled || !selected || !available(this._hass.states[model.modeEntity]) ? 'disabled' : ''}>${!options.includes(this.mode) ? '<option value="">Unavailable</option>' : ''}${options.map(option => `<option value="${h(option)}" ${this.mode === option ? 'selected' : ''}>${h(option)}</option>`).join('')}</select></label>${this.config.unsupported_settings === 'hidden' ? '' : `<p class="fine">Additional settings</p>${['Cleaning strategy', 'Water level', 'Mop passes'].map(label => `<label class="field">${label}<select disabled aria-label="${label} ${h(room.name)}"><option>—</option></select><span class="badge">Not available yet</span></label>`).join('')}`}${selected ? `<div class="mode"><p>Planned position: ${order}</p><div class="order"><button data-focus="up-${n}" data-move="${h(room.entity)}" data-direction="-1" aria-label="Move ${h(room.name)} earlier" ${this.busy || order <= 1 ? 'disabled' : ''}>↑</button><button data-focus="down-${n}" data-move="${h(room.entity)}" data-direction="1" aria-label="Move ${h(room.name)} later" ${this.busy || order >= this.selected.length ? 'disabled' : ''}>↓</button></div></div>` : ''}</div></section>`;
     }).join('');
-    this.paint(`<style>${styles}</style><ha-card><header><div class="robot"><ha-icon icon="mdi:robot-vacuum"></ha-icon></div><div><h2>${h(this.config.title)}</h2><p>Dyson Spot+Scrub <span class="tag">v0.1.1</span></p></div></header><p class="hint">Select rooms in preferred sequence. <span class="badge">Order is not sent to the robot yet.</span></p><div class="rooms">${roomHtml}</div>${!rooms.length ? '<p class="empty">No enabled rooms found. Check the card configuration and room discovery.</p>' : ''}<footer><div class="summary-line"><span>${this.selected.length} of ${rooms.length} rooms selected</span><span class="status">${this.dirty ? 'Local draft' : 'From Home Assistant'}</span></div><div class="actions"><button disabled title="Saving to the robot without cleaning is not supported yet">Save settings</button><button class="start" data-focus="start" data-action="start" ${this.selected.length === 0 || this.busy ? 'disabled' : ''}>${this.busy ? 'Starting …' : 'Start clean'}</button></div><p class="notice">Saving to the robot is not supported yet. Editing sends no commands.</p>${external ? '<p class="notice badge">Settings changed outside this card. Your draft remains and will be applied when you start.</p>' : ''}<p class="notice ${this.error ? 'error' : ''}" role="status" aria-live="polite">${h(this.message)}</p><button class="reset" data-focus="reset" data-action="reset" ${this.busy ? 'disabled' : ''}>Discard draft</button> <button class="reset" data-action="refresh" ${this.busy ? 'disabled' : ''}>Refresh rooms</button></footer></ha-card>`);
+    this.paint(`<style>${styles}</style><ha-card>${this.headerHtml()}<p class="hint">Select rooms in preferred sequence. <span class="badge">Order is not sent to the robot yet.</span></p><div class="rooms">${roomHtml}</div>${!rooms.length ? '<p class="empty">No enabled rooms found. Check the card configuration and room discovery.</p>' : ''}<footer><div class="summary-line"><span>${this.selected.length} of ${rooms.length} rooms selected</span><span class="status">${this.dirty ? 'Local draft' : 'From Home Assistant'}</span></div><div class="actions"><button disabled title="Saving to the robot without cleaning is not supported yet">Save settings</button><button class="start" data-focus="start" data-action="start" ${this.selected.length === 0 || this.busy ? 'disabled' : ''}>${this.busy ? 'Starting …' : 'Start clean'}</button></div><p class="notice">Saving to the robot is not supported yet. Editing sends no commands.</p>${external ? '<p class="notice badge">Settings changed outside this card. Your draft remains and will be applied when you start.</p>' : ''}<p class="notice ${this.error ? 'error' : ''}" role="status" aria-live="polite">${h(this.message)}</p><button class="reset" data-focus="reset" data-action="reset" ${this.busy ? 'disabled' : ''}>Discard draft</button> <button class="reset" data-action="refresh" ${this.busy ? 'disabled' : ''}>Refresh rooms</button></footer></ha-card>`);
+    this.updateBattery();
   }
 }
 
@@ -301,9 +554,9 @@ class DysonCleaningPlannerEditor extends DysonRegistryElement {
       if (!this.config) return;
       const next = { ...this.config };
       if (el.dataset.key) {
-        next[el.dataset.key] = el.value;
+        next[el.dataset.key] = el.type === 'checkbox' ? el.checked : el.dataset.key === 'camera_rotation' ? Number(el.value) : el.value;
         if (el.dataset.key === 'entity') {
-          delete next.mode_entity; delete next.start_entity; delete next.room_entities;
+          delete next.mode_entity; delete next.start_entity; delete next.room_entities; delete next.camera_entity;
           next.excluded_rooms = []; next.room_order = [];
         }
       } else if (el.dataset.include) {
@@ -340,7 +593,18 @@ class DysonCleaningPlannerEditor extends DysonRegistryElement {
       const entries = this.registry.filter(e => e.platform === DOMAIN && !e.disabled_by && e.device_id === device && e.entity_id.startsWith(`${domain}.`));
       return `<label>${label}<select data-focus="${key}" data-key="${key}"><option value="">Auto-detect</option>${entries.map(e => `<option value="${h(e.entity_id)}" ${config[key] === e.entity_id ? 'selected' : ''}>${h(e.name || e.original_name || e.entity_id)}</option>`).join('')}</select></label>`;
     };
-    this.paint(`<style>${styles}:host{padding:8px}label{display:grid;gap:8px;margin:0 0 16px;font-size:14px}input[type=text]{padding:12px;border:1px solid var(--dp-line);border-radius:8px;background:var(--dp-bg);color:inherit;width:100%}.entry{display:flex;gap:8px;align-items:center;margin:8px 0}.entry label{display:flex;align-items:center;flex:1;margin:0}.entry button{min-width:42px}h3{font-size:15px;margin-top:24px}</style><label>Dyson device<select data-key="entity" data-focus="entity"><option value="">Select a device</option>${vacuums.map(e => `<option value="${h(e.entity_id)}" ${config.entity === e.entity_id ? 'selected' : ''}>${h(this._hass.states[e.entity_id]?.attributes?.friendly_name || e.entity_id)}</option>`).join('')}</select></label><label>Title<input type="text" data-key="title" data-focus="title" value="${h(config.title ?? 'Plan a clean')} "></label><label>Unsupported settings<select data-key="unsupported_settings" data-focus="unsupported"><option value="disabled" ${config.unsupported_settings !== 'hidden' ? 'selected' : ''}>Show disabled</option><option value="hidden" ${config.unsupported_settings === 'hidden' ? 'selected' : ''}>Hide</option></select></label>${field('mode_entity', 'Cleaning mode', 'select')}${field('start_entity', 'Start button', 'button')}<h3>Rooms in this card</h3><p>Choose which rooms to show. Arrows change the display order, not the robot cleaning order.</p>${this.model.rooms.map((r, i) => `<div class="entry"><label><input type="checkbox" data-focus="include-${i}" data-include="${h(r.entity)}" ${!r.excluded ? 'checked' : ''} ${!r.entity ? 'disabled' : ''}>${h(r.name)}</label><button data-order="${h(r.entity)}" data-direction="-1" ${i === 0 ? 'disabled' : ''} aria-label="Move ${h(r.name)} up">↑</button><button data-order="${h(r.entity)}" data-direction="1" ${i === this.model.rooms.length - 1 ? 'disabled' : ''} aria-label="Move ${h(r.name)} down">↓</button></div>`).join('')}<p class="notice">Rooms disabled in Home Assistant are not offered. New rooms appear automatically.</p><p class="notice error">${h(this.registryError || this.model.issues.join(' '))}</p>`);
+    this.paint(`<style>${styles}:host{padding:8px}label{display:grid;gap:8px;margin:0 0 16px;font-size:14px}input[type=text]{padding:12px;border:1px solid var(--dp-line);border-radius:8px;background:var(--dp-bg);color:inherit;width:100%}.entry{display:flex;gap:8px;align-items:center;margin:8px 0}.entry label{display:flex;align-items:center;flex:1;margin:0}.entry button{min-width:42px}h3{font-size:15px;margin-top:24px}</style>
+      <label>Dyson device<select data-key="entity" data-focus="entity"><option value="">Select a device</option>${vacuums.map(e => `<option value="${h(e.entity_id)}" ${config.entity === e.entity_id ? 'selected' : ''}>${h(this._hass.states[e.entity_id]?.attributes?.friendly_name || e.entity_id)}</option>`).join('')}</select></label>
+      <label>Title<input type="text" data-key="title" data-focus="title" value="${h(config.title ?? 'Plan a clean')}"></label>
+      <label>Unsupported settings<select data-key="unsupported_settings" data-focus="unsupported"><option value="disabled" ${config.unsupported_settings !== 'hidden' ? 'selected' : ''}>Show disabled</option><option value="hidden" ${config.unsupported_settings === 'hidden' ? 'selected' : ''}>Hide</option></select></label>
+      ${field('mode_entity', 'Cleaning mode', 'select')}${field('start_entity', 'Start button', 'button')}
+      <h3>Cleaning map</h3><div class="entry"><label><input type="checkbox" data-key="show_camera" data-focus="show-camera" ${config.show_camera !== false ? 'checked' : ''}>Show camera during a cleaning session</label></div>
+      <p class="notice">Turning this off removes the map and stops image requests from this card.</p>
+      ${field('camera_entity', 'Map camera', 'camera')}
+      <label>Map rotation<select data-key="camera_rotation" data-focus="camera-rotation">${[0, 90, 180, 270].map(deg => `<option value="${deg}" ${(config.camera_rotation ?? 0) === deg ? 'selected' : ''}>${deg}°</option>`).join('')}</select></label>
+      <h3>Rooms in this card</h3><p>Choose which rooms to show. Arrows change the display order, not the robot cleaning order.</p>
+      ${this.model.rooms.map((r, i) => `<div class="entry"><label><input type="checkbox" data-focus="include-${i}" data-include="${h(r.entity)}" ${!r.excluded ? 'checked' : ''} ${!r.entity ? 'disabled' : ''}>${h(r.name)}</label><button data-order="${h(r.entity)}" data-direction="-1" ${i === 0 ? 'disabled' : ''} aria-label="Move ${h(r.name)} up">↑</button><button data-order="${h(r.entity)}" data-direction="1" ${i === this.model.rooms.length - 1 ? 'disabled' : ''} aria-label="Move ${h(r.name)} down">↓</button></div>`).join('')}
+      <p class="notice">Rooms disabled in Home Assistant are not offered. New rooms appear automatically.</p><p class="notice error">${h(this.registryError || this.model.issues.join(' '))}</p>`);
   }
 }
 if (!customElements.get('dyson-cleaning-planner-card-editor')) customElements.define('dyson-cleaning-planner-card-editor', DysonCleaningPlannerEditor);

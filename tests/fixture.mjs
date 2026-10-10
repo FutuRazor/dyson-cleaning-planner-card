@@ -2,6 +2,9 @@ export function fixture() {
   const entity = 'vacuum.kuche_dyson_spot_scrub';
   const mode = 'select.kuche_dyson_spot_scrub_vacuum_mode';
   const start = 'button.kuche_dyson_spot_scrub_vacuum_start';
+  const camera = 'camera.kuche_dyson_spot_scrub_floor_map';
+  const battery = 'sensor.kuche_dyson_spot_scrub_battery';
+  const charging = 'binary_sensor.kuche_dyson_spot_scrub_charging';
   const names = ['Wohnzimmer', 'Küche', 'Schlafzimmer', 'Flur', 'Badezimmer'];
   const suffixes = ['wohnzimmer', 'kuche', 'schlafzimmer', 'flur', 'badezimmer'];
   const ids = suffixes.map(s => `switch.kuche_dyson_spot_scrub_room_${s}`);
@@ -10,10 +13,16 @@ export function fixture() {
   const state = (state, attributes = {}) => ({ state, attributes });
   const states = { [entity]: state('docked', { rooms: names, friendly_name: 'Dyson Spot+Scrub' }), [mode]: state('Vacuum', { options: ['Vacuum', 'Vacuum and Mop', 'Mop', 'Vacuum then Mop'] }), [start]: state('unknown'), ...Object.fromEntries(ids.map(id => [id, state('off')])) };
   // A button may have state "unknown" until its first press: it is still usable.
+  registry.push(row(camera, 'DEMO_floor_map', 'Floor Map'));
+  registry.push(row(battery, 'DEMO_battery', 'Battery'), row(charging, 'DEMO_charging', 'Charging'));
+  states[entity].attributes.supported_features = 12344;
+  states[camera] = state('idle', { entity_picture: `/api/camera_proxy/${camera}` });
+  states[battery] = state('100', { device_class: 'battery', unit_of_measurement: '%' });
+  states[charging] = state('on', { device_class: 'battery_charging' });
   const calls = [];
   const hass = {
     states, connected: true, connection: {},
-    services: { select: { select_option: {} }, switch: { turn_on: {}, turn_off: {} }, button: { press: {} } },
+    services: { select: { select_option: {} }, switch: { turn_on: {}, turn_off: {} }, button: { press: {} }, vacuum: { stop: {}, return_to_base: {} } },
     callWS: async () => registry,
     callService: async (domain, service, data) => {
       calls.push({ domain, service, data });
@@ -22,5 +31,5 @@ export function fixture() {
       if (domain === 'button') states[data.entity_id] = state(new Date().toISOString());
     }
   };
-  return { entity, mode, start, names, ids, registry, hass, calls, config: { entity, excluded_rooms: [], room_order: [] } };
+  return { entity, mode, start, camera, battery, charging, names, ids, registry, hass, calls, config: { entity, excluded_rooms: [], room_order: [] } };
 }
