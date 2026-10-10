@@ -1,4 +1,5 @@
 {
   "name": "Dyson Cleaning Planner Card",
   "filename": "dyson-cleaning-planner-card.js"
+  "manifest": "dist/dyson-cleaning-planner-card.js"
 }
