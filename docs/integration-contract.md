@@ -1,45 +1,45 @@
-# Vorbereitung der zukünftigen Integrationsschnittstelle
+# v0.2.2 integration contract
 
-Status: Entwurf, nicht implementiert oder mit der Integration vereinbart.
+The frontend holds only a local draft. The integration translates option labels into Dyson array values.
 
-Die Karte hält einen geordneten Plan intern so vor:
+## Save
+
+Action: `dyson_spot_scrub.save_room_settings`
 
 ```json
 {
-  "version": 1,
-  "rooms": [
-    { "entity_id": "switch.example_kitchen", "name": "Küche" },
-    { "entity_id": "switch.example_living", "name": "Wohnzimmer" }
-  ],
-  "mode": "Vacuum"
+  "entity_id": "vacuum.your_dyson",
+  "room_settings": {
+    "12": {"cleaning_mode": "Mop", "water_level": "High"},
+    "10": {"mop_repetitions": "Two Passes"}
+  }
 }
 ```
 
-Die Arrayposition ist die gewünschte Reihenfolge. Die Entity-ID ist eine Referenz für die derzeitige HA-Anbindung, keine Dyson-Raum-ID. Zukünftig sollte die Integration stabile, kartenbezogene Raum-IDs samt Anzeigenamen veröffentlichen. Dann kann die Karte diese IDs statt Namen übergeben.
+Only changed fields are included. No room switches, selection or start command are sent by the card. An empty settings draft results in no call. HA must reflect the values before the card clears the settings draft; after six seconds without confirmation it keeps the draft and reports the timeout. The selected room list remains local after saving.
 
-## Geplante getrennte Aktionen
+## Start
 
-- **Einstellungen speichern:** Gerät, Plan und gegebenenfalls Karten-ID validieren; vollständigen Einstellungsblock an den Roboter senden, ohne Reinigung zu starten.
-- **Mit Einstellungen starten:** denselben Plan validieren und als zusammengehörigen Auftrag übertragen und starten. Vorheriges Speichern ist nicht nötig.
+Action: `dyson_spot_scrub.start_rooms_with_settings`
 
-Namen und Payload dieser HA-Aktionen werden von der Integration vorgegeben. Die Karte soll weder Dyson-MQTT-Daten noch unbekannte Arraypositionen selbst zusammenbauen. Aktuell läuft ausschließlich `startLegacy`.
+```json
+{
+  "entity_id": "vacuum.your_dyson",
+  "room_ids": ["12", "10"],
+  "room_settings": {"12": {"cleaning_mode": "Mop"}}
+}
+```
 
-## Fähigkeiten
+One call contains the complete changed-settings draft and room selection. The settings object can be empty. Values for unedited fields remain under integration control. The card never calls a preliminary save or `button.press`.
 
-Empfohlen ist eine versionierte Fähigkeitsbeschreibung am Gerät/vacuum, zum Beispiel mit Angaben zu `save_settings`, `ordered_room_cleaning`, `per_room_mode`, `water_level`, `cleaning_strategy`, `mop_passes` und deren zulässigen Werten. Feldnamen sind noch offen. Bloßes Vorhandensein einer Aktion oder eine Versionsnummer bestätigt keine Semantik.
+The integration writes preferences once, then issues its existing protocol start sequence. One HA call is not one MQTT packet, a transactional robot update or a confirmed robot acknowledgement. Execution order remains unconfirmed because the robot receives `unorderedZones`.
 
-Die Integration ist die Quelle für Fähigkeiten, die Kartenkonfiguration entscheidet über ausgegraute oder ausgeblendete Felder. Ohne bestätigte Unterstützung bleibt Speichern deaktiviert und die Reihenfolge ausdrücklich als nicht übertragbar markiert.
+## Identity and capabilities
 
-## Anforderungen an den zukünftigen Start
+Entities must belong to the same Dyson device and platform. Room switch registry unique IDs identify per-room select registry prefixes; their `room_id` attributes supply the native map ID. The card uses option labels exactly as reported by HA. Native IDs are map-scoped, so remapping requires fresh drafts.
 
-- Eindeutige Zielgeräteauswahl; niemals versehentlich alle Roboter adressieren.
-- Gesamten Plan einschließlich leerer/ungültiger/doppelter Räume vor dem Senden prüfen.
-- Raum-IDs zur aktiven Karte auflösen; unbekannte Parameter im Originalblock erhalten.
-- Gewünschte Reihenfolge für aktivierte Räume übertragen; nicht gewählte Räume ausschließen.
-- Keine gestartete Reinigung beim bloßen Speichern.
-- Fehler an den Aufrufer zurückgeben; idealerweise Auftragskennung, Status und Schutz vor doppelten Starts anbieten.
-- Keine Ablaufsteuerung im Browser: Auftrag läuft nach erfolgreicher Übergabe weiter, wenn die Karte geschlossen wird.
+Missing actions produce a clear message and never trigger a legacy fallback. Missing options are disabled or hidden. Duplicate/ambiguous room IDs and invalid edited options are rejected before the action. The original legacy adapter remains in the source for regression coverage but is not called by the v0.2.2 UI.
 
-## Bekannte Grenzen des Prototyps
+## Known integration limits
 
-Die bisherigen HA-Entitätsänderungen und der anschließende Button-Aufruf sind nicht atomar. Die Karte prüft Bereitschaft und bestätigte Zustände vor dem Start und verhindert parallele Startvorbereitung derselben Entität innerhalb dieses Browsermoduls. Änderungen aus anderen Browsern oder der Dyson-App können nicht vollständig ausgeschlossen werden. Die endgültige Transaktions- und Duplikatbehandlung gehört in die Integration.
+The supplied save implementation merges with cached robot preferences. Concurrent external changes, remapping and acknowledgement handling require integration-level coordination. The frontend cannot guarantee a transaction across other browsers, automations or the Dyson app. It retains failed drafts and never retries robot commands automatically.

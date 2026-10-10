@@ -1,27 +1,24 @@
-# Prüfung von v0.2.1
+# Testing v0.2.2
 
-Stand: 10. Oktober 2026.
+## Automated checks
 
-## Bestanden
+- Core regression tests cover discovery, legacy behavior, session states, controls, camera sizing and battery status.
+- Batch tests cover exact Save/Start payloads, multiple rooms, Unicode/renamed entities, missing actions, stale IDs, unavailable fields and concurrent requests.
+- Browser checks use simulated HA entities to exercise independent room drafts, Save without Start, combined Start payloads, active views, editor, mobile layout, camera rotation/polling and request cleanup.
 
-- 20 automatisierte Node-Tests: bestehender Legacy-Start einschließlich Umlauten, umbenannten Entitäten, deaktivierten/nicht verfügbaren Räumen und konkurrierenden Starts; zusätzlich Statusansicht, Stop/Home ohne Schalteränderungen, Aktionsverfügbarkeit, optionale Kameraerkennung, Konfiguration und Bildanpassung über die volle Breite bei allen Drehungen.
-- Akku: automatische Gerätezuordnung auch nach Umbenennung, keine Übernahme fremder oder deaktivierter Sensoren, 0–100 %, Farbstufen, ungültige/fehlende Werte, wiederhergestellte Zustände und fehlende Verbindung. Der Blitz erscheint ausschließlich bei bestätigtem Laden. Sensoränderungen erstellen das Kamerabild nicht neu und erhalten die angeforderten Räume.
-- Browserprüfung in einem isolierten Edge mit simuliertem Home Assistant: bisherige Planungsfunktionen und Editoroptionen, Start mit unbeteiligtem unerreichbarem Raum, Wechsel zur Statusansicht, kein erneuter Start während einer Sitzung, angeforderte Räume nur aus der eigenen Startanforderung und wartende Startbestätigung.
-- Stop/Home senden jeweils genau eine Aktion an die gewählte vacuum-Entität. Keine zusätzlichen Raumschalteränderungen. Fehler bleiben sichtbar, fehlende Fähigkeiten sperren die betreffende Aktion.
-- Kamera: Bildabruf, letzter Bildstand bei HTTP-Fehler, stabile Karteninstanz über Statusänderungen, alle vier Drehungen mit proportionaler Höhe bis an beide Kartenränder, keine weiteren Abfragen nach Abschalten, Rückkehr zur Planung oder Entfernen der Karte.
-- Browserbreiten 900, 390 und 320 Pixel: Bildkanten und Seitenverhältnis geprüft; kein horizontaler Seitenüberlauf, keine Überlappung von Akkustand und Kartentitel. Screenshots der Planungs- und Statusansicht einschließlich Dunkeldarstellung visuell angesehen.
-- Einzeldatei gebaut und JavaScript-Syntax geprüft.
+Run `node --test tests/*.test.mjs`, `node scripts/build.mjs` and `node tests/browser.mjs` and `node tests/batch-browser.mjs` with Playwright available. These checks do not contact a real robot.
 
-## Rückmeldungen aus dem Praxistest von v0.2.0
+## Real Home Assistant checklist
 
-- Nutzer bestätigt funktionierendes Auto-detect in allen bisher beteiligten Einstellungen, einschließlich der Vacuum-Vorauswahl.
-- Die seitlichen Leerflächen bei 90°-Drehung führten zur proportionalen Darstellung in v0.2.1.
+1. Confirm the card header is v0.2.2 and both new Dyson actions exist.
+2. Expand two rooms. Check that all four dropdowns show each room's current HA values and options.
+3. Change several options. HA entities and the robot must remain unchanged during editing. Only the edited room should change in the card.
+4. Click Save settings. Confirm one `save_room_settings` action carries all changes, HA reflects the values, and cleaning does not start. The card's room selection must remain selected.
+5. Change another setting, then Discard draft. Confirm no service call occurs and current HA values return.
+6. Select one room and use Start clean. Confirm a single `start_rooms_with_settings` action contains the room ID and unsaved changes, with no individual select/switch/button calls.
+7. Check actual robot behavior and settings. Then try multiple rooms; do not assume transmitted list order guarantees execution order.
+8. Check the active view, camera rotation/disable, battery and Stop/Home. Queue cancellation and pause behavior are determined by the integration.
+9. Rename a room or entity and Refresh rooms. Confirm active room IDs remain correctly associated; ambiguous or missing edited rooms must give an error rather than targeting another room.
+10. Check missing/unavailable settings with both editor options (disabled/hidden). Simulate an action error and ensure the draft remains without automatic retries.
 
-## Noch offen
-
-- Akkuanzeige und geänderte Bildskalierung von v0.2.1 im echten Home-Assistant-Dashboard.
-- Stop-Bedeutung und Mehrraumverhalten nach Home mit der tatsächlich installierten Integration und dem Roboter.
-- HACS-Installation aus dem späteren öffentlichen Repository sowie Ausführung der vorbereiteten GitHub-Workflows.
-- Zukünftige Einstellungen-speichern-, geordnete Start-, Pause/Fortsetzen- und Warteschlange-löschen-Funktionen der Integration.
-
-Die Browserprüfung simuliert Home-Assistant-Zustände und Aktionsantworten. Sie belegt nicht, dass der Roboter die Befehle bereits korrekt ausführt.
+HA value confirmation means the integration has updated its states. It is not proof that the robot acknowledged the settings. Cross-client editing and stale integration caches still need observation on the real device.

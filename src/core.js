@@ -1,4 +1,5 @@
 export const DOMAIN = 'dyson_spot_scrub';
+export const ROOM_FIELDS = { cleaning_mode: 'Cleaning mode', cleaning_strategy: 'Cleaning strategy', water_level: 'Water level', mop_repetitions: 'Mop repetitions' };
 export const available = state => !!state && !['unavailable', 'unknown'].includes(state.state) && !state.attributes?.restored;
 export const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -31,8 +32,6 @@ export function discover(hass, registry, config) {
   const cameraEntity = pick(config.camera_entity, 'floor_map', 'camera');
   const batteryEntity = pick(undefined, 'battery', 'sensor');
   const chargingEntity = pick(undefined, 'charging', 'binary_sensor');
-  if (!modeEntity) issues.push('The cleaning mode entity could not be identified. Check the editor mapping.');
-  if (!startEntity) issues.push('The start button could not be identified. Check the editor mapping.');
   const managed = entries.filter(e => e.entity_id.startsWith('switch.') && String(e.unique_id).startsWith(`${serial}_room_`));
   const names = hass.states[config.entity]?.attributes?.rooms;
   if (!Array.isArray(names) || !names.length || names.some(n => typeof n !== 'string')) issues.push('The Dyson room list is not currently available.');
@@ -45,7 +44,21 @@ export function discover(hass, registry, config) {
     if (matches.length !== 1) return [{ name, entity: '', available: false, error: 'Room switch mapping is ambiguous' }];
     const entry = matches[0];
     if (!managed.some(e => e.entity_id === entry.entity_id)) managed.push(entry);
-    return [{ name, entity: entry.entity_id, available: available(hass.states[entry.entity_id]), excluded: config.excluded_rooms.includes(entry.entity_id) }];
+    const settings = {};
+    const roomIds = new Set();
+    for (const key of Object.keys(ROOM_FIELDS)) {
+      const candidates = entries.filter(e => e.entity_id.startsWith('select.') && e.unique_id === `${entry.unique_id}_${key}` && available(hass.states[e.entity_id]));
+      if (candidates.length !== 1) continue;
+      const entity = candidates[0].entity_id, state = hass.states[entity];
+      const nativeId = state.attributes?.room_id;
+      if (nativeId === undefined || nativeId === null || String(nativeId) === '') continue;
+      const options = state.attributes?.options;
+      if (!Array.isArray(options) || !options.every(o => typeof o === 'string')) continue;
+      roomIds.add(String(nativeId));
+      settings[key] = { entity, value: state.state, options };
+    }
+    const roomId = roomIds.size === 1 ? [...roomIds][0] : undefined;
+    return [{ name, entity: entry.entity_id, roomId, settings: roomId ? settings : {}, available: available(hass.states[entry.entity_id]), excluded: config.excluded_rooms.includes(entry.entity_id) }];
   });
   const ids = rooms.map(r => r.entity).filter(Boolean);
   if (new Set(ids).size !== ids.length) issues.push('Multiple rooms map to the same switch.');
@@ -65,6 +78,52 @@ export function batteryStatus(hass, model) {
   const level = percent === null ? 'unknown' : percent < 20 ? 'low' : percent < 50 ? 'medium' : 'high';
   const label = `${percent === null ? 'Battery level unavailable' : `Battery: ${percent}%`}. ${chargeState === 'on' ? 'Charging' : chargeState === 'off' ? 'Not charging' : 'Charging status unavailable'}.`;
   return { percent, charging: chargeState === 'on', level, label };
+}
+
+// Only the integration converts labels to Dyson protocol values. One HA action
+// receives the complete draft; never fan out to select.select_option here.
+const draftRequests = new Set();
+export async function sendRoomDraft({ hass, model, config, selected = [], draft = {}, start = false }) {
+  const service = start ? 'start_rooms_with_settings' : 'save_room_settings';
+  if (hass?.connected === false) throw new Error('Home Assistant is not connected.');
+  if (!hass.services?.[DOMAIN]?.[service]) throw new Error(`Update the Dyson integration: ${DOMAIN}.${service} is unavailable.`);
+  const vacuum = hass.states[config.entity];
+  if (!available(vacuum)) throw new Error('The robot is unavailable.');
+  if (start && !['docked', 'idle'].includes(vacuum.state)) throw new Error('Start is only available when the Dyson is ready (docked or idle).');
+  const byId = new Map();
+  for (const room of model.rooms) {
+    if (!room.roomId) continue;
+    const list = byId.get(room.roomId) ?? [];
+    list.push(room); byId.set(room.roomId, list);
+  }
+  const resolve = id => {
+    const rooms = byId.get(id);
+    if (rooms?.length !== 1 || !rooms[0].available || rooms[0].excluded) throw new Error('A room in your draft is unavailable or ambiguous. Review or discard the draft.');
+    return rooms[0];
+  };
+  const settings = {};
+  for (const [id, values] of Object.entries(draft)) {
+    const room = resolve(id);
+    for (const [key, value] of Object.entries(values)) {
+      const field = room.settings?.[key];
+      if (!field || !available(hass.states[field.entity]) || !field.options.includes(value)) throw new Error(`${ROOM_FIELDS[key] ?? key} is no longer available for ${room.name}.`);
+      if (hass.states[field.entity].state !== value) (settings[id] ??= {})[key] = value;
+    }
+  }
+  const rooms = start ? selected.map(entity => {
+    const room = model.rooms.find(r => r.entity === entity);
+    if (!room?.roomId) throw new Error('A selected room has no stable room ID. Refresh rooms and check the integration.');
+    return resolve(room.roomId);
+  }) : [];
+  if (start && (!rooms.length || new Set(rooms.map(r => r.roomId)).size !== rooms.length)) throw new Error('Select at least one room without duplicates.');
+  if (draftRequests.has(config.entity)) throw new Error('An action for this Dyson is already running in this browser.');
+  if (!start && !Object.keys(settings).length) return { rooms: [], settings, sent: false };
+  const data = { entity_id: config.entity, room_settings: settings };
+  if (start) data.room_ids = rooms.map(r => r.roomId);
+  draftRequests.add(config.entity);
+  try { await hass.callService(DOMAIN, service, data); }
+  finally { draftRequests.delete(config.entity); }
+  return { rooms: rooms.map(r => ({ entity_id: r.entity, room_id: r.roomId, name: r.name })), settings, sent: true };
 }
 
 export function cleaningView(hass, entity, pendingStart = false) {

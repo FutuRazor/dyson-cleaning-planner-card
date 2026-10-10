@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.2.2
+
+- Add independent per-room cleaning mode, strategy, water level and mop repetitions using live select options.
+- Keep edits in a local draft and submit all changed settings through one save action, or together with selected room IDs through one start action.
+- Replace the UI's legacy select/switch/button sequence with the integration batch actions; missing actions never trigger a fallback.
+- Preserve selected rooms after saving, retain drafts on service/confirmation errors, and follow renamed rooms by native room ID.
+- Show unsupported settings disabled or hidden. Retain battery, camera and active-session controls.
+- Translate the README, testing checklist and integration contract into English.
+
+Validation: 28 core tests and two isolated Edge browser suites with simulated HA entities. Real integration and robot verification remains a user test. The transmitted room list does not guarantee robot execution order.
+
+
 ## v0.2.1
 
 - Add a colored battery icon and percentage in the upper-right card header in both planning and session views. Detect the battery and charging sensors through the selected Dyson device's registry identities, including renamed entity IDs.

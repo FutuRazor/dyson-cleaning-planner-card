@@ -33,3 +33,33 @@ export function fixture() {
   };
   return { entity, mode, start, camera, battery, charging, names, ids, registry, hass, calls, config: { entity, excluded_rooms: [], room_order: [] } };
 }
+
+export function batchFixture() {
+  const f = fixture();
+  const options = {
+    cleaning_mode: ['Vacuum', 'Vacuum and Mop', 'Mop', 'Vacuum then Mop'],
+    cleaning_strategy: ['Auto', 'Boost', 'Quiet', 'Quick'],
+    water_level: ['Very Low', 'Low', 'Medium', 'High'],
+    mop_repetitions: ['One Pass', 'Two Passes']
+  };
+  f.fields = {};
+  f.names.forEach((name, i) => {
+    const id = String(i + 10); f.fields[id] = {};
+    for (const [key, values] of Object.entries(options)) {
+      const entity = `select.arbitrary_${i}_${key}`;
+      f.fields[id][key] = entity;
+      f.registry.push({ entity_id: entity, unique_id: `DEMO_room_${name.toLowerCase()}_${key}`, platform: 'dyson_spot_scrub', device_id: 'demo-device', disabled_by: null });
+      f.hass.states[entity] = { state: values[0], attributes: { options: values, room_id: id } };
+    }
+  });
+  f.hass.services.dyson_spot_scrub = { save_room_settings: {}, start_rooms_with_settings: {} };
+  const original = f.hass.callService;
+  f.hass.callService = async (domain, service, data) => {
+    await original(domain, service, data);
+    if (domain !== 'dyson_spot_scrub') return;
+    for (const [id, settings] of Object.entries(data.room_settings)) {
+      for (const [key, value] of Object.entries(settings)) f.hass.states[f.fields[id][key]].state = value;
+    }
+  };
+  return f;
+}

@@ -20,7 +20,7 @@ try {
   const shot = name => page.screenshot({ path: fileURLToPath(new URL(`../artifacts/${name}.png`, import.meta.url)), fullPage: true });
   await card.locator('.room').first().waitFor();
   assert.equal(await card.locator('.room').count(), 5);
-  assert.equal(await card.locator('.tag').innerText(), 'v0.2.1');
+  assert.equal(await card.locator('.tag').innerText(), 'v0.2.2');
   assert.equal(await card.locator('.battery-value').innerText(), '100%');
   assert.equal(await card.locator('.battery-bolt').isVisible(), true);
   assert.equal(await card.locator('.battery').getAttribute('data-level'), 'high');
@@ -44,13 +44,21 @@ try {
   await card.locator('input[data-room]').nth(0).check();
   await card.locator('[data-expand]').nth(0).click();
   await card.locator('[data-expand]').nth(1).click();
-  await card.locator('[data-mode]').nth(0).selectOption('Mop');
-  assert.equal(await card.locator('[data-mode]').nth(1).inputValue(), 'Mop');
+  await card.locator('[data-setting="cleaning_mode"]').nth(0).selectOption('Mop');
+  assert.equal(await card.locator('[data-setting="cleaning_mode"]').nth(1).inputValue(), 'Vacuum');
   assert.equal(await page.evaluate(() => demo.calls.length), 0);
-  assert.equal(await card.getByRole('button', { name: 'Save settings', exact: true }).isDisabled(), true);
+  await card.locator('[data-setting="water_level"]').nth(1).selectOption('High');
+  assert.equal(await page.evaluate(() => demo.calls.length), 0);
+  assert.equal(await card.getByRole('button', { name: 'Save settings', exact: true }).isEnabled(), true);
+  await card.locator('[data-action="save"]').click();
+  await page.waitForFunction(() => !demo.card.busy);
+  assert.equal(await card.locator('.room').count(), 5, 'save retains the planner');
+  assert.equal(await page.evaluate(() => demo.card.selected.length), 2, 'save retains local selection');
+  assert.deepEqual(await page.evaluate(() => demo.calls), [{ domain: 'dyson_spot_scrub', service: 'save_room_settings', data: { entity_id: 'vacuum.kuche_dyson_spot_scrub', room_settings: { 10: { cleaning_mode: 'Mop' }, 11: { water_level: 'High' } } } }]);
+  await card.locator('[data-setting="mop_repetitions"]').nth(0).selectOption('Two Passes');
   assert.equal(imageRequests, 0, 'planner does not fetch the camera');
   await mkdir(new URL('../artifacts/', import.meta.url), { recursive: true });
-  await shot('planner-v0.2.1');
+  await shot('planner-v0.2.2');
   await page.evaluate(() => { demo.hass.states[demo.ids[4]].state = 'unavailable'; demo.card.hass = { ...demo.hass }; });
   await card.locator('.start').click();
   await page.waitForFunction(() => !demo.card.busy && demo.card.requestedPlan?.rooms.length === 2);
@@ -58,7 +66,8 @@ try {
   assert.equal(await card.locator('.start').count(), 0);
   assert.deepEqual(await card.locator('.requested li').allTextContents(), ['Küche', 'Wohnzimmer']);
   assert.equal(await card.locator('.session-title').innerText(), 'Cleaning session active');
-  assert.equal(await page.evaluate(() => demo.calls.filter(c => c.domain === 'button').length), 1);
+  assert.deepEqual(await page.evaluate(() => demo.calls.at(-1)), { domain: 'dyson_spot_scrub', service: 'start_rooms_with_settings', data: { entity_id: 'vacuum.kuche_dyson_spot_scrub', room_ids: ['11', '10'], room_settings: { 10: { mop_repetitions: 'Two Passes' } } } });
+  assert.equal(await page.evaluate(() => demo.calls.some(c => ['select', 'switch', 'button'].includes(c.domain))), false);
   const map = card.locator('dyson-planner-map');
   await map.scrollIntoViewIfNeeded();
   await page.waitForFunction(() => !!demo.card.shadowRoot.querySelector('dyson-planner-map')?.objectUrl);
@@ -73,7 +82,7 @@ try {
     assert.equal(await card.locator('.requested li').count(), 2);
   }
   await page.evaluate(() => { demo.hass.states[demo.battery].state = '78'; demo.hass.states[demo.charging].state = 'off'; demo.card.hass = { ...demo.hass }; });
-  await shot('cleaning-desktop-v0.2.1');
+  await shot('cleaning-desktop-v0.2.2');
   const beforeControl = await page.evaluate(() => demo.calls.length);
   await card.locator('[data-control="stop"]').click();
   await page.waitForFunction(() => !demo.card.controlBusy);
@@ -83,7 +92,7 @@ try {
     { domain: 'vacuum', service: 'stop', data: { entity_id: 'vacuum.kuche_dyson_spot_scrub' } },
     { domain: 'vacuum', service: 'return_to_base', data: { entity_id: 'vacuum.kuche_dyson_spot_scrub' } }
   ]);
-  assert.equal(await page.evaluate(() => demo.hass.states[demo.ids[0]].state), 'on');
+  assert.equal(await page.evaluate(() => demo.hass.states[demo.ids[0]].state), 'off');
   assert.equal(await card.locator('.session-title').innerText(), 'Robot returning');
   assert.match(await card.locator('.action-message').innerText(), /may still resume/);
   assert.equal(await page.evaluate(() => demo.map === demo.card.shadowRoot.querySelector('dyson-planner-map')), true);
@@ -121,7 +130,7 @@ try {
   await page.setViewportSize({ width: 390, height: 844 });
   assert.equal(await card.locator('.requested li').count(), 2);
   await page.locator('#settings').click();
-  await shot('cleaning-mobile-rotated-v0.2.1');
+  await shot('cleaning-mobile-rotated-v0.2.2');
   await map.scrollIntoViewIfNeeded();
   await page.route('**/api/camera_proxy/**', route => route.fulfill({ status: 503, body: 'Unavailable' }));
   await page.waitForFunction(() => demo.map.caption.textContent.includes('Showing the last received image.'), null, { timeout: 10000 });
@@ -164,6 +173,7 @@ try {
   assert.equal(await card.locator('[data-control="return_to_base"]').isDisabled(), true);
   await state('docked');
   await page.locator('#settings').click();
+  await page.evaluate(() => { for (const fields of Object.values(demo.fields)) demo.hass.states[fields.water_level].state = 'unavailable'; demo.card.hass = { ...demo.hass }; });
   await editor.locator('[data-key="unsupported_settings"]').selectOption('hidden');
   await card.locator('[data-expand]').first().click();
   assert.equal(await card.locator('.field').filter({ hasText: 'Water level' }).count(), 0);
@@ -173,6 +183,7 @@ try {
     demo.hass.callService = async (domain, service, data) => { demo.calls.push({ domain, service, data }); };
     demo.hass.states[demo.ids[0]].state = 'off'; demo.card.hass = { ...demo.hass };
   });
+  await card.locator('input[data-room]').first().check();
   await card.locator('.start').click();
   await page.waitForFunction(() => !demo.card.busy && demo.card.pendingStart);
   assert.equal(await card.locator('.session-title').innerText(), 'Starting clean');

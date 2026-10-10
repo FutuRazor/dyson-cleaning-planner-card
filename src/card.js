@@ -1,4 +1,4 @@
-import { DOMAIN, available, escapeHtml, normalizeConfig, discover, createPlan, startLegacy, cleaningView, canControl, controlCleaning, batteryStatus } from './core.js';
+import { DOMAIN, ROOM_FIELDS, available, escapeHtml, normalizeConfig, discover, sendRoomDraft, cleaningView, canControl, controlCleaning, batteryStatus } from './core.js';
 
 const styles = `
 :host{--dp-padding:24px}.header-title{flex:1;min-width:0}.header-title h2{overflow-wrap:anywhere}.robot{flex-shrink:0}.battery{display:flex;align-items:center;gap:7px;flex-shrink:0;align-self:flex-start;margin-top:4px;font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}.battery svg{width:32px;height:20px;color:var(--dp-muted)}.battery[data-level=high] svg{color:var(--success-color,#2e7d32)}.battery[data-level=medium] svg{color:var(--warning-color,#ad6800)}.battery[data-level=low] svg{color:var(--error-color,#b3261e)}
@@ -52,7 +52,7 @@ class DysonRegistryElement extends HTMLElement {
 
 class DysonCleaningPlannerCard extends DysonRegistryElement {
   constructor() {
-    super(); this.selected = []; this.dirty = false; this.busy = false; this.expanded = new Set(); this.message = '';
+    super(); this.selected = []; this.settingDraft = {}; this.dirty = false; this.busy = false; this.expanded = new Set(); this.message = '';
     this.controlBusy = false; this.pendingStart = false; this.requestedPlan = null;
     this.shadowRoot.addEventListener('change', event => this.onChange(event));
     this.shadowRoot.addEventListener('click', event => this.onClick(event));
@@ -67,27 +67,38 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       this.clearPendingStart(); this.requestedPlan = null; this.sessionObserved = false;
     }
     this.config = normalizeConfig(config);
-    this.initialized = false; this.dirty = false; this.selected = []; this.expanded.clear(); this.message = ''; this.lastRooms = [];
+    this.initialized = false; this.dirty = false; this.selected = []; this.settingDraft = {}; this.expanded.clear(); this.message = ''; this.lastRooms = [];
     this.update();
   }
   disconnectedCallback() { super.disconnectedCallback(); this.clearPendingStart(); }
   clearPendingStart() { clearTimeout(this._startTimer); this.pendingStart = false; }
-  get view() { return cleaningView(this._hass, this.config?.entity, this.busy || this.pendingStart); }
+  get view() { return cleaningView(this._hass, this.config?.entity, (this.busy && !this.saving) || this.pendingStart); }
   getCardSize() { return this.view.active ? (this.config?.show_camera ? 9 : 5) : 3 + (this.model?.rooms.length ?? 3); }
   getGridOptions() { return { columns: 12, min_columns: 6 }; }
   getModel() { return discover(this._hass, this.registry, this.config); }
   resetDraft(clearMessage = true) {
     this.selected = this.model.rooms.filter(r => !r.excluded && r.available && this._hass.states[r.entity]?.state === 'on').map(r => r.entity);
-    this.mode = this._hass.states[this.model.modeEntity]?.state ?? '';
+    this.settingDraft = {};
     this.baseline = this.liveSignature(); this.dirty = false;
     if (clearMessage) { this.message = ''; this.error = false; }
   }
   liveSignature() {
-    return JSON.stringify([this._hass.states[this.model.modeEntity]?.state, this.model.managed.map(id => [id, this._hass.states[id]?.state])]);
+    return JSON.stringify(this.model.rooms.map(r => [r.roomId, r.entity, this._hass.states[r.entity]?.state, Object.entries(r.settings ?? {}).map(([key, field]) => [key, field.entity, field.value])]));
+  }
+  updateDirty() {
+    const live = this.model.rooms.filter(r => !r.excluded && r.available && this._hass.states[r.entity]?.state === 'on').map(r => r.entity);
+    this.dirty = Object.keys(this.settingDraft).length > 0 || JSON.stringify(this.selected) !== JSON.stringify(live);
   }
   update() {
     if (!this.config || !this._hass) return;
+    const previous = this.model;
     this.model = this.getModel();
+    // Preserve a local selection across entity renames using the robot's room ID.
+    if (this.dirty && previous) this.selected = this.selected.map(entity => {
+      const id = previous.rooms.find(r => r.entity === entity)?.roomId;
+      const matches = this.model.rooms.filter(r => id && r.roomId === id);
+      return matches.length === 1 ? matches[0].entity : entity;
+    });
     const reported = cleaningView(this._hass, this.config.entity);
     if (reported.live) {
       this.clearPendingStart(); this.sessionObserved = true;
@@ -97,7 +108,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     }
     if (this.model.rooms.length) this.lastRooms = this.model.rooms;
     else if (!Array.isArray(this._hass.states[this.config.entity]?.attributes?.rooms)) this.model.rooms = (this.lastRooms ?? []).map(r => ({ ...r, available: false }));
-    if ((!this.initialized || !this.dirty) && !this.view.active && this.model.modeEntity) {
+    if ((!this.initialized || !this.dirty) && !this.view.active && !this.busy && this.model.rooms.length) {
       this.resetDraft(false); this.initialized = true;
     }
     this.render();
@@ -108,9 +119,17 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     if (el.dataset.room) {
       this.selected = this.selected.filter(id => id !== el.dataset.room);
       if (el.checked) this.selected.push(el.dataset.room);
-    } else if (el.dataset.mode !== undefined) this.mode = el.value;
+    } else if (el.dataset.setting && el.dataset.roomId) {
+      const room = this.model.rooms.find(r => r.roomId === el.dataset.roomId);
+      const field = room?.settings?.[el.dataset.setting];
+      if (!field?.options.includes(el.value)) return;
+      const values = this.settingDraft[room.roomId] ??= {};
+      if (el.value === field.value) delete values[el.dataset.setting];
+      else values[el.dataset.setting] = el.value;
+      if (!Object.keys(values).length) delete this.settingDraft[room.roomId];
+    }
     else return;
-    this.dirty = true; this.message = ''; this.error = false; this.render();
+    this.updateDirty(); this.message = ''; this.error = false; this.render();
   }
   onClick(event) {
     const el = event.target.closest('button');
@@ -127,6 +146,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     } else if (el.dataset.action === 'reset') this.resetDraft();
     else if (el.dataset.action === 'refresh') { this.loadRegistry(); return; }
     else if (el.dataset.action === 'start') { this.start(); return; }
+    else if (el.dataset.action === 'save') { this.save(); return; }
     this.render();
   }
   async start() {
@@ -135,16 +155,10 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     const config = this.config;
     try {
       if (this.registryError) throw new Error(this.registryError);
-      const plan = createPlan(this.getModel(), this.selected, this.mode);
-      await startLegacy({
-        config, plan,
-        getHass: () => this._hass,
-        getModel: () => {
-          if (!this.isConnected || this.config !== config) throw new Error('The card was closed or its configuration changed. The start was cancelled.');
-          return this.getModel();
-        },
-        onProgress: message => { this.message = message; this.render(); }
-      });
+      this.message = 'Sending room settings and start request …'; this.render();
+      const plan = await sendRoomDraft({ hass: this._hass, model: this.getModel(), config, selected: [...this.selected], draft: this.settingDraft, start: true });
+      if (this.config !== config || !this.isConnected) return;
+      this.settingDraft = {};
       this.requestedPlan = plan;
       this.sessionObserved = cleaningView(this._hass, config.entity).live;
       if (!this.sessionObserved) {
@@ -158,13 +172,35 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
           this.update();
         }, 30000);
       }
-      this.message = 'Start requested. The integration controls the order; the preferred order was not sent.';
+      this.message = 'Start requested with room settings. The robot determines the execution order.';
       this.dirty = true;
       this.baseline = this.liveSignature();
     } catch (error) {
       this.error = true;
-      this.message = `${error.message} Settings already applied may remain in Home Assistant. The start will not be retried automatically.`;
+      if (this.config === config) this.message = `${error.message} No automatic retry will be made.`;
     } finally { this.busy = false; this.render(); }
+  }
+  async save() {
+    if (this.busy || this.view.active || !this.isConnected) return;
+    const config = this.config, draft = structuredClone(this.settingDraft);
+    this.busy = true; this.saving = true; this.error = false;
+    this.message = 'Saving room settings …'; this.render();
+    try {
+      await sendRoomDraft({ hass: this._hass, model: this.getModel(), config, draft });
+      const deadline = Date.now() + 6000;
+      while (true) {
+        if (this.config !== config || !this.isConnected) return;
+        const model = this.getModel();
+        if (Object.entries(draft).every(([id, fields]) => Object.entries(fields).every(([key, value]) => model.rooms.find(r => r.roomId === id)?.settings?.[key]?.value === value))) break;
+        if (Date.now() >= deadline) throw new Error('Save was sent, but Home Assistant has not reflected all values yet. The draft was kept; check the robot before retrying.');
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      this.settingDraft = {}; this.model = this.getModel(); this.updateDirty();
+      this.baseline = this.liveSignature();
+      this.message = 'Settings sent. Home Assistant values updated. Room selection remains local.';
+    } catch (error) {
+      if (this.config === config) { this.error = true; this.message = error.message; }
+    } finally { this.busy = false; this.saving = false; this.render(); }
   }
   async control(action) {
     if (this.busy || this.controlBusy || !this.isConnected) return;
@@ -179,7 +215,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     } finally { this.controlBusy = false; this.render(); }
   }
   headerHtml() {
-    return `<header><div class="robot"><ha-icon icon="mdi:robot-vacuum"></ha-icon></div><div class="header-title"><h2>${escapeHtml(this.config.title)}</h2><p>Dyson Spot+Scrub <span class="tag">v0.2.1</span></p></div><div class="battery" role="img"><svg viewBox="0 0 32 20" aria-hidden="true"><rect x="1" y="3" width="26" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="29" y="7" width="3" height="6" rx="1" fill="currentColor"/><rect class="battery-fill" x="4" y="6" width="0" height="8" rx="1" fill="currentColor"/><path class="battery-bolt" d="M17 1 9 11h6l-2 8L23 8h-7Z" fill="var(--dp-bg)" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" hidden/></svg><span class="battery-value" aria-hidden="true">—</span></div></header>`;
+    return `<header><div class="robot"><ha-icon icon="mdi:robot-vacuum"></ha-icon></div><div class="header-title"><h2>${escapeHtml(this.config.title)}</h2><p>Dyson Spot+Scrub <span class="tag">v0.2.2</span></p></div><div class="battery" role="img"><svg viewBox="0 0 32 20" aria-hidden="true"><rect x="1" y="3" width="26" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="29" y="7" width="3" height="6" rx="1" fill="currentColor"/><rect class="battery-fill" x="4" y="6" width="0" height="8" rx="1" fill="currentColor"/><path class="battery-bolt" d="M17 1 9 11h6l-2 8L23 8h-7Z" fill="var(--dp-bg)" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" hidden/></svg><span class="battery-value" aria-hidden="true">—</span></div></header>`;
   }
   updateBattery() {
     const state = batteryStatus(this._hass, this.model);
@@ -205,7 +241,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     const list = root.querySelector('.requested');
     if (list.innerHTML !== chips) list.innerHTML = chips;
     root.querySelector('.requested-note').textContent = known
-      ? `${this.requestedPlan.mode} · Requested from this card. Room progress and sequence are not reported.`
+      ? `Requested from this card. Room progress and sequence are not reported.`
       : 'The rooms for this session are not reported by the integration.';
     for (const button of root.querySelectorAll('[data-control]')) {
       const supported = canControl(this._hass, this.config.entity, button.dataset.control);
@@ -222,20 +258,28 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     if (this.view.active) { this.renderSession(this.view); return; }
     const h = escapeHtml, model = this.model;
     const rooms = model.rooms.filter(r => !r.excluded);
-    const options = this._hass.states[model.modeEntity]?.attributes?.options ?? [];
-    // Enable from the local draft only; live entity states are checked on execution.
     const external = this.dirty && !this.busy && this.baseline !== this.liveSignature();
+    const canSave = !!this._hass.services?.[DOMAIN]?.save_room_settings;
+    const canStart = !!this._hass.services?.[DOMAIN]?.start_rooms_with_settings;
+    const hasChanges = Object.keys(this.settingDraft).length > 0;
     const roomHtml = rooms.map((room, n) => {
       const selected = this.selected.includes(room.entity), order = this.selected.indexOf(room.entity) + 1;
       const open = this.expanded.has(room.entity || room.name);
       const disabled = this.busy || !room.available;
-      return `<section class="room ${selected ? 'selected' : ''}"><div class="room-head"><label class="pick"><input type="checkbox" data-focus="room-${n}" data-room="${h(room.entity)}" ${selected ? 'checked' : ''} ${disabled ? 'disabled' : ''}><span><span class="name">${h(room.name)} ${selected ? `<span class="status">(${order})</span>` : ''}</span><span class="summary">${!room.available ? h(room.error || 'Unavailable') : selected ? h(this.mode) + ' · Global' : 'Not selected'}</span></span></label><button class="expand" data-focus="expand-${n}" data-expand="${h(room.entity || room.name)}" aria-expanded="${open}" aria-controls="fields-${n}" aria-label="Settings for ${h(room.name)}"><span>Settings</span> ${open ? '⌃' : '⌄'}</button></div><div class="fields" id="fields-${n}" ${open ? '' : 'hidden'}><label class="field mode">Cleaning mode <span class="badge">Global · applies to all rooms</span><select data-mode data-focus="mode-${n}" aria-label="Cleaning mode ${h(room.name)}" ${disabled || !selected || !available(this._hass.states[model.modeEntity]) ? 'disabled' : ''}>${!options.includes(this.mode) ? '<option value="">Unavailable</option>' : ''}${options.map(option => `<option value="${h(option)}" ${this.mode === option ? 'selected' : ''}>${h(option)}</option>`).join('')}</select></label>${this.config.unsupported_settings === 'hidden' ? '' : `<p class="fine">Additional settings</p>${['Cleaning strategy', 'Water level', 'Mop passes'].map(label => `<label class="field">${label}<select disabled aria-label="${label} ${h(room.name)}"><option>—</option></select><span class="badge">Not available yet</span></label>`).join('')}`}${selected ? `<div class="mode"><p>Planned position: ${order}</p><div class="order"><button data-focus="up-${n}" data-move="${h(room.entity)}" data-direction="-1" aria-label="Move ${h(room.name)} earlier" ${this.busy || order <= 1 ? 'disabled' : ''}>↑</button><button data-focus="down-${n}" data-move="${h(room.entity)}" data-direction="1" aria-label="Move ${h(room.name)} later" ${this.busy || order >= this.selected.length ? 'disabled' : ''}>↓</button></div></div>` : ''}</div></section>`;
+      const valueOf = key => this.settingDraft[room.roomId]?.[key] ?? room.settings?.[key]?.value;
+      const fields = Object.entries(ROOM_FIELDS).map(([key, label]) => {
+        const field = room.settings?.[key];
+        if (!field && this.config.unsupported_settings === 'hidden') return '';
+        const value = valueOf(key), options = field?.options ?? [];
+        return `<label class="field ${key === 'cleaning_mode' ? 'mode' : ''}">${label}<select data-setting="${key}" data-room-id="${h(room.roomId)}" data-focus="${key}-${n}" aria-label="${label} ${h(room.name)}" ${disabled || !field ? 'disabled' : ''}>${!options.includes(value) ? '<option value="">Unavailable</option>' : ''}${options.map(option => `<option value="${h(option)}" ${value === option ? 'selected' : ''}>${h(option)}</option>`).join('')}</select>${!field ? '<span class="badge">Not available</span>' : ''}</label>`;
+      }).join('');
+      return `<section class="room ${selected ? 'selected' : ''}"><div class="room-head"><label class="pick"><input type="checkbox" data-focus="room-${n}" data-room="${h(room.entity)}" ${selected ? 'checked' : ''} ${disabled ? 'disabled' : ''}><span><span class="name">${h(room.name)} ${selected ? `<span class="status">(${order})</span>` : ''}</span><span class="summary">${!room.available ? h(room.error || 'Unavailable') : h(valueOf('cleaning_mode') ?? 'Room settings unavailable')}${selected ? '' : ' · Not selected'}</span></span></label><button class="expand" data-focus="expand-${n}" data-expand="${h(room.entity || room.name)}" aria-expanded="${open}" aria-controls="fields-${n}" aria-label="Settings for ${h(room.name)}"><span>Settings</span> ${open ? '⌃' : '⌄'}</button></div><div class="fields" id="fields-${n}" ${open ? '' : 'hidden'}>${fields}${!room.roomId ? '<p class="badge mode">Room ID unavailable. Check the updated integration and refresh rooms.</p>' : ''}${selected ? `<div class="mode"><p>Preferred position: ${order}</p><div class="order"><button data-focus="up-${n}" data-move="${h(room.entity)}" data-direction="-1" aria-label="Move ${h(room.name)} earlier" ${this.busy || order <= 1 ? 'disabled' : ''}>↑</button><button data-focus="down-${n}" data-move="${h(room.entity)}" data-direction="1" aria-label="Move ${h(room.name)} later" ${this.busy || order >= this.selected.length ? 'disabled' : ''}>↓</button></div></div>` : ''}</div></section>`;
     }).join('');
-    this.paint(`<style>${styles}</style><ha-card>${this.headerHtml()}<p class="hint">Select rooms in preferred sequence. <span class="badge">Order is not sent to the robot yet.</span></p><div class="rooms">${roomHtml}</div>${!rooms.length ? '<p class="empty">No enabled rooms found. Check the card configuration and room discovery.</p>' : ''}<footer><div class="summary-line"><span>${this.selected.length} of ${rooms.length} rooms selected</span><span class="status">${this.dirty ? 'Local draft' : 'From Home Assistant'}</span></div><div class="actions"><button disabled title="Saving to the robot without cleaning is not supported yet">Save settings</button><button class="start" data-focus="start" data-action="start" ${this.selected.length === 0 || this.busy ? 'disabled' : ''}>${this.busy ? 'Starting …' : 'Start clean'}</button></div><p class="notice">Saving to the robot is not supported yet. Editing sends no commands.</p>${external ? '<p class="notice badge">Settings changed outside this card. Your draft remains and will be applied when you start.</p>' : ''}<p class="notice ${this.error ? 'error' : ''}" role="status" aria-live="polite">${h(this.message)}</p><button class="reset" data-focus="reset" data-action="reset" ${this.busy ? 'disabled' : ''}>Discard draft</button> <button class="reset" data-action="refresh" ${this.busy ? 'disabled' : ''}>Refresh rooms</button></footer></ha-card>`);
+    this.paint(`<style>${styles}</style><ha-card>${this.headerHtml()}<p class="hint">Select rooms in preferred sequence. <span class="badge">The robot may choose a different execution order.</span></p><div class="rooms">${roomHtml}</div>${!rooms.length ? '<p class="empty">No enabled rooms found. Check the card configuration and room discovery.</p>' : ''}<footer><div class="summary-line"><span>${this.selected.length} of ${rooms.length} rooms selected</span><span class="status">${this.dirty ? 'Local draft' : 'From Home Assistant'}</span></div><div class="actions"><button data-action="save" data-focus="save" ${!hasChanges || this.busy || !canSave ? 'disabled' : ''}>${this.saving ? 'Saving …' : 'Save settings'}</button><button class="start" data-focus="start" data-action="start" ${this.selected.length === 0 || this.busy ? 'disabled' : ''}>Start clean</button></div><p class="notice">Editing sends no commands. Save settings updates room options without starting a clean; room selection is sent with Start clean.</p>${!canSave || !canStart ? '<p class="notice badge">The updated Dyson integration actions are not available. Reload the integration and refresh this dashboard.</p>' : ''}${external ? '<p class="notice badge">Settings changed outside this card. Your edited values remain in the local draft.</p>' : ''}<p class="notice ${this.error ? 'error' : ''}" role="status" aria-live="polite">${h(this.message)}</p><button class="reset" data-focus="reset" data-action="reset" ${this.busy ? 'disabled' : ''}>Discard draft</button> <button class="reset" data-action="refresh" ${this.busy ? 'disabled' : ''}>Refresh rooms</button></footer></ha-card>`);
     this.updateBattery();
   }
 }
 
 if (!customElements.get('dyson-cleaning-planner-card')) customElements.define('dyson-cleaning-planner-card', DysonCleaningPlannerCard);
 window.customCards = window.customCards || [];
-if (!window.customCards.some(card => card.type === 'dyson-cleaning-planner-card')) window.customCards.push({ type: 'dyson-cleaning-planner-card', name: 'Dyson Cleaning Planner', description: 'Room selection and global cleaning settings for Dyson Spot+Scrub.', preview: true });
+if (!window.customCards.some(card => card.type === 'dyson-cleaning-planner-card')) window.customCards.push({ type: 'dyson-cleaning-planner-card', name: 'Dyson Cleaning Planner', description: 'Room selection and per-room cleaning settings for Dyson Spot+Scrub.', preview: true });

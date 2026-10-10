@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="600" viewBox="0 0 900 600">
+  <rect width="900" height="600" fill="#e9f0f3"/>
+  <g stroke="#526f82" stroke-width="8" stroke-linejoin="round">
+    <path d="M115 95H430V355H115Z" fill="#c2deee"/>
+    <path d="M430 95H750V265H430Z" fill="#d9d1eb"/>
+    <path d="M430 265H750V500H430Z" fill="#c7e6dd"/>
+    <path d="M115 355H300V500H115Z" fill="#f0dfbe"/>
+    <path d="M300 355H430V500H300Z" fill="#cee6ed"/>
+  </g>
+  <path d="M150 130H395V162H150V194H395V226H150V258H395V290H150V322H395" fill="none" stroke="#65b8d6" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <g font-family="Arial,sans-serif" font-size="22" text-anchor="middle" fill="#294250">
+    <text x="275" y="243">Wohnzimmer</text><text x="590" y="183">Küche</text><text x="590" y="385">Schlafzimmer</text><text x="207" y="433">Badezimmer</text><text x="365" y="433">Flur</text>
+  </g>
+  <circle cx="395" cy="322" r="20" fill="white" stroke="#007da5" stroke-width="6"/>
+  <path d="M386 324L395 313L404 324" fill="none" stroke="#007da5" stroke-width="4"/>
+  <text x="450" y="560" font-family="Arial,sans-serif" font-size="18" text-anchor="middle" fill="#526f82">SIMULATED MAP · PREVIEW ONLY</text>
+</svg>
