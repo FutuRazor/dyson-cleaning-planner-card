@@ -14,6 +14,15 @@ const darkHintStyle = document.createElement('style');
 darkHintStyle.textContent = 'body.dark{--warning-color:#f2b45d}';
 document.head.append(darkHintStyle);
 const f = batchFixture();
+// Map the mock HA camera-proxy URL to the bundled sample SVG. On GitHub Pages,
+// resolve it relative to this preview page; on the local preview server, use
+// its /preview/ route. The production card still uses HA's real camera proxy.
+f.hass.hassUrl = picture => {
+ if (!picture.startsWith('/api/camera_proxy/')) return picture;
+ return location.pathname.endsWith('/preview/index.html')
+   ? new URL('./map.svg', location.href).href
+   : new URL('/preview/map.svg', location.origin).href;
+};
 const card = document.querySelector('#card');
 card.setConfig({ type: 'custom:dyson-cleaning-planner-card', entity: f.entity });
 card.hass = f.hass;
@@ -23,7 +32,8 @@ f.hass.callService = async (...args) => {
  await new Promise(r => setTimeout(r, 80)); await original(...args);
  if (args[1] === 'start_rooms_with_settings') f.hass.states[f.entity].state = 'cleaning';
  if (args[0] === 'vacuum' && args[1] === 'return_to_base') f.hass.states[f.entity].state = 'returning';
- // STOP has no simulated state change: the integration currently reports pauses as cleaning.
+ if (args[0] === 'vacuum' && args[1] === 'pause') f.hass.states[f.entity].state = 'paused';
+ if (args[0] === 'vacuum' && args[1] === 'start') f.hass.states[f.entity].state = 'cleaning';
  card.hass = { ...f.hass }; document.querySelector('#log').textContent = JSON.stringify(f.calls, null, 2);
 };
 document.querySelector('#theme').onclick = () => document.body.classList.toggle('dark');
