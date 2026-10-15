@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.2.3
+
+- Update the title preview on every keystroke, preserving the editing cursor.
+- Rename Cleaning strategy to Vacuum Power without changing entity or service payload keys.
+- Show room settings according to the live or draft cleaning mode; add `always_show_all_settings` (default false). Hidden values remain in the local draft.
+- Use live cleaning/paused states for the session header and orange Pause / green Resume controls; keep Home red.
+- Remove verbose session explanations and move the refresh caption above the map.
+- Preserve room chips, batch Save/Start, battery status, map rotation and mounted camera updates.
+
+Repository maintenance: the published v0.2.3 bundle was already current, but
+several source, test, metadata and workflow files had not been synchronized to
+GitHub. Those files were restored from the matching v0.2.3 project source; this
+does not introduce a new card version.
+
+Validation: 30 core/batch tests and three isolated Edge browser suites passed with simulated HA entities. Real robot testing remains necessary for integration Pause/Resume support.
+
 ## v0.2.2
 
 - Add independent per-room cleaning mode, strategy, water level and mop repetitions using live select options.

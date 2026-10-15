@@ -7,7 +7,7 @@ class DysonPlannerMap extends HTMLElement {
     this.shadowRoot.innerHTML = `<style>
       :host{display:block;min-width:0}.viewport{position:relative;width:100%;aspect-ratio:4/3;overflow:hidden;background:var(--secondary-background-color,#f5f7f9);isolation:isolate}
       img{position:absolute;left:50%;top:50%;max-width:none;max-height:none;transform-origin:center;visibility:hidden}.placeholder{position:absolute;inset:0;display:grid;place-items:center;padding:16px;text-align:center;color:var(--secondary-text-color,#52616e);font:13px/1.5 Arial,sans-serif}
-      .caption{margin:8px 0 0;padding:0 var(--dp-padding,24px);color:var(--secondary-text-color,#52616e);font:12px/1.5 Arial,sans-serif}[hidden]{display:none}
+      .caption{margin:8px 0 0;padding:0 var(--dp-padding,24px);color:var(--secondary-text-color,#52616e);font:12px/1.5 Arial,sans-serif}.caption:empty{display:none}[hidden]{display:none}
       </style><div class="viewport"><img alt="Live cleaning map"><div class="placeholder">Loading cleaning map …</div></div><p class="caption" role="status" aria-live="polite"></p>`;
     this.img = this.shadowRoot.querySelector('img');
     this.viewport = this.shadowRoot.querySelector('.viewport');
@@ -91,7 +91,7 @@ class DysonPlannerMap extends HTMLElement {
       this.imageWidth = image.naturalWidth; this.imageHeight = image.naturalHeight;
       this.img.src = this.objectUrl; this.img.style.visibility = 'visible';
       this.placeholder.hidden = true; this.resize();
-      this.caption.textContent = 'Live map · refreshes about every 5 seconds';
+      this.caption.textContent = '';
       if (previous) URL.revokeObjectURL(previous);
     } catch {
       if (controller === this.abortController) this.showMessage('Map update unavailable.');

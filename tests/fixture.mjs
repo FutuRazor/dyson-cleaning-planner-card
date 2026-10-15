@@ -15,14 +15,14 @@ export function fixture() {
   // A button may have state "unknown" until its first press: it is still usable.
   registry.push(row(camera, 'DEMO_floor_map', 'Floor Map'));
   registry.push(row(battery, 'DEMO_battery', 'Battery'), row(charging, 'DEMO_charging', 'Charging'));
-  states[entity].attributes.supported_features = 12344;
+  states[entity].attributes.supported_features = 12348;
   states[camera] = state('idle', { entity_picture: `/api/camera_proxy/${camera}` });
   states[battery] = state('100', { device_class: 'battery', unit_of_measurement: '%' });
   states[charging] = state('on', { device_class: 'battery_charging' });
   const calls = [];
   const hass = {
     states, connected: true, connection: {},
-    services: { select: { select_option: {} }, switch: { turn_on: {}, turn_off: {} }, button: { press: {} }, vacuum: { stop: {}, return_to_base: {} } },
+    services: { select: { select_option: {} }, switch: { turn_on: {}, turn_off: {} }, button: { press: {} }, vacuum: { pause: {}, start: {}, stop: {}, return_to_base: {} } },
     callWS: async () => registry,
     callService: async (domain, service, data) => {
       calls.push({ domain, service, data });

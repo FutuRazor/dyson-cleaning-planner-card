@@ -1,0 +1,22 @@
+name: Attach card to release
+on:
+  release:
+    types: [published]
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test tests/*.test.mjs
+      - run: node scripts/build.mjs
+      - run: git diff --exit-code -- dist/
+      - name: Upload JavaScript
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: gh release upload "$RELEASE_TAG" dist/dyson-cleaning-planner-card.js --clobber

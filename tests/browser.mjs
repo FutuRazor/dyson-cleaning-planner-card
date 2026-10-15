@@ -20,7 +20,10 @@ try {
   const shot = name => page.screenshot({ path: fileURLToPath(new URL(`../artifacts/${name}.png`, import.meta.url)), fullPage: true });
   await card.locator('.room').first().waitFor();
   assert.equal(await card.locator('.room').count(), 5);
-  assert.equal(await card.locator('.tag').innerText(), 'v0.2.2');
+  assert.equal(await card.locator('[data-move]').count(), 0, 'room settings do not contain display-order controls');
+  assert.equal(await card.locator('.hint').count(), 0, 'the preferred-sequence hint is removed');
+  assert.equal((await card.locator('.notice').allTextContents()).some(text => text.includes('Editing sends no commands')), false, 'the editing explanation is removed');
+  assert.equal(await card.locator('.tag').innerText(), 'v0.2.3');
   assert.equal(await card.locator('.battery-value').innerText(), '100%');
   assert.equal(await card.locator('.battery-bolt').isVisible(), true);
   assert.equal(await card.locator('.battery').getAttribute('data-level'), 'high');
@@ -36,31 +39,47 @@ try {
   assert.equal(await card.locator('.start').isDisabled(), true);
   await card.locator('input[data-room]').nth(1).check();
   assert.equal(await card.locator('.start').isEnabled(), true);
+  assert.match(await card.locator('.room.selected .name').innerText(), /\(1\)/, 'selected rooms retain their selection-order number');
   assert.equal(await page.evaluate(() => demo.hass.states[demo.ids[1]].state), 'off');
   for (const value of ['2026-10-06T17:27:30.003139+00:00', 'unknown', 'unavailable']) {
     await page.evaluate(value => { demo.hass.states[demo.start].state = value; demo.card.hass = { ...demo.hass }; }, value);
     assert.equal(await card.locator('.start').isEnabled(), true, 'button timestamps never gate the planner');
   }
   await card.locator('input[data-room]').nth(0).check();
+  assert.deepEqual(await card.locator('.room.selected .name').allTextContents(), ['Wohnzimmer (2)', 'Küche (1)']);
   await card.locator('[data-expand]').nth(0).click();
   await card.locator('[data-expand]').nth(1).click();
   await card.locator('[data-setting="cleaning_mode"]').nth(0).selectOption('Mop');
   assert.equal(await card.locator('[data-setting="cleaning_mode"]').nth(1).inputValue(), 'Vacuum');
   assert.equal(await page.evaluate(() => demo.calls.length), 0);
-  await card.locator('[data-setting="water_level"]').nth(1).selectOption('High');
+  await card.locator('[data-setting="water_level"]').first().selectOption('High');
   assert.equal(await page.evaluate(() => demo.calls.length), 0);
   assert.equal(await card.getByRole('button', { name: 'Save settings', exact: true }).isEnabled(), true);
   await card.locator('[data-action="save"]').click();
   await page.waitForFunction(() => !demo.card.busy);
   assert.equal(await card.locator('.room').count(), 5, 'save retains the planner');
   assert.equal(await page.evaluate(() => demo.card.selected.length), 2, 'save retains local selection');
-  assert.deepEqual(await page.evaluate(() => demo.calls), [{ domain: 'dyson_spot_scrub', service: 'save_room_settings', data: { entity_id: 'vacuum.kuche_dyson_spot_scrub', room_settings: { 10: { cleaning_mode: 'Mop' }, 11: { water_level: 'High' } } } }]);
+  assert.deepEqual(await page.evaluate(() => demo.calls), [{ domain: 'dyson_spot_scrub', service: 'save_room_settings', data: { entity_id: 'vacuum.kuche_dyson_spot_scrub', room_settings: { 10: { cleaning_mode: 'Mop', water_level: 'High' } } } }]);
   await card.locator('[data-setting="mop_repetitions"]').nth(0).selectOption('Two Passes');
   assert.equal(imageRequests, 0, 'planner does not fetch the camera');
   await mkdir(new URL('../artifacts/', import.meta.url), { recursive: true });
-  await shot('planner-v0.2.2');
+  await shot('planner-v0.2.3');
   await page.evaluate(() => { demo.hass.states[demo.ids[4]].state = 'unavailable'; demo.card.hass = { ...demo.hass }; });
+  await page.evaluate(() => {
+    demo.previewService = demo.hass.callService;
+    demo.startGate = new Promise(resolve => { demo.resolveStart = resolve; });
+    demo.hass.callService = async (domain, service, data) => {
+      if (domain === 'vacuum') return demo.previewService(domain, service, data);
+      demo.calls.push({ domain, service, data });
+      demo.hass.states[demo.entity].state = 'cleaning';
+      demo.card.hass = { ...demo.hass };
+      await demo.startGate;
+    };
+  });
   await card.locator('.start').click();
+  await card.locator('.session').waitFor();
+  assert.deepEqual(await card.locator('.requested li').allTextContents(), ['Küche', 'Wohnzimmer'], 'requested rooms are visible while the integration action is still pending');
+  await page.evaluate(() => demo.resolveStart());
   await page.waitForFunction(() => !demo.card.busy && demo.card.requestedPlan?.rooms.length === 2);
   assert.equal(await card.locator('.room').count(), 0);
   assert.equal(await card.locator('.start').count(), 0);
@@ -82,19 +101,19 @@ try {
     assert.equal(await card.locator('.requested li').count(), 2);
   }
   await page.evaluate(() => { demo.hass.states[demo.battery].state = '78'; demo.hass.states[demo.charging].state = 'off'; demo.card.hass = { ...demo.hass }; });
-  await shot('cleaning-desktop-v0.2.2');
+  await shot('cleaning-desktop-v0.2.3');
   const beforeControl = await page.evaluate(() => demo.calls.length);
-  await card.locator('[data-control="stop"]').click();
+  await card.locator('[data-control="pause"]').click();
   await page.waitForFunction(() => !demo.card.controlBusy);
   await card.locator('[data-control="return_to_base"]').click();
   await page.waitForFunction(() => !demo.card.controlBusy);
   assert.deepEqual(await page.evaluate(n => demo.calls.slice(n), beforeControl), [
-    { domain: 'vacuum', service: 'stop', data: { entity_id: 'vacuum.kuche_dyson_spot_scrub' } },
+    { domain: 'vacuum', service: 'pause', data: { entity_id: 'vacuum.kuche_dyson_spot_scrub' } },
     { domain: 'vacuum', service: 'return_to_base', data: { entity_id: 'vacuum.kuche_dyson_spot_scrub' } }
   ]);
   assert.equal(await page.evaluate(() => demo.hass.states[demo.ids[0]].state), 'off');
   assert.equal(await card.locator('.session-title').innerText(), 'Robot returning');
-  assert.match(await card.locator('.action-message').innerText(), /may still resume/);
+  assert.equal(await card.locator('.action-message').innerText(), '');
   assert.equal(await page.evaluate(() => demo.map === demo.card.shadowRoot.querySelector('dyson-planner-map')), true);
   await page.evaluate(() => demo.card.start());
   assert.equal(await page.evaluate(() => demo.calls.length), beforeControl + 2);
@@ -130,11 +149,11 @@ try {
   await page.setViewportSize({ width: 390, height: 844 });
   assert.equal(await card.locator('.requested li').count(), 2);
   await page.locator('#settings').click();
-  await shot('cleaning-mobile-rotated-v0.2.2');
+  await shot('cleaning-mobile-rotated-v0.2.3');
   await map.scrollIntoViewIfNeeded();
   await page.route('**/api/camera_proxy/**', route => route.fulfill({ status: 503, body: 'Unavailable' }));
   await page.waitForFunction(() => demo.map.caption.textContent.includes('Showing the last received image.'), null, { timeout: 10000 });
-  assert.equal(await card.locator('[data-control="stop"]').isEnabled(), true);
+  assert.equal(await card.locator('[data-control="return_to_base"]').isEnabled(), true);
   await page.unroute('**/api/camera_proxy/**');
   await page.locator('#settings').click();
   await editor.locator('[data-key="show_camera"]').uncheck();
@@ -153,23 +172,27 @@ try {
   assert.equal(imageRequests, beforeDocked);
   await state('cleaning');
   assert.equal(await card.locator('.requested li').count(), 0);
-  assert.match(await card.locator('.requested-note').innerText(), /not reported/);
+  assert.equal(await card.locator('.requested-note').count(), 0);
   await state('paused');
-  assert.equal(await card.locator('.session-title').innerText(), 'Cleaning paused');
-  assert.equal(await card.getByRole('button', { name: /Resume|Start clean/ }).count(), 0);
+  assert.equal(await card.locator('.session-title').innerText(), 'Cleaning session paused');
+  assert.equal(await card.getByRole('button', { name: 'Resume', exact: true }).isEnabled(), true);
+  await card.locator('[data-control="start"]').click();
+  await page.waitForFunction(() => !demo.card.controlBusy);
+  assert.deepEqual(await page.evaluate(() => demo.calls.at(-1)), { domain: 'vacuum', service: 'start', data: { entity_id: 'vacuum.kuche_dyson_spot_scrub' } });
   await state('unavailable');
   assert.equal(await card.locator('.session-title').innerText(), 'Robot unavailable');
-  assert.equal(await card.locator('[data-control="stop"]').isDisabled(), true);
+  assert.equal(await card.locator('[data-control="pause"]').isDisabled(), true);
   assert.equal(await card.locator('[data-control="return_to_base"]').isDisabled(), true);
   assert.equal(await card.locator('.start').count(), 0);
   await state('error');
   assert.equal(await card.locator('.session-title').innerText(), 'Robot needs attention');
+  await state('cleaning');
   await page.evaluate(() => { demo.original = demo.hass.callService; demo.hass.callService = async () => { throw new Error('Action denied'); }; demo.card.hass = { ...demo.hass }; });
-  await card.locator('[data-control="stop"]').click();
+  await card.locator('[data-control="pause"]').click();
   await page.waitForFunction(() => !demo.card.controlBusy);
   assert.equal(await card.locator('.action-message').innerText(), 'Action denied');
   await page.evaluate(() => { demo.hass.callService = demo.original; demo.hass.states[demo.entity].attributes.supported_features = 0; demo.card.hass = { ...demo.hass }; });
-  assert.equal(await card.locator('[data-control="stop"]').isDisabled(), true);
+  assert.equal(await card.locator('[data-control="pause"]').isDisabled(), true);
   assert.equal(await card.locator('[data-control="return_to_base"]').isDisabled(), true);
   await state('docked');
   await page.locator('#settings').click();
@@ -200,5 +223,5 @@ try {
   await page.waitForTimeout(5500);
   assert.equal(imageRequests, beforeDetached, 'detached cards stop polling');
   assert.deepEqual(errors, []);
-  console.log('Browser checks passed: planner regression, active status, exact Stop/Home calls, camera refresh/errors/disable/rotation/cleanup, editor, mobile, request snapshots and pending starts.');
+  console.log('Browser checks passed: planner regression, active status, exact Pause/Resume/Home calls, camera refresh/errors/disable/rotation/cleanup, editor, mobile, request snapshots and pending starts.');
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }

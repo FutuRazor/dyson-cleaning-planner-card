@@ -1,5 +1,5 @@
 export const DOMAIN = 'dyson_spot_scrub';
-export const ROOM_FIELDS = { cleaning_mode: 'Cleaning mode', cleaning_strategy: 'Cleaning strategy', water_level: 'Water level', mop_repetitions: 'Mop repetitions' };
+export const ROOM_FIELDS = { cleaning_mode: 'Cleaning mode', cleaning_strategy: 'Vacuum Power', water_level: 'Water level', mop_repetitions: 'Mop repetitions' };
 export const available = state => !!state && !['unavailable', 'unknown'].includes(state.state) && !state.attributes?.restored;
 export const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -11,9 +11,10 @@ export function normalizeConfig(config) {
   }
   if (config.room_entities !== undefined && (!config.room_entities || typeof config.room_entities !== 'object' || Array.isArray(config.room_entities) || Object.values(config.room_entities).some(x => typeof x !== 'string' || !x.startsWith('switch.')))) throw new Error('room_entities must map room names to switch entities.');
   if (config.show_camera !== undefined && typeof config.show_camera !== 'boolean') throw new Error('show_camera must be true or false.');
+  if (config.always_show_all_settings !== undefined && typeof config.always_show_all_settings !== 'boolean') throw new Error('always_show_all_settings must be true or false.');
   if (config.camera_rotation !== undefined && ![0, 90, 180, 270].includes(config.camera_rotation)) throw new Error('camera_rotation must be 0, 90, 180 or 270.');
   if (config.camera_entity && (typeof config.camera_entity !== 'string' || !config.camera_entity.startsWith('camera.'))) throw new Error('Select a camera entity.');
-  return { ...config, title: config.title ?? 'Plan a clean', unsupported_settings: config.unsupported_settings ?? 'disabled', excluded_rooms: config.excluded_rooms ?? [], room_order: config.room_order ?? [], show_camera: config.show_camera ?? true, camera_rotation: config.camera_rotation ?? 0 };
+  return { ...config, title: config.title ?? 'Plan a clean', always_show_all_settings: config.always_show_all_settings ?? false, unsupported_settings: config.unsupported_settings ?? 'disabled', excluded_rooms: config.excluded_rooms ?? [], room_order: config.room_order ?? [], show_camera: config.show_camera ?? true, camera_rotation: config.camera_rotation ?? 0 };
 }
 
 // Entity IDs are user-editable. Match registry identity within ONE integration device.
@@ -130,8 +131,8 @@ export function cleaningView(hass, entity, pendingStart = false) {
   const state = hass?.states?.[entity];
   if (!available(state) || hass?.connected === false) return { active: true, title: 'Robot unavailable', detail: 'Waiting for a connection to the robot.', live: false };
   const states = {
-    cleaning: ['Cleaning session active', 'The integration may also report a paused clean as active.'],
-    paused: ['Cleaning paused', 'The current cleaning session is paused.'],
+    cleaning: ['Cleaning session active', ''],
+    paused: ['Cleaning session paused', ''],
     returning: ['Robot returning', 'The integration is reporting a return or mapping operation.'],
     error: ['Robot needs attention', 'Check the robot or the Dyson app for details.']
   };
@@ -143,9 +144,10 @@ export function cleaningView(hass, entity, pendingStart = false) {
 
 export function canControl(hass, entity, action) {
   const state = hass?.states?.[entity];
-  const feature = { stop: 8, return_to_base: 16 }[action];
+  const feature = { pause: 4, start: 8192, return_to_base: 16 }[action];
+  const allowedStates = { pause: ['cleaning'], start: ['paused'], return_to_base: ['cleaning', 'paused', 'returning', 'error'] }[action] ?? [];
   return !!(feature && hass?.connected !== false && available(state) &&
-    ['cleaning', 'paused', 'returning', 'error'].includes(state.state) &&
+    allowedStates.includes(state.state) &&
     (Number(state.attributes?.supported_features) & feature) && hass.services?.vacuum?.[action]);
 }
 

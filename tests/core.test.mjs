@@ -143,28 +143,31 @@ test('status view replaces the planner unless the connected robot reports docked
   assert.equal(cleaningView(f.hass, f.entity).live, false);
 });
 
-test('Stop and Home target the vacuum without clearing room switches or issuing start', async () => {
+test('Pause, Home and Resume target the vacuum without changing local entity states', async () => {
   const f = fixture();
   f.hass.states[f.entity].state = 'cleaning';
   f.hass.states[f.ids[0]].state = 'on';
   const before = structuredClone(f.hass.states);
-  await controlCleaning(f.hass, f.entity, 'stop');
+  await controlCleaning(f.hass, f.entity, 'pause');
   await controlCleaning(f.hass, f.entity, 'return_to_base');
   assert.deepEqual(f.calls, [
-    { domain: 'vacuum', service: 'stop', data: { entity_id: f.entity } },
+    { domain: 'vacuum', service: 'pause', data: { entity_id: f.entity } },
     { domain: 'vacuum', service: 'return_to_base', data: { entity_id: f.entity } }
   ]);
   assert.deepEqual(f.hass.states, before, 'card must not pretend commands changed robot state');
   await assert.rejects(controlCleaning(f.hass, f.entity, 'start'));
+  f.hass.states[f.entity].state = 'paused';
   await assert.rejects(controlCleaning(f.hass, f.entity, 'pause'));
+  await controlCleaning(f.hass, f.entity, 'start');
+  assert.deepEqual(f.calls.at(-1), { domain: 'vacuum', service: 'start', data: { entity_id: f.entity } });
 });
 
 test('control availability requires entity features, a registered action and live connection', async () => {
   const f = fixture();
   f.hass.states[f.entity].state = 'paused';
-  assert.equal(canControl(f.hass, f.entity, 'stop'), true);
-  delete f.hass.services.vacuum.stop;
-  assert.equal(canControl(f.hass, f.entity, 'stop'), false);
+  assert.equal(canControl(f.hass, f.entity, 'start'), true);
+  delete f.hass.services.vacuum.start;
+  assert.equal(canControl(f.hass, f.entity, 'start'), false);
   f.hass.states[f.entity].attributes.supported_features = 0;
   await assert.rejects(controlCleaning(f.hass, f.entity, 'return_to_base'));
   f.hass.states[f.entity].attributes.supported_features = 12344;
@@ -174,6 +177,31 @@ test('control availability requires entity features, a registered action and liv
   f.hass.states[f.entity].state = 'docked';
   await assert.rejects(controlCleaning(f.hass, f.entity, 'return_to_base'));
   assert.equal(f.calls.length, 0);
+});
+
+test('session controls require their exact live state and feature', () => {
+  const f = fixture();
+  for (const state of ['docked', 'idle', 'cleaning', 'paused', 'returning', 'error', 'unavailable', 'unknown']) {
+    f.hass.states[f.entity].state = state;
+    assert.equal(canControl(f.hass, f.entity, 'pause'), state === 'cleaning');
+    assert.equal(canControl(f.hass, f.entity, 'start'), state === 'paused');
+  }
+  f.hass.states[f.entity].state = 'cleaning';
+  assert.equal(cleaningView(f.hass, f.entity).title, 'Cleaning session active');
+  f.hass.states[f.entity].attributes.supported_features = 12344;
+  assert.equal(canControl(f.hass, f.entity, 'pause'), false, 'old integration without PAUSE is not advertised as supported');
+  f.hass.states[f.entity].state = 'paused';
+  assert.equal(cleaningView(f.hass, f.entity).title, 'Cleaning session paused');
+  f.hass.states[f.entity].attributes.supported_features = 16;
+  assert.equal(canControl(f.hass, f.entity, 'start'), false);
+});
+
+test('all-settings override defaults to false and only accepts booleans', () => {
+  assert.equal(normalizeConfig({ entity: 'vacuum.test' }).always_show_all_settings, false);
+  assert.equal(normalizeConfig({ entity: 'vacuum.test', always_show_all_settings: true }).always_show_all_settings, true);
+  for (const value of ['false', 'true', 0, 1, null]) {
+    assert.throws(() => normalizeConfig({ entity: 'vacuum.test', always_show_all_settings: value }), /always_show_all_settings/);
+  }
 });
 
 test('camera matches registry identity on the same device and remains optional', () => {

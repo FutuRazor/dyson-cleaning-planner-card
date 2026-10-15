@@ -2,9 +2,13 @@
 class DysonCleaningPlannerEditor extends DysonRegistryElement {
   constructor() {
     super();
+    this.shadowRoot.addEventListener('input', event => {
+      const el = event.target;
+      if (this.config && el.dataset.key === 'title') this.commit({ ...this.config, title: el.value });
+    });
     this.shadowRoot.addEventListener('change', event => {
       const el = event.target;
-      if (!this.config) return;
+      if (!this.config || el.dataset.key === 'title') return;
       const next = { ...this.config };
       if (el.dataset.key) {
         next[el.dataset.key] = el.type === 'checkbox' ? el.checked : el.dataset.key === 'camera_rotation' ? Number(el.value) : el.value;
@@ -50,6 +54,7 @@ class DysonCleaningPlannerEditor extends DysonRegistryElement {
       <label>Dyson device<select data-key="entity" data-focus="entity"><option value="">Select a device</option>${vacuums.map(e => `<option value="${h(e.entity_id)}" ${config.entity === e.entity_id ? 'selected' : ''}>${h(this._hass.states[e.entity_id]?.attributes?.friendly_name || e.entity_id)}</option>`).join('')}</select></label>
       <label>Title<input type="text" data-key="title" data-focus="title" value="${h(config.title ?? 'Plan a clean')}"></label>
       <label>Unsupported settings<select data-key="unsupported_settings" data-focus="unsupported"><option value="disabled" ${config.unsupported_settings !== 'hidden' ? 'selected' : ''}>Show disabled</option><option value="hidden" ${config.unsupported_settings === 'hidden' ? 'selected' : ''}>Hide</option></select></label>
+      <div class="entry"><label><input type="checkbox" data-key="always_show_all_settings" data-focus="all-settings" ${config.always_show_all_settings === true ? 'checked' : ''}>Always show all settings</label></div>
       <p>Per-room settings are detected automatically. Saving and starting use the Dyson integration batch actions.</p>
       <h3>Cleaning map</h3><div class="entry"><label><input type="checkbox" data-key="show_camera" data-focus="show-camera" ${config.show_camera !== false ? 'checked' : ''}>Show camera during a cleaning session</label></div>
       <p class="notice">Turning this off removes the map and stops image requests from this card.</p>

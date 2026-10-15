@@ -2,19 +2,19 @@
 
 A Home Assistant Lovelace card for the Dyson Spot+Scrub integration.
 
-**v0.2.3 — Prototype**
+**v0.2.3 — mode-aware room settings and live Pause/Resume controls.**
 
 ## Requirements
 
 The [Dyson Spot+Scrub integration](https://github.com/UNsync3D/ha-dyson-spot-scrub) is required.
 
-Needs at least v1.4.0
+The updated Dyson integration must provide:
 
-Working on full compatibility
+- `dyson_spot_scrub.save_room_settings`
+- `dyson_spot_scrub.start_rooms_with_settings`
+- Per-room selects for `cleaning_mode`, `cleaning_strategy`, `water_level`, and `mop_repetitions`, with a `room_id` attribute.
 
-## Preview
-
-[Click here for a preview](https://futurazor.github.io/dyson-cleaning-planner-card/preview/index.html)
+The card checks action availability. It does not fall back to individual select writes or the legacy start button.
 
 ## Screenshots
 
@@ -33,55 +33,39 @@ Working on full compatibility
 
 ## Editing and cleaning
 
-Each room uses the options reported by its own select entities. Editing only updates a local draft. Drafts are private to the card instance and are lost on reload.
+Choose rooms and set each room's cleaning mode, Vacuum Power, water level, and mop repetitions. The card keeps edits as a local draft until you save or start. **Save settings** sends changed options without starting a clean; **Start clean** sends the selected rooms and their changed options together. The integration currently does not guarantee the order in which rooms are cleaned. Drafts are lost if the card is reloaded before saving or starting.
 
-**Save settings** submits all changed options in one targeted integration action, without starting a clean. It can save options for unselected rooms. Room selection and preferred sequence remain local because the save action accepts only room settings. The card retains the draft until HA reflects the submitted values, or reports a confirmation timeout. HA state confirmation is not a robot acknowledgement.
-
-**Start clean** submits selected room IDs and changed room settings together in one integration action. It does not call Save first. Only the local room selection and an in-flight request disable the Start button; execution validates the current robot status, selected rooms and edited options. Unrelated unavailable switches do not block a run. Service failures are shown without automatic retries.
-
-The room ID list preserves the preferred sequence, but the current integration uses `unorderedZones`; actual cleaning order is not guaranteed.
-
-**Discard draft** restores current HA values and switch selection. External changes update unedited fields; locally edited fields retain their draft values. A notice identifies changes outside the card.
+Settings that do not apply to the selected cleaning mode are hidden. **Always show all settings** keeps them visible; unavailable options can be shown disabled or hidden.
 
 ## Discovery
 
-Discovery is limited to the selected Dyson device and integration. It matches registry unique IDs rather than generating entity IDs from room names, so Unicode names and manually renamed entity IDs work. Per-room select attributes provide native room IDs for action payloads. A local draft follows the same room ID when the registry receives renamed room entities. Missing, ambiguous or disabled entities are never guessed.
-
-Room IDs are scoped to the robot's map. After replacing or remapping a floor, discard old drafts and refresh rooms. Explicit room mappings and exclusions use entity IDs and may need updating after entity renames.
-
-Unavailable settings can be disabled or hidden in the editor. Battery and charging sensors are automatically discovered on the same device. The header shows percentage, color and a charging bolt only when charging is confirmed.
+The card finds rooms and settings belonging to the selected Dyson vacuum, using the integration's room IDs rather than guessing from room names. It also finds that device's battery and charging sensors. Missing or ambiguous entities are skipped. If the robot's map changes, refresh the rooms and review any explicit room mappings or exclusions.
 
 ## During a clean
 
-The active-session view replaces room selection and Start. It shows requested rooms only for a start submitted by this card instance; these are not confirmed progress or queue data. External sessions do not invent a room list. A pending start waits up to 30 seconds for an active robot state.
-
-Stop and Home use the vacuum's supported actions. Pause/resume and queue cancellation semantics belong to the integration. The card does not toggle switches or clear a queue when returning home.
-
-The optional camera fits the full card width without distortion. It rotates in 90-degree steps and can be disabled entirely. Visible active sessions request HA camera images about every five seconds; hidden/detached cards stop requests. Battery/status updates retain the mounted map and last successful image. Borders embedded in the camera source itself are preserved.
+During a clean, the card shows the live robot state and optional camera instead of room selection. It can show the rooms started from this card, but the integration does not report confirmed room progress or a queue. **Pause/Resume** and **Home** are available when supported by the integration. The camera can be hidden or rotated in 90-degree steps.
 
 ## Install or update for testing
 
-1. Copy `dist/dyson-cleaning-planner-card.js` to `/config/www/dyson-cleaning-planner-card.js`.
-2. Add or update the dashboard resource as a JavaScript module: `/local/dyson-cleaning-planner-card.js?v=0.2.3`.
-3. Reload the dashboard/browser. The header must show **v0.2.3**.
-4. Use the visual editor or this configuration:
+For a manual install, copy **only** `dist/dyson-cleaning-planner-card.js` into Home Assistant's `www` folder. For example, the file can be placed at:
 
-```yaml
-type: custom:dyson-cleaning-planner-card
-entity: vacuum.your_dyson
-show_camera: true
-camera_rotation: 90
-unsupported_settings: disabled
-```
+`/config/www/dyson-planner/dyson-cleaning-planner-card.js`
 
-For HACS, add this repository as a custom dashboard repository and use its generated resource. Do not load both a manual resource and a HACS resource. Existing HACS packaging and release workflows are retained.
+Create the `dyson-planner` folder if needed. Copy the JavaScript file itself, not the `dist` folder. Home Assistant paths use forward slashes (`/`); backslashes (`\`) are used in Windows file paths.
 
-## Configuration
+When updating a manual install, replace that same JavaScript file and hard-refresh the Home Assistant page with **Ctrl+F5**. You normally do not need to change the dashboard resource or the card's settings for an update. If a hard refresh is unavailable and the old version remains, clear the browser cache and reload Home Assistant.
+
+For HACS, install the card from HACS and use HACS to update it. To add the card to a dashboard, open the dashboard, choose **Edit dashboard → Add card**, search for **Dyson Cleaning Planner**, then select your vacuum and options in the card editor. No YAML is needed for the usual setup.
+
+## Card options
+
+The usual setup can be done in the visual editor: open the dashboard, choose **Edit dashboard**, then edit the Dyson Cleaning Planner card. The options below are also available in that card's YAML editor; they do not belong in Home Assistant's `configuration.yaml`.
 
 | Option | Description |
 |---|---|
 | `entity` | Required Dyson vacuum entity |
-| `title` | Header text; defaults to `Plan a clean` |
+| `title` | Planner header text; defaults to `Plan a clean`; edits update the preview as you type |
+| `always_show_all_settings` | Show all dropdowns regardless of mode or unavailable-setting visibility; defaults to `false` |
 | `unsupported_settings` | `disabled` (default) or `hidden` |
 | `excluded_rooms` | Room switch entity IDs hidden in this card |
 | `room_order` | Room switch IDs defining display order |
@@ -90,7 +74,7 @@ For HACS, add this repository as a custom dashboard repository and use its gener
 | `camera_entity` | Optional explicit camera on the same Dyson device |
 | `camera_rotation` | `0`, `90`, `180`, or `270` degrees |
 
-Old `mode_entity` and `start_entity` configuration keys are accepted for compatibility, but the v0.2.2 card does not use global mode or start-button entities to execute a run.
+Old `mode_entity` and `start_entity` configuration keys are accepted for compatibility, but the v0.2.3 card does not use global mode or start-button entities to execute a run.
 
 ## Development
 
@@ -102,4 +86,4 @@ node scripts/build.mjs
 node scripts/preview.mjs
 ```
 
-The preview uses simulated HA data only. Optional browser checks use Playwright: `node tests/browser.mjs`. Set `BROWSER_CHANNEL=msedge` for an installed Edge browser. See [TESTING.md](TESTING.md) for the device test checklist and [the integration contract](docs/integration-contract.md) for payloads and limitations.
+The preview uses simulated HA data only. Optional browser checks use Playwright: `node tests/browser.mjs`, `node tests/batch-browser.mjs`, and `node tests/ui-browser.mjs`. Set `BROWSER_CHANNEL=msedge` for an installed Edge browser. See [TESTING.md](TESTING.md) for the device test checklist and [the integration contract](docs/integration-contract.md) for payloads and limitations.
