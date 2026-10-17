@@ -47,15 +47,26 @@ During a clean, the card shows the live robot state and optional camera instead 
 
 ## Install or update for testing
 
-For a manual install, copy **only** `dist/dyson-cleaning-planner-card.js` into Home Assistant's `www` folder. For example, the file can be placed at:
+### Manual installation
+
+Copy **only** `dist/dyson-cleaning-planner-card.js` into Home Assistant's `www` folder. For example, place the file at:
 
 `/config/www/dyson-planner/dyson-cleaning-planner-card.js`
 
-Create the `dyson-planner` folder if needed. Copy the JavaScript file itself, not the `dist` folder. Home Assistant paths use forward slashes (`/`); backslashes (`\`) are used in Windows file paths.
+Create the `www` and `dyson-planner` folders if needed. Copy the JavaScript file itself, not the `dist` folder. Home Assistant paths use forward slashes (`/`); backslashes (`\`) are used in Windows file paths.
 
-When updating a manual install, replace that same JavaScript file and hard-refresh the Home Assistant page with **Ctrl+F5**. You normally do not need to change the dashboard resource or the card's settings for an update. If a hard refresh is unavailable and the old version remains, clear the browser cache and reload Home Assistant.
+Register the file as a dashboard resource the first time you install it. Go to **Settings → Dashboards → ⋮ → Resources → Add resource**, then enter:
 
-For HACS, install the card from HACS and use HACS to update it. To add the card to a dashboard, open the dashboard, choose **Edit dashboard → Add card**, search for **Dyson Cleaning Planner**, then select your vacuum and options in the card editor. No YAML is needed for the usual setup.
+- URL: `/local/dyson-planner/dyson-cleaning-planner-card.js`
+- Resource type: **JavaScript module**
+
+If you have just created the `www` folder, restart Home Assistant once so it can serve files from that folder.
+
+When updating a manual install, replace that same JavaScript file and hard-refresh the Home Assistant page with **Ctrl+F5**. Once the resource is registered, its URL does not need to change for updates. If a hard refresh is unavailable and the old version remains, clear the browser cache and reload Home Assistant.
+
+### HACS installation
+
+Install the card from HACS and use HACS to update it. HACS registers the dashboard resource automatically when resources are managed in the Home Assistant UI. If your resources are managed in YAML, add the installed card's resource URL to the `lovelace.resources` list instead. To add the card to a dashboard, open the dashboard, choose **Edit dashboard → Add card**, search for **Dyson Cleaning Planner**, then select your vacuum and options in the card editor. No YAML is needed for the usual card setup.
 
 ## Card options
 
