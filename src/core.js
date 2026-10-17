@@ -130,11 +130,14 @@ export async function sendRoomDraft({ hass, model, config, selected = [], draft 
 export function cleaningView(hass, entity, pendingStart = false) {
   const state = hass?.states?.[entity];
   if (!available(state) || hass?.connected === false) return { active: true, title: 'Robot unavailable', detail: 'Waiting for a connection to the robot.', live: false };
+  const defaultErrorDetail = 'Check the robot or the Dyson app for details.';
+  const reportedFault = typeof state.attributes?.fault === 'string' ? state.attributes.fault.trim() : '';
+  const errorDetail = reportedFault && !/^Fault\s+\d+$/i.test(reportedFault) ? reportedFault : defaultErrorDetail;
   const states = {
     cleaning: ['Cleaning session active', ''],
     paused: ['Cleaning session paused', ''],
     returning: ['Robot returning', 'The integration is reporting a return or mapping operation.'],
-    error: ['Robot needs attention', 'Check the robot or the Dyson app for details.']
+    error: ['Robot needs attention', errorDetail]
   };
   if (states[state.state]) return { active: true, title: states[state.state][0], detail: states[state.state][1], live: true };
   if (pendingStart) return { active: true, title: 'Starting clean', detail: 'Waiting for the robot to report its status.', live: false };

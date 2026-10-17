@@ -241,7 +241,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     const h = escapeHtml;
     // Keep the map element mounted across status and message updates so polling,
     // the last good image and in-flight requests are independent of card renders.
-    this.paint(`<style>${styles}</style><ha-card>${this.headerHtml()}<section class="session"><ul class="requested"></ul></section>${this.config.show_camera ? '<div class="map-section"><div class="map-title">Cleaning map</div><p class="map-caption">Refreshes about every 5 seconds</p><dyson-planner-map></dyson-planner-map></div>' : ''}<footer class="session-footer"><div class="actions session-actions"><button class="session-toggle" data-control="pause" data-focus="session-toggle"><ha-icon></ha-icon><span></span></button><button class="home" data-control="return_to_base" data-focus="home"><ha-icon icon="mdi:home-import-outline"></ha-icon>Home</button></div><p class="notice action-message" role="status" aria-live="polite"></p></footer></ha-card>`);
+    this.paint(`<style>${styles}</style><ha-card>${this.headerHtml()}<section class="session"><p class="detail"></p><ul class="requested"></ul></section>${this.config.show_camera ? '<div class="map-section"><div class="map-title">Cleaning map</div><p class="map-caption">Refreshes about every 5 seconds</p><dyson-planner-map></dyson-planner-map></div>' : ''}<footer class="session-footer"><div class="actions session-actions"><button class="session-toggle" data-control="pause" data-focus="session-toggle"><ha-icon></ha-icon><span></span></button><button class="home" data-control="return_to_base" data-focus="home"><ha-icon icon="mdi:home-import-outline"></ha-icon>Home</button></div><p class="notice action-message" role="status" aria-live="polite"></p></footer></ha-card>`);
     const root = this.shadowRoot;
     this.updateBattery();
     const title = root.querySelector('.header-title h2');
@@ -251,7 +251,10 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     const chips = (this.requestedPlan?.rooms ?? []).map(r => `<li>${h(r.name)}</li>`).join('');
     const list = root.querySelector('.requested');
     if (list.innerHTML !== chips) list.innerHTML = chips;
-    root.querySelector('.session').hidden = !chips;
+    const detail = root.querySelector('.detail');
+    detail.textContent = view.detail;
+    detail.hidden = !view.detail;
+    root.querySelector('.session').hidden = !view.detail && !chips;
     const paused = this._hass.states[this.config.entity]?.state === 'paused';
     const toggle = root.querySelector('.session-toggle');
     toggle.dataset.control = paused ? 'start' : 'pause';

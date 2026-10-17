@@ -143,6 +143,22 @@ test('status view replaces the planner unless the connected robot reports docked
   assert.equal(cleaningView(f.hass, f.entity).live, false);
 });
 
+test('error status shows a specific integration fault and otherwise keeps the default detail', () => {
+  const f = fixture();
+  const vacuum = f.hass.states[f.entity];
+  vacuum.state = 'error';
+  const fallback = 'Check the robot or the Dyson app for details.';
+
+  assert.equal(cleaningView(f.hass, f.entity).detail, fallback);
+  vacuum.attributes.fault = "Dock's clean water tank not detected";
+  assert.equal(cleaningView(f.hass, f.entity).detail, "Dock's clean water tank not detected");
+
+  for (const fault of ['', '   ', 'Fault 999', 583, null]) {
+    vacuum.attributes.fault = fault;
+    assert.equal(cleaningView(f.hass, f.entity).detail, fallback);
+  }
+});
+
 test('Pause, Home and Resume target the vacuum without changing local entity states', async () => {
   const f = fixture();
   f.hass.states[f.entity].state = 'cleaning';
