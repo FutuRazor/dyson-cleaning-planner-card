@@ -91,6 +91,7 @@ export async function sendRoomDraft({ hass, model, config, selected = [], draft 
   const vacuum = hass.states[config.entity];
   if (!available(vacuum)) throw new Error('The robot is unavailable.');
   if (start && !['docked', 'idle'].includes(vacuum.state)) throw new Error('Start is only available when the Dyson is ready (docked or idle).');
+  if (start && dockBusy(hass, config.entity)) throw new Error('Wait for the dock cycle to finish before starting a clean.');
   const byId = new Map();
   for (const room of model.rooms) {
     if (!room.roomId) continue;
@@ -127,6 +128,37 @@ export async function sendRoomDraft({ hass, model, config, selected = [], draft 
   return { rooms: rooms.map(r => ({ entity_id: r.entity, room_id: r.roomId, name: r.name })), settings, sent: true };
 }
 
+const DOCK_PHASES = {
+  WASHING_MOP: ['Cleaning mop roller', 'mdi:waves'],
+  DRYING_MOP: ['Drying mop roller', 'mdi:weather-windy'],
+  COLLECTING_DUST: ['Emptying dust bin', 'mdi:delete-empty-outline']
+};
+
+export function dockBusy(hass, entity) {
+  const state = hass?.states?.[entity];
+  return hass?.connected !== false && available(state) && Object.hasOwn(DOCK_PHASES, state.attributes?.dock_state);
+}
+
+// Report live telemetry, never the selected mode or the colours of old map paths.
+export function activityStatus(hass, entity, pendingStart = false) {
+  const state = hass?.states?.[entity];
+  const view = cleaningView(hass, entity, pendingStart);
+  const result = (text, icon = 'mdi:robot-vacuum', drying = false) => ({ text, icon, drying });
+  if (!available(state) || hass?.connected === false) return result('Robot unavailable', 'mdi:alert-circle-outline');
+  if (state.state === 'error') return result('Robot needs attention', 'mdi:alert-circle-outline');
+  if (state.state === 'paused') return result('Paused', 'mdi:pause');
+  if (dockBusy(hass, entity)) {
+    const phase = state.attributes.dock_state;
+    return result(...DOCK_PHASES[phase], phase === 'DRYING_MOP');
+  }
+  if (state.state === 'cleaning') {
+    const modes = { VACUUMING: 'Vacuuming', MOPPING: 'Mopping', VACUUMING_AND_MOPPING: 'Vacuuming and mopping' };
+    return result(modes[state.attributes?.full_clean_action] ?? 'Cleaning');
+  }
+  if (state.state === 'returning') return result('Returning / mapping', 'mdi:home-import-outline');
+  return view.active ? result(view.title) : null;
+}
+
 export function cleaningView(hass, entity, pendingStart = false) {
   const state = hass?.states?.[entity];
   if (!available(state) || hass?.connected === false) return { active: true, title: 'Robot unavailable', detail: 'Waiting for a connection to the robot.', live: false };
@@ -147,6 +179,7 @@ export function canControl(hass, entity, action) {
   const feature = { pause: 4, start: 8192, return_to_base: 16 }[action];
   const allowedStates = { pause: ['cleaning'], start: ['paused'], return_to_base: ['cleaning', 'paused', 'returning', 'error'] }[action] ?? [];
   return !!(feature && hass?.connected !== false && available(state) &&
+    !dockBusy(hass, entity) &&
     allowedStates.includes(state.state) &&
     (Number(state.attributes?.supported_features) & feature) && hass.services?.vacuum?.[action]);
 }
