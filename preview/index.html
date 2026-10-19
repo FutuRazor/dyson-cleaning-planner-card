@@ -14,6 +14,12 @@ const darkHintStyle = document.createElement('style');
 darkHintStyle.textContent = 'body.dark{--warning-color:#f2b45d}';
 document.head.append(darkHintStyle);
 const f = batchFixture();
+// Consumables match the integration's sensor contract; no robot is contacted.
+for (const [i, type] of ['brushBar', 'mopRoller', 'sideBrushes', 'robotFilter', 'dockFilter', 'cleaningSolution'].entries()) {
+ const id = `sensor.demo_consumable_${i}`;
+ f.registry.push({ entity_id: id, platform: 'dyson_spot_scrub', device_id: 'demo-device', unique_id: `DEMO_consumable_${i}` });
+ f.hass.states[id] = { state: i === 5 ? 'ok' : String([4, 6, 9, 80, 95][i]), attributes: { consumable_type: type, value_kind: i === 5 ? 'refill_status' : 'usage_percent' } };
+}
 // Map the mock HA camera-proxy URL to the bundled sample SVG. On GitHub Pages,
 // resolve it relative to this preview page; on the local preview server, use
 // its /preview/ route. The production card still uses HA's real camera proxy.
