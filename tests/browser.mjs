@@ -13,7 +13,7 @@ try {
   const errors = [];
   let imageRequests = 0;
   page.on('pageerror', error => errors.push(error.message));
-  page.on('request', request => { if (request.url().includes('/api/camera_proxy/')) imageRequests++; });
+  page.on('request', request => { if (request.url().includes('/preview/map.svg')) imageRequests++; });
   await page.goto(`http://127.0.0.1:${server.address().port}`);
   const card = page.locator('#card');
   const state = value => page.evaluate(value => { demo.hass.states[demo.entity].state = value; demo.card.hass = { ...demo.hass }; }, value);
@@ -84,7 +84,7 @@ try {
   assert.equal(await card.locator('.room').count(), 0);
   assert.equal(await card.locator('.start').count(), 0);
   assert.deepEqual(await card.locator('.requested li').allTextContents(), ['Küche', 'Wohnzimmer']);
-  assert.equal(await card.locator('.session-title').innerText(), 'Cleaning session active');
+  assert.equal(await card.locator('.session-title').innerText(), 'Cleaning session');
   assert.deepEqual(await page.evaluate(() => demo.calls.at(-1)), { domain: 'dyson_spot_scrub', service: 'start_rooms_with_settings', data: { entity_id: 'vacuum.kuche_dyson_spot_scrub', room_ids: ['11', '10'], room_settings: { 10: { mop_repetitions: 'Two Passes' } } } });
   assert.equal(await page.evaluate(() => demo.calls.some(c => ['select', 'switch', 'button'].includes(c.domain))), false);
   const map = card.locator('dyson-planner-map');
@@ -112,7 +112,7 @@ try {
     { domain: 'vacuum', service: 'return_to_base', data: { entity_id: 'vacuum.kuche_dyson_spot_scrub' } }
   ]);
   assert.equal(await page.evaluate(() => demo.hass.states[demo.ids[0]].state), 'off');
-  assert.equal(await card.locator('.session-title').innerText(), 'Robot returning');
+  assert.equal(await card.locator('.session-title').innerText(), 'Cleaning session');
   assert.equal(await card.locator('.action-message').innerText(), '');
   assert.equal(await page.evaluate(() => demo.map === demo.card.shadowRoot.querySelector('dyson-planner-map')), true);
   await page.evaluate(() => demo.card.start());
@@ -151,10 +151,10 @@ try {
   await page.locator('#settings').click();
   await shot('cleaning-mobile-rotated-v0.2.3');
   await map.scrollIntoViewIfNeeded();
-  await page.route('**/api/camera_proxy/**', route => route.fulfill({ status: 503, body: 'Unavailable' }));
+  await page.route('**/preview/map.svg*', route => route.fulfill({ status: 503, body: 'Unavailable' }));
   await page.waitForFunction(() => demo.map.caption.textContent.includes('Showing the last received image.'), null, { timeout: 10000 });
   assert.equal(await card.locator('[data-control="return_to_base"]').isEnabled(), true);
-  await page.unroute('**/api/camera_proxy/**');
+  await page.unroute('**/preview/map.svg*');
   await page.locator('#settings').click();
   await editor.locator('[data-key="show_camera"]').uncheck();
   assert.equal(await map.count(), 0);
@@ -174,18 +174,18 @@ try {
   assert.equal(await card.locator('.requested li').count(), 0);
   assert.equal(await card.locator('.requested-note').count(), 0);
   await state('paused');
-  assert.equal(await card.locator('.session-title').innerText(), 'Cleaning session paused');
+  assert.equal(await card.locator('.session-title').innerText(), 'Cleaning session');
   assert.equal(await card.getByRole('button', { name: 'Resume', exact: true }).isEnabled(), true);
   await card.locator('[data-control="start"]').click();
   await page.waitForFunction(() => !demo.card.controlBusy);
   assert.deepEqual(await page.evaluate(() => demo.calls.at(-1)), { domain: 'vacuum', service: 'start', data: { entity_id: 'vacuum.kuche_dyson_spot_scrub' } });
   await state('unavailable');
-  assert.equal(await card.locator('.session-title').innerText(), 'Robot unavailable');
+  assert.equal(await card.locator('.session-title').innerText(), 'Cleaning session');
   assert.equal(await card.locator('[data-control="pause"]').isDisabled(), true);
   assert.equal(await card.locator('[data-control="return_to_base"]').isDisabled(), true);
   assert.equal(await card.locator('.start').count(), 0);
   await state('error');
-  assert.equal(await card.locator('.session-title').innerText(), 'Robot needs attention');
+  assert.equal(await card.locator('.activity-text').innerText(), 'Robot needs attention');
   await state('cleaning');
   await page.evaluate(() => { demo.original = demo.hass.callService; demo.hass.callService = async () => { throw new Error('Action denied'); }; demo.card.hass = { ...demo.hass }; });
   await card.locator('[data-control="pause"]').click();
@@ -209,7 +209,7 @@ try {
   await card.locator('input[data-room]').first().check();
   await card.locator('.start').click();
   await page.waitForFunction(() => !demo.card.busy && demo.card.pendingStart);
-  assert.equal(await card.locator('.session-title').innerText(), 'Starting clean');
+  assert.equal(await card.locator('.activity-text').innerText(), 'Starting clean');
   assert.equal(await card.locator('.start').count(), 0);
   await state('cleaning');
   assert.equal(await card.locator('.requested li').count(), 1);

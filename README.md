@@ -45,6 +45,10 @@ The card finds rooms and settings belonging to the selected Dyson vacuum, using 
 
 During a clean, the card shows the live robot state and optional camera instead of room selection. It can show the rooms started from this card, but the integration does not report confirmed room progress or a queue. **Pause/Resume** and **Home** are available when supported by the integration. The camera can be hidden or rotated in 90-degree steps.
 
+The session header stays **Cleaning session**, with live activity below it and requested-room badges underneath. When provided by the integration, `full_clean_action` identifies vacuuming, mopping, or both. Otherwise the card shows **Cleaning**.
+
+After docking, the planner shows **Cleaning mop roller**, **Drying mop roller**, or **Emptying dust bin** above the rooms, based on `dock_state`. The message disappears when the dock becomes idle. Start is disabled during these dock cycles; local planning remains available. The drying cancel icon is a disabled placeholder until the integration provides a supported action. No drying countdown is estimated, and robot errors remain visible.
+
 ## Install or update for testing
 
 ### Manual installation

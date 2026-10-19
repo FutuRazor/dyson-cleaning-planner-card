@@ -31,7 +31,7 @@ try {
   assert.equal(await card.locator('[data-setting="cleaning_mode"]').first().inputValue(), 'Mop');
   await card.locator('[data-action="save"]').click();
   await page.waitForFunction(() => !demo.card.busy);
-  assert.match(await card.locator('[role="status"]').innerText(), /Save denied/);
+  assert.match(await card.locator('.notice[role="status"]').innerText(), /Save denied/);
   assert.equal(await card.locator('[data-setting="cleaning_mode"]').first().inputValue(), 'Mop');
   assert.equal(await card.locator('input[data-room]').first().isChecked(), true);
   // Rename both room and entity while the same native room ID retains the draft.
@@ -58,7 +58,7 @@ try {
   await page.evaluate(() => { demo.hass.callService = async (...args) => { demo.unconfirmed = args; }; demo.card.hass = { ...demo.hass }; });
   await card.locator('[data-action="save"]').click();
   await page.waitForFunction(() => !demo.card.busy, null, { timeout: 10000 });
-  assert.match(await card.locator('[role="status"]').innerText(), /not reflected/);
+  assert.match(await card.locator('.notice[role="status"]').innerText(), /not reflected/);
   assert.equal(await page.evaluate(() => demo.card.settingDraft[10].cleaning_mode), 'Vacuum then Mop');
   assert.deepEqual(errors, []);
   console.log('Draft browser checks passed: discard, external edits, save rejection, rename migration, selection retention and confirmation timeout.');

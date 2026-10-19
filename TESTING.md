@@ -22,3 +22,12 @@ Run `node --test tests/*.test.mjs`, `node scripts/build.mjs` and `node tests/bro
 10. Check missing/unavailable settings with both editor options (disabled/hidden). Simulate an action error and ensure the draft remains without automatic retries.
 
 HA value confirmation means the integration has updated its states. It is not proof that the robot acknowledged the settings. Cross-client editing and stale integration caches still need observation on the real device.
+
+## Cleaning and dock activity
+
+- Verify the session header reads **Cleaning session**, with the live status below it and room badges below the status.
+- Compare Vacuuming/Mopping against the vacuum entity's `full_clean_action`; missing or unknown phases should show Cleaning, not the configured mode.
+- After docking, check Washing, Drying and Dust collection messages above the planner rooms. Confirm they disappear at `dock_state: IDLE`.
+- Start must be disabled during these dock cycles; locally edited settings must survive status changes.
+- The drying cancel icon is intentionally disabled. No countdown or cancellation service is implemented yet.
+- Confirm real faults and unavailable/disconnected states remain visible even when a dock attribute is present.

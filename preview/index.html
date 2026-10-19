@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dyson Cleaning Planner · Preview</title><style>
 body{margin:0;background:#f1f4f6;color:#20272d;font-family:Arial,sans-serif;padding:28px 16px}main{max-width:580px;margin:auto}.demo{font-size:13px;line-height:1.6;margin:0 0 18px;color:#52616e}.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}button{padding:10px 14px;background:white;border:1px solid #ccd5db;border-radius:8px;cursor:pointer}body.dark{background:#14181d;color:#e9eef2;--primary-text-color:#e9eef2;--secondary-text-color:#abb8c4;--card-background-color:#20252b;--secondary-background-color:#292f36;--divider-color:#414953;--primary-color:#73d5f5;--text-primary-color:#09232e}.dark .demo{color:#abb8c4}#editor{margin-top:24px;padding:18px;border:1px solid #aaa;border-radius:14px}#log{white-space:pre-wrap;font-size:12px;overflow-wrap:anywhere}ha-icon::before{content:'◉';font-size:26px}
-</style></head><body><main><p class="demo">Interactive preview with simulated Home Assistant entities and a sample map. No robot connected.</p><div class="toolbar"><button id="theme">Light / Dark</button><button id="settings">Card editor</button><button id="offline">Toggle availability</button><button id="external">External clean</button><button id="docked">Docked</button></div><dyson-cleaning-planner-card id="card"></dyson-cleaning-planner-card><div id="editor" hidden></div><pre id="log"></pre></main><script type="module">
+</style></head><body><main><p class="demo">Interactive preview with simulated Home Assistant entities and a sample map. No robot connected.</p><div class="toolbar"><button id="theme">Light / Dark</button><button id="settings">Card editor</button><button id="offline">Toggle availability</button><button id="external">External clean</button><button id="docked">Docked</button><button data-phase="WASHING_MOP">Wash roller</button><button data-phase="DRYING_MOP">Dry roller</button><button data-phase="COLLECTING_DUST">Empty dust bin</button><button data-mode="VACUUMING">Vacuuming</button><button data-mode="MOPPING">Mopping</button></div><dyson-cleaning-planner-card id="card"></dyson-cleaning-planner-card><div id="editor" hidden></div><pre id="log"></pre></main><script type="module">
 import '../dist/dyson-cleaning-planner-card.js';
 import { batchFixture } from '../tests/fixture.mjs';
 // Stand-in for Home Assistant's icon element, only used by this offline preview.
@@ -38,8 +38,18 @@ f.hass.callService = async (...args) => {
 };
 document.querySelector('#theme').onclick = () => document.body.classList.toggle('dark');
 document.querySelector('#offline').onclick = () => { f.hass.states[f.entity].state = f.hass.states[f.entity].state === 'docked' ? 'unavailable' : 'docked'; card.hass = { ...f.hass }; };
-document.querySelector('#external').onclick = () => { f.hass.states[f.entity].state = 'cleaning'; card.hass = { ...f.hass }; };
-document.querySelector('#docked').onclick = () => { f.hass.states[f.entity].state = 'docked'; card.hass = { ...f.hass }; };
+document.querySelector('#external').onclick = () => { f.hass.states[f.entity].attributes.dock_state = 'IDLE'; f.hass.states[f.entity].state = 'cleaning'; card.hass = { ...f.hass }; };
+document.querySelector('#docked').onclick = () => { f.hass.states[f.entity].attributes.dock_state = 'IDLE'; f.hass.states[f.entity].state = 'docked'; card.hass = { ...f.hass }; };
+document.querySelectorAll('[data-phase]').forEach(button => button.onclick = () => {
+ f.hass.states[f.entity].state = 'docked';
+ f.hass.states[f.entity].attributes.dock_state = button.dataset.phase;
+ card.hass = { ...f.hass };
+});
+document.querySelectorAll('[data-mode]').forEach(button => button.onclick = () => {
+ f.hass.states[f.entity].state = 'cleaning';
+ Object.assign(f.hass.states[f.entity].attributes, { dock_state: 'IDLE', full_clean_action: button.dataset.mode });
+ card.hass = { ...f.hass };
+});
 document.querySelector('#settings').onclick = () => {
  const host = document.querySelector('#editor'); host.hidden = !host.hidden;
  if (!host.firstChild) { const editor = document.createElement('dyson-cleaning-planner-card-editor'); editor.setConfig(card.config); editor.hass = f.hass; editor.addEventListener('config-changed', e => card.setConfig(e.detail.config)); host.append(editor); }
