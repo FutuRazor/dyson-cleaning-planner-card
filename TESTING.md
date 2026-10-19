@@ -31,3 +31,9 @@ HA value confirmation means the integration has updated its states. It is not pr
 - Start must be disabled during these dock cycles; locally edited settings must survive status changes.
 - The drying cancel icon is intentionally disabled. No countdown or cancellation service is implemented yet.
 - Confirm real faults and unavailable/disconnected states remain visible even when a dock attribute is present.
+
+## Single-room session badges
+
+Run `node tests/session-badges-browser.mjs` with Playwright available. It covers a one-room start, brief idle/docked updates, cancellation of pending cleanup, and removal of old badges after a stable ready state.
+
+On the robot, start one room from this card and watch the badge through startup. If it disappears, record the vacuum state transitions and whether the dashboard was reloaded. Requested rooms are local to the card instance; external starts and page reloads do not provide a confirmed room list. The card retains the request for five seconds after returning to the planner to tolerate brief idle/docked transitions.

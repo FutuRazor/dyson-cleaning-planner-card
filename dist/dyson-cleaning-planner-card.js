@@ -470,14 +470,28 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
   }
   setConfig(config) {
     if (this.config?.entity !== config.entity) {
+      this.clearSessionEnd();
       this.clearPendingStart(); this.requestedPlan = null; this.sessionObserved = false;
     }
     this.config = normalizeConfig(config);
     this.initialized = false; this.dirty = false; this.selected = []; this.settingDraft = {}; this.expanded.clear(); this.message = ''; this.lastRooms = [];
     this.update();
   }
-  disconnectedCallback() { super.disconnectedCallback(); this.clearPendingStart(); }
+  disconnectedCallback() { super.disconnectedCallback(); this.clearPendingStart(); this.clearSessionEnd(); }
   clearPendingStart() { clearTimeout(this._startTimer); this.pendingStart = false; }
+  clearSessionEnd() { clearTimeout(this._sessionEndTimer); this._sessionEndTimer = null; }
+  deferSessionEnd() {
+    if (this._sessionEndTimer) return;
+    const entity = this.config.entity;
+    // Keep the request briefly across idle/docked telemetry between active states.
+    // The planner still returns immediately; badges are only shown in session view.
+    this._sessionEndTimer = setTimeout(() => {
+      this._sessionEndTimer = null;
+      if (!this.isConnected || this.config.entity !== entity || this.busy || this.pendingStart || this.view.active) return;
+      this.requestedPlan = null; this.sessionObserved = false;
+      this.render();
+    }, 5000);
+  }
   get view() { return cleaningView(this._hass, this.config?.entity, (this.busy && !this.saving) || this.pendingStart); }
   getCardSize() { return this.view.active ? (this.config?.show_camera ? 9 : 5) : 3 + (this.model?.rooms.length ?? 3); }
   getGridOptions() { return { columns: 12, min_columns: 6 }; }
@@ -506,11 +520,12 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       return matches.length === 1 ? matches[0].entity : entity;
     });
     const reported = cleaningView(this._hass, this.config.entity);
+    if (reported.active || this.busy || this.pendingStart) this.clearSessionEnd();
     if (reported.live) {
       this.clearPendingStart(); this.sessionObserved = true;
     } else if (!reported.active && !this.busy && !this.pendingStart && this.sessionObserved) {
-      // Docking can also occur between queued jobs. Do not claim the queue is finished.
-      this.requestedPlan = null; this.sessionObserved = false; this.message = ''; this.error = false;
+      this.deferSessionEnd();
+      this.message = ''; this.error = false;
     }
     if (this.model.rooms.length) this.lastRooms = this.model.rooms;
     else if (!Array.isArray(this._hass.states[this.config.entity]?.attributes?.rooms)) this.model.rooms = (this.lastRooms ?? []).map(r => ({ ...r, available: false }));
@@ -553,6 +568,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
   }
   async start() {
     if (this.busy || this.view.active || !this.isConnected) return;
+    this.clearSessionEnd();
     this.busy = true; this.error = false;
     const config = this.config;
     try {
