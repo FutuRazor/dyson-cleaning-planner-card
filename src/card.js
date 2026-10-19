@@ -1,6 +1,9 @@
-import { DOMAIN, ROOM_FIELDS, available, escapeHtml, normalizeConfig, discover, sendRoomDraft, cleaningView, canControl, controlCleaning, batteryStatus, activityStatus, dockBusy } from './core.js';
+import { DOMAIN, ROOM_FIELDS, available, escapeHtml, normalizeConfig, discover, sendRoomDraft, cleaningView, canControl, controlCleaning, batteryStatus, activityStatus, dockBusy, consumableStatus } from './core.js';
 
 const styles = `
+ha-card{position:relative}.header-tools{display:flex;flex-direction:column;align-items:flex-end;gap:7px;flex-shrink:0}.consumables-info{min-height:32px;width:100%;padding:3px 10px;background:transparent;color:var(--dp-muted);display:flex;justify-content:center;align-items:center}.consumables-info ha-icon{width:20px;height:20px}.consumables-info.attention{color:var(--error-color,#b3261e);background:color-mix(in srgb,var(--error-color,#b3261e) 10%,var(--dp-bg));border-color:color-mix(in srgb,var(--error-color,#b3261e) 30%,var(--dp-line))}
+.consumables-overlay{position:absolute;inset:0;z-index:5;background:#0005;padding:12px;display:flex;align-items:flex-start}.consumables-panel{width:100%;max-height:min(100%,75vh);overflow-y:auto;overscroll-behavior:contain;background:var(--dp-bg);border:1px solid var(--dp-line);border-radius:14px;padding:18px;box-shadow:0 8px 30px #0003}.consumables-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:18px}.consumables-heading h3{margin:0;font-size:20px;font-weight:500}.consumables-close{display:flex;padding:8px;min-width:42px}.consumable-row{margin:0 0 20px}.consumable-row:last-child{margin-bottom:0}.consumable-label{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:13px;margin-bottom:8px}.consumable-value{color:var(--dp-muted)}.consumable-track{height:8px;border-radius:8px;background:var(--divider-color,#dde3e8);overflow:hidden}.consumable-fill{display:block;height:100%;background:var(--success-color,#2e7d32)}.consumable-fill.medium{background:var(--warning-color,#ad6800)}.consumable-fill.low{background:var(--error-color,#b3261e)}
+
 :host{--dp-padding:24px}.header-title{flex:1;min-width:0}.header-title h2{overflow-wrap:anywhere}.robot{flex-shrink:0}.battery{display:flex;align-items:center;gap:7px;flex-shrink:0;align-self:flex-start;margin-top:4px;font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}.battery svg{width:32px;height:20px;color:var(--dp-muted)}.battery[data-level=high] svg{color:var(--success-color,#2e7d32)}.battery[data-level=medium] svg{color:var(--warning-color,#ad6800)}.battery[data-level=low] svg{color:var(--error-color,#b3261e)}
 :host{display:block;color:var(--primary-text-color,#20272d);font-family:var(--paper-font-body1_-_font-family,Arial,sans-serif);--dp-bg:var(--ha-card-background,var(--card-background-color,#fff));--dp-line:var(--divider-color,#dde3e8);--dp-muted:var(--secondary-text-color,#52616e);--dp-accent:var(--primary-color,#007da5);--dp-soft:color-mix(in srgb,var(--dp-accent) 10%,var(--dp-bg))}
 *{box-sizing:border-box}ha-card{display:block;background:var(--dp-bg);border:1px solid var(--dp-line);border-radius:var(--ha-card-border-radius,22px);overflow:hidden;box-shadow:var(--ha-card-box-shadow,0 3px 18px #0000000a)}
@@ -63,6 +66,11 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     this.controlBusy = false; this.pendingStart = false; this.requestedPlan = null;
     this.shadowRoot.addEventListener('change', event => this.onChange(event));
     this.shadowRoot.addEventListener('click', event => this.onClick(event));
+    this.shadowRoot.addEventListener('keydown', event => {
+      if (!this.consumablesOpen) return;
+      if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); this.toggleConsumables(false); }
+      if (event.key === 'Tab') { event.preventDefault(); this.shadowRoot.querySelector('.consumables-close')?.focus(); }
+    });
   }
   static getConfigElement() { return document.createElement('dyson-cleaning-planner-card-editor'); }
   static getStubConfig(hass) {
@@ -74,6 +82,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       this.clearSessionEnd();
       this.clearPendingStart(); this.requestedPlan = null; this.sessionObserved = false;
     }
+    this.consumablesOpen = false;
     this.config = normalizeConfig(config);
     this.initialized = false; this.dirty = false; this.selected = []; this.settingDraft = {}; this.expanded.clear(); this.message = ''; this.lastRooms = [];
     this.update();
@@ -155,6 +164,9 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
   }
   onClick(event) {
     const el = event.target.closest('button');
+    if (el?.dataset.action === 'consumables') { this.toggleConsumables(true); return; }
+    if (el?.dataset.action === 'close-consumables') { this.toggleConsumables(false); return; }
+    if (this.consumablesOpen) return;
     if (!el || el.disabled || this.busy || this.controlBusy) return;
     if (el.dataset.control) { this.control(el.dataset.control); return; }
     if (this.view.active) return;
@@ -241,8 +253,32 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       if (this.config.entity === entity) { this.error = true; this.message = error.message; }
     } finally { this.controlBusy = false; this.render(); }
   }
+  consumablesHtml() {
+    return `<div class="consumables-overlay" hidden><section class="consumables-panel" role="dialog" aria-modal="true" aria-label="Consumables"><div class="consumables-heading"><h3>Consumables</h3><button class="consumables-close" data-action="close-consumables" data-focus="consumables-close" aria-label="Close consumables"><ha-icon icon="mdi:close" aria-hidden="true"></ha-icon></button></div><div class="consumables-rows"></div></section></div>`;
+  }
+  toggleConsumables(open) {
+    this.consumablesOpen = open;
+    this.updateConsumables();
+    this.shadowRoot.querySelector(open ? '.consumables-close' : '.consumables-info')?.focus();
+  }
+  updateConsumables() {
+    const root = this.shadowRoot;
+    const rows = consumableStatus(this._hass, this.registry, this.config.entity);
+    const warning = rows.some(row => row.level === 'low');
+    const button = root.querySelector('.consumables-info');
+    button.classList.toggle('attention', warning);
+    button.setAttribute('aria-label', warning ? 'Consumables: replacement needed soon' : 'Consumables');
+    button.title = warning ? 'Consumables: replacement needed soon' : 'Consumables';
+    button.setAttribute('aria-expanded', String(!!this.consumablesOpen));
+    root.querySelector('.consumables-overlay').hidden = !this.consumablesOpen;
+    root.querySelector('.card-content').inert = !!this.consumablesOpen;
+    const content = rows.map(row => `<div class="consumable-row"><div class="consumable-label"><span>${escapeHtml(row.name)}</span><span class="consumable-value">${escapeHtml(row.text)}</span></div>${row.remaining === null ? '' : `<div class="consumable-track" role="meter" aria-label="${escapeHtml(row.name)} remaining life" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${row.remaining}"><span class="consumable-fill ${row.level}" style="width:${row.remaining}%"></span></div>`}</div>`).join('');
+    const host = root.querySelector('.consumables-rows');
+    if (host.innerHTML !== content) host.innerHTML = content;
+    if (this.consumablesOpen && !root.querySelector('.consumables-panel').contains(root.activeElement)) root.querySelector('.consumables-close').focus();
+  }
   headerHtml() {
-    return `<header><div class="robot"><ha-icon icon="mdi:robot-vacuum"></ha-icon></div><div class="header-title"><h2>${escapeHtml(this.config.title)}</h2><p>Dyson Spot+Scrub <span class="tag">v0.2.3</span></p></div><div class="battery" role="img"><svg viewBox="0 0 32 20" aria-hidden="true"><rect x="1" y="3" width="26" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="29" y="7" width="3" height="6" rx="1" fill="currentColor"/><rect class="battery-fill" x="4" y="6" width="0" height="8" rx="1" fill="currentColor"/><path class="battery-bolt" d="M17 1 9 11h6l-2 8L23 8h-7Z" fill="var(--dp-bg)" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" hidden/></svg><span class="battery-value" aria-hidden="true">—</span></div></header>`;
+    return `<header><div class="robot"><ha-icon icon="mdi:robot-vacuum"></ha-icon></div><div class="header-title"><h2>${escapeHtml(this.config.title)}</h2><p>Dyson Spot+Scrub <span class="tag">v0.2.3</span></p></div><div class="header-tools"><div class="battery" role="img"><svg viewBox="0 0 32 20" aria-hidden="true"><rect x="1" y="3" width="26" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="29" y="7" width="3" height="6" rx="1" fill="currentColor"/><rect class="battery-fill" x="4" y="6" width="0" height="8" rx="1" fill="currentColor"/><path class="battery-bolt" d="M17 1 9 11h6l-2 8L23 8h-7Z" fill="var(--dp-bg)" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" hidden/></svg><span class="battery-value" aria-hidden="true">—</span></div><button class="consumables-info" data-action="consumables" data-focus="consumables-info" aria-label="Consumables" aria-haspopup="dialog" aria-expanded="false" title="Consumables"><ha-icon icon="mdi:information-outline" aria-hidden="true"></ha-icon></button></div></header>`;
   }
   updateBattery() {
     const state = batteryStatus(this._hass, this.model);
@@ -268,9 +304,10 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     const h = escapeHtml;
     // Keep the map element mounted across status and message updates so polling,
     // the last good image and in-flight requests are independent of card renders.
-    this.paint(`<style>${styles}</style><ha-card>${this.headerHtml()}${this.statusHtml()}<section class="session"><ul class="requested"></ul></section>${this.config.show_camera ? '<div class="map-section"><div class="map-title">Cleaning map</div><p class="map-caption">Refreshes about every 5 seconds</p><dyson-planner-map></dyson-planner-map></div>' : ''}<footer class="session-footer"><div class="actions session-actions"><button class="session-toggle" data-control="pause" data-focus="session-toggle"><ha-icon></ha-icon><span></span></button><button class="home" data-control="return_to_base" data-focus="home"><ha-icon icon="mdi:home-import-outline"></ha-icon>Home</button></div><p class="notice action-message" role="status" aria-live="polite"></p></footer></ha-card>`);
+    this.paint(`<style>${styles}</style><ha-card><div class="card-content">${this.headerHtml()}${this.statusHtml()}<section class="session"><ul class="requested"></ul></section>${this.config.show_camera ? '<div class="map-section"><div class="map-title">Cleaning map</div><p class="map-caption">Refreshes about every 5 seconds</p><dyson-planner-map></dyson-planner-map></div>' : ''}<footer class="session-footer"><div class="actions session-actions"><button class="session-toggle" data-control="pause" data-focus="session-toggle"><ha-icon></ha-icon><span></span></button><button class="home" data-control="return_to_base" data-focus="home"><ha-icon icon="mdi:home-import-outline"></ha-icon>Home</button></div><p class="notice action-message" role="status" aria-live="polite"></p></footer></div>${this.consumablesHtml()}</ha-card>`);
     const root = this.shadowRoot;
     this.updateBattery();
+    this.updateConsumables();
     this.updateStatus();
     const title = root.querySelector('.header-title h2');
     title.classList.add('session-title');
@@ -322,8 +359,9 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       }).join('');
       return `<section class="room ${selected ? 'selected' : ''}"><div class="room-head"><label class="pick"><input type="checkbox" data-focus="room-${n}" data-room="${h(room.entity)}" ${selected ? 'checked' : ''} ${disabled ? 'disabled' : ''}><span><span class="name">${h(room.name)} ${selected ? `<span class="status">(${order})</span>` : ''}</span><span class="summary">${!room.available ? h(room.error || 'Unavailable') : h(valueOf('cleaning_mode') ?? 'Room settings unavailable')}${selected ? '' : ' · Not selected'}</span></span></label><button class="expand" data-focus="expand-${n}" data-expand="${h(room.entity || room.name)}" aria-expanded="${open}" aria-controls="fields-${n}" aria-label="Settings for ${h(room.name)}"><span>Settings</span> ${open ? '⌃' : '⌄'}</button></div><div class="fields" id="fields-${n}" ${open ? '' : 'hidden'}>${fields}${!room.roomId ? '<p class="badge mode">Room ID unavailable. Check the updated integration and refresh rooms.</p>' : ''}</div></section>`;
     }).join('');
-    this.paint(`<style>${styles}</style><ha-card>${this.headerHtml()}${this.statusHtml()}<div class="rooms">${roomHtml}</div>${!rooms.length ? '<p class="empty">No enabled rooms found. Check the card configuration and room discovery.</p>' : ''}<footer><div class="summary-line"><span>${this.selected.length} of ${rooms.length} rooms selected</span><span class="status">${this.dirty ? 'Local draft' : 'From Home Assistant'}</span></div><div class="actions"><button data-action="save" data-focus="save" ${!hasChanges || this.busy || !canSave ? 'disabled' : ''}>${this.saving ? 'Saving …' : 'Save settings'}</button><button class="start" data-focus="start" data-action="start" ${this.selected.length === 0 || this.busy || dockBusy(this._hass, this.config.entity) ? 'disabled' : ''}>Start clean</button></div>${!canSave || !canStart ? '<p class="notice badge">The updated Dyson integration actions are not available. Reload the integration and refresh this dashboard.</p>' : ''}${external ? '<p class="notice badge">Settings changed outside this card. Your edited values remain in the local draft.</p>' : ''}<p class="notice ${this.error ? 'error' : ''}" role="status" aria-live="polite">${h(this.message)}</p><button class="reset" data-focus="reset" data-action="reset" ${this.busy ? 'disabled' : ''}>Discard draft</button> <button class="reset" data-action="refresh" ${this.busy ? 'disabled' : ''}>Refresh rooms</button></footer></ha-card>`);
+    this.paint(`<style>${styles}</style><ha-card><div class="card-content">${this.headerHtml()}${this.statusHtml()}<div class="rooms">${roomHtml}</div>${!rooms.length ? '<p class="empty">No enabled rooms found. Check the card configuration and room discovery.</p>' : ''}<footer><div class="summary-line"><span>${this.selected.length} of ${rooms.length} rooms selected</span><span class="status">${this.dirty ? 'Local draft' : 'From Home Assistant'}</span></div><div class="actions"><button data-action="save" data-focus="save" ${!hasChanges || this.busy || !canSave ? 'disabled' : ''}>${this.saving ? 'Saving …' : 'Save settings'}</button><button class="start" data-focus="start" data-action="start" ${this.selected.length === 0 || this.busy || dockBusy(this._hass, this.config.entity) ? 'disabled' : ''}>Start clean</button></div>${!canSave || !canStart ? '<p class="notice badge">The updated Dyson integration actions are not available. Reload the integration and refresh this dashboard.</p>' : ''}${external ? '<p class="notice badge">Settings changed outside this card. Your edited values remain in the local draft.</p>' : ''}<p class="notice ${this.error ? 'error' : ''}" role="status" aria-live="polite">${h(this.message)}</p><button class="reset" data-focus="reset" data-action="reset" ${this.busy ? 'disabled' : ''}>Discard draft</button> <button class="reset" data-action="refresh" ${this.busy ? 'disabled' : ''}>Refresh rooms</button></footer></div>${this.consumablesHtml()}</ha-card>`);
     this.updateBattery();
+    this.updateConsumables();
     this.updateStatus();
   }
 }

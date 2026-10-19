@@ -102,3 +102,9 @@ node scripts/preview.mjs
 ```
 
 The preview uses simulated HA data only. Optional browser checks use Playwright: `node tests/browser.mjs`, `node tests/batch-browser.mjs`, and `node tests/ui-browser.mjs`. Set `BROWSER_CHANNEL=msedge` for an installed Edge browser. See [TESTING.md](TESTING.md) for the device test checklist and [the integration contract](docs/integration-contract.md) for payloads and limitations.
+
+## Consumables
+
+The info button below the battery opens a consumables overlay in either card view. Five bars show remaining life (`100 - usage`); cleaning solution shows OK or Refill required. Bars are orange at 25% or less and red at 10% or less. Any red bar also subtly highlights the info button in red.
+
+Requires the integration's consumable sensors with `consumable_type` and `value_kind` attributes. Sensors are discovered on the selected Dyson device, including renamed entity IDs. Missing, ambiguous or unavailable values display Unavailable. The ioniser cartridge is omitted. Opening the overlay sends no service calls and preserves local drafts and the live map. Close it with the close button or Escape.

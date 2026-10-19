@@ -283,3 +283,27 @@ async function executeLegacy({ getHass, getModel, config, plan, wait = waitForSt
   onProgress('Sending start command …');
   await call('button', 'press', { entity_id: initial.startEntity });
 }
+
+
+export const CONSUMABLES = [
+  ['brushBar', 'Brush bar'], ['mopRoller', 'Mop roller'],
+  ['sideBrushes', 'Side brushes'], ['robotFilter', 'Robot filter'],
+  ['dockFilter', 'Dock filter'], ['cleaningSolution', 'Cleaning solution']
+];
+
+export function consumableStatus(hass, registry, entity) {
+  const vacuum = registry.find(e => e.entity_id === entity && e.platform === DOMAIN && !e.disabled_by);
+  return CONSUMABLES.map(([type, name]) => {
+    const candidates = vacuum?.device_id ? registry.filter(e => e.platform === DOMAIN && e.device_id === vacuum.device_id && !e.disabled_by && e.entity_id.startsWith('sensor.') && hass?.states?.[e.entity_id]?.attributes?.consumable_type === type) : [];
+    const state = candidates.length === 1 ? hass?.states?.[candidates[0].entity_id] : null;
+    const live = hass?.connected !== false && available(state);
+    if (type === 'cleaningSolution') {
+      const value = live && state.attributes?.value_kind === 'refill_status' ? state.state : null;
+      return { type, name, remaining: null, level: 'unknown', text: value === 'ok' ? 'OK' : value === 'refill_required' ? 'Refill required' : 'Unavailable' };
+    }
+    const raw = state?.state;
+    const usage = typeof raw === 'number' || (typeof raw === 'string' && raw.trim() !== '') ? Number(raw) : NaN;
+    const remaining = live && state.attributes?.value_kind === 'usage_percent' && Number.isFinite(usage) && usage >= 0 && usage <= 100 ? Math.round((100 - usage) * 10) / 10 : null;
+    return { type, name, remaining, level: remaining === null ? 'unknown' : remaining <= 10 ? 'low' : remaining <= 25 ? 'medium' : 'high', text: remaining === null ? 'Unavailable' : `${remaining}% remaining` };
+  });
+}
