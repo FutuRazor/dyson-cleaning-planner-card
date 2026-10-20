@@ -10,9 +10,17 @@ try {
   browser = await chromium.launch({ headless: true, channel: process.env.BROWSER_CHANNEL || 'msedge' });
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
   const errors = []; page.on('pageerror', e => errors.push(e.message));
+  // Reproduce HA's slotted card-content padding, which the plain preview lacks.
+  await page.addInitScript(() => customElements.define('ha-card', class extends HTMLElement {
+    constructor() {
+      super();
+      this.attachShadow({ mode: 'open' }).innerHTML = '<style>::slotted(.card-content){padding:16px}</style><slot></slot>';
+    }
+  }));
   await page.goto(`http://127.0.0.1:${server.address().port}`);
   const card = page.locator('#card');
   await card.locator('.room').first().waitFor();
+  assert.equal(await card.locator('.planner-content').evaluate(el => getComputedStyle(el).paddingLeft), '0px');
   await card.locator('input[data-room]').first().check();
   await card.locator('.consumables-info').click();
   assert.equal(await card.locator('.consumables-info.attention').count(), 1);
@@ -20,7 +28,7 @@ try {
   assert.equal(await card.locator('[role="meter"]').count(), 5);
   assert.equal(await card.locator('.consumable-row').count(), 6);
   assert.match(await card.locator('.consumables-rows').innerText(), /96% remaining/);
-  assert.equal(await card.locator('.card-content').evaluate(el => el.inert), true);
+  assert.equal(await card.locator('.planner-content').evaluate(el => el.inert), true);
   await page.keyboard.press('Tab');
   assert.equal(await card.locator('.consumables-close').evaluate(el => el === el.getRootNode().activeElement), true);
   await page.evaluate(() => {
@@ -36,6 +44,7 @@ try {
   assert.equal(await card.locator('input[data-room]').first().isChecked(), true);
   assert.equal(await page.evaluate(() => demo.calls.length), 0);
   await page.locator('#external').click();
+  assert.equal(await card.locator('.planner-content').evaluate(el => getComputedStyle(el).paddingLeft), '0px');
   await page.evaluate(() => { demo.savedMap = demo.card.shadowRoot.querySelector('dyson-planner-map'); });
   await card.locator('.consumables-info').click();
   assert.equal(await page.evaluate(() => demo.savedMap === demo.card.shadowRoot.querySelector('dyson-planner-map')), true);

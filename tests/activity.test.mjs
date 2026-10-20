@@ -35,10 +35,21 @@ test('dock phases appear in the planner, disappear at idle, and cannot hide erro
   assert.equal(activityStatus(f.hass, f.entity), null, 'old cleaning telemetry cannot leave a stale status');
 });
 
-test('starting during a dock cycle is rejected before any service call', async () => {
+test('starting during roller washing is rejected before any service call', async () => {
   const f = batchFixture();
-  f.hass.states[f.entity].attributes.dock_state = 'DRYING_MOP';
+  f.hass.states[f.entity].attributes.dock_state = 'WASHING_MOP';
   const config = normalizeConfig(f.config), model = discover(f.hass, f.registry, config);
   await assert.rejects(sendRoomDraft({ hass: f.hass, model, config, selected: [f.ids[0]], draft: {}, start: true }), /dock cycle/);
   assert.equal(f.calls.length, 0);
+});
+
+
+test('start during drying sends the normal batch action and keeps the drying status', async () => {
+  const f = batchFixture();
+  f.hass.states[f.entity].attributes.dock_state = 'DRYING_MOP';
+  const config = normalizeConfig(f.config), model = discover(f.hass, f.registry, config);
+  await sendRoomDraft({ hass: f.hass, model, config, selected: [f.ids[0]], draft: {}, start: true });
+  assert.equal(f.calls.length, 1);
+  assert.equal(f.calls[0].service, 'start_rooms_with_settings');
+  assert.equal(activityStatus(f.hass, f.entity).text, 'Drying mop roller');
 });

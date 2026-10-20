@@ -91,7 +91,7 @@ export async function sendRoomDraft({ hass, model, config, selected = [], draft 
   const vacuum = hass.states[config.entity];
   if (!available(vacuum)) throw new Error('The robot is unavailable.');
   if (start && !['docked', 'idle'].includes(vacuum.state)) throw new Error('Start is only available when the Dyson is ready (docked or idle).');
-  if (start && dockBusy(hass, config.entity)) throw new Error('Wait for the dock cycle to finish before starting a clean.');
+  if (start && dockBlocksStart(hass, config.entity)) throw new Error('Wait for the dock cycle to finish before starting a clean.');
   const byId = new Map();
   for (const room of model.rooms) {
     if (!room.roomId) continue;
@@ -137,6 +137,11 @@ const DOCK_PHASES = {
 export function dockBusy(hass, entity) {
   const state = hass?.states?.[entity];
   return hass?.connected !== false && available(state) && Object.hasOwn(DOCK_PHASES, state.attributes?.dock_state);
+}
+
+// A new cleaning request lets the integration cancel roller drying automatically.
+export function dockBlocksStart(hass, entity) {
+  return dockBusy(hass, entity) && hass.states[entity].attributes.dock_state !== 'DRYING_MOP';
 }
 
 // Report live telemetry, never the selected mode or the colours of old map paths.
