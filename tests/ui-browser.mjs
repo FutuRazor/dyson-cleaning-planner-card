@@ -108,5 +108,5 @@ try {
   await page.locator('[data-phase="DRYING_MOP"]').click();
   await page.screenshot({ path: 'artifacts/drying-status-preview.png', fullPage: true });
   assert.deepEqual(errors, []);
-  console.log('v0.3.0 UI checks passed: live title/caret, mode visibility, override, retained drafts, session colors/actions, caption placement and persistent map.');
+  console.log('v0.3.1 UI checks passed: live title/caret, mode visibility, override, retained drafts, session colors/actions, caption placement and persistent map.');
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }

@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.3.1
+
+- Raise the default minimum dashboard width to 9 columns.
+- Keep automatic height as the default and support manual height with scrollable content.
+- Preserve the internal planner/session layout and keep the consumables overlay within the card.
+
 ## v0.3.0
 
 - Remove the Not selected suffix from room summaries, retaining selection order badges.
