@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.3.0
+
+- Remove the Not selected suffix from room summaries, retaining selection order badges.
+- Rename Mop repetitions to Clean repetitions and make it available in every cleaning mode. Keep the integration key `mop_repetitions` unchanged.
+- Show live cleaning and dock activity below the header, including roller washing, drying and dust collection.
+- Preserve single-room session badges through brief idle/docked transitions.
+- Add a consumables overlay with remaining-life bars and a subtle low-life indicator.
+- Allow starting during roller drying and correct doubled planner padding in Home Assistant.
+- Update documentation screenshots and link to the interactive preview.
+
 ## v0.2.3
 
 - Update the title preview on every keystroke, preserving the editing cursor.

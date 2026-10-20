@@ -1,4 +1,4 @@
-# v0.2.3 integration contract
+# v0.3.0 integration contract
 
 The frontend holds only a local draft. The integration translates option labels into Dyson array values.
 
@@ -38,7 +38,7 @@ The integration writes preferences once, then issues its existing protocol start
 
 Entities must belong to the same Dyson device and platform. Room switch registry unique IDs identify per-room select registry prefixes; their `room_id` attributes supply the native map ID. The card uses option labels exactly as reported by HA. Native IDs are map-scoped, so remapping requires fresh drafts.
 
-Missing actions produce a clear message and never trigger a legacy fallback. Missing options are disabled or hidden. Duplicate/ambiguous room IDs and invalid edited options are rejected before the action. The original legacy adapter remains in the source for regression coverage but is not called by the v0.2.3 UI.
+Missing actions produce a clear message and never trigger a legacy fallback. Missing options are disabled or hidden. Duplicate/ambiguous room IDs and invalid edited options are rejected before the action. The original legacy adapter remains in the source for regression coverage but is not called by the v0.3.0 UI.
 
 ## Known integration limits
 

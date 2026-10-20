@@ -1,4 +1,4 @@
-# Testing v0.2.3
+# Testing v0.3.0
 
 ## Automated checks
 
@@ -10,8 +10,8 @@ Run `node --test tests/*.test.mjs`, `node scripts/build.mjs` and `node tests/bro
 
 ## Real Home Assistant checklist
 
-1. Confirm the card header is v0.2.3 and both new Dyson actions exist.
-2. Type a title without pressing Enter; confirm immediate preview updates and stable cursor position. Expand two rooms. Check mode-dependent visibility and enable Always show all settings to inspect all four dropdowns.
+1. Confirm the card header is v0.3.0 and both new Dyson actions exist.
+2. Type a title without pressing Enter; confirm immediate preview updates and stable cursor position. Expand two rooms. Confirm unselected rooms have no Not selected suffix. Select Clean repetitions in every cleaning mode, including Vacuum. Check mode-dependent visibility and enable Always show all settings to inspect all four dropdowns.
 3. Change several options. HA entities and the robot must remain unchanged during editing. Only the edited room should change in the card.
 4. Click Save settings. Confirm one `save_room_settings` action carries all changes, HA reflects the values, and cleaning does not start. The card's room selection must remain selected.
 5. Change another setting, then Discard draft. Confirm no service call occurs and current HA values return.
