@@ -47,7 +47,7 @@ During a clean, the card shows the live robot state and optional camera instead 
 
 The session header stays **Cleaning session**, with live activity below it and requested-room badges underneath. When provided by the integration, `full_clean_action` identifies vacuuming, mopping, or both. Otherwise the card shows **Cleaning**.
 
-After docking, the planner shows **Cleaning mop roller**, **Drying mop roller**, or **Emptying dust bin** above the rooms, based on `dock_state`. The message disappears when the dock becomes idle. Start is disabled during these dock cycles; local planning remains available. The drying cancel icon is a disabled placeholder until the integration provides a supported action. No drying countdown is estimated, and robot errors remain visible.
+After docking, the planner shows **Cleaning mop roller**, **Drying mop roller**, or **Emptying dust bin** above the rooms, based on `dock_state`. The message disappears when the dock becomes idle. Start is available during roller drying: the integration ends drying when starting the new clean. Start remains disabled during roller washing and dust collection; local planning remains available. The drying cancel icon is a disabled placeholder until the integration provides a supported action. No drying countdown is estimated, and robot errors remain visible.
 
 ## Install or update for testing
 

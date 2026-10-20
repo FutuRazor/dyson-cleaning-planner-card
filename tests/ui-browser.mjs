@@ -83,7 +83,7 @@ try {
     await page.locator(`[data-phase="${phase}"]`).click();
     assert.equal(await card.locator('.activity-text').innerText(), label);
     assert.equal(await card.locator('.room').count() > 0, true);
-    assert.equal(await card.locator('[data-action="start"]').isDisabled(), true);
+    assert.equal(await card.locator('[data-action="start"]').isDisabled(), phase !== 'DRYING_MOP');
     assert.equal(await card.locator('.drying-control').isVisible(), phase === 'DRYING_MOP');
     assert.deepEqual(await page.evaluate(() => demo.card.settingDraft), { 10: { cleaning_mode: 'Mop' } });
   }
