@@ -1,4 +1,4 @@
-# Testing v0.3.0
+# Testing v0.3.1
 
 ## Automated checks
 
@@ -10,7 +10,7 @@ Run `node --test tests/*.test.mjs`, `node scripts/build.mjs` and `node tests/bro
 
 ## Real Home Assistant checklist
 
-1. Confirm the card header is v0.3.0 and both new Dyson actions exist.
+1. Confirm the card header is v0.3.1 and both new Dyson actions exist.
 2. Type a title without pressing Enter; confirm immediate preview updates and stable cursor position. Expand two rooms. Confirm unselected rooms have no Not selected suffix. Select Clean repetitions in every cleaning mode, including Vacuum. Check mode-dependent visibility and enable Always show all settings to inspect all four dropdowns.
 3. Change several options. HA entities and the robot must remain unchanged during editing. Only the edited room should change in the card.
 4. Click Save settings. Confirm one `save_room_settings` action carries all changes, HA reflects the values, and cleaning does not start. The card's room selection must remain selected.
@@ -37,3 +37,7 @@ HA value confirmation means the integration has updated its states. It is not pr
 Run `node tests/session-badges-browser.mjs` with Playwright available. It covers a one-room start, brief idle/docked updates, cancellation of pending cleanup, and removal of old badges after a stable ready state.
 
 On the robot, start one room from this card and watch the badge through startup. If it disappears, record the vacuum state transitions and whether the dashboard was reloaded. Requested rooms are local to the card instance; external starts and page reloads do not provide a confirmed room list. The card retains the request for five seconds after returning to the planner to tolerate brief idle/docked transitions.
+
+## Dashboard sizing
+
+Run `node tests/layout-browser.mjs` with Playwright available. In a real Sections dashboard, verify the 9-column minimum, automatic height, manual height with reachable controls, and restoring Auto height. Check the planner, active session and consumables overlay.

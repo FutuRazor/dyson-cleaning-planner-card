@@ -1,4 +1,4 @@
-/* Dyson Cleaning Planner Card v0.3.0 | MIT */
+/* Dyson Cleaning Planner Card v0.3.1 | MIT */
 const DOMAIN = 'dyson_spot_scrub';
 const ROOM_FIELDS = { cleaning_mode: 'Cleaning mode', cleaning_strategy: 'Vacuum Power', water_level: 'Water level', mop_repetitions: 'Clean repetitions' };
 const available = state => !!state && !['unavailable', 'unknown'].includes(state.state) && !state.attributes?.restored;
@@ -429,6 +429,11 @@ if (!customElements.get('dyson-planner-map')) customElements.define('dyson-plann
 
 
 const styles = `
+/* Only constrain the content when the dashboard assigns an explicit row count. */
+:host([fixed-height]){height:100%;min-height:0}
+:host([fixed-height]) ha-card{height:100%;min-height:0}
+:host([fixed-height]) .planner-content{height:100%;overflow-y:auto;overscroll-behavior:contain}
+
 ha-card{position:relative}.header-tools{display:flex;flex-direction:column;align-items:flex-end;gap:7px;flex-shrink:0}.consumables-info{min-height:32px;width:100%;padding:3px 10px;background:transparent;color:var(--dp-muted);display:flex;justify-content:center;align-items:center;font-size:12px}.consumables-info.attention{color:var(--error-color,#b3261e);background:color-mix(in srgb,var(--error-color,#b3261e) 10%,var(--dp-bg));border-color:color-mix(in srgb,var(--error-color,#b3261e) 30%,var(--dp-line))}
 .consumables-overlay{position:absolute;inset:0;z-index:5;background:#0005;padding:12px;display:flex;align-items:flex-start}.consumables-panel{width:100%;max-height:min(100%,75vh);overflow-y:auto;overscroll-behavior:contain;background:var(--dp-bg);border:1px solid var(--dp-line);border-radius:14px;padding:18px;box-shadow:0 8px 30px #0003}.consumables-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:18px}.consumables-heading h3{margin:0;font-size:20px;font-weight:500}.consumables-close{display:flex;padding:8px;min-width:42px}.consumable-row{margin:0 0 20px}.consumable-row:last-child{margin-bottom:0}.consumable-label{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:13px;margin-bottom:8px}.consumable-value{color:var(--dp-muted)}.consumable-track{height:8px;border-radius:8px;background:var(--divider-color,#dde3e8);overflow:hidden}.consumable-fill{display:block;height:100%;background:var(--success-color,#2e7d32)}.consumable-fill.medium{background:var(--warning-color,#ad6800)}.consumable-fill.low{background:var(--error-color,#b3261e)}
 
@@ -512,6 +517,8 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     }
     this.consumablesOpen = false;
     this.config = normalizeConfig(config);
+    const rows = config.grid_options?.rows ?? config.layout_options?.grid_rows;
+    this.toggleAttribute('fixed-height', typeof rows === 'number' && Number.isFinite(rows) && rows > 0);
     this.initialized = false; this.dirty = false; this.selected = []; this.settingDraft = {}; this.expanded.clear(); this.message = ''; this.lastRooms = [];
     this.update();
   }
@@ -532,7 +539,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
   }
   get view() { return cleaningView(this._hass, this.config?.entity, (this.busy && !this.saving) || this.pendingStart); }
   getCardSize() { return this.view.active ? (this.config?.show_camera ? 9 : 5) : 3 + (this.model?.rooms.length ?? 3); }
-  getGridOptions() { return { columns: 12, min_columns: 6 }; }
+  getGridOptions() { return { columns: 12, min_columns: 9, rows: 'auto', min_rows: 1 }; }
   getModel() { return discover(this._hass, this.registry, this.config); }
   resetDraft(clearMessage = true) {
     this.selected = this.model.rooms.filter(r => !r.excluded && r.available && this._hass.states[r.entity]?.state === 'on').map(r => r.entity);
@@ -706,7 +713,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     if (this.consumablesOpen && !root.querySelector('.consumables-panel').contains(root.activeElement)) root.querySelector('.consumables-close').focus();
   }
   headerHtml() {
-    return `<header><div class="robot"><ha-icon icon="mdi:robot-vacuum"></ha-icon></div><div class="header-title"><h2>${escapeHtml(this.config.title)}</h2><p>Dyson Spot+Scrub <span class="tag">v0.3.0</span></p></div><div class="header-tools"><div class="battery" role="img"><svg viewBox="0 0 32 20" aria-hidden="true"><rect x="1" y="3" width="26" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="29" y="7" width="3" height="6" rx="1" fill="currentColor"/><rect class="battery-fill" x="4" y="6" width="0" height="8" rx="1" fill="currentColor"/><path class="battery-bolt" d="M17 1 9 11h6l-2 8L23 8h-7Z" fill="var(--dp-bg)" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" hidden/></svg><span class="battery-value" aria-hidden="true">—</span></div><button class="consumables-info" data-action="consumables" data-focus="consumables-info" aria-label="Consumables" aria-haspopup="dialog" aria-expanded="false" title="Consumables">Info</button></div></header>`;
+    return `<header><div class="robot"><ha-icon icon="mdi:robot-vacuum"></ha-icon></div><div class="header-title"><h2>${escapeHtml(this.config.title)}</h2><p>Dyson Spot+Scrub <span class="tag">v0.3.1</span></p></div><div class="header-tools"><div class="battery" role="img"><svg viewBox="0 0 32 20" aria-hidden="true"><rect x="1" y="3" width="26" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="29" y="7" width="3" height="6" rx="1" fill="currentColor"/><rect class="battery-fill" x="4" y="6" width="0" height="8" rx="1" fill="currentColor"/><path class="battery-bolt" d="M17 1 9 11h6l-2 8L23 8h-7Z" fill="var(--dp-bg)" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" hidden/></svg><span class="battery-value" aria-hidden="true">—</span></div><button class="consumables-info" data-action="consumables" data-focus="consumables-info" aria-label="Consumables" aria-haspopup="dialog" aria-expanded="false" title="Consumables">Info</button></div></header>`;
   }
   updateBattery() {
     const state = batteryStatus(this._hass, this.model);

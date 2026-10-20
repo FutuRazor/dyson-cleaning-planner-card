@@ -2,7 +2,7 @@
 
 A Home Assistant Lovelace card for the Dyson Spot+Scrub integration.
 
-**v0.3.0 — per-room planning, live cleaning and dock status, and consumables monitoring.**
+**v0.3.1 — per-room planning, live cleaning and dock status, and consumables monitoring.**
 
 ## Requirements
 
@@ -74,6 +74,10 @@ When updating a manual install, replace that same JavaScript file and hard-refre
 
 Install the card from HACS and use HACS to update it. HACS registers the dashboard resource automatically when resources are managed in the Home Assistant UI. If your resources are managed in YAML, add the installed card's resource URL to the `lovelace.resources` list instead. To add the card to a dashboard, open the dashboard, choose **Edit dashboard → Add card**, search for **Dyson Cleaning Planner**, then select your vacuum and options in the card editor. No YAML is needed for the usual card setup.
 
+## Dashboard layout
+
+In the card editor's **Layout** tab, the default height is automatic and the minimum width is 9 columns. Turn off **Auto height** to choose a fixed height. If the content exceeds that height, scroll inside the card to reach all settings and controls. Turn Auto height back on to restore the natural content height. The internal layout remains unchanged.
+
 ## Card options
 
 The usual setup can be done in the visual editor: open the dashboard, choose **Edit dashboard**, then edit the Dyson Cleaning Planner card. The options below are also available in that card's YAML editor; they do not belong in Home Assistant's `configuration.yaml`.
@@ -91,7 +95,7 @@ The usual setup can be done in the visual editor: open the dashboard, choose **E
 | `camera_entity` | Optional explicit camera on the same Dyson device |
 | `camera_rotation` | `0`, `90`, `180`, or `270` degrees |
 
-Old `mode_entity` and `start_entity` configuration keys are accepted for compatibility, but the v0.3.0 card does not use global mode or start-button entities to execute a run.
+Old `mode_entity` and `start_entity` configuration keys are accepted for compatibility, but the v0.3.1 card does not use global mode or start-button entities to execute a run.
 
 ## Development
 
