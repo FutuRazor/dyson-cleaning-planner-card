@@ -2,7 +2,7 @@
 
 A Home Assistant Lovelace card for the Dyson Spot+Scrub integration.
 
-**v0.2.3 — mode-aware room settings and live Pause/Resume controls.**
+**v0.3.0 — per-room planning, live cleaning and dock status, and consumables monitoring.**
 
 ## Requirements
 
@@ -31,11 +31,13 @@ The card checks action availability. It does not fall back to individual select 
   </tr>
 </table>
 
+[Try the interactive preview](https://futurazor.github.io/dyson-cleaning-planner-card/preview/index.html) with simulated Home Assistant entities. No robot is connected.
+
 ## Editing and cleaning
 
-Choose rooms and set each room's cleaning mode, Vacuum Power, water level, and mop repetitions. The card keeps edits as a local draft until you save or start. **Save settings** sends changed options without starting a clean; **Start clean** sends the selected rooms and their changed options together. The integration currently does not guarantee the order in which rooms are cleaned. Drafts are lost if the card is reloaded before saving or starting.
+Choose rooms and set each room's cleaning mode, Vacuum Power, water level, and Clean repetitions. The card keeps edits as a local draft until you save or start. **Save settings** sends changed options without starting a clean; **Start clean** sends the selected rooms and their changed options together. The integration currently does not guarantee the order in which rooms are cleaned. Drafts are lost if the card is reloaded before saving or starting.
 
-Settings that do not apply to the selected cleaning mode are hidden. **Always show all settings** keeps them visible; unavailable options can be shown disabled or hidden.
+Clean repetitions is available in every cleaning mode when the integration provides the setting. Water level is hidden in Vacuum mode, and Vacuum Power is hidden in Mop mode. **Always show all settings** keeps them visible; unavailable options can be shown disabled or hidden.
 
 ## Discovery
 
@@ -89,7 +91,7 @@ The usual setup can be done in the visual editor: open the dashboard, choose **E
 | `camera_entity` | Optional explicit camera on the same Dyson device |
 | `camera_rotation` | `0`, `90`, `180`, or `270` degrees |
 
-Old `mode_entity` and `start_entity` configuration keys are accepted for compatibility, but the v0.2.3 card does not use global mode or start-button entities to execute a run.
+Old `mode_entity` and `start_entity` configuration keys are accepted for compatibility, but the v0.3.0 card does not use global mode or start-button entities to execute a run.
 
 ## Development
 

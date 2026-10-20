@@ -29,8 +29,12 @@ try {
   await room.locator('[data-expand]').click();
   const mode = room.locator('[data-setting="cleaning_mode"]');
   const keys = () => room.locator('[data-setting]').evaluateAll(els => els.map(el => el.dataset.setting));
-  assert.deepEqual(await keys(), ['cleaning_mode', 'cleaning_strategy']);
+  assert.deepEqual(await keys(), ['cleaning_mode', 'cleaning_strategy', 'mop_repetitions']);
   assert.equal(await room.getByLabel('Vacuum Power', { exact: false }).count(), 1);
+  assert.doesNotMatch(await card.innerText(), /Not selected/);
+  assert.equal(await room.getByLabel('Clean repetitions', { exact: false }).count(), 1);
+  await room.locator('[data-setting="mop_repetitions"]').selectOption('Two Passes');
+  assert.equal(await page.evaluate(() => demo.card.settingDraft[10].mop_repetitions), 'Two Passes');
   await mode.selectOption('Mop');
   assert.deepEqual(await keys(), ['cleaning_mode', 'water_level', 'mop_repetitions']);
   await room.locator('[data-setting="water_level"]').selectOption('High');
@@ -104,5 +108,5 @@ try {
   await page.locator('[data-phase="DRYING_MOP"]').click();
   await page.screenshot({ path: 'artifacts/drying-status-preview.png', fullPage: true });
   assert.deepEqual(errors, []);
-  console.log('v0.2.3 UI checks passed: live title/caret, mode visibility, override, retained drafts, session colors/actions, caption placement and persistent map.');
+  console.log('v0.3.0 UI checks passed: live title/caret, mode visibility, override, retained drafts, session colors/actions, caption placement and persistent map.');
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }
