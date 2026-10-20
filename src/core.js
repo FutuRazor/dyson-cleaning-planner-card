@@ -179,8 +179,20 @@ export function cleaningView(hass, entity, pendingStart = false) {
   return { active: true, title: 'Waiting for robot status', detail: 'The robot is not reporting a ready state.', live: false };
 }
 
+// Display the integration's last confirmed sample; do not invent elapsed time.
+export function dryingRemainingTime(hass, entity) {
+  const state = hass?.states?.[entity];
+  if (hass?.connected === false || !available(state) || state.attributes?.dock_state !== 'DRYING_MOP') return null;
+  const seconds = state.attributes.drying_remaining_seconds;
+  if (!Number.isFinite(seconds) || seconds < 0) return null;
+  const minutes = Math.ceil(seconds / 60);
+  return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
+}
+
 export function canControl(hass, entity, action) {
   const state = hass?.states?.[entity];
+  if (action === 'cancel_drying') return !!(hass?.connected !== false && available(state) &&
+    state.attributes?.dock_state === 'DRYING_MOP' && hass.services?.[DOMAIN]?.cancel_drying);
   const feature = { pause: 4, start: 8192, return_to_base: 16 }[action];
   const allowedStates = { pause: ['cleaning'], start: ['paused'], return_to_base: ['cleaning', 'paused', 'returning', 'error'] }[action] ?? [];
   return !!(feature && hass?.connected !== false && available(state) &&
@@ -192,7 +204,7 @@ export function canControl(hass, entity, action) {
 export async function controlCleaning(hass, entity, action) {
   if (!canControl(hass, entity, action)) throw new Error('This action is not available for the current robot state.');
   // Queue cancellation belongs to the integration. Do not toggle room switches here.
-  await hass.callService('vacuum', action, { entity_id: entity });
+  await hass.callService(action === 'cancel_drying' ? DOMAIN : 'vacuum', action, { entity_id: entity });
 }
 
 export function fitMap(width, height, boxWidth, rotation) {

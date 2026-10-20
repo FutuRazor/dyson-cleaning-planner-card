@@ -33,9 +33,11 @@ const card = document.querySelector('#card');
 card.setConfig({ type: 'custom:dyson-cleaning-planner-card', entity: f.entity });
 card.hass = f.hass;
 window.demo = { ...f, card };
+f.hass.services.dyson_spot_scrub.cancel_drying = {};
 const original = f.hass.callService;
 f.hass.callService = async (...args) => {
  await new Promise(r => setTimeout(r, 80)); await original(...args);
+ if (args[0] === 'dyson_spot_scrub' && args[1] === 'cancel_drying') f.hass.states[f.entity].attributes.dock_state = 'IDLE';
  if (args[1] === 'start_rooms_with_settings') f.hass.states[f.entity].state = 'cleaning';
  if (args[0] === 'vacuum' && args[1] === 'return_to_base') f.hass.states[f.entity].state = 'returning';
  if (args[0] === 'vacuum' && args[1] === 'pause') f.hass.states[f.entity].state = 'paused';
@@ -49,6 +51,7 @@ document.querySelector('#docked').onclick = () => { f.hass.states[f.entity].attr
 document.querySelectorAll('[data-phase]').forEach(button => button.onclick = () => {
  f.hass.states[f.entity].state = 'docked';
  f.hass.states[f.entity].attributes.dock_state = button.dataset.phase;
+ if (button.dataset.phase === 'DRYING_MOP') Object.assign(f.hass.states[f.entity].attributes, { drying_total_seconds: 14400, drying_remaining_seconds: 6000, drying_updated_at: new Date().toISOString() });
  card.hass = { ...f.hass };
 });
 document.querySelectorAll('[data-mode]').forEach(button => button.onclick = () => {

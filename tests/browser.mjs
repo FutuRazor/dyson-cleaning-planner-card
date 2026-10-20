@@ -23,7 +23,7 @@ try {
   assert.equal(await card.locator('[data-move]').count(), 0, 'room settings do not contain display-order controls');
   assert.equal(await card.locator('.hint').count(), 0, 'the preferred-sequence hint is removed');
   assert.equal((await card.locator('.notice').allTextContents()).some(text => text.includes('Editing sends no commands')), false, 'the editing explanation is removed');
-  assert.equal(await card.locator('.tag').innerText(), 'v0.3.1');
+  assert.equal(await card.locator('.tag').innerText(), 'v0.3.2');
   assert.equal(await card.locator('.battery-value').innerText(), '100%');
   assert.equal(await card.locator('.battery-bolt').isVisible(), true);
   assert.equal(await card.locator('.battery').getAttribute('data-level'), 'high');
@@ -63,7 +63,7 @@ try {
   await card.locator('[data-setting="mop_repetitions"]').nth(0).selectOption('Two Passes');
   assert.equal(imageRequests, 0, 'planner does not fetch the camera');
   await mkdir(new URL('../artifacts/', import.meta.url), { recursive: true });
-  await shot('planner-v0.3.1');
+  await shot('planner-v0.3.2');
   await page.evaluate(() => { demo.hass.states[demo.ids[4]].state = 'unavailable'; demo.card.hass = { ...demo.hass }; });
   await page.evaluate(() => {
     demo.previewService = demo.hass.callService;
@@ -101,7 +101,7 @@ try {
     assert.equal(await card.locator('.requested li').count(), 2);
   }
   await page.evaluate(() => { demo.hass.states[demo.battery].state = '78'; demo.hass.states[demo.charging].state = 'off'; demo.card.hass = { ...demo.hass }; });
-  await shot('cleaning-desktop-v0.3.1');
+  await shot('cleaning-desktop-v0.3.2');
   const beforeControl = await page.evaluate(() => demo.calls.length);
   await card.locator('[data-control="pause"]').click();
   await page.waitForFunction(() => !demo.card.controlBusy);
@@ -149,7 +149,7 @@ try {
   await page.setViewportSize({ width: 390, height: 844 });
   assert.equal(await card.locator('.requested li').count(), 2);
   await page.locator('#settings').click();
-  await shot('cleaning-mobile-rotated-v0.3.1');
+  await shot('cleaning-mobile-rotated-v0.3.2');
   await map.scrollIntoViewIfNeeded();
   await page.route('**/preview/map.svg*', route => route.fulfill({ status: 503, body: 'Unavailable' }));
   await page.waitForFunction(() => demo.map.caption.textContent.includes('Showing the last received image.'), null, { timeout: 10000 });

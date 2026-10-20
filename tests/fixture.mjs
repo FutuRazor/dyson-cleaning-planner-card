@@ -57,7 +57,7 @@ export function batchFixture() {
   f.hass.callService = async (domain, service, data) => {
     await original(domain, service, data);
     if (domain !== 'dyson_spot_scrub') return;
-    for (const [id, settings] of Object.entries(data.room_settings)) {
+    for (const [id, settings] of Object.entries(data.room_settings ?? {})) {
       for (const [key, value] of Object.entries(settings)) f.hass.states[f.fields[id][key]].state = value;
     }
   };
