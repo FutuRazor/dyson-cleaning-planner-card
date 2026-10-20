@@ -107,6 +107,32 @@ try {
   await page.screenshot({ path: 'artifacts/session-status-preview.png', fullPage: true });
   await page.locator('[data-phase="DRYING_MOP"]').click();
   await page.screenshot({ path: 'artifacts/drying-status-preview.png', fullPage: true });
+  assert.equal(await card.locator('.activity-remaining').innerText(), 'Remaining time: 01:40 (hh:mm)');
+  assert.equal(await card.locator('.cancel-drying').isEnabled(), true);
+  const draftBeforeCancel = await page.evaluate(() => JSON.stringify(demo.card.settingDraft));
+  await page.evaluate(() => {
+    demo.hass.callService = async (domain, service, data) => {
+      demo.calls.push({ domain, service, data });
+      await new Promise(resolve => { demo.releaseCancel = resolve; });
+    };
+    demo.card.hass = { ...demo.hass };
+  });
+  await card.locator('.cancel-drying').click();
+  assert.equal(await card.locator('.cancel-drying').isDisabled(), true);
+  assert.deepEqual(await page.evaluate(() => demo.calls.at(-1)), { domain: 'dyson_spot_scrub', service: 'cancel_drying', data: { entity_id: 'vacuum.kuche_dyson_spot_scrub' } });
+  await page.evaluate(() => demo.releaseCancel());
+  await page.waitForFunction(() => !demo.card.controlBusy);
+  assert.equal(await card.locator('.activity-text').innerText(), 'Drying mop roller');
+  assert.equal(await page.evaluate(() => JSON.stringify(demo.card.settingDraft)), draftBeforeCancel);
+  await page.evaluate(() => {
+    delete demo.hass.states[demo.entity].attributes.drying_remaining_seconds;
+    delete demo.hass.services.dyson_spot_scrub.cancel_drying;
+    demo.card.hass = { ...demo.hass };
+  });
+  assert.equal(await card.locator('.activity-remaining').innerText(), 'Remaining time: unavailable');
+  assert.equal(await card.locator('.cancel-drying').isDisabled(), true);
+  await page.locator('#docked').click();
+  assert.equal(await card.locator('.activity-status').isVisible(), false);
   assert.deepEqual(errors, []);
-  console.log('v0.3.1 UI checks passed: live title/caret, mode visibility, override, retained drafts, session colors/actions, caption placement and persistent map.');
+  console.log('v0.3.2 UI checks passed: live title/caret, mode visibility, override, retained drafts, session colors/actions, caption placement and persistent map.');
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }

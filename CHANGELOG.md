@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.3.2
+
+- Enable the drying cancel button when the integration exposes `cancel_drying`.
+- Show robot-reported remaining drying time as a small muted hh:mm subtitle.
+- Preserve local drafts and wait for telemetry to confirm cancellation; missing timing data is shown as unavailable.
+
 ## v0.3.1
 
 - Raise the default minimum dashboard width to 9 columns.

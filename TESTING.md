@@ -1,4 +1,4 @@
-# Testing v0.3.1
+# Testing v0.3.2
 
 ## Automated checks
 
@@ -10,7 +10,7 @@ Run `node --test tests/*.test.mjs`, `node scripts/build.mjs` and `node tests/bro
 
 ## Real Home Assistant checklist
 
-1. Confirm the card header is v0.3.1 and both new Dyson actions exist.
+1. Confirm the card header is v0.3.2 and both new Dyson actions exist.
 2. Type a title without pressing Enter; confirm immediate preview updates and stable cursor position. Expand two rooms. Confirm unselected rooms have no Not selected suffix. Select Clean repetitions in every cleaning mode, including Vacuum. Check mode-dependent visibility and enable Always show all settings to inspect all four dropdowns.
 3. Change several options. HA entities and the robot must remain unchanged during editing. Only the edited room should change in the card.
 4. Click Save settings. Confirm one `save_room_settings` action carries all changes, HA reflects the values, and cleaning does not start. The card's room selection must remain selected.
@@ -29,7 +29,7 @@ HA value confirmation means the integration has updated its states. It is not pr
 - Compare Vacuuming/Mopping against the vacuum entity's `full_clean_action`; missing or unknown phases should show Cleaning, not the configured mode.
 - After docking, check Washing, Drying and Dust collection messages above the planner rooms. Confirm they disappear at `dock_state: IDLE`.
 - Start must be enabled during drying when a room is selected, and disabled during washing and dust collection. Locally edited settings must survive status changes.
-- The drying cancel icon is intentionally disabled. No countdown or cancellation service is implemented yet.
+- Verify Remaining time updates from drying_remaining_seconds, including 0 and missing values. Cancel drying must call dyson_spot_scrub.cancel_drying exactly once with the selected vacuum; it stays disabled without that service or during a request. The dock status must remain unchanged until new telemetry arrives.
 - Confirm real faults and unavailable/disconnected states remain visible even when a dock attribute is present.
 
 ## Single-room session badges
