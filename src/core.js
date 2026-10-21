@@ -189,6 +189,14 @@ export function dryingRemainingTime(hass, entity) {
   return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
 }
 
+// Fraction of the configured drying duration still remaining, from confirmed telemetry.
+export function dryingRemainingPercent(hass, entity) {
+  if (dryingRemainingTime(hass, entity) === null) return null;
+  const { drying_total_seconds: total, drying_remaining_seconds: remaining } = hass.states[entity].attributes;
+  if (!Number.isFinite(total) || total <= 0 || remaining > total) return null;
+  return remaining / total * 100;
+}
+
 export function canControl(hass, entity, action) {
   const state = hass?.states?.[entity];
   if (action === 'cancel_drying') return !!(hass?.connected !== false && available(state) &&

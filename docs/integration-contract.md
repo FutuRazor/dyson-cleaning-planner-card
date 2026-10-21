@@ -1,4 +1,4 @@
-# v0.3.2 integration contract
+# v0.3.3 integration contract
 
 The frontend holds only a local draft. The integration translates option labels into Dyson array values.
 
@@ -38,7 +38,7 @@ The integration writes preferences once, then issues its existing protocol start
 
 Entities must belong to the same Dyson device and platform. Room switch registry unique IDs identify per-room select registry prefixes; their `room_id` attributes supply the native map ID. The card uses option labels exactly as reported by HA. Native IDs are map-scoped, so remapping requires fresh drafts.
 
-Missing actions produce a clear message and never trigger a legacy fallback. Missing options are disabled or hidden. Duplicate/ambiguous room IDs and invalid edited options are rejected before the action. The original legacy adapter remains in the source for regression coverage but is not called by the v0.3.2 UI.
+Missing actions produce a clear message and never trigger a legacy fallback. Missing options are disabled or hidden. Duplicate/ambiguous room IDs and invalid edited options are rejected before the action. The original legacy adapter remains in the source for regression coverage but is not called by the v0.3.3 UI.
 
 ## Known integration limits
 
@@ -50,8 +50,11 @@ The supplied save implementation merges with cached robot preferences. Concurren
 When `dock_state` is `DRYING_MOP`, the card displays the vacuum attribute
 `drying_remaining_seconds` as hours and minutes, rounded up to the next minute.
 It shows the last reported sample and does not run a speculative countdown.
-Missing or invalid values display Unavailable. `drying_total_seconds` and
-`drying_updated_at` are reserved for later progress/countdown displays.
+Missing or invalid values display Unavailable. The remaining-time bar uses
+`100 * drying_remaining_seconds / drying_total_seconds`. Both must be finite
+numbers, total must be positive, and remaining must be between zero and total.
+Otherwise the bar is hidden. `drying_updated_at` remains reserved for a future
+countdown; this version displays confirmed samples only.
 
 The cancel button requires a connected, available vacuum and the registered
 `dyson_spot_scrub.cancel_drying` action. It sends `{entity_id: <configured vacuum>}`
