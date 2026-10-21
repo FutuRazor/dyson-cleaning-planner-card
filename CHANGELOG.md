@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.3.3
+
+- Close room-setting dropdowns after selection on iOS by releasing focus before rendering.
+- Preserve the planner's scroll position when selecting rooms, expanding settings or changing options in a fixed-height card.
+- Keep the original session rendering path and start at the top when switching between planner and cleaning views.
+- Show a theme-colored remaining drying time bar below the subtitle, ending before the cancel button. Use confirmed remaining/total seconds and hide the bar when timing data is missing or invalid.
+- Validated the combined changes on multiple devices in a live Home Assistant installation.
+
 ## v0.3.2
 
 - Enable the drying cancel button when the integration exposes `cancel_drying`.

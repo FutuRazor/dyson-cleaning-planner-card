@@ -2,7 +2,7 @@
 
 A Home Assistant Lovelace card for the Dyson Spot+Scrub integration.
 
-**v0.3.2 — per-room planning, live cleaning and dock status, and consumables monitoring.**
+**v0.3.3 — per-room planning, live cleaning and dock status, and consumables monitoring.**
 
 ## Requirements
 
@@ -51,6 +51,8 @@ The session header stays **Cleaning session**, with live activity below it and r
 
 After docking, the planner shows **Cleaning mop roller**, **Drying mop roller**, or **Emptying dust bin** above the rooms, based on `dock_state`. The message disappears when the dock becomes idle. Start is available during roller drying: the integration ends drying when starting the new clean. Start remains disabled during roller washing and dust collection; local planning remains available. During drying, a muted subtitle shows **Remaining time: 01:40 (hh:mm)** from the integration’s `drying_remaining_seconds` attribute. It updates with robot telemetry (roughly once per minute); missing data shows **Remaining time: unavailable**. The cancel icon calls `dyson_spot_scrub.cancel_drying` for the selected vacuum when that action is available. The card waits for the real dock status to change and does not assume cancellation succeeded. Robot errors remain visible.
 
+During roller drying, a bar below the remaining-time subtitle shows the fraction of drying time still remaining. It uses the card's accent color and stops before the cancel button. The bar updates with robot telemetry and is hidden if total or remaining time is invalid or unavailable.
+
 ## Install or update for testing
 
 ### Manual installation
@@ -78,6 +80,8 @@ Install the card from HACS and use HACS to update it. HACS registers the dashboa
 
 In the card editor's **Layout** tab, the default height is automatic and the minimum width is 9 columns. Turn off **Auto height** to choose a fixed height. If the content exceeds that height, scroll inside the card to reach all settings and controls. Turn Auto height back on to restore the natural content height. The internal layout remains unchanged.
 
+In a fixed-height card, selecting rooms, expanding settings and changing options preserve the planner's scroll position. Switching between planner and cleaning views starts at the top. Room-setting dropdowns close after a selection, including on iOS.
+
 ## Card options
 
 The usual setup can be done in the visual editor: open the dashboard, choose **Edit dashboard**, then edit the Dyson Cleaning Planner card. The options below are also available in that card's YAML editor; they do not belong in Home Assistant's `configuration.yaml`.
@@ -95,7 +99,7 @@ The usual setup can be done in the visual editor: open the dashboard, choose **E
 | `camera_entity` | Optional explicit camera on the same Dyson device |
 | `camera_rotation` | `0`, `90`, `180`, or `270` degrees |
 
-Old `mode_entity` and `start_entity` configuration keys are accepted for compatibility, but the v0.3.2 card does not use global mode or start-button entities to execute a run.
+Old `mode_entity` and `start_entity` configuration keys are accepted for compatibility, but the v0.3.3 card does not use global mode or start-button entities to execute a run.
 
 ## Development
 
