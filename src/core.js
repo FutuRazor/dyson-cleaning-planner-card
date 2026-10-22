@@ -91,7 +91,7 @@ export async function sendRoomDraft({ hass, model, config, selected = [], draft 
   const vacuum = hass.states[config.entity];
   if (!available(vacuum)) throw new Error('The robot is unavailable.');
   if (start && !['docked', 'idle'].includes(vacuum.state)) throw new Error('Start is only available when the Dyson is ready (docked or idle).');
-  if (start && dockBlocksStart(hass, config.entity)) throw new Error('Wait for the dock cycle to finish before starting a clean.');
+  if (start && startBlockReason(hass, config.entity)) throw new Error(startBlockReason(hass, config.entity));
   const byId = new Map();
   for (const room of model.rooms) {
     if (!room.roomId) continue;
@@ -144,6 +144,24 @@ export function dockBlocksStart(hass, entity) {
   return dockBusy(hass, entity) && hass.states[entity].attributes.dock_state !== 'DRYING_MOP';
 }
 
+// Prefer the integration's explicit veto; keep legacy dock checks as fallback.
+export function startBlockReason(hass, entity) {
+  const attrs = hass?.states?.[entity]?.attributes ?? {};
+  if (attrs.ready_to_start === false) {
+    return {
+      disconnected: 'Robot disconnected',
+      robot_fault: 'Robot needs attention',
+      washing_mop: 'Cleaning mop roller',
+      emptying_bin: 'Emptying dust bin',
+      mapping_or_navigation: 'Mapping / navigation in progress',
+      returning_or_finishing: 'Returning to dock / finishing cleanup',
+      cleaning_job_active: 'A cleaning job is still active',
+      waiting_for_ready_state: 'Waiting for the robot to be ready'
+    }[attrs.start_block_reason] ?? 'The integration is not ready to start a new clean';
+  }
+  return dockBlocksStart(hass, entity) ? 'Wait for the dock cycle to finish before starting a clean' : null;
+}
+
 // Report live telemetry, never the selected mode or the colours of old map paths.
 export function activityStatus(hass, entity, pendingStart = false) {
   const state = hass?.states?.[entity];
@@ -161,6 +179,8 @@ export function activityStatus(hass, entity, pendingStart = false) {
     return result(modes[state.attributes?.full_clean_action] ?? 'Cleaning');
   }
   if (state.state === 'returning') return result('Returning / mapping', 'mdi:home-import-outline');
+  const blocked = startBlockReason(hass, entity);
+  if (blocked) return result(blocked, 'mdi:timer-sand');
   return view.active ? result(view.title) : null;
 }
 

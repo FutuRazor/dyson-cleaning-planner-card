@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.3.4
+
+- Honor the integration's `ready_to_start` veto before starting a clean and show its reason below the header.
+- Keep Start disabled while returning or finishing cleanup, washing the mop roller, or emptying the dust bin. Allow planning and preserve local drafts throughout these phases.
+- Allow starting during roller drying when the integration permits it. Retain dock-state checks for older integrations without readiness attributes.
+- Validated return status and start availability after dust collection and roller washing in live Home Assistant tests using the v0.3.3a test build.
+
 ## v0.3.3
 
 - Close room-setting dropdowns after selection on iOS by releasing focus before rendering.

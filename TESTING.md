@@ -1,4 +1,4 @@
-# Testing v0.3.3
+# Testing v0.3.4
 
 ## Automated checks
 
@@ -8,6 +8,12 @@
 
 Run `node --test tests/*.test.mjs`, `node scripts/build.mjs` and `node tests/browser.mjs` , `node tests/batch-browser.mjs` and `node tests/ui-browser.mjs` with Playwright available. These checks do not contact a real robot.
 
+## Start readiness
+
+Run `node tests/start-readiness-browser.mjs` with Playwright and Edge available. It checks return, washing, dust collection, drying and ready transitions, start-button availability, draft retention, and the older-integration fallback.
+
+The v0.3.3a test build was verified in live Home Assistant: return status appeared, Start stayed disabled through the return and station cleanup, and became available after dust collection or roller washing. Mapping has not been tested on the real robot; its reason label is supported when reported by the integration.
+
 ## Real Home Assistant checklist
 
 - Regression coverage: run `node tests/scroll-browser.mjs` and `node tests/layout-browser.mjs` with Playwright and Edge available. These verify fixed-height scrolling, view transitions, loading during a clean, and the drying bar's spacing at several widths.
@@ -15,7 +21,7 @@ Run `node --test tests/*.test.mjs`, `node scripts/build.mjs` and `node tests/bro
 - Recheck scroll retention after room selection, expanding/collapsing settings and changing modes. Verify each view transition starts at the top, including reloading during an active clean.
 - During drying, verify the bar shrinks with remaining time, ends before Cancel and disappears without valid total/remaining values. Confirm 0 remaining yields an empty bar without inferring the dock is idle.
 
-1. Confirm the card header is v0.3.3 and both new Dyson actions exist.
+1. Confirm the card header is v0.3.4 and both new Dyson actions exist.
 2. Type a title without pressing Enter; confirm immediate preview updates and stable cursor position. Expand two rooms. Confirm unselected rooms have no Not selected suffix. Select Clean repetitions in every cleaning mode, including Vacuum. Check mode-dependent visibility and enable Always show all settings to inspect all four dropdowns.
 3. Change several options. HA entities and the robot must remain unchanged during editing. Only the edited room should change in the card.
 4. Click Save settings. Confirm one `save_room_settings` action carries all changes, HA reflects the values, and cleaning does not start. The card's room selection must remain selected.

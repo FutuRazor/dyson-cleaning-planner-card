@@ -134,5 +134,5 @@ try {
   await page.locator('#docked').click();
   assert.equal(await card.locator('.activity-status').isVisible(), false);
   assert.deepEqual(errors, []);
-  console.log('v0.3.3 UI checks passed: live title/caret, mode visibility, override, retained drafts, session colors/actions, caption placement and persistent map.');
+  console.log('v0.3.4 UI checks passed: live title/caret, mode visibility, override, retained drafts, session colors/actions, caption placement and persistent map.');
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }
