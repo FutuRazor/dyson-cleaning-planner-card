@@ -24,6 +24,7 @@ class DysonCleaningPlannerEditor extends DysonRegistryElement {
     });
     this.shadowRoot.addEventListener('click', event => {
       const el = event.target.closest('button');
+      if (el?.dataset.action === 'refresh') { this.loadRegistry(true); return; }
       if (!el?.dataset.order) return;
       const ids = this.model.rooms.filter(r => r.entity).map(r => r.entity);
       const i = ids.indexOf(el.dataset.order), j = i + Number(el.dataset.direction);
@@ -62,6 +63,7 @@ class DysonCleaningPlannerEditor extends DysonRegistryElement {
       <label>Map rotation<select data-key="camera_rotation" data-focus="camera-rotation">${[0, 90, 180, 270].map(deg => `<option value="${deg}" ${(config.camera_rotation ?? 0) === deg ? 'selected' : ''}>${deg}°</option>`).join('')}</select></label>
       <h3>Rooms in this card</h3><p>Choose which rooms to show. Arrows change the display order, not the robot cleaning order.</p>
       ${this.model.rooms.map((r, i) => `<div class="entry"><label><input type="checkbox" data-focus="include-${i}" data-include="${h(r.entity)}" ${!r.excluded ? 'checked' : ''} ${!r.entity ? 'disabled' : ''}>${h(r.name)}</label><button data-order="${h(r.entity)}" data-direction="-1" ${i === 0 ? 'disabled' : ''} aria-label="Move ${h(r.name)} up">↑</button><button data-order="${h(r.entity)}" data-direction="1" ${i === this.model.rooms.length - 1 ? 'disabled' : ''} aria-label="Move ${h(r.name)} down">↓</button></div>`).join('')}
+      <button data-action="refresh" data-focus="refresh-rooms">Refresh rooms</button>
       <p class="notice">Rooms disabled in Home Assistant are not offered. New rooms appear automatically.</p><p class="notice error">${h(this.registryError || this.model.issues.join(' '))}</p>`);
   }
 }

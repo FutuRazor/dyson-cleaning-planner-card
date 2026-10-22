@@ -2,7 +2,7 @@
 
 A Home Assistant Lovelace card for the Dyson Spot+Scrub integration.
 
-**v0.3.4 — per-room planning, live cleaning and dock status, and consumables monitoring.**
+**v0.3.5 — per-room planning, live cleaning and dock status, and consumables monitoring.**
 
 ## Requirements
 
@@ -37,11 +37,13 @@ The card checks action availability. It does not fall back to individual select 
 
 Choose rooms and set each room's cleaning mode, Vacuum Power, water level, and Clean repetitions. The card keeps edits as a local draft until you save or start. **Save settings** sends changed options without starting a clean; **Start clean** sends the selected rooms and their changed options together. The integration currently does not guarantee the order in which rooms are cleaned. Drafts are lost if the card is reloaded before saving or starting.
 
+Use the trash icon beside **Local draft** to discard unsaved settings and restore the room selection reported by Home Assistant. The icon only appears when a local draft exists.
+
 Clean repetitions is available in every cleaning mode when the integration provides the setting. Water level is hidden in Vacuum mode, and Vacuum Power is hidden in Mop mode. **Always show all settings** keeps them visible; unavailable options can be shown disabled or hidden.
 
 ## Discovery
 
-The card finds rooms and settings belonging to the selected Dyson vacuum, using the integration's room IDs rather than guessing from room names. It also finds that device's battery and charging sensors. Missing or ambiguous entities are skipped. If the robot's map changes, refresh the rooms and review any explicit room mappings or exclusions.
+The card finds rooms and settings belonging to the selected Dyson vacuum, using the integration's room IDs rather than guessing from room names. It also finds that device's battery and charging sensors. Missing or ambiguous entities are skipped. If the robot's map changes, use **Refresh rooms** below the room order in the card editor and review any explicit room mappings or exclusions. Discovery also refreshes automatically every 30 seconds.
 
 ## During a clean
 
@@ -49,7 +51,7 @@ During a clean, the card shows the live robot state and optional camera instead 
 
 The session header stays **Cleaning session**, with live activity below it and requested-room badges underneath. When provided by the integration, `full_clean_action` identifies vacuuming, mopping, or both. Otherwise the card shows **Cleaning**.
 
-After docking, the planner shows **Cleaning mop roller**, **Drying mop roller**, or **Emptying dust bin** above the rooms, based on `dock_state`. The message disappears when the dock becomes idle. Start is available during roller drying: the integration ends drying when starting the new clean. Start follows the integration’s `ready_to_start` attribute and remains disabled during return/cleanup, roller washing and dust collection; local planning remains available. The reason appears below the header. Older integrations without readiness attributes retain dock-state checks but cannot reliably block the return/cleanup interval. During drying, a muted subtitle shows **Remaining time: 01:40 (hh:mm)** from the integration’s `drying_remaining_seconds` attribute. It updates with robot telemetry (roughly once per minute); missing data shows **Remaining time: unavailable**. The cancel icon calls `dyson_spot_scrub.cancel_drying` for the selected vacuum when that action is available. The card waits for the real dock status to change and does not assume cancellation succeeded. Robot errors remain visible.
+After docking, the planner shows **Cleaning mop roller**, **Drying mop roller**, or **Emptying dust bin** above the rooms, based on `dock_state`. The message disappears when the dock becomes idle. Start is available during roller drying: the integration ends drying when starting the new clean. Start follows the integration’s `ready_to_start` attribute and remains disabled during return/cleanup, roller washing and dust collection; local planning remains available. The reason appears below the header. Older integrations without readiness attributes retain dock-state checks but cannot reliably block the return/cleanup interval. During drying, a muted subtitle shows **Remaining time: 01:40 (hh:mm)** from the integration’s `drying_remaining_seconds` attribute. It updates with robot telemetry (roughly once per minute); missing data shows **Remaining time: unavailable**. The cancel icon calls `dyson_spot_scrub.cancel_drying` for the selected vacuum when that action is available. The card waits for the real dock status to change and does not assume cancellation succeeded. Robot errors remain visible. When the integration provides a fault description, it appears beneath **Robot needs attention**. The card follows the current reported fault and does not retain cleared errors.
 
 During roller drying, a bar below the remaining-time subtitle shows the fraction of drying time still remaining. It uses the card's accent color and stops before the cancel button. The bar updates with robot telemetry and is hidden if total or remaining time is invalid or unavailable.
 
@@ -99,7 +101,7 @@ The usual setup can be done in the visual editor: open the dashboard, choose **E
 | `camera_entity` | Optional explicit camera on the same Dyson device |
 | `camera_rotation` | `0`, `90`, `180`, or `270` degrees |
 
-Old `mode_entity` and `start_entity` configuration keys are accepted for compatibility, but the v0.3.4 card does not use global mode or start-button entities to execute a run.
+Old `mode_entity` and `start_entity` configuration keys are accepted for compatibility, but the v0.3.5 card does not use global mode or start-button entities to execute a run.
 
 ## Development
 

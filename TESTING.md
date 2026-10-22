@@ -1,4 +1,8 @@
-# Testing v0.3.4
+# Testing v0.3.5
+
+## v0.3.5 acceptance
+
+The user confirmed the fault subtitle and relocated controls in live Home Assistant with the v0.3.4a/b test builds. Check that the discard icon is visible only with a draft, preserves the summary row height and sends no robot command. Refresh rooms is below room ordering in the visual editor and refreshes the preview without changing room order, exclusions or draft settings. Fault subtitles disappear with the active fault; status logic is unchanged.
 
 ## Automated checks
 
@@ -21,11 +25,11 @@ The v0.3.3a test build was verified in live Home Assistant: return status appear
 - Recheck scroll retention after room selection, expanding/collapsing settings and changing modes. Verify each view transition starts at the top, including reloading during an active clean.
 - During drying, verify the bar shrinks with remaining time, ends before Cancel and disappears without valid total/remaining values. Confirm 0 remaining yields an empty bar without inferring the dock is idle.
 
-1. Confirm the card header is v0.3.4 and both new Dyson actions exist.
+1. Confirm the card header is v0.3.5 and both new Dyson actions exist.
 2. Type a title without pressing Enter; confirm immediate preview updates and stable cursor position. Expand two rooms. Confirm unselected rooms have no Not selected suffix. Select Clean repetitions in every cleaning mode, including Vacuum. Check mode-dependent visibility and enable Always show all settings to inspect all four dropdowns.
 3. Change several options. HA entities and the robot must remain unchanged during editing. Only the edited room should change in the card.
 4. Click Save settings. Confirm one `save_room_settings` action carries all changes, HA reflects the values, and cleaning does not start. The card's room selection must remain selected.
-5. Change another setting, then Discard draft. Confirm no service call occurs and current HA values return.
+5. Change another setting, then use the trash icon beside Local draft. Confirm no service call occurs and current HA values return.
 6. Select one room and use Start clean. Confirm a single `start_rooms_with_settings` action contains the room ID and unsaved changes, with no individual select/switch/button calls.
 7. Check actual robot behavior and settings. Then try multiple rooms; do not assume transmitted list order guarantees execution order.
 8. Check the active view, camera rotation/disable, battery and Pause/Resume/Home. Queue cancellation and pause behavior are determined by the integration.
