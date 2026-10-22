@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.3.5
+
+- Show the integration's current fault explanation below Robot needs attention without changing fault handling, view transitions or start readiness.
+- Move Refresh rooms into the visual editor below room ordering. Refresh the connected card preview without changing configuration or local drafts.
+- Replace the planner's bottom button row with a compact discard icon before Local draft. Keep the summary row height unchanged; hide the icon without a draft and disable it during requests.
+- Validated both changes in live Home Assistant using the v0.3.4a and v0.3.4b test builds.
+
 ## v0.3.4
 
 - Honor the integration's `ready_to_start` veto before starting a clean and show its reason below the header.

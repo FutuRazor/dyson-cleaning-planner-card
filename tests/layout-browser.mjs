@@ -31,7 +31,7 @@ try {
   let size = await dimensions();
   assert.equal(size.height, 320);
   assert.ok(size.scroll > size.client);
-  await page.locator('#card [data-action="refresh"]').scrollIntoViewIfNeeded();
+  await page.locator('#card [data-action="start"]').scrollIntoViewIfNeeded();
   assert.ok(await page.locator('#card .planner-content').evaluate(el => el.scrollTop > 0));
   await page.locator('#card .consumables-info').click();
   assert.equal(await page.locator('#card .consumables-panel').isVisible(), true);
