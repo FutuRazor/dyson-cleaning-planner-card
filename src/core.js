@@ -352,3 +352,39 @@ export function consumableStatus(hass, registry, entity) {
     return { type, name, remaining, level: remaining === null ? 'unknown' : remaining <= 10 ? 'low' : remaining <= 25 ? 'medium' : 'high', text: remaining === null ? 'Unavailable' : `${remaining}% remaining` };
   });
 }
+
+
+export const STATION_FIELDS = [
+  ['hot_water_mopping', 'Hot water mopping', 'switch'],
+  ['cleaning_solution', 'Cleaning solution', 'switch'],
+  ['extended_roller_preparation', 'Extended roller preparation', 'switch'],
+  ['hot_water_self_cleaning', 'Hot water self-cleaning', 'switch'],
+  ['self_cleaning_frequency', 'Self-cleaning frequency', 'select'],
+  ['roller_drying_duration', 'Roller drying duration', 'select']
+];
+
+export function stationSettings(hass, registry, entity) {
+  const vacuum = registry.find(e => e.entity_id === entity && e.platform === DOMAIN && !e.disabled_by);
+  const serial = String(vacuum?.unique_id ?? '').replace(/_vacuum$/, '');
+  return STATION_FIELDS.map(([key, label, domain]) => {
+    const matches = vacuum?.device_id ? registry.filter(e => e.platform === DOMAIN && e.device_id === vacuum.device_id && !e.disabled_by && e.entity_id.startsWith(`${domain}.`) && e.unique_id === `${serial}_station_${key}`) : [];
+    const id = matches.length === 1 ? matches[0].entity_id : undefined;
+    const state = hass?.states?.[id];
+    const options = Array.isArray(state?.attributes?.options) ? state.attributes.options.filter(v => typeof v === 'string') : [];
+    const valid = domain === 'switch' ? ['on', 'off'].includes(state?.state) : options.includes(state?.state);
+    const service = domain === 'switch' ? hass?.services?.switch?.turn_on && hass?.services?.switch?.turn_off : hass?.services?.select?.select_option;
+    return { key, label, domain, entity: id, value: state?.state, options, available: hass?.connected !== false && available(state) && valid && !!service };
+  });
+}
+
+export async function changeStationSetting(hass, registry, entity, key, value) {
+  const field = stationSettings(hass, registry, entity).find(f => f.key === key);
+  if (!field?.available) throw new Error('This station setting is unavailable.');
+  if (field.domain === 'switch') {
+    if (typeof value !== 'boolean') throw new Error('Invalid station switch value.');
+    await hass.callService('switch', value ? 'turn_on' : 'turn_off', { entity_id: field.entity });
+  } else {
+    if (!field.options.includes(value)) throw new Error('Invalid station option.');
+    await hass.callService('select', 'select_option', { entity_id: field.entity, option: value });
+  }
+}

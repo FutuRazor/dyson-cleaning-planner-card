@@ -63,3 +63,19 @@ export function batchFixture() {
   };
   return f;
 }
+
+
+export function addStationFixture(f) {
+  const fields = [
+    ['hot_water_mopping', 'switch', 'on'], ['cleaning_solution', 'switch', 'off'],
+    ['extended_roller_preparation', 'switch', 'on'], ['hot_water_self_cleaning', 'switch', 'on'],
+    ['self_cleaning_frequency', 'select', 'After each room', ['After each room', 'Every 15 minutes', 'Every 30 minutes', 'Only as needed']],
+    ['roller_drying_duration', 'select', '3 hours', ['3 hours', '4 hours', '5 hours']]
+  ];
+  fields.forEach(([key, domain, value, options], i) => {
+    const id = `${domain}.renamed_station_${i}`;
+    f.registry.push({ entity_id: id, platform: 'dyson_spot_scrub', device_id: 'demo-device', unique_id: `DEMO_station_${key}` });
+    f.hass.states[id] = { state: value, attributes: options ? { options } : {} };
+  });
+  return f;
+}

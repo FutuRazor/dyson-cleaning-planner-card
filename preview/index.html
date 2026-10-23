@@ -3,7 +3,7 @@
 body{margin:0;background:#f1f4f6;color:#20272d;font-family:Arial,sans-serif;padding:28px 16px}main{max-width:580px;margin:auto}.demo{font-size:13px;line-height:1.6;margin:0 0 18px;color:#52616e}.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}button{padding:10px 14px;background:white;border:1px solid #ccd5db;border-radius:8px;cursor:pointer}body.dark{background:#14181d;color:#e9eef2;--primary-text-color:#e9eef2;--secondary-text-color:#abb8c4;--card-background-color:#20252b;--secondary-background-color:#292f36;--divider-color:#414953;--primary-color:#73d5f5;--text-primary-color:#09232e}.dark .demo{color:#abb8c4}#editor{margin-top:24px;padding:18px;border:1px solid #aaa;border-radius:14px}#log{white-space:pre-wrap;font-size:12px;overflow-wrap:anywhere}ha-icon::before{content:'◉';font-size:26px}
 </style></head><body><main><p class="demo">Interactive preview with simulated Home Assistant entities and a sample map. No robot connected.</p><div class="toolbar"><button id="theme">Light / Dark</button><button id="settings">Card editor</button><button id="offline">Toggle availability</button><button id="external">External clean</button><button id="docked">Docked</button><button data-phase="WASHING_MOP">Wash roller</button><button data-phase="DRYING_MOP">Dry roller</button><button data-phase="COLLECTING_DUST">Empty dust bin</button><button data-mode="VACUUMING">Vacuuming</button><button data-mode="MOPPING">Mopping</button></div><dyson-cleaning-planner-card id="card"></dyson-cleaning-planner-card><div id="editor" hidden></div><pre id="log"></pre></main><script type="module">
 import '../dist/dyson-cleaning-planner-card.js';
-import { batchFixture } from '../tests/fixture.mjs';
+import { batchFixture, addStationFixture } from '../tests/fixture.mjs';
 // Stand-in for Home Assistant's icon element, only used by this offline preview.
 customElements.define('ha-icon', class extends HTMLElement {
   connectedCallback() {
@@ -13,7 +13,7 @@ customElements.define('ha-icon', class extends HTMLElement {
 const darkHintStyle = document.createElement('style');
 darkHintStyle.textContent = 'body.dark{--warning-color:#f2b45d}';
 document.head.append(darkHintStyle);
-const f = batchFixture();
+const f = addStationFixture(batchFixture());
 // Consumables match the integration's sensor contract; no robot is contacted.
 for (const [i, type] of ['brushBar', 'mopRoller', 'sideBrushes', 'robotFilter', 'dockFilter', 'cleaningSolution'].entries()) {
  const id = `sensor.demo_consumable_${i}`;

@@ -30,7 +30,7 @@ try {
   assert.match(await card.locator('.consumables-rows').innerText(), /96% remaining/);
   assert.equal(await card.locator('.planner-content').evaluate(el => el.inert), true);
   await page.keyboard.press('Tab');
-  assert.equal(await card.locator('.consumables-close').evaluate(el => el === el.getRootNode().activeElement), true);
+  assert.equal(await card.locator('[data-info-tab=consumables]').evaluate(el => el === el.getRootNode().activeElement), true);
   await page.evaluate(() => {
     demo.hass.states['sensor.demo_consumable_4'].state = '0';
     demo.hass.states['sensor.demo_consumable_5'].state = 'refill_required';

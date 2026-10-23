@@ -1,5 +1,13 @@
 # Changelog
 
+## v0.3.6
+
+- Add Consumables and Station settings tabs to the Info overlay.
+- Detect four station switches and two selects by registry identity on the selected Dyson device; retain live option labels from Home Assistant.
+- Send station changes directly through HA switch/select actions, independently of room drafts. Disable missing or unavailable settings and show service errors without retrying.
+- Support keyboard navigation and focus containment in the tabbed overlay, retaining the consumables warning indicator.
+
+
 ## v0.3.5
 
 - Show the integration's current fault explanation below Robot needs attention without changing fault handling, view transitions or start readiness.
