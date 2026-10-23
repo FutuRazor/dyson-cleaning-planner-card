@@ -1,4 +1,4 @@
-# Testing v0.3.5
+# Testing v0.3.6
 
 ## v0.3.5 acceptance
 
@@ -25,7 +25,7 @@ The v0.3.3a test build was verified in live Home Assistant: return status appear
 - Recheck scroll retention after room selection, expanding/collapsing settings and changing modes. Verify each view transition starts at the top, including reloading during an active clean.
 - During drying, verify the bar shrinks with remaining time, ends before Cancel and disappears without valid total/remaining values. Confirm 0 remaining yields an empty bar without inferring the dock is idle.
 
-1. Confirm the card header is v0.3.5 and both new Dyson actions exist.
+1. Confirm the card header is v0.3.6 and both new Dyson actions exist.
 2. Type a title without pressing Enter; confirm immediate preview updates and stable cursor position. Expand two rooms. Confirm unselected rooms have no Not selected suffix. Select Clean repetitions in every cleaning mode, including Vacuum. Check mode-dependent visibility and enable Always show all settings to inspect all four dropdowns.
 3. Change several options. HA entities and the robot must remain unchanged during editing. Only the edited room should change in the card.
 4. Click Save settings. Confirm one `save_room_settings` action carries all changes, HA reflects the values, and cleaning does not start. The card's room selection must remain selected.
@@ -56,3 +56,7 @@ On the robot, start one room from this card and watch the badge through startup.
 ## Dashboard sizing
 
 Run `node tests/layout-browser.mjs` with Playwright available. In a real Sections dashboard, verify the 9-column minimum, automatic height, manual height with reachable controls, and restoring Auto height. Check the planner, active session and consumables overlay.
+
+## Station settings (v0.3.6)
+
+Run `node tests/station-browser.mjs` with Playwright and Edge available. Verify exact service targeting, live state updates, draft preservation, missing entities and service errors. On real hardware, check all six settings against the Dyson app; settings should update immediately without Save or Start. Check both tabs, keyboard navigation, mobile scrolling, and the low-consumables Info indicator. Hardware validation of the new station UI remains pending.

@@ -1,4 +1,4 @@
-# v0.3.5 integration contract
+# v0.3.6 integration contract
 
 The frontend holds only a local draft. The integration translates option labels into Dyson array values.
 
@@ -46,7 +46,7 @@ The card retains its existing dock-state checks, including on older integrations
 
 Entities must belong to the same Dyson device and platform. Room switch registry unique IDs identify per-room select registry prefixes; their `room_id` attributes supply the native map ID. The card uses option labels exactly as reported by HA. Native IDs are map-scoped, so remapping requires fresh drafts.
 
-Missing actions produce a clear message and never trigger a legacy fallback. Missing options are disabled or hidden. Duplicate/ambiguous room IDs and invalid edited options are rejected before the action. The original legacy adapter remains in the source for regression coverage but is not called by the v0.3.5 UI.
+Missing actions produce a clear message and never trigger a legacy fallback. Missing options are disabled or hidden. Duplicate/ambiguous room IDs and invalid edited options are rejected before the action. The original legacy adapter remains in the source for regression coverage but is not called by the v0.3.6 UI.
 
 ## Known integration limits
 
@@ -73,3 +73,7 @@ disabled. Errors remain visible and requests are not automatically retried.
 ## Fault descriptions
 
 When the displayed activity is Robot needs attention, the card shows a non-empty string from the vacuum attribute `fault` as a subtitle. It inserts this as plain text. Missing descriptions keep the generic message. The card neither interprets fault codes nor retains cleared faults; readiness and session selection continue to use existing state handling.
+
+## Station controls
+
+Station entities use unique IDs `<serial>_station_<key>` on the same Dyson integration device as the configured vacuum. The first four keys (`hot_water_mopping`, `cleaning_solution`, `extended_roller_preparation`, `hot_water_self_cleaning`) are switches. `self_cleaning_frequency` and `roller_drying_duration` are selects with live `options` attributes. The card uses `switch.turn_on`, `switch.turn_off` and `select.select_option`, targeting exactly one entity. It does not write room drafts, infer robot confirmation from service completion, or retry failed calls.
