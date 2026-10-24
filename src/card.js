@@ -118,7 +118,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       }
       if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key) && event.target.dataset.infoTab) {
         event.preventDefault();
-        this.infoTab = event.key === 'Home' ? 'consumables' : event.key === 'End' ? 'station' : this.infoTab === 'station' ? 'consumables' : 'station';
+        this.infoTab = event.key === 'Home' ? 'station' : event.key === 'End' ? 'consumables' : this.infoTab === 'station' ? 'consumables' : 'station';
         this.updateConsumables(); this.shadowRoot.querySelector(`[data-info-tab="${this.infoTab}"]`).focus();
       }
     });
@@ -318,11 +318,11 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     } finally { this.controlBusy = false; this.render(); }
   }
   consumablesHtml() {
-    return `<div class="consumables-overlay" hidden><section class="consumables-panel" role="dialog" aria-modal="true" aria-label="Robot information"><div class="consumables-heading"><h3>Info</h3><button class="consumables-close" data-action="close-consumables" data-focus="consumables-close" aria-label="Close information"><ha-icon icon="mdi:close" aria-hidden="true"></ha-icon></button></div><div class="info-tabs" role="tablist" aria-label="Robot information"><button id="tab-consumables" role="tab" data-info-tab="consumables" aria-controls="panel-consumables">Consumables</button><button id="tab-station" role="tab" data-info-tab="station" aria-controls="panel-station">Station settings</button></div><div id="panel-consumables" role="tabpanel" aria-labelledby="tab-consumables"><div class="consumables-rows"></div></div><div id="panel-station" role="tabpanel" aria-labelledby="tab-station" hidden><div class="station-rows"></div><p class="station-message notice" role="status" aria-live="polite"></p></div></section></div>`;
+    return `<div class="consumables-overlay" hidden><section class="consumables-panel" role="dialog" aria-modal="true" aria-label="Robot information"><div class="consumables-heading"><h3>Info</h3><button class="consumables-close" data-action="close-consumables" data-focus="consumables-close" aria-label="Close information"><ha-icon icon="mdi:close" aria-hidden="true"></ha-icon></button></div><div class="info-tabs" role="tablist" aria-label="Robot information"><button id="tab-station" role="tab" data-info-tab="station" aria-controls="panel-station">Station settings</button><button id="tab-consumables" role="tab" data-info-tab="consumables" aria-controls="panel-consumables">Consumables</button></div><div id="panel-station" role="tabpanel" aria-labelledby="tab-station"><div class="station-rows"></div><p class="station-message notice" role="status" aria-live="polite"></p></div><div id="panel-consumables" role="tabpanel" aria-labelledby="tab-consumables" hidden><div class="consumables-rows"></div></div></section></div>`;
   }
   toggleConsumables(open) {
     this.consumablesOpen = open;
-    if (open) this.infoTab = 'consumables';
+    if (open) this.infoTab = 'station';
     this.updateConsumables();
     this.shadowRoot.querySelector(open ? '.consumables-close' : '.consumables-info')?.focus();
   }
@@ -351,15 +351,14 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     try {
       if (action) await pressStationAction(this._hass, this.registry, entity, key);
       else await changeStationSetting(this._hass, this.registry, entity, key, value);
-      if (this.config.entity === entity) this.stationMessage = action ? 'Action sent. Status follows Home Assistant.' : 'Setting sent. The displayed value follows Home Assistant.';
     } catch (error) {
       if (this.config.entity === entity) { this.stationMessage = error.message; this.stationError = true; }
     } finally { this.stationBusy = false; this.updateConsumables(); }
   }
   updateStationSettings() {
     const root = this.shadowRoot;
-    const tab = this.infoTab || 'consumables';
-    for (const name of ['consumables', 'station']) {
+    const tab = this.infoTab || 'station';
+    for (const name of ['station', 'consumables']) {
       const button = root.querySelector(`[data-info-tab="${name}"]`);
       button.setAttribute('aria-selected', String(tab === name));
       button.tabIndex = tab === name ? 0 : -1;
@@ -382,6 +381,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     if (host._stationHtml !== content) { host.innerHTML = content; host._stationHtml = content; }
     const message = root.querySelector('.station-message');
     message.textContent = this.stationMessage || '';
+    message.hidden = !this.stationMessage;
     message.classList.toggle('error', !!this.stationError);
   }
   headerHtml() {

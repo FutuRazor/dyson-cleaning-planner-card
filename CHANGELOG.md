@@ -2,6 +2,8 @@
 
 ## v0.3.6b
 
+- Open Info on Station settings, followed by Consumables. Keep station actions quiet on success and show only failures.
+
 - Add native Home Assistant Press buttons for Empty dust bin and Wash mop roller below the station settings.
 - Discover dock actions and the drying sensor by device and stable unique ID, including renamed entities.
 - Prefer the dedicated drying sensor for remaining time and progress; retain legacy vacuum attributes only when no matching sensor is registered.
