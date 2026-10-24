@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.3.6a
+
+- Style station switches as Home Assistant-style sliders with theme colors, visible keyboard focus and disabled states.
+- Align station dropdowns to the right of their labels on the same row, including narrow cards.
+- Preserve immediate entity actions and all station-setting behavior.
+
 ## v0.3.6
 
 - Add Consumables and Station settings tabs to the Info overlay.
