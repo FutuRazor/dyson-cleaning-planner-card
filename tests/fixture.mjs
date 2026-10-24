@@ -77,5 +77,10 @@ export function addStationFixture(f) {
     f.registry.push({ entity_id: id, platform: 'dyson_spot_scrub', device_id: 'demo-device', unique_id: `DEMO_station_${key}` });
     f.hass.states[id] = { state: value, attributes: options ? { options } : {} };
   });
+  for (const key of ['empty_bin', 'wash_mop']) {
+    const id = `button.renamed_${key}`;
+    f.registry.push({ entity_id: id, platform: 'dyson_spot_scrub', device_id: 'demo-device', unique_id: `DEMO_${key}` });
+    f.hass.states[id] = { state: 'unknown', attributes: {} };
+  }
   return f;
 }

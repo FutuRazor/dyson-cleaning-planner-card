@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.3.6b
+
+- Add native Home Assistant Press buttons for Empty dust bin and Wash mop roller below the station settings.
+- Discover dock actions and the drying sensor by device and stable unique ID, including renamed entities.
+- Prefer the dedicated drying sensor for remaining time and progress; retain legacy vacuum attributes only when no matching sensor is registered.
+- Preserve room drafts and respect entity availability; report action failures without retrying.
+
 ## v0.3.6a
 
 - Use Home Assistant’s native `ha-switch` component for station switches, including its theme, keyboard focus and disabled states. The standalone preview uses a separate mock component.

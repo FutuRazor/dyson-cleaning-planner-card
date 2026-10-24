@@ -1,4 +1,4 @@
-import { DOMAIN, ROOM_FIELDS, available, escapeHtml, normalizeConfig, discover, sendRoomDraft, cleaningView, canControl, controlCleaning, batteryStatus, activityStatus, dryingRemainingTime, dryingRemainingPercent, dockBlocksStart, startBlockReason, consumableStatus, stationSettings, changeStationSetting } from './core.js';
+import { DOMAIN, ROOM_FIELDS, available, escapeHtml, normalizeConfig, discover, sendRoomDraft, cleaningView, canControl, controlCleaning, batteryStatus, activityStatus, dryingRemainingTime, dryingRemainingPercent, dockBlocksStart, startBlockReason, consumableStatus, stationSettings, changeStationSetting, stationActions, pressStationAction } from './core.js';
 
 const styles = `
 /* Only constrain the content when the dashboard assigns an explicit row count. */
@@ -7,7 +7,7 @@ const styles = `
 :host([fixed-height]) .planner-content{height:100%;overflow-y:auto;overscroll-behavior:contain}
 
 ha-card{position:relative}.header-tools{display:flex;flex-direction:column;align-items:flex-end;gap:7px;flex-shrink:0}.consumables-info{min-height:32px;width:100%;padding:3px 10px;background:transparent;color:var(--dp-muted);display:flex;justify-content:center;align-items:center;font-size:12px}.consumables-info.attention{color:var(--error-color,#b3261e);background:color-mix(in srgb,var(--error-color,#b3261e) 10%,var(--dp-bg));border-color:color-mix(in srgb,var(--error-color,#b3261e) 30%,var(--dp-line))}
-.info-tabs{display:flex;gap:8px;margin-bottom:20px}.info-tabs button{flex:1;font-size:13px}.info-tabs [aria-selected=true]{color:var(--dp-accent);border-color:var(--dp-accent);background:var(--dp-soft)}.station-row{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px;font-size:13px}.station-row small{display:block;color:var(--dp-muted);margin-top:4px}.station-row>span{min-width:0;overflow-wrap:anywhere}.station-row.select{gap:12px}.station-row select{flex:0 1 190px;width:55%;min-width:140px;margin-left:auto;font-size:14px}.station-row ha-switch{flex:0 0 auto;margin-left:auto}@media(max-width:400px){.station-row select{font-size:16px}}.consumables-overlay{position:absolute;inset:0;z-index:5;background:#0005;padding:12px;display:flex;align-items:flex-start}.consumables-panel{width:100%;max-height:min(100%,75vh);overflow-y:auto;overscroll-behavior:contain;background:var(--dp-bg);border:1px solid var(--dp-line);border-radius:14px;padding:18px;box-shadow:0 8px 30px #0003}.consumables-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:18px}.consumables-heading h3{margin:0;font-size:20px;font-weight:500}.consumables-close{display:flex;padding:8px;min-width:42px}.consumable-row{margin:0 0 20px}.consumable-row:last-child{margin-bottom:0}.consumable-label{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:13px;margin-bottom:8px}.consumable-value{color:var(--dp-muted)}.consumable-track{height:8px;border-radius:8px;background:var(--divider-color,#dde3e8);overflow:hidden}.consumable-fill{display:block;height:100%;background:var(--success-color,#2e7d32)}.consumable-fill.medium{background:var(--warning-color,#ad6800)}.consumable-fill.low{background:var(--error-color,#b3261e)}
+.info-tabs{display:flex;gap:8px;margin-bottom:20px}.info-tabs button{flex:1;font-size:13px}.info-tabs [aria-selected=true]{color:var(--dp-accent);border-color:var(--dp-accent);background:var(--dp-soft)}.station-row{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px;font-size:13px}.station-row small{display:block;color:var(--dp-muted);margin-top:4px}.station-row>span{min-width:0;overflow-wrap:anywhere}.station-row.select{gap:12px}.station-row select{flex:0 1 190px;width:55%;min-width:140px;margin-left:auto;font-size:14px}.station-row ha-switch,.station-row ha-button{flex:0 0 auto;margin-left:auto}@media(max-width:400px){.station-row select{font-size:16px}}.consumables-overlay{position:absolute;inset:0;z-index:5;background:#0005;padding:12px;display:flex;align-items:flex-start}.consumables-panel{width:100%;max-height:min(100%,75vh);overflow-y:auto;overscroll-behavior:contain;background:var(--dp-bg);border:1px solid var(--dp-line);border-radius:14px;padding:18px;box-shadow:0 8px 30px #0003}.consumables-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:18px}.consumables-heading h3{margin:0;font-size:20px;font-weight:500}.consumables-close{display:flex;padding:8px;min-width:42px}.consumable-row{margin:0 0 20px}.consumable-row:last-child{margin-bottom:0}.consumable-label{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:13px;margin-bottom:8px}.consumable-value{color:var(--dp-muted)}.consumable-track{height:8px;border-radius:8px;background:var(--divider-color,#dde3e8);overflow:hidden}.consumable-fill{display:block;height:100%;background:var(--success-color,#2e7d32)}.consumable-fill.medium{background:var(--warning-color,#ad6800)}.consumable-fill.low{background:var(--error-color,#b3261e)}
 
 :host{--dp-padding:24px}.header-title{flex:1;min-width:0}.header-title h2{overflow-wrap:anywhere}.robot{flex-shrink:0}.battery{display:flex;align-items:center;gap:7px;flex-shrink:0;align-self:flex-start;margin-top:4px;font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}.battery svg{width:32px;height:20px;color:var(--dp-muted)}.battery[data-level=high] svg{color:var(--success-color,#2e7d32)}.battery[data-level=medium] svg{color:var(--warning-color,#ad6800)}.battery[data-level=low] svg{color:var(--error-color,#b3261e)}
 :host{display:block;color:var(--primary-text-color,#20272d);font-family:var(--paper-font-body1_-_font-family,Arial,sans-serif);--dp-bg:var(--ha-card-background,var(--card-background-color,#fff));--dp-line:var(--divider-color,#dde3e8);--dp-muted:var(--secondary-text-color,#52616e);--dp-accent:var(--primary-color,#007da5);--dp-soft:color-mix(in srgb,var(--dp-accent) 10%,var(--dp-bg))}
@@ -111,7 +111,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); this.toggleConsumables(false); }
       if (event.key === 'Tab') {
         const panel = this.shadowRoot.querySelector('.consumables-panel');
-        const items = [...panel.querySelectorAll('button:not(:disabled), input:not(:disabled), select:not(:disabled), ha-switch:not([disabled])')].filter(el => (el.localName === 'ha-switch' || el.tabIndex >= 0) && el.getClientRects().length);
+        const items = [...panel.querySelectorAll('button:not(:disabled), input:not(:disabled), select:not(:disabled), ha-switch:not([disabled]), ha-button:not([disabled])')].filter(el => (['ha-switch', 'ha-button'].includes(el.localName) || el.tabIndex >= 0) && el.getClientRects().length);
         const first = items[0], last = items.at(-1), active = this.shadowRoot.activeElement;
         if (event.shiftKey && active === first) { event.preventDefault(); last?.focus(); }
         else if (!event.shiftKey && active === last) { event.preventDefault(); first?.focus(); }
@@ -223,7 +223,11 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     this.updateDirty(); this.message = ''; this.error = false; this.render();
   }
   onClick(event) {
-    const el = event.target.closest('button');
+    const el = event.target.closest('button, ha-button');
+    if (el?.dataset.stationAction) {
+      if (!el.disabled && !el.hasAttribute('disabled')) this.setStationSetting(el.dataset.stationAction, undefined, true);
+      return;
+    }
     if (el?.dataset.action === 'consumables') { this.toggleConsumables(true); return; }
     if (el?.dataset.action === 'close-consumables') { this.toggleConsumables(false); return; }
     if (el?.dataset.infoTab) { this.infoTab = el.dataset.infoTab; this.updateConsumables(); return; }
@@ -339,14 +343,15 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     if (host.innerHTML !== content) host.innerHTML = content;
     if (this.consumablesOpen && !root.querySelector('.consumables-panel').contains(root.activeElement)) root.querySelector('.consumables-close').focus();
   }
-  async setStationSetting(key, value) {
+  async setStationSetting(key, value, action = false) {
     if (this.stationBusy || this.busy || this.controlBusy || !this.consumablesOpen) return;
     const entity = this.config.entity;
     this.stationBusy = true; this.stationMessage = ''; this.stationError = false;
     this.updateConsumables();
     try {
-      await changeStationSetting(this._hass, this.registry, entity, key, value);
-      if (this.config.entity === entity) this.stationMessage = 'Setting sent. The displayed value follows Home Assistant.';
+      if (action) await pressStationAction(this._hass, this.registry, entity, key);
+      else await changeStationSetting(this._hass, this.registry, entity, key, value);
+      if (this.config.entity === entity) this.stationMessage = action ? 'Action sent. Status follows Home Assistant.' : 'Setting sent. The displayed value follows Home Assistant.';
     } catch (error) {
       if (this.config.entity === entity) { this.stationMessage = error.message; this.stationError = true; }
     } finally { this.stationBusy = false; this.updateConsumables(); }
@@ -368,14 +373,19 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
         : `<select ${attrs}>${!field.options.includes(field.value) ? '<option value="">Unavailable</option>' : ''}${field.options.map(v => `<option value="${escapeHtml(v)}" ${v === field.value ? 'selected' : ''}>${escapeHtml(v)}</option>`).join('')}</select>`;
       return `<label class="station-row ${field.domain}"><span>${field.label}${!field.available ? '<small>Unavailable</small>' : ''}</span>${control}</label>`;
     }).join('');
+    const actions = stationActions(this._hass, this.registry, this.config.entity).map(action => {
+      const disabled = !action.available || this.stationBusy || this.busy || this.controlBusy;
+      return `<div class="station-row"><span>${action.label}${!action.available ? '<small>Unavailable</small>' : ''}</span><ha-button appearance="plain" size="s" data-station-action="${action.key}" aria-label="${action.label}" ${disabled ? 'disabled' : ''}>Press</ha-button></div>`;
+    }).join('');
+    const content = html + actions;
     const host = root.querySelector('.station-rows');
-    if (host._stationHtml !== html) { host.innerHTML = html; host._stationHtml = html; }
+    if (host._stationHtml !== content) { host.innerHTML = content; host._stationHtml = content; }
     const message = root.querySelector('.station-message');
     message.textContent = this.stationMessage || '';
     message.classList.toggle('error', !!this.stationError);
   }
   headerHtml() {
-    return `<header><div class="robot"><ha-icon icon="mdi:robot-vacuum"></ha-icon></div><div class="header-title"><h2>${escapeHtml(this.config.title)}</h2><p>Dyson Spot+Scrub <span class="tag">v0.3.6a</span></p></div><div class="header-tools"><div class="battery" role="img"><svg viewBox="0 0 32 20" aria-hidden="true"><rect x="1" y="3" width="26" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="29" y="7" width="3" height="6" rx="1" fill="currentColor"/><rect class="battery-fill" x="4" y="6" width="0" height="8" rx="1" fill="currentColor"/><path class="battery-bolt" d="M17 1 9 11h6l-2 8L23 8h-7Z" fill="var(--dp-bg)" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" hidden/></svg><span class="battery-value" aria-hidden="true">—</span></div><button class="consumables-info" data-action="consumables" data-focus="consumables-info" aria-label="Consumables" aria-haspopup="dialog" aria-expanded="false" title="Consumables">Info</button></div></header>`;
+    return `<header><div class="robot"><ha-icon icon="mdi:robot-vacuum"></ha-icon></div><div class="header-title"><h2>${escapeHtml(this.config.title)}</h2><p>Dyson Spot+Scrub <span class="tag">v0.3.6b</span></p></div><div class="header-tools"><div class="battery" role="img"><svg viewBox="0 0 32 20" aria-hidden="true"><rect x="1" y="3" width="26" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="29" y="7" width="3" height="6" rx="1" fill="currentColor"/><rect class="battery-fill" x="4" y="6" width="0" height="8" rx="1" fill="currentColor"/><path class="battery-bolt" d="M17 1 9 11h6l-2 8L23 8h-7Z" fill="var(--dp-bg)" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" hidden/></svg><span class="battery-value" aria-hidden="true">—</span></div><button class="consumables-info" data-action="consumables" data-focus="consumables-info" aria-label="Consumables" aria-haspopup="dialog" aria-expanded="false" title="Consumables">Info</button></div></header>`;
   }
   updateBattery() {
     const state = batteryStatus(this._hass, this.model);
@@ -408,11 +418,11 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     row.querySelector('.activity-icon').setAttribute('icon', status?.icon ?? 'mdi:robot-vacuum');
     row.querySelector('.drying-control').hidden = !status?.drying;
     const remaining = row.querySelector('.activity-remaining');
-    const time = status?.drying ? dryingRemainingTime(this._hass, this.config.entity) : null;
+    const time = status?.drying ? dryingRemainingTime(this._hass, this.config.entity, this.registry) : null;
     remaining.hidden = !status?.drying;
     remaining.textContent = time === null ? 'Remaining time: unavailable' : `Remaining time: ${time} (hh:mm)`;
     const progress = row.querySelector('.drying-progress');
-    const percent = status?.drying ? dryingRemainingPercent(this._hass, this.config.entity) : null;
+    const percent = status?.drying ? dryingRemainingPercent(this._hass, this.config.entity, this.registry) : null;
     progress.hidden = percent === null;
     if (percent !== null) {
       progress.setAttribute('aria-valuenow', String(Math.round(percent)));

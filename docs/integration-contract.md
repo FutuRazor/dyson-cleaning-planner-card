@@ -77,3 +77,9 @@ When the displayed activity is Robot needs attention, the card shows a non-empty
 ## Station controls
 
 Station entities use unique IDs `<serial>_station_<key>` on the same Dyson integration device as the configured vacuum. The first four keys (`hot_water_mopping`, `cleaning_solution`, `extended_roller_preparation`, `hot_water_self_cleaning`) are switches. `self_cleaning_frequency` and `roller_drying_duration` are selects with live `options` attributes. The card uses `switch.turn_on`, `switch.turn_off` and `select.select_option`, targeting exactly one entity. It does not write room drafts, infer robot confirmation from service completion, or retry failed calls.
+
+## Dock action buttons and dedicated drying sensor (v0.3.6b)
+
+The two dock buttons use `<serial>_empty_bin` and `<serial>_wash_mop` unique IDs on the selected Dyson device. Each Press invokes `button.press` once with that entity ID. Unknown before the first press and timestamp states are valid; unavailable, restored, missing, disabled or ambiguous entities cannot be pressed. The integration supplies operational availability. Requests in flight disable the station controls. Service completion is not treated as robot confirmation.
+
+The dedicated sensor uses `<serial>_drying_remaining`. While the vacuum reports `DRYING_MOP`, its numeric state supplies remaining seconds and its numeric `total_seconds` attribute supplies the bar's denominator. `updated_at` records the telemetry sample time; the card does not extrapolate a countdown. Legacy vacuum drying attributes are used only if no matching sensor is registered. A registered sensor that is unavailable, disabled, missing its live state, ambiguous or malformed never falls back to stale vacuum values. Outside drying the display is hidden.
