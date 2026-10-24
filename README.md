@@ -59,7 +59,7 @@ During roller drying, a bar below the remaining-time subtitle shows the fraction
 
 The **Info** overlay has two tabs: **Consumables** shows remaining supply life; **Station settings** contains Hot water mopping, Cleaning solution, Extended roller preparation, Hot water self-cleaning, Self-cleaning frequency and Roller drying duration, in that order.
 
-Station settings are detected on the selected Dyson device, even after entity renames. Switches use theme-colored sliders, and dropdowns sit to the right of their labels. Changes immediately call the corresponding switch or select action; they are independent of the room draft and Save settings. Displayed values follow Home Assistant. Dropdown options come from the integration. Missing, unavailable or ambiguous entities are disabled; this tab requires the integration version that provides the six station entities. The Info button still turns subtly red when consumables are low.
+Station settings are detected on the selected Dyson device, even after entity renames. Switches use Home Assistant’s native `ha-switch` component, and dropdowns sit to the right of their labels. Changes immediately call the corresponding switch or select action; they are independent of the room draft and Save settings. Displayed values follow Home Assistant. Dropdown options come from the integration. Missing, unavailable or ambiguous entities are disabled; this tab requires the integration version that provides the six station entities. The Info button still turns subtly red when consumables are low.
 
 ## Install or update for testing
 

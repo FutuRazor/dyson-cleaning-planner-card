@@ -60,3 +60,5 @@ Run `node tests/layout-browser.mjs` with Playwright available. In a real Section
 ## Station settings (v0.3.6a)
 
 Run `node tests/station-browser.mjs` with Playwright and Edge available. Verify exact service targeting, live state updates, draft preservation, missing entities and service errors. On real hardware, check all six settings against the Dyson app; settings should update immediately without Save or Start. Check both tabs, keyboard navigation, mobile scrolling, and the low-consumables Info indicator. Hardware validation of the new station UI remains pending.
+
+Station switch browser checks use a preview-only `ha-switch` mock. Production uses the component supplied by Home Assistant; verify native appearance and toggling in a real HA dashboard.
