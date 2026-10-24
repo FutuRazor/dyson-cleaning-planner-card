@@ -20,8 +20,9 @@ try {
   assert.ok(await card.locator('#panel-consumables').isVisible());
   await card.locator('[data-info-tab="station"]').click();
   assert.equal(await card.locator('.station-row').count(), 6);
+  assert.equal(await card.locator('.station-row ha-switch').count(), 4);
   assert.deepEqual(await card.locator('.station-row > span').allTextContents(), ['Hot water mopping', 'Cleaning solution', 'Extended roller preparation', 'Hot water self-cleaning', 'Self-cleaning frequency', 'Roller drying duration']);
-  await card.locator('[data-station="hot_water_mopping"]').uncheck();
+  await card.locator('ha-switch[data-station="hot_water_mopping"] input').uncheck();
   await page.waitForFunction(() => !demo.card.stationBusy);
   await card.locator('[data-station="roller_drying_duration"]').selectOption('5 hours');
   await page.waitForFunction(() => !demo.card.stationBusy);
@@ -31,9 +32,9 @@ try {
   ]);
   assert.equal(await page.evaluate(() => JSON.stringify(demo.card.settingDraft)), draft);
   await page.evaluate(() => { demo.hass.states['switch.renamed_station_1'].state = 'unavailable'; demo.card.hass = { ...demo.hass }; });
-  assert.ok(await card.locator('[data-station="cleaning_solution"]').isDisabled());
+  assert.ok(await card.locator('ha-switch[data-station="cleaning_solution"] input').isDisabled());
   await page.evaluate(() => { demo.hass.callService = async () => { throw new Error('Test rejection'); }; demo.card.hass = { ...demo.hass }; });
-  await card.locator('[data-station="hot_water_mopping"]').evaluate(el => el.click());
+  await card.locator('ha-switch[data-station="hot_water_mopping"] input').evaluate(el => el.click());
   await page.waitForFunction(() => !demo.card.stationBusy);
   assert.match(await card.locator('.station-message').innerText(), /Test rejection/);
   await card.locator('[data-info-tab="station"]').focus();

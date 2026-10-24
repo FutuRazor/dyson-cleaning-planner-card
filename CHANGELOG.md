@@ -2,7 +2,7 @@
 
 ## v0.3.6a
 
-- Style station switches as Home Assistant-style sliders with theme colors, visible keyboard focus and disabled states.
+- Use Home Assistant’s native `ha-switch` component for station switches, including its theme, keyboard focus and disabled states. The standalone preview uses a separate mock component.
 - Align station dropdowns to the right of their labels on the same row, including narrow cards.
 - Preserve immediate entity actions and all station-setting behavior.
 
