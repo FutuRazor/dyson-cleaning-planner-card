@@ -2,7 +2,7 @@
 
 A Home Assistant Lovelace card for the Dyson Spot+Scrub integration.
 
-**v0.3.6 — per-room planning, live cleaning and dock status, and consumables monitoring.**
+**v0.3.6a — per-room planning, live cleaning and dock status, and consumables monitoring.**
 
 ## Requirements
 
@@ -59,7 +59,7 @@ During roller drying, a bar below the remaining-time subtitle shows the fraction
 
 The **Info** overlay has two tabs: **Consumables** shows remaining supply life; **Station settings** contains Hot water mopping, Cleaning solution, Extended roller preparation, Hot water self-cleaning, Self-cleaning frequency and Roller drying duration, in that order.
 
-Station settings are detected on the selected Dyson device, even after entity renames. Changes immediately call the corresponding switch or select action; they are independent of the room draft and Save settings. Displayed values follow Home Assistant. Dropdown options come from the integration. Missing, unavailable or ambiguous entities are disabled; this tab requires the integration version that provides the six station entities. The Info button still turns subtly red when consumables are low.
+Station settings are detected on the selected Dyson device, even after entity renames. Switches use theme-colored sliders, and dropdowns sit to the right of their labels. Changes immediately call the corresponding switch or select action; they are independent of the room draft and Save settings. Displayed values follow Home Assistant. Dropdown options come from the integration. Missing, unavailable or ambiguous entities are disabled; this tab requires the integration version that provides the six station entities. The Info button still turns subtly red when consumables are low.
 
 ## Install or update for testing
 
@@ -107,7 +107,7 @@ The usual setup can be done in the visual editor: open the dashboard, choose **E
 | `camera_entity` | Optional explicit camera on the same Dyson device |
 | `camera_rotation` | `0`, `90`, `180`, or `270` degrees |
 
-Old `mode_entity` and `start_entity` configuration keys are accepted for compatibility, but the v0.3.6 card does not use global mode or start-button entities to execute a run.
+Old `mode_entity` and `start_entity` configuration keys are accepted for compatibility, but the v0.3.6a card does not use global mode or start-button entities to execute a run.
 
 ## Development
 
