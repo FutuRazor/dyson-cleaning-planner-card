@@ -2,7 +2,7 @@
 
 A Home Assistant Lovelace card for the Dyson Spot+Scrub integration.
 
-**v0.3.6a — per-room planning, live cleaning and dock status, and consumables monitoring.**
+**v0.3.6b — per-room planning, live cleaning and dock status, and consumables monitoring.**
 
 ## Requirements
 
@@ -107,7 +107,7 @@ The usual setup can be done in the visual editor: open the dashboard, choose **E
 | `camera_entity` | Optional explicit camera on the same Dyson device |
 | `camera_rotation` | `0`, `90`, `180`, or `270` degrees |
 
-Old `mode_entity` and `start_entity` configuration keys are accepted for compatibility, but the v0.3.6a card does not use global mode or start-button entities to execute a run.
+Old `mode_entity` and `start_entity` configuration keys are accepted for compatibility, but the v0.3.6b card does not use global mode or start-button entities to execute a run.
 
 ## Development
 
@@ -126,3 +126,9 @@ The preview uses simulated HA data only. Optional browser checks use Playwright:
 The info button below the battery opens a consumables overlay in either card view. Five bars show remaining life (`100 - usage`); cleaning solution shows OK or Refill required. Bars are orange at 25% or less and red at 10% or less. Any red bar also subtly highlights the info button in red.
 
 Requires the integration's consumable sensors with `consumable_type` and `value_kind` attributes. Sensors are discovered on the selected Dyson device, including renamed entity IDs. Missing, ambiguous or unavailable values display Unavailable. The ioniser cartridge is omitted. Opening the overlay sends no service calls and preserves local drafts and the live map. Close it with the close button or Escape.
+
+### Station actions and drying time
+
+Station settings includes **Empty dust bin** and **Wash mop roller**, each with a native HA **Press** button. Actions execute immediately and leave room drafts untouched. Missing or unavailable actions are disabled. Wash mop roller also starts drying afterward, as controlled by the integration.
+
+Remaining drying time and its bar use the dedicated drying sensor on the selected robot. Older integrations without this sensor use the vacuum attributes. A registered but unavailable sensor displays no time or progress; it never falls back to stale values. The dock status still determines when the drying display appears.

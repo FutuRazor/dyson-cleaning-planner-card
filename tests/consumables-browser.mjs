@@ -23,12 +23,14 @@ try {
   assert.equal(await card.locator('.planner-content').evaluate(el => getComputedStyle(el).paddingLeft), '0px');
   await card.locator('input[data-room]').first().check();
   await card.locator('.consumables-info').click();
+  await card.locator('[data-info-tab=consumables]').click();
   assert.equal(await card.locator('.consumables-info.attention').count(), 1);
   assert.equal(await card.getByRole('dialog').isVisible(), true);
   assert.equal(await card.locator('[role="meter"]').count(), 5);
   assert.equal(await card.locator('.consumable-row').count(), 6);
   assert.match(await card.locator('.consumables-rows').innerText(), /96% remaining/);
   assert.equal(await card.locator('.planner-content').evaluate(el => el.inert), true);
+  await card.locator('.consumables-close').focus();
   await page.keyboard.press('Tab');
   assert.equal(await card.locator('[data-info-tab=consumables]').evaluate(el => el === el.getRootNode().activeElement), true);
   await page.evaluate(() => {
@@ -47,6 +49,7 @@ try {
   assert.equal(await card.locator('.planner-content').evaluate(el => getComputedStyle(el).paddingLeft), '0px');
   await page.evaluate(() => { demo.savedMap = demo.card.shadowRoot.querySelector('dyson-planner-map'); });
   await card.locator('.consumables-info').click();
+  await card.locator('[data-info-tab=consumables]').click();
   assert.equal(await page.evaluate(() => demo.savedMap === demo.card.shadowRoot.querySelector('dyson-planner-map')), true);
   assert.equal(await card.locator('.consumables-panel').evaluate(el => el.getBoundingClientRect().right <= innerWidth), true);
   await mkdir('artifacts', { recursive: true });

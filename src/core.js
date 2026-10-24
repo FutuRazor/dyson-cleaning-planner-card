@@ -200,19 +200,31 @@ export function cleaningView(hass, entity, pendingStart = false) {
 }
 
 // Display the integration's last confirmed sample; do not invent elapsed time.
-export function dryingRemainingTime(hass, entity) {
+function dryingTelemetry(hass, entity, registry = []) {
   const state = hass?.states?.[entity];
   if (hass?.connected === false || !available(state) || state.attributes?.dock_state !== 'DRYING_MOP') return null;
-  const seconds = state.attributes.drying_remaining_seconds;
+  // A registered but disabled, ambiguous or unavailable sensor must not revive stale legacy data.
+  const matches = deviceEntities(registry, entity, 'sensor', 'drying_remaining');
+  if (matches.length) {
+    if (matches.length !== 1 || matches[0].disabled_by) return null;
+    const sensor = hass.states[matches[0].entity_id];
+    if (!available(sensor) || typeof sensor.state !== 'string' || !sensor.state.trim()) return null;
+    return { remaining: Number(sensor.state), total: sensor.attributes?.total_seconds };
+  }
+  return { remaining: state.attributes.drying_remaining_seconds, total: state.attributes.drying_total_seconds };
+}
+
+export function dryingRemainingTime(hass, entity, registry = []) {
+  const seconds = dryingTelemetry(hass, entity, registry)?.remaining;
   if (!Number.isFinite(seconds) || seconds < 0) return null;
   const minutes = Math.ceil(seconds / 60);
   return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
 }
 
 // Fraction of the configured drying duration still remaining, from confirmed telemetry.
-export function dryingRemainingPercent(hass, entity) {
-  if (dryingRemainingTime(hass, entity) === null) return null;
-  const { drying_total_seconds: total, drying_remaining_seconds: remaining } = hass.states[entity].attributes;
+export function dryingRemainingPercent(hass, entity, registry = []) {
+  if (dryingRemainingTime(hass, entity, registry) === null) return null;
+  const { total, remaining } = dryingTelemetry(hass, entity, registry);
   if (!Number.isFinite(total) || total <= 0 || remaining > total) return null;
   return remaining / total * 100;
 }
@@ -362,6 +374,33 @@ export const STATION_FIELDS = [
   ['self_cleaning_frequency', 'Self-cleaning frequency', 'select'],
   ['roller_drying_duration', 'Roller drying duration', 'select']
 ];
+
+export const STATION_ACTIONS = [
+  ['empty_bin', 'Empty dust bin'],
+  ['wash_mop', 'Wash mop roller']
+];
+
+function deviceEntities(registry, entity, domain, suffix) {
+  const vacuum = registry.find(e => e.entity_id === entity && e.platform === DOMAIN && !e.disabled_by);
+  const serial = String(vacuum?.unique_id ?? '').replace(/_vacuum$/, '');
+  return vacuum?.device_id ? registry.filter(e => e.platform === DOMAIN && e.device_id === vacuum.device_id && e.entity_id.startsWith(`${domain}.`) && e.unique_id === `${serial}_${suffix}`) : [];
+}
+
+export function stationActions(hass, registry, entity) {
+  return STATION_ACTIONS.map(([key, label]) => {
+    const matches = deviceEntities(registry, entity, 'button', key);
+    const id = matches.length === 1 && !matches[0].disabled_by ? matches[0].entity_id : undefined;
+    const state = hass?.states?.[id];
+    // Button states are timestamps, or unknown before the first press.
+    return { key, label, entity: id, available: hass?.connected !== false && !!state && state.state !== 'unavailable' && !state.attributes?.restored && !!hass?.services?.button?.press };
+  });
+}
+
+export async function pressStationAction(hass, registry, entity, key) {
+  const action = stationActions(hass, registry, entity).find(item => item.key === key);
+  if (!action?.available) throw new Error('This station action is unavailable.');
+  await hass.callService('button', 'press', { entity_id: action.entity });
+}
 
 export function stationSettings(hass, registry, entity) {
   const vacuum = registry.find(e => e.entity_id === entity && e.platform === DOMAIN && !e.disabled_by);
