@@ -1,4 +1,4 @@
-# Testing v0.4.0
+# Testing v0.4.1
 
 ## v0.3.5 acceptance
 
@@ -7,6 +7,10 @@ The user confirmed the fault subtitle and relocated controls in live Home Assist
 ## v0.4.0 cleanup
 
 Verify Save and Start with the global mode and original start-button entities absent. Old `mode_entity` and `start_entity` keys are ignored. Missing batch actions must produce an error without individual entity calls. Station switches, selects and buttons and vacuum Pause/Resume/Home remain supported.
+
+## v0.4.1 visual improvements
+
+Check the consumables tab in light and dark themes at narrow and desktop widths. Names and remaining values are stacked on the left; compact bars align on the right. Ready to use, Refill required and Unavailable are non-interactive chips. Low-life warning colors, Info attention, focus handling and local drafts remain unchanged.
 
 ## Automated checks
 
@@ -29,7 +33,7 @@ The v0.3.3a test build was verified in live Home Assistant: return status appear
 - Recheck scroll retention after room selection, expanding/collapsing settings and changing modes. Verify each view transition starts at the top, including reloading during an active clean.
 - During drying, verify the bar shrinks with remaining time, ends before Cancel and disappears without valid total/remaining values. Confirm 0 remaining yields an empty bar without inferring the dock is idle.
 
-1. Confirm the card header is v0.4.0 and both new Dyson actions exist.
+1. Confirm the card header is v0.4.1 and both new Dyson actions exist.
 2. Type a title without pressing Enter; confirm immediate preview updates and stable cursor position. Expand two rooms. Confirm unselected rooms have no Not selected suffix. Select Clean repetitions in every cleaning mode, including Vacuum. Check mode-dependent visibility and enable Always show all settings to inspect all four dropdowns.
 3. Change several options. HA entities and the robot must remain unchanged during editing. Only the edited room should change in the card.
 4. Click Save settings. Confirm one `save_room_settings` action carries all changes, HA reflects the values, and cleaning does not start. The card's room selection must remain selected.

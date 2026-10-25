@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.4.1
+
+- Refine consumables into two-column rows with stacked labels and compact, rounded remaining-life bars.
+- Use the Home Assistant accent for normal life levels while preserving warning and low-life colors.
+- Replace the cleaning-solution OK label with a non-interactive Ready to use status chip, with distinct refill and unavailable states.
+- Preserve station actions, room drafts and integration interfaces.
+
 ## v0.4.0
 
 - Remove the unused legacy start adapter, its global mode/start-button discovery, and obsolete preparation helpers.

@@ -264,7 +264,7 @@ export function consumableStatus(hass, registry, entity) {
     const live = hass?.connected !== false && available(state);
     if (type === 'cleaningSolution') {
       const value = live && state.attributes?.value_kind === 'refill_status' ? state.state : null;
-      return { type, name, remaining: null, level: 'unknown', text: value === 'ok' ? 'OK' : value === 'refill_required' ? 'Refill required' : 'Unavailable' };
+      return { type, name, remaining: null, level: 'unknown', text: value === 'ok' ? 'Ready to use' : value === 'refill_required' ? 'Refill required' : 'Unavailable' };
     }
     const raw = state?.state;
     const usage = typeof raw === 'number' || (typeof raw === 'string' && raw.trim() !== '') ? Number(raw) : NaN;

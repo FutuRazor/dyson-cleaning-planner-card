@@ -2,7 +2,7 @@
 
 A Home Assistant Lovelace card for the Dyson Spot+Scrub integration.
 
-**v0.4.0 — per-room planning, live cleaning and dock status, and consumables monitoring.**
+**v0.4.1 — per-room planning, live cleaning and dock status, and consumables monitoring.**
 
 ## Requirements
 
@@ -123,7 +123,7 @@ The preview uses simulated HA data only. Optional browser checks use Playwright:
 
 ## Consumables
 
-The info button below the battery opens a consumables overlay in either card view. Five bars show remaining life (`100 - usage`); cleaning solution shows OK or Refill required. Bars are orange at 25% or less and red at 10% or less. Any red bar also subtly highlights the info button in red.
+The info button below the battery opens a consumables overlay in either card view. Compact, rounded bars sit to the right of each material name and remaining-life value (`100 - usage`). Normal bars use the Home Assistant theme accent. Cleaning solution uses a non-interactive Ready to use, Refill required or Unavailable status chip. Bars are orange at 25% or less and red at 10% or less. Any red bar also subtly highlights the info button in red.
 
 Requires the integration's consumable sensors with `consumable_type` and `value_kind` attributes. Sensors are discovered on the selected Dyson device, including renamed entity IDs. Missing, ambiguous or unavailable values display Unavailable. The ioniser cartridge is omitted. Opening the overlay sends no service calls and preserves local drafts and the live map. Close it with the close button or Escape.
 
