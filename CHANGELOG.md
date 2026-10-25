@@ -2,6 +2,8 @@
 
 ## v0.4.1
 
+- Show Enabled/Disabled below Cleaning solution using the station switch, independently of refill status. Use a red Refill required chip and a neutral subtitle when the switch is unavailable.
+
 - Refine consumables into two-column rows with stacked labels and compact, rounded remaining-life bars.
 - Use the Home Assistant accent for normal life levels while preserving warning and low-life colors.
 - Replace the cleaning-solution OK label with a non-interactive Ready to use status chip, with distinct refill and unavailable states.

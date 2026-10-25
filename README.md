@@ -127,6 +127,8 @@ The info button below the battery opens a consumables overlay in either card vie
 
 Requires the integration's consumable sensors with `consumable_type` and `value_kind` attributes. Sensors are discovered on the selected Dyson device, including renamed entity IDs. Missing, ambiguous or unavailable values display Unavailable. The ioniser cartridge is omitted. Opening the overlay sends no service calls and preserves local drafts and the live map. Close it with the close button or Escape.
 
+Cleaning solution shows Enabled or Disabled below its name, based on the same-device station switch; unavailable switch data shows Status unavailable. The vertically centered chip separately reports supply status: Ready to use in the theme accent, Refill required in red, or Unavailable in neutral colors. Disabling use does not hide a refill warning.
+
 ### Station actions and drying time
 
 Station settings includes **Empty dust bin** and **Wash mop roller**, each with a native HA **Press** button. Actions execute immediately and leave room drafts untouched. Missing or unavailable actions are disabled. Wash mop roller also starts drying afterward, as controlled by the integration.
