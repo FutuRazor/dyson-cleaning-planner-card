@@ -45,7 +45,7 @@ class DysonCleaningPlannerEditor extends DysonRegistryElement {
     const h = escapeHtml;
     const vacuums = this.registry.filter(e => e.platform === DOMAIN && !e.disabled_by && e.entity_id.startsWith('vacuum.'));
     const config = { ...this.config, excluded_rooms: this.config.excluded_rooms ?? [], room_order: this.config.room_order ?? [] };
-    this.model = config.entity ? discover(this._hass, this.registry, config) : { rooms: [], issues: [], managed: [] };
+    this.model = config.entity ? discover(this._hass, this.registry, config) : { rooms: [], issues: [] };
     const device = this.registry.find(e => e.entity_id === config.entity)?.device_id;
     const field = (key, label, domain) => {
       const entries = this.registry.filter(e => e.platform === DOMAIN && !e.disabled_by && e.device_id === device && e.entity_id.startsWith(`${domain}.`));

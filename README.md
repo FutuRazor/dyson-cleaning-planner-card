@@ -2,7 +2,7 @@
 
 A Home Assistant Lovelace card for the Dyson Spot+Scrub integration.
 
-**v0.3.6b — per-room planning, live cleaning and dock status, and consumables monitoring.**
+**v0.4.0 — per-room planning, live cleaning and dock status, and consumables monitoring.**
 
 ## Requirements
 
@@ -107,7 +107,7 @@ The usual setup can be done in the visual editor: open the dashboard, choose **E
 | `camera_entity` | Optional explicit camera on the same Dyson device |
 | `camera_rotation` | `0`, `90`, `180`, or `270` degrees |
 
-Old `mode_entity` and `start_entity` configuration keys are accepted for compatibility, but the v0.3.6b card does not use global mode or start-button entities to execute a run.
+The obsolete global-mode/start-button adapter was removed in v0.4.0. Old `mode_entity` and `start_entity` configuration keys remain accepted but ignored; they can be removed from your YAML. Save and Start require the integration batch actions. Station controls and Pause/Resume/Home are unchanged.
 
 ## Development
 
