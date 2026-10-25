@@ -1,4 +1,4 @@
-/* Dyson Cleaning Planner Card v0.3.6b | MIT */
+/* Dyson Cleaning Planner Card v0.4.0 | MIT */
 const DOMAIN = 'dyson_spot_scrub';
 const ROOM_FIELDS = { cleaning_mode: 'Cleaning mode', cleaning_strategy: 'Vacuum Power', water_level: 'Water level', mop_repetitions: 'Clean repetitions' };
 const available = state => !!state && !['unavailable', 'unknown'].includes(state.state) && !state.attributes?.restored;
@@ -22,19 +22,16 @@ function normalizeConfig(config) {
 function discover(hass, registry, config) {
   const issues = [];
   const vacuum = registry.find(e => e.entity_id === config.entity && e.platform === DOMAIN && !e.disabled_by);
-  if (!vacuum?.device_id) return { rooms: [], managed: [], issues: ['The Dyson device was not found in the entity registry.'] };
+  if (!vacuum?.device_id) return { rooms: [], issues: ['The Dyson device was not found in the entity registry.'] };
   const entries = registry.filter(e => e.device_id === vacuum.device_id && e.platform === DOMAIN && !e.disabled_by);
   const serial = String(vacuum.unique_id ?? '').replace(/_vacuum$/, '');
   const pick = (explicit, suffix, domain) => {
     const candidates = entries.filter(e => e.entity_id.startsWith(`${domain}.`) && (explicit ? e.entity_id === explicit : e.unique_id === `${serial}_${suffix}`));
     return candidates.length === 1 ? candidates[0].entity_id : undefined;
   };
-  const modeEntity = pick(config.mode_entity, 'cleaning_mode', 'select');
-  const startEntity = pick(config.start_entity, 'start_button', 'button');
   const cameraEntity = pick(config.camera_entity, 'floor_map', 'camera');
   const batteryEntity = pick(undefined, 'battery', 'sensor');
   const chargingEntity = pick(undefined, 'charging', 'binary_sensor');
-  const managed = entries.filter(e => e.entity_id.startsWith('switch.') && String(e.unique_id).startsWith(`${serial}_room_`));
   const names = hass.states[config.entity]?.attributes?.rooms;
   if (!Array.isArray(names) || !names.length || names.some(n => typeof n !== 'string')) issues.push('The Dyson room list is not currently available.');
   const rooms = (Array.isArray(names) ? names.filter(n => typeof n === 'string') : []).flatMap(name => {
@@ -45,7 +42,6 @@ function discover(hass, registry, config) {
     const matches = allMatches.filter(e => !e.disabled_by);
     if (matches.length !== 1) return [{ name, entity: '', available: false, error: 'Room switch mapping is ambiguous' }];
     const entry = matches[0];
-    if (!managed.some(e => e.entity_id === entry.entity_id)) managed.push(entry);
     const settings = {};
     const roomIds = new Set();
     for (const key of Object.keys(ROOM_FIELDS)) {
@@ -66,7 +62,7 @@ function discover(hass, registry, config) {
   if (new Set(ids).size !== ids.length) issues.push('Multiple rooms map to the same switch.');
   const rank = id => { const i = config.room_order.indexOf(id); return i < 0 ? Number.MAX_SAFE_INTEGER : i; };
   rooms.sort((a, b) => rank(a.entity) - rank(b.entity));
-  return { rooms, managed: managed.map(e => e.entity_id), modeEntity, startEntity, cameraEntity, batteryEntity, chargingEntity, issues };
+  return { rooms, cameraEntity, batteryEntity, chargingEntity, issues };
 }
 
 function batteryStatus(hass, model) {
@@ -254,94 +250,6 @@ function fitMap(width, height, boxWidth, rotation) {
   const scale = boxWidth / (sideways ? height : width);
   return { width: width * scale, height: height * scale, frameHeight: (sideways ? width : height) * scale };
 }
-
-function createPlan(model, selected, mode) {
-  if (!selected.length) throw new Error('Select at least one room.');
-  if (new Set(selected).size !== selected.length) throw new Error('Duplicate room selection.');
-  const rooms = selected.map(entity => {
-    const room = model.rooms.find(r => r.entity === entity && !r.excluded);
-    if (!room?.available) throw new Error('A selected room is no longer available. Check the selection.');
-    return { entity_id: entity, name: room.name };
-  });
-  // Internal versioned contract, NOT a currently supported Dyson service payload.
-  return { version: 1, rooms, mode };
-}
-
-function assertReady(hass, model, config, plan) {
-  if (!hass || hass.connected === false) throw new Error('Home Assistant is not connected.');
-  const vacuum = hass.states[config.entity];
-  if (!available(vacuum) || !['docked', 'idle'].includes(vacuum.state)) throw new Error('Start is only available when the Dyson is ready (docked or idle).');
-  // button.* carries a last-press timestamp, not a readiness status.
-  // Do not inspect the start entity's state; button.press reports action errors.
-  const mode = hass.states[model.modeEntity];
-  if (!available(mode) || !mode.attributes?.options?.includes(plan.mode)) throw new Error('The selected cleaning mode is not available.');
-  // Only selected room switches are relevant to this run. Unrelated or obsolete
-  // switches in the registry must never block a cleaning session.
-  for (const { entity_id: id } of plan.rooms) {
-    const state = hass.states[id];
-    if (!available(state) || !['on', 'off'].includes(state.state)) throw new Error('A selected room switch is not available.');
-  }
-  createPlan(model, plan.rooms.map(r => r.entity_id), plan.mode);
-  for (const [domain, service] of [['select', 'select_option'], ['switch', 'turn_on'], ['switch', 'turn_off'], ['button', 'press']]) {
-    if (!hass.services?.[domain]?.[service]) throw new Error(`Home Assistant action ${domain}.${service} is unavailable.`);
-  }
-}
-
-async function waitForState(getHass, predicate, { timeout = 6000, interval = 100 } = {}) {
-  const deadline = Date.now() + timeout;
-  while (!predicate(getHass())) {
-    if (Date.now() >= deadline) throw new Error('Home Assistant did not confirm the setting in time. No start command was sent.');
-    await new Promise(resolve => setTimeout(resolve, interval));
-  }
-}
-
-// Legacy adapter. Never infer order from switch toggling, never use vacuum.start.
-const activeStarts = new Set();
-async function startLegacy(args) {
-  const key = args.config.entity;
-  if (activeStarts.has(key)) throw new Error('A start request for this Dyson is already running in this browser.');
-  activeStarts.add(key);
-  try { return await executeLegacy(args); }
-  finally { activeStarts.delete(key); }
-}
-
-async function executeLegacy({ getHass, getModel, config, plan, wait = waitForState, onProgress = () => {} }) {
-  const initial = getModel();
-  const signature = JSON.stringify([initial.modeEntity, initial.startEntity]);
-  const check = () => {
-    const model = getModel();
-    if (JSON.stringify([model.modeEntity, model.startEntity]) !== signature) throw new Error('The entity mapping changed. Please review it and try again.');
-    assertReady(getHass(), model, config, plan);
-    return model;
-  };
-  check();
-  const call = async (domain, service, data) => {
-    check();
-    await getHass().callService(domain, service, data);
-  };
-  onProgress('Applying cleaning mode …');
-  if (getHass().states[initial.modeEntity].state !== plan.mode) {
-    await call('select', 'select_option', { entity_id: initial.modeEntity, option: plan.mode });
-    await wait(getHass, h => h.states[initial.modeEntity]?.state === plan.mode);
-  }
-  const selected = new Set(plan.rooms.map(r => r.entity_id));
-  onProgress('Applying room selection …');
-  // Also clear ON switches for rooms excluded from this card or no longer on the map.
-  for (const id of initial.managed) {
-    const desired = selected.has(id) ? 'on' : 'off';
-    const state = getHass().states[id];
-    if (!state || !available(state) || !['on', 'off'].includes(state.state)) continue;
-    if (state.state !== desired) {
-      await call('switch', desired === 'on' ? 'turn_on' : 'turn_off', { entity_id: id });
-      await wait(getHass, h => h.states[id]?.state === desired);
-    }
-  }
-  check();
-  if (getHass().states[initial.modeEntity].state !== plan.mode || [...selected].some(id => getHass().states[id]?.state !== 'on')) throw new Error('The settings changed during preparation. No start command was sent.');
-  onProgress('Sending start command …');
-  await call('button', 'press', { entity_id: initial.startEntity });
-}
-
 
 const CONSUMABLES = [
   ['brushBar', 'Brush bar'], ['mopRoller', 'Mop roller'],
@@ -928,7 +836,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     message.classList.toggle('error', !!this.stationError);
   }
   headerHtml() {
-    return `<header><div class="robot"><ha-icon icon="mdi:robot-vacuum"></ha-icon></div><div class="header-title"><h2>${escapeHtml(this.config.title)}</h2><p>Dyson Spot+Scrub <span class="tag">v0.3.6b</span></p></div><div class="header-tools"><div class="battery" role="img"><svg viewBox="0 0 32 20" aria-hidden="true"><rect x="1" y="3" width="26" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="29" y="7" width="3" height="6" rx="1" fill="currentColor"/><rect class="battery-fill" x="4" y="6" width="0" height="8" rx="1" fill="currentColor"/><path class="battery-bolt" d="M17 1 9 11h6l-2 8L23 8h-7Z" fill="var(--dp-bg)" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" hidden/></svg><span class="battery-value" aria-hidden="true">—</span></div><button class="consumables-info" data-action="consumables" data-focus="consumables-info" aria-label="Consumables" aria-haspopup="dialog" aria-expanded="false" title="Consumables">Info</button></div></header>`;
+    return `<header><div class="robot"><ha-icon icon="mdi:robot-vacuum"></ha-icon></div><div class="header-title"><h2>${escapeHtml(this.config.title)}</h2><p>Dyson Spot+Scrub <span class="tag">v0.4.0</span></p></div><div class="header-tools"><div class="battery" role="img"><svg viewBox="0 0 32 20" aria-hidden="true"><rect x="1" y="3" width="26" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="29" y="7" width="3" height="6" rx="1" fill="currentColor"/><rect class="battery-fill" x="4" y="6" width="0" height="8" rx="1" fill="currentColor"/><path class="battery-bolt" d="M17 1 9 11h6l-2 8L23 8h-7Z" fill="var(--dp-bg)" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" hidden/></svg><span class="battery-value" aria-hidden="true">—</span></div><button class="consumables-info" data-action="consumables" data-focus="consumables-info" aria-label="Consumables" aria-haspopup="dialog" aria-expanded="false" title="Consumables">Info</button></div></header>`;
   }
   updateBattery() {
     const state = batteryStatus(this._hass, this.model);
@@ -1097,7 +1005,7 @@ class DysonCleaningPlannerEditor extends DysonRegistryElement {
     const h = escapeHtml;
     const vacuums = this.registry.filter(e => e.platform === DOMAIN && !e.disabled_by && e.entity_id.startsWith('vacuum.'));
     const config = { ...this.config, excluded_rooms: this.config.excluded_rooms ?? [], room_order: this.config.room_order ?? [] };
-    this.model = config.entity ? discover(this._hass, this.registry, config) : { rooms: [], issues: [], managed: [] };
+    this.model = config.entity ? discover(this._hass, this.registry, config) : { rooms: [], issues: [] };
     const device = this.registry.find(e => e.entity_id === config.entity)?.device_id;
     const field = (key, label, domain) => {
       const entries = this.registry.filter(e => e.platform === DOMAIN && !e.disabled_by && e.device_id === device && e.entity_id.startsWith(`${domain}.`));

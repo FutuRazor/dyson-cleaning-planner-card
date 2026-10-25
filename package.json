@@ -1,6 +1,6 @@
 {
   "name": "dyson-cleaning-planner-card",
-  "version": "0.3.6b",
+  "version": "0.4.0",
   "private": true,
   "type": "module",
   "description": "Home Assistant Lovelace cleaning planner for Dyson Spot+Scrub",

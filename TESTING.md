@@ -1,12 +1,16 @@
-# Testing v0.3.6b
+# Testing v0.4.0
 
 ## v0.3.5 acceptance
 
 The user confirmed the fault subtitle and relocated controls in live Home Assistant with the v0.3.4a/b test builds. Check that the discard icon is visible only with a draft, preserves the summary row height and sends no robot command. Refresh rooms is below room ordering in the visual editor and refreshes the preview without changing room order, exclusions or draft settings. Fault subtitles disappear with the active fault; status logic is unchanged.
 
+## v0.4.0 cleanup
+
+Verify Save and Start with the global mode and original start-button entities absent. Old `mode_entity` and `start_entity` keys are ignored. Missing batch actions must produce an error without individual entity calls. Station switches, selects and buttons and vacuum Pause/Resume/Home remain supported.
+
 ## Automated checks
 
-- Core regression tests cover discovery, legacy behavior, session states, controls, camera sizing and battery status.
+- Core regression tests cover discovery, session states, controls, camera sizing and battery status.
 - Batch tests cover exact Save/Start payloads, multiple rooms, Unicode/renamed entities, missing actions, stale IDs, unavailable fields and concurrent requests.
 - Browser checks use simulated HA entities to exercise independent room drafts, Save without Start, combined Start payloads, active views, editor, mobile layout, camera rotation/polling and request cleanup.
 
@@ -25,7 +29,7 @@ The v0.3.3a test build was verified in live Home Assistant: return status appear
 - Recheck scroll retention after room selection, expanding/collapsing settings and changing modes. Verify each view transition starts at the top, including reloading during an active clean.
 - During drying, verify the bar shrinks with remaining time, ends before Cancel and disappears without valid total/remaining values. Confirm 0 remaining yields an empty bar without inferring the dock is idle.
 
-1. Confirm the card header is v0.3.6b and both new Dyson actions exist.
+1. Confirm the card header is v0.4.0 and both new Dyson actions exist.
 2. Type a title without pressing Enter; confirm immediate preview updates and stable cursor position. Expand two rooms. Confirm unselected rooms have no Not selected suffix. Select Clean repetitions in every cleaning mode, including Vacuum. Check mode-dependent visibility and enable Always show all settings to inspect all four dropdowns.
 3. Change several options. HA entities and the robot must remain unchanged during editing. Only the edited room should change in the card.
 4. Click Save settings. Confirm one `save_room_settings` action carries all changes, HA reflects the values, and cleaning does not start. The card's room selection must remain selected.
@@ -57,13 +61,13 @@ On the robot, start one room from this card and watch the badge through startup.
 
 Run `node tests/layout-browser.mjs` with Playwright available. In a real Sections dashboard, verify the 9-column minimum, automatic height, manual height with reachable controls, and restoring Auto height. Check the planner, active session and consumables overlay.
 
-## Station settings (v0.3.6b)
+## Station settings (v0.4.0)
 
 Run `node tests/station-browser.mjs` with Playwright and Edge available. Verify exact service targeting, live state updates, draft preservation, missing entities and service errors. On real hardware, check all six settings against the Dyson app; settings should update immediately without Save or Start. Check both tabs, keyboard navigation, mobile scrolling, and the low-consumables Info indicator. Hardware validation of the new station UI remains pending.
 
 Station switch browser checks use a preview-only `ha-switch` mock. Production uses the component supplied by Home Assistant; verify native appearance and toggling in a real HA dashboard.
 
-## Station actions and drying sensor (v0.3.6b)
+## Station actions and drying sensor (v0.4.0)
 
 - Verify native Press buttons in HA, including hover, keyboard focus and disabled appearance. Preview controls are mocks.
 - Check one button.press call per press, unavailable actions, errors and unchanged room drafts.

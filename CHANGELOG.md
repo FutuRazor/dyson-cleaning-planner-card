@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.4.0
+
+- Remove the unused legacy start adapter, its global mode/start-button discovery, and obsolete preparation helpers.
+- Keep room planning and execution exclusively on the existing batch actions; retain room-switch discovery and all station/session controls.
+- Continue accepting old `mode_entity` and `start_entity` configuration keys as ignored values.
+- Replace legacy-only tests with batch regression coverage and update documentation and the compiled bundle.
+
 ## v0.3.6b
 
 - Open Info on Station settings, followed by Consumables. Keep station actions quiet on success and show only failures.

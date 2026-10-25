@@ -18,6 +18,9 @@ test('save combines changed options from several rooms into one targeted action'
 
 test('start sends room IDs in local order and settings together, independent of global entities', async () => {
   const f = batchFixture(); delete f.hass.states[f.mode]; delete f.hass.states[f.start];
+  f.registry = f.registry.filter(row => ![f.mode, f.start].includes(row.entity_id));
+  f.config.mode_entity = 'select.obsolete';
+  f.config.start_entity = 'button.obsolete';
   f.hass.states[f.ids[4]].state = 'unavailable';
   await send(f, { start: true, selected: [f.ids[1], f.ids[0]], draft: { 11: { cleaning_mode: 'Vacuum then Mop' } } });
   assert.deepEqual(f.calls, [{ domain: 'dyson_spot_scrub', service: 'start_rooms_with_settings', data: {
@@ -39,6 +42,18 @@ test('discovery uses registry identities despite obfuscated entity IDs and refre
 test('missing batch service never falls back to select, switch or button calls', async () => {
   const f = batchFixture(); delete f.hass.services.dyson_spot_scrub;
   await assert.rejects(send(f, { start: true, selected: [f.ids[0]] }), /integration/);
+  await assert.rejects(send(f, { draft: { 10: { cleaning_mode: 'Mop' } } }), /integration/);
+  assert.equal(f.calls.length, 0);
+});
+
+test('batch start rejects empty selections, unavailable selected rooms and active robots', async () => {
+  const f = batchFixture();
+  await assert.rejects(send(f, { start: true, selected: [] }), /at least one room/);
+  f.hass.states[f.ids[0]].state = 'unavailable';
+  await assert.rejects(send(f, { start: true, selected: [f.ids[0]] }), /unavailable or ambiguous/);
+  f.hass.states[f.ids[0]].state = 'off';
+  f.hass.states[f.entity].state = 'cleaning';
+  await assert.rejects(send(f, { start: true, selected: [f.ids[0]] }), /ready/);
   assert.equal(f.calls.length, 0);
 });
 
