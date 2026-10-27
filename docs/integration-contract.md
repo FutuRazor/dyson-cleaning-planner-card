@@ -1,4 +1,4 @@
-# v0.4.0 integration contract
+# v0.4.1 integration contract
 
 The frontend holds only a local draft. The integration translates option labels into Dyson array values.
 

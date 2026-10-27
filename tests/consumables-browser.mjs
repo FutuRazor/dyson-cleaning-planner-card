@@ -29,6 +29,17 @@ try {
   assert.equal(await card.locator('[role="meter"]').count(), 5);
   assert.equal(await card.locator('.consumable-row').count(), 6);
   assert.match(await card.locator('.consumables-rows').innerText(), /96% remaining/);
+  assert.equal(await card.locator('.consumable-chip.ready').innerText(), 'Ready to use');
+  assert.equal(await card.locator('.consumable-solution .consumable-value').innerText(), 'Disabled');
+  for (const [state, label] of [['on', 'Enabled'], ['off', 'Disabled'], ['unavailable', 'Status unavailable']]) {
+    await page.evaluate(state => {
+      demo.hass.states['switch.renamed_station_1'].state = state;
+      demo.card.hass = { ...demo.hass };
+    }, state);
+    assert.equal(await card.locator('.consumable-solution .consumable-value').innerText(), label);
+    assert.equal(await card.locator('.consumable-chip.ready').innerText(), 'Ready to use');
+  }
+  assert.equal(await card.locator('.consumable-chip').evaluate(el => el.tabIndex), -1);
   assert.equal(await card.locator('.planner-content').evaluate(el => el.inert), true);
   await card.locator('.consumables-close').focus();
   await page.keyboard.press('Tab');
@@ -40,6 +51,10 @@ try {
   });
   assert.equal(await card.locator('.consumables-info.attention').count(), 0);
   assert.match(await card.locator('.consumables-rows').innerText(), /Refill required/);
+  assert.equal(await card.locator('.consumable-chip.refill').evaluate(el => getComputedStyle(el).color), await card.locator('.consumables-info').evaluate(el => {
+    const probe = document.createElement('span'); probe.style.color = 'var(--error-color,#b3261e)'; el.append(probe);
+    const color = getComputedStyle(probe).color; probe.remove(); return color;
+  }));
   await page.keyboard.press('Escape');
   assert.equal(await card.getByRole('dialog').isVisible(), false);
   assert.equal(await card.locator('.consumables-info').evaluate(el => el === el.getRootNode().activeElement), true);
@@ -56,6 +71,20 @@ try {
   await page.screenshot({ path: 'artifacts/consumables-mobile.png', fullPage: true });
   await page.locator('body').evaluate(el => el.classList.add('dark'));
   await page.screenshot({ path: 'artifacts/consumables-dark.png', fullPage: true });
+  await page.evaluate(() => {
+    demo.hass.states['sensor.demo_consumable_5'].state = 'ok';
+    demo.card.hass = { ...demo.hass };
+  });
+  for (const width of [320, 390, 760]) {
+    await page.setViewportSize({ width, height: 1000 });
+    assert.equal(await card.locator('.consumables-panel').evaluate(el => el.scrollWidth <= el.clientWidth), true);
+    assert.equal(await card.locator('.consumable-row').first().evaluate(el => {
+      const label = el.querySelector('.consumable-label').getBoundingClientRect();
+      const bar = el.querySelector('.consumable-track').getBoundingClientRect();
+      return bar.left > label.right && bar.height === 12 && Math.abs((bar.top + bar.bottom - label.top - label.bottom) / 2) < 1;
+    }), true);
+    await page.screenshot({ path: `artifacts/consumables-v0.4.1-${width}.png`, fullPage: true });
+  }
   assert.deepEqual(errors, []);
   console.log('Consumables browser checks passed: live values, warning, focus, draft, no commands, map persistence and mobile layout.');
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }
