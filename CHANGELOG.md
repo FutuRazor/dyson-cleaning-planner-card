@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.0.0
+
+- Prepare the first stable release, requiring Dyson Spot+Scrub integration v1.5.0 or newer.
+- Move the version badge from the planner and cleaning headers to the shared Info overlay heading.
+- Show the README as the repository description in HACS.
+- Align package versions, generated bundle, test expectations and release documentation.
+
 ## v0.4.1
 
 - Show Enabled/Disabled below Cleaning solution using the station switch, independently of refill status. Use a red Refill required chip and a neutral subtitle when the switch is unavailable.

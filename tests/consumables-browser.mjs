@@ -23,7 +23,10 @@ try {
   assert.equal(await card.locator('.planner-content').evaluate(el => getComputedStyle(el).paddingLeft), '0px');
   await card.locator('input[data-room]').first().check();
   await card.locator('.consumables-info').click();
+  assert.equal(await card.locator('header .tag').count(), 0);
+  assert.equal(await card.locator('.consumables-heading .tag').innerText(), 'v1.0.0');
   await card.locator('[data-info-tab=consumables]').click();
+  assert.equal(await card.locator('.consumables-heading .tag').isVisible(), true);
   assert.equal(await card.locator('.consumables-info.attention').count(), 1);
   assert.equal(await card.getByRole('dialog').isVisible(), true);
   assert.equal(await card.locator('[role="meter"]').count(), 5);
@@ -64,7 +67,10 @@ try {
   assert.equal(await card.locator('.planner-content').evaluate(el => getComputedStyle(el).paddingLeft), '0px');
   await page.evaluate(() => { demo.savedMap = demo.card.shadowRoot.querySelector('dyson-planner-map'); });
   await card.locator('.consumables-info').click();
+  assert.equal(await card.locator('header .tag').count(), 0);
+  assert.equal(await card.locator('.consumables-heading .tag').innerText(), 'v1.0.0');
   await card.locator('[data-info-tab=consumables]').click();
+  assert.equal(await card.locator('.consumables-heading .tag').isVisible(), true);
   assert.equal(await page.evaluate(() => demo.savedMap === demo.card.shadowRoot.querySelector('dyson-planner-map')), true);
   assert.equal(await card.locator('.consumables-panel').evaluate(el => el.getBoundingClientRect().right <= innerWidth), true);
   await mkdir('artifacts', { recursive: true });
@@ -83,7 +89,7 @@ try {
       const bar = el.querySelector('.consumable-track').getBoundingClientRect();
       return bar.left > label.right && bar.height === 12 && Math.abs((bar.top + bar.bottom - label.top - label.bottom) / 2) < 1;
     }), true);
-    await page.screenshot({ path: `artifacts/consumables-v0.4.1-${width}.png`, fullPage: true });
+    await page.screenshot({ path: `artifacts/consumables-v1.0.0-${width}.png`, fullPage: true });
   }
   assert.deepEqual(errors, []);
   console.log('Consumables browser checks passed: live values, warning, focus, draft, no commands, map persistence and mobile layout.');

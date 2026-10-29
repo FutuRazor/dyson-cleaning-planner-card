@@ -1,4 +1,5 @@
 {
   "name": "Dyson Cleaning Planner Card",
-  "filename": "dyson-cleaning-planner-card.js"
+  "filename": "dyson-cleaning-planner-card.js",
+  "render_readme": true
 }
