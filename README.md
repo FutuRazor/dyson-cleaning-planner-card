@@ -1,20 +1,13 @@
 # Dyson Cleaning Planner Card
 
-A Home Assistant Lovelace card for the Dyson Spot+Scrub integration.
+A Home Assistant dashboard card for planning room cleaning and keeping an eye on your Dyson Spot+Scrub AI.
 
-**v0.4.1 — per-room planning, live cleaning and dock status, and consumables monitoring.**
+**Version 1.0.0**
 
 ## Requirements
 
-The [Dyson Spot+Scrub integration](https://github.com/UNsync3D/ha-dyson-spot-scrub) is required.
-
-The updated Dyson integration must provide:
-
-- `dyson_spot_scrub.save_room_settings`
-- `dyson_spot_scrub.start_rooms_with_settings`
-- Per-room selects for `cleaning_mode`, `cleaning_strategy`, `water_level`, and `mop_repetitions`, with a `room_id` attribute.
-
-The card checks action availability. It does not fall back to individual select writes or the legacy start button.
+- [Dyson Spot+Scrub integration by UNsync3D](https://github.com/UNsync3D/ha-dyson-spot-scrub), **v1.5.0 or newer**, installed and configured in Home Assistant.
+- [HACS](https://www.hacs.xyz/) for the recommended installation method. Manual installation is also supported.
 
 ## Screenshots
 
@@ -22,115 +15,130 @@ The card checks action availability. It does not fall back to individual select 
   <tr>
     <td align="center">
       <img src="docs/images/room-planner.png" alt="Room selection and cleaning settings" width="320">
-      <br>Room selection and cleaning settings
+      <br>Plan a clean
     </td>
     <td align="center">
-      <img src="docs/images/cleaning-session.png" alt="Active cleaning session and live map" width="320">
-      <br>Active cleaning session and live map
+      <img src="docs/images/cleaning-session.png" alt="Cleaning status, selected rooms and live map" width="320">
+      <br>Follow the cleaning session
     </td>
   </tr>
 </table>
 
-[Try the interactive preview](https://futurazor.github.io/dyson-cleaning-planner-card/preview/index.html) with simulated Home Assistant entities. No robot is connected.
+[Try the interactive preview](https://futurazor.github.io/dyson-cleaning-planner-card/preview/index.html). It uses simulated data; no robot is connected.
 
-## Editing and cleaning
+## Installation
 
-Choose rooms and set each room's cleaning mode, Vacuum Power, water level, and Clean repetitions. The card keeps edits as a local draft until you save or start. **Save settings** sends changed options without starting a clean; **Start clean** sends the selected rooms and their changed options together. The integration currently does not guarantee the order in which rooms are cleaned. Drafts are lost if the card is reloaded before saving or starting.
+### HACS (recommended)
 
-Use the trash icon beside **Local draft** to discard unsaved settings and restore the room selection reported by Home Assistant. The icon only appears when a local draft exists.
+1. Open **HACS** in Home Assistant.
+2. Open the **⋮ menu → Custom repositories**.
+3. Enter `https://github.com/FutuRazor/dyson-cleaning-planner-card`, select **Dashboard** as the type, and click **Add**.
+4. Find **Dyson Cleaning Planner Card** in HACS, open it, and download it.
+5. Reload your Home Assistant page.
 
-Clean repetitions is available in every cleaning mode when the integration provides the setting. Water level is hidden in Vacuum mode, and Vacuum Power is hidden in Mop mode. **Always show all settings** keeps them visible; unavailable options can be shown disabled or hidden.
-
-## Discovery
-
-The card finds rooms and settings belonging to the selected Dyson vacuum, using the integration's room IDs rather than guessing from room names. It also finds that device's battery and charging sensors. Missing or ambiguous entities are skipped. If the robot's map changes, use **Refresh rooms** below the room order in the card editor and review any explicit room mappings or exclusions. Discovery also refreshes automatically every 30 seconds.
-
-## During a clean
-
-During a clean, the card shows the live robot state and optional camera instead of room selection. It can show the rooms started from this card, but the integration does not report confirmed room progress or a queue. **Pause/Resume** and **Home** are available when supported by the integration. The camera can be hidden or rotated in 90-degree steps.
-
-The session header stays **Cleaning session**, with live activity below it and requested-room badges underneath. When provided by the integration, `full_clean_action` identifies vacuuming, mopping, or both. Otherwise the card shows **Cleaning**.
-
-After docking, the planner shows **Cleaning mop roller**, **Drying mop roller**, or **Emptying dust bin** above the rooms, based on `dock_state`. The message disappears when the dock becomes idle. Start is available during roller drying: the integration ends drying when starting the new clean. Start follows the integration’s `ready_to_start` attribute and remains disabled during return/cleanup, roller washing and dust collection; local planning remains available. The reason appears below the header. Older integrations without readiness attributes retain dock-state checks but cannot reliably block the return/cleanup interval. During drying, a muted subtitle shows **Remaining time: 01:40 (hh:mm)** from the integration’s `drying_remaining_seconds` attribute. It updates with robot telemetry (roughly once per minute); missing data shows **Remaining time: unavailable**. The cancel icon calls `dyson_spot_scrub.cancel_drying` for the selected vacuum when that action is available. The card waits for the real dock status to change and does not assume cancellation succeeded. Robot errors remain visible. When the integration provides a fault description, it appears beneath **Robot needs attention**. The card follows the current reported fault and does not retain cleared errors.
-
-During roller drying, a bar below the remaining-time subtitle shows the fraction of drying time still remaining. It uses the card's accent color and stops before the cancel button. The bar updates with robot telemetry and is hidden if total or remaining time is invalid or unavailable.
-
-## Info and station settings
-
-The **Info** overlay has two tabs: **Consumables** shows remaining supply life; **Station settings** contains Hot water mopping, Cleaning solution, Extended roller preparation, Hot water self-cleaning, Self-cleaning frequency and Roller drying duration, in that order.
-
-Station settings are detected on the selected Dyson device, even after entity renames. Switches use Home Assistant’s native `ha-switch` component, and dropdowns sit to the right of their labels. Changes immediately call the corresponding switch or select action; they are independent of the room draft and Save settings. Displayed values follow Home Assistant. Dropdown options come from the integration. Missing, unavailable or ambiguous entities are disabled; this tab requires the integration version that provides the six station entities. The Info button still turns subtly red when consumables are low.
-
-## Install or update for testing
+If the repository is already listed in HACS, you can find and download it directly. See [HACS custom repository instructions](https://www.hacs.xyz/docs/faq/custom_repositories/) if needed.
 
 ### Manual installation
 
-Copy **only** `dist/dyson-cleaning-planner-card.js` into Home Assistant's `www` folder. For example, place the file at:
+1. Download **dyson-cleaning-planner-card.js** from the [latest release](https://github.com/FutuRazor/dyson-cleaning-planner-card/releases/latest).
+2. Copy **only this JavaScript file** into:
 
-`/config/www/dyson-planner/dyson-cleaning-planner-card.js`
+   ```text
+   /config/www/dyson-planner/dyson-cleaning-planner-card.js
+   ```
 
-Create the `www` and `dyson-planner` folders if needed. Copy the JavaScript file itself, not the `dist` folder. Home Assistant paths use forward slashes (`/`); backslashes (`\`) are used in Windows file paths.
+   Create the `www` and `dyson-planner` folders if needed. Do not copy the whole `dist` folder. When accessing the configuration folder from Windows, the relative path is `www\dyson-planner\dyson-cleaning-planner-card.js`.
 
-Register the file as a dashboard resource the first time you install it. Go to **Settings → Dashboards → ⋮ → Resources → Add resource**, then enter:
+3. Go to **Settings → Dashboards → ⋮ → Resources → Add resource**:
+   - **URL:** `/local/dyson-planner/dyson-cleaning-planner-card.js`
+   - **Resource type:** JavaScript module
+4. If you created the `www` folder for the first time, restart Home Assistant. Reload the dashboard afterward.
 
-- URL: `/local/dyson-planner/dyson-cleaning-planner-card.js`
-- Resource type: **JavaScript module**
+If **Resources** is not visible, enable **Advanced mode** in your Home Assistant user profile.
 
-If you have just created the `www` folder, restart Home Assistant once so it can serve files from that folder.
+### Add the card to your dashboard
 
-When updating a manual install, replace that same JavaScript file and hard-refresh the Home Assistant page with **Ctrl+F5**. Once the resource is registered, its URL does not need to change for updates. If a hard refresh is unavailable and the old version remains, clear the browser cache and reload Home Assistant.
+Open your dashboard and choose **Edit dashboard → Add card**. Search for **Dyson Cleaning Planner**, select your Dyson vacuum, and save. Rooms and supported controls are detected automatically.
 
-### HACS installation
+The visual editor handles the usual setup; no YAML is required.
 
-Install the card from HACS and use HACS to update it. HACS registers the dashboard resource automatically when resources are managed in the Home Assistant UI. If your resources are managed in YAML, add the installed card's resource URL to the `lovelace.resources` list instead. To add the card to a dashboard, open the dashboard, choose **Edit dashboard → Add card**, search for **Dyson Cleaning Planner**, then select your vacuum and options in the card editor. No YAML is needed for the usual card setup.
+<details>
+<summary>If the card does not appear after a HACS installation</summary>
 
-## Dashboard layout
+Reload the page first. If the card is still missing, check **Settings → Dashboards → ⋮ → Resources** for this JavaScript module:
 
-In the card editor's **Layout** tab, the default height is automatic and the minimum width is 9 columns. Turn off **Auto height** to choose a fixed height. If the content exceeds that height, scroll inside the card to reach all settings and controls. Turn Auto height back on to restore the natural content height. The internal layout remains unchanged.
+```text
+/hacsfiles/dyson-cleaning-planner-card/dyson-cleaning-planner-card.js
+```
 
-In a fixed-height card, selecting rooms, expanding settings and changing options preserve the planner's scroll position. Switching between planner and cleaning views starts at the top. Room-setting dropdowns close after a selection, including on iOS.
+Add it only if it is missing. If you manage dashboard resources in YAML, register that URL in your `lovelace.resources` configuration instead.
 
-## Card options
+</details>
 
-The usual setup can be done in the visual editor: open the dashboard, choose **Edit dashboard**, then edit the Dyson Cleaning Planner card. The options below are also available in that card's YAML editor; they do not belong in Home Assistant's `configuration.yaml`.
+### Updates
+
+Update through HACS, or replace the same JavaScript file for a manual installation. Reload the page; if the old version remains, use **Ctrl+F5** on a desktop browser or clear the frontend cache in your browser/app. You do not normally need to change the resource URL.
+
+## Using the card
+
+### Plan a clean
+
+Select rooms and adjust **Cleaning mode**, **Vacuum Power**, **Water level**, and **Clean repetitions**. Changes stay in a local draft until you choose:
+
+- **Save settings** — save changed room settings without starting a cleaning session.
+- **Start clean** — start the selected rooms with your chosen settings.
+
+The trash icon beside **Local draft** discards unsaved changes. Reloading the card also clears the draft. The robot may clean rooms in a different order from your selection.
+
+### During and after cleaning
+
+The card switches to a cleaning view with robot status, room badges when known, and an optional live map. Use **Pause**, **Resume**, or **Home** as available.
+
+Dock activity appears below the header, including dust-bin emptying, roller washing and drying. Drying shows the remaining time and a progress bar when available, with a button to cancel it. New cleaning starts follow the integration's readiness checks; starting during drying is allowed.
+
+### Station settings and consumables
+
+The **Info** button opens two tabs:
+
+- **Station settings:** hot-water options, cleaning solution, extended roller preparation, self-cleaning frequency and drying duration, plus **Empty dust bin** and **Wash mop roller**.
+- **Consumables:** remaining life for the brush bar, mop roller, side brushes and filters, plus cleaning-solution availability and whether its use is enabled.
+
+**Station settings take effect immediately** and are separate from the room draft. Consumable bars change from the theme accent to orange and red as their remaining life decreases. The Info button highlights red when a consumable needs attention.
+
+## Customization
+
+Open **Edit dashboard**, then edit the card to change its title, room visibility and display order, optional map and map rotation. You can also choose whether unavailable settings are hidden or disabled, and whether settings irrelevant to the selected cleaning mode remain visible.
+
+Where Home Assistant offers the **Layout** tab, height is automatic by default. A fixed height enables scrolling inside the card. Room edits preserve your scroll position; switching between planner and cleaning views starts at the top.
+
+<details>
+<summary>Advanced YAML options</summary>
+
+These options belong in the individual card's code editor, not in `configuration.yaml`.
 
 | Option | Description |
 |---|---|
 | `entity` | Required Dyson vacuum entity |
-| `title` | Planner header text; defaults to `Plan a clean`; edits update the preview as you type |
-| `always_show_all_settings` | Show all dropdowns regardless of mode or unavailable-setting visibility; defaults to `false` |
+| `title` | Planner title; default: `Plan a clean` |
+| `always_show_all_settings` | Keep all room settings visible; default: `false` |
 | `unsupported_settings` | `disabled` (default) or `hidden` |
-| `excluded_rooms` | Room switch entity IDs hidden in this card |
-| `room_order` | Room switch IDs defining display order |
-| `room_entities` | Optional map from current Dyson room names to switch entity IDs |
-| `show_camera` | Show the camera during a session; defaults to `true` |
-| `camera_entity` | Optional explicit camera on the same Dyson device |
+| `excluded_rooms` | Room switch entity IDs to hide |
+| `room_order` | Room switch entity IDs in display order |
+| `room_entities` | Optional mapping from room names to switch entity IDs |
+| `show_camera` | Show the map during cleaning; default: `true` |
+| `camera_entity` | Optional camera entity on the same Dyson device |
 | `camera_rotation` | `0`, `90`, `180`, or `270` degrees |
 
-The obsolete global-mode/start-button adapter was removed in v0.4.0. Old `mode_entity` and `start_entity` configuration keys remain accepted but ignored; they can be removed from your YAML. Save and Start require the integration batch actions. Station controls and Pause/Resume/Home are unchanged.
+</details>
 
-## Development
+## Limitations and troubleshooting
 
-Node.js 22 or newer, no build or runtime dependencies:
+- The card relies on the integration for room data, robot status and supported actions. It does not guarantee cleaning order or report confirmed progress for each room.
+- After changes to the robot's map, use **Refresh rooms** below the room order in the card editor if needed.
+- If controls are unavailable, check the corresponding device and entities in Home Assistant and confirm that the required integration version is installed.
 
-```sh
-node --test tests/*.test.mjs
-node scripts/build.mjs
-node scripts/preview.mjs
-```
 
-The preview uses simulated HA data only. Optional browser checks use Playwright: `node tests/browser.mjs`, `node tests/batch-browser.mjs`, and `node tests/ui-browser.mjs`. Set `BROWSER_CHANNEL=msedge` for an installed Edge browser. See [TESTING.md](TESTING.md) for the device test checklist and [the integration contract](docs/integration-contract.md) for payloads and limitations.
 
-## Consumables
+## License
 
-The info button below the battery opens a consumables overlay in either card view. Compact, rounded bars sit to the right of each material name and remaining-life value (`100 - usage`). Normal bars use the Home Assistant theme accent. Cleaning solution uses a non-interactive Ready to use, Refill required or Unavailable status chip. Bars are orange at 25% or less and red at 10% or less. Any red bar also subtly highlights the info button in red.
-
-Requires the integration's consumable sensors with `consumable_type` and `value_kind` attributes. Sensors are discovered on the selected Dyson device, including renamed entity IDs. Missing, ambiguous or unavailable values display Unavailable. The ioniser cartridge is omitted. Opening the overlay sends no service calls and preserves local drafts and the live map. Close it with the close button or Escape.
-
-Cleaning solution shows Enabled or Disabled below its name, based on the same-device station switch; unavailable switch data shows Status unavailable. The vertically centered chip separately reports supply status: Ready to use in the theme accent, Refill required in red, or Unavailable in neutral colors. Disabling use does not hide a refill warning.
-
-### Station actions and drying time
-
-Station settings includes **Empty dust bin** and **Wash mop roller**, each with a native HA **Press** button. Actions execute immediately and leave room drafts untouched. Missing or unavailable actions are disabled. Wash mop roller also starts drying afterward, as controlled by the integration.
-
-Remaining drying time and its bar use the dedicated drying sensor on the selected robot. Older integrations without this sensor use the vacuum attributes. A registered but unavailable sensor displays no time or progress; it never falls back to stale values. The dock status still determines when the drying display appears.
+[MIT](LICENSE) · Copyright (c) 2026 FutuRazor.
