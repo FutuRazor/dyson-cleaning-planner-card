@@ -1,6 +1,5 @@
 {
   "name": "Dyson Cleaning Planner Card",
   "filename": "dyson-cleaning-planner-card.js",
-  "type": "plugin",
   "render_readme": true
 }
