@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Compact the Info overlay by placing the close button beside the tabs and removing the heading and version badge.
+
 ## v1.0.0
 
 - Prepare the first stable release, requiring Dyson Spot+Scrub integration v1.5.0 or newer.

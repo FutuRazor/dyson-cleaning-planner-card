@@ -24,9 +24,9 @@ try {
   await card.locator('input[data-room]').first().check();
   await card.locator('.consumables-info').click();
   assert.equal(await card.locator('header .tag').count(), 0);
-  assert.equal(await card.locator('.consumables-heading .tag').innerText(), 'v1.0.0');
+  assert.equal(await card.locator('.consumables-panel h3, .tag').count(), 0);
   await card.locator('[data-info-tab=consumables]').click();
-  assert.equal(await card.locator('.consumables-heading .tag').isVisible(), true);
+  assert.equal(await card.locator('.info-toolbar .consumables-close').isVisible(), true);
   assert.equal(await card.locator('.consumables-info.attention').count(), 1);
   assert.equal(await card.getByRole('dialog').isVisible(), true);
   assert.equal(await card.locator('[role="meter"]').count(), 5);
@@ -68,9 +68,9 @@ try {
   await page.evaluate(() => { demo.savedMap = demo.card.shadowRoot.querySelector('dyson-planner-map'); });
   await card.locator('.consumables-info').click();
   assert.equal(await card.locator('header .tag').count(), 0);
-  assert.equal(await card.locator('.consumables-heading .tag').innerText(), 'v1.0.0');
+  assert.equal(await card.locator('.consumables-panel h3, .tag').count(), 0);
   await card.locator('[data-info-tab=consumables]').click();
-  assert.equal(await card.locator('.consumables-heading .tag').isVisible(), true);
+  assert.equal(await card.locator('.info-toolbar .consumables-close').isVisible(), true);
   assert.equal(await page.evaluate(() => demo.savedMap === demo.card.shadowRoot.querySelector('dyson-planner-map')), true);
   assert.equal(await card.locator('.consumables-panel').evaluate(el => el.getBoundingClientRect().right <= innerWidth), true);
   await mkdir('artifacts', { recursive: true });
@@ -84,6 +84,11 @@ try {
   for (const width of [320, 390, 760]) {
     await page.setViewportSize({ width, height: 1000 });
     assert.equal(await card.locator('.consumables-panel').evaluate(el => el.scrollWidth <= el.clientWidth), true);
+    assert.equal(await card.locator('.info-toolbar').evaluate(el => {
+      const tabs = el.querySelector('.info-tabs').getBoundingClientRect();
+      const close = el.querySelector('.consumables-close').getBoundingClientRect();
+      return tabs.right <= close.left && Math.abs(tabs.top - close.top) < 1 && close.width >= 42 && close.height >= 42 && el.scrollWidth <= el.clientWidth;
+    }), true, 'tabs and close button share one row without overlap');
     assert.equal(await card.locator('.consumable-row').first().evaluate(el => {
       const label = el.querySelector('.consumable-label').getBoundingClientRect();
       const bar = el.querySelector('.consumable-track').getBoundingClientRect();
