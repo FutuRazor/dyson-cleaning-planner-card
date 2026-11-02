@@ -2,6 +2,18 @@
 class DysonCleaningPlannerEditor extends DysonRegistryElement {
   constructor() {
     super();
+    const previewInteraction = event => {
+      const el = event.target.closest('input, select, button');
+      if (!el) return;
+      if (['show_camera', 'camera_entity', 'camera_rotation'].includes(el.dataset.key)) this.setSessionPreview(true);
+      else if (['unsupported_settings', 'always_show_all_settings'].includes(el.dataset.key)
+        || el.dataset.include || el.dataset.order || el.dataset.action === 'refresh') this.setSessionPreview(false);
+    };
+    for (const type of ['pointerdown', 'click', 'change', 'keydown']) {
+      this.shadowRoot.addEventListener(type, event => {
+        if (type !== 'keydown' || ['Enter', ' ', 'ArrowDown', 'ArrowUp', 'F4'].includes(event.key)) previewInteraction(event);
+      });
+    }
     this.shadowRoot.addEventListener('input', event => {
       const el = event.target;
       if (this.config && el.dataset.key === 'title') this.commit({ ...this.config, title: el.value });
@@ -38,6 +50,22 @@ class DysonCleaningPlannerEditor extends DysonRegistryElement {
         this.commit({ ...this.config, room_order: ids });
       }
     });
+  }
+  connectedCallback() {
+    this._previewDialog = cardEditorDialog(this);
+    super.connectedCallback();
+  }
+  disconnectedCallback() {
+    this.setSessionPreview(false);
+    this._previewDialog = null;
+    super.disconnectedCallback();
+  }
+  setSessionPreview(active) {
+    const dialog = this._previewDialog;
+    if (!dialog || (sessionPreviewOwners.get(dialog) === this) === active) return;
+    if (active) sessionPreviewOwners.set(dialog, this);
+    else sessionPreviewOwners.delete(dialog);
+    dialog.dispatchEvent(new Event(previewViewChanged));
   }
   setConfig(config) { this.config = { ...config }; this.update(); }
   commit(config) {
