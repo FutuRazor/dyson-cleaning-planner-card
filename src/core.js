@@ -3,6 +3,16 @@ export const ROOM_FIELDS = { cleaning_mode: 'Cleaning mode', cleaning_strategy: 
 export const available = state => !!state && !['unavailable', 'unknown'].includes(state.state) && !state.attributes?.restored;
 export const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
+export const STATUS_BAR_ITEMS = [
+  ['hot_water_mopping', 'Hot water mopping'],
+  ['hot_water_self_cleaning', 'Hot water self-cleaning'],
+  ['extended_roller_preparation', 'Extended roller preparation'],
+  ['cleaning_solution', 'Cleaning solution'],
+  ['self_cleaning_frequency', 'Self-cleaning frequency'],
+  ['roller_drying_duration', 'Roller drying duration'],
+  ['battery', 'Battery and charging'],
+];
+
 export function normalizeConfig(config) {
   if (!config || typeof config.entity !== 'string' || !config.entity.startsWith('vacuum.')) throw new Error('Select a vacuum entity.');
   if (config.unsupported_settings && !['disabled', 'hidden'].includes(config.unsupported_settings)) throw new Error('unsupported_settings must be disabled or hidden.');
@@ -10,11 +20,13 @@ export function normalizeConfig(config) {
     if (config[key] !== undefined && (!Array.isArray(config[key]) || config[key].some(x => typeof x !== 'string'))) throw new Error(`${key} must be a list of entity IDs.`);
   }
   if (config.room_entities !== undefined && (!config.room_entities || typeof config.room_entities !== 'object' || Array.isArray(config.room_entities) || Object.values(config.room_entities).some(x => typeof x !== 'string' || !x.startsWith('switch.')))) throw new Error('room_entities must map room names to switch entities.');
+  if (config.show_status_bar !== undefined && typeof config.show_status_bar !== 'boolean') throw new Error('show_status_bar must be true or false.');
+  if (config.hidden_status_items !== undefined && (!Array.isArray(config.hidden_status_items) || config.hidden_status_items.some(item => typeof item !== 'string'))) throw new Error('hidden_status_items must be a list of indicator keys.');
   if (config.show_camera !== undefined && typeof config.show_camera !== 'boolean') throw new Error('show_camera must be true or false.');
   if (config.always_show_all_settings !== undefined && typeof config.always_show_all_settings !== 'boolean') throw new Error('always_show_all_settings must be true or false.');
   if (config.camera_rotation !== undefined && ![0, 90, 180, 270].includes(config.camera_rotation)) throw new Error('camera_rotation must be 0, 90, 180 or 270.');
   if (config.camera_entity && (typeof config.camera_entity !== 'string' || !config.camera_entity.startsWith('camera.'))) throw new Error('Select a camera entity.');
-  return { ...config, title: config.title ?? 'Plan a clean', always_show_all_settings: config.always_show_all_settings ?? false, unsupported_settings: config.unsupported_settings ?? 'disabled', excluded_rooms: config.excluded_rooms ?? [], room_order: config.room_order ?? [], show_camera: config.show_camera ?? true, camera_rotation: config.camera_rotation ?? 0 };
+  return { ...config, show_status_bar: config.show_status_bar ?? true, hidden_status_items: config.hidden_status_items ?? [], title: config.title ?? 'Plan a clean', always_show_all_settings: config.always_show_all_settings ?? false, unsupported_settings: config.unsupported_settings ?? 'disabled', excluded_rooms: config.excluded_rooms ?? [], room_order: config.room_order ?? [], show_camera: config.show_camera ?? true, camera_rotation: config.camera_rotation ?? 0 };
 }
 
 // Entity IDs are user-editable. Match registry identity within ONE integration device.

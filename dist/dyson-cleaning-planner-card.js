@@ -4,6 +4,16 @@ const ROOM_FIELDS = { cleaning_mode: 'Cleaning mode', cleaning_strategy: 'Vacuum
 const available = state => !!state && !['unavailable', 'unknown'].includes(state.state) && !state.attributes?.restored;
 const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
+const STATUS_BAR_ITEMS = [
+  ['hot_water_mopping', 'Hot water mopping'],
+  ['hot_water_self_cleaning', 'Hot water self-cleaning'],
+  ['extended_roller_preparation', 'Extended roller preparation'],
+  ['cleaning_solution', 'Cleaning solution'],
+  ['self_cleaning_frequency', 'Self-cleaning frequency'],
+  ['roller_drying_duration', 'Roller drying duration'],
+  ['battery', 'Battery and charging'],
+];
+
 function normalizeConfig(config) {
   if (!config || typeof config.entity !== 'string' || !config.entity.startsWith('vacuum.')) throw new Error('Select a vacuum entity.');
   if (config.unsupported_settings && !['disabled', 'hidden'].includes(config.unsupported_settings)) throw new Error('unsupported_settings must be disabled or hidden.');
@@ -11,11 +21,13 @@ function normalizeConfig(config) {
     if (config[key] !== undefined && (!Array.isArray(config[key]) || config[key].some(x => typeof x !== 'string'))) throw new Error(`${key} must be a list of entity IDs.`);
   }
   if (config.room_entities !== undefined && (!config.room_entities || typeof config.room_entities !== 'object' || Array.isArray(config.room_entities) || Object.values(config.room_entities).some(x => typeof x !== 'string' || !x.startsWith('switch.')))) throw new Error('room_entities must map room names to switch entities.');
+  if (config.show_status_bar !== undefined && typeof config.show_status_bar !== 'boolean') throw new Error('show_status_bar must be true or false.');
+  if (config.hidden_status_items !== undefined && (!Array.isArray(config.hidden_status_items) || config.hidden_status_items.some(item => typeof item !== 'string'))) throw new Error('hidden_status_items must be a list of indicator keys.');
   if (config.show_camera !== undefined && typeof config.show_camera !== 'boolean') throw new Error('show_camera must be true or false.');
   if (config.always_show_all_settings !== undefined && typeof config.always_show_all_settings !== 'boolean') throw new Error('always_show_all_settings must be true or false.');
   if (config.camera_rotation !== undefined && ![0, 90, 180, 270].includes(config.camera_rotation)) throw new Error('camera_rotation must be 0, 90, 180 or 270.');
   if (config.camera_entity && (typeof config.camera_entity !== 'string' || !config.camera_entity.startsWith('camera.'))) throw new Error('Select a camera entity.');
-  return { ...config, title: config.title ?? 'Plan a clean', always_show_all_settings: config.always_show_all_settings ?? false, unsupported_settings: config.unsupported_settings ?? 'disabled', excluded_rooms: config.excluded_rooms ?? [], room_order: config.room_order ?? [], show_camera: config.show_camera ?? true, camera_rotation: config.camera_rotation ?? 0 };
+  return { ...config, show_status_bar: config.show_status_bar ?? true, hidden_status_items: config.hidden_status_items ?? [], title: config.title ?? 'Plan a clean', always_show_all_settings: config.always_show_all_settings ?? false, unsupported_settings: config.unsupported_settings ?? 'disabled', excluded_rooms: config.excluded_rooms ?? [], room_order: config.room_order ?? [], show_camera: config.show_camera ?? true, camera_rotation: config.camera_rotation ?? 0 };
 }
 
 // Entity IDs are user-editable. Match registry identity within ONE integration device.
@@ -878,7 +890,11 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     }
     const indicators = Object.fromEntries(settings.map(field => [field.key, stationIndicator(field, refillStatus)]));
     const bar = root.querySelector('.station-indicators');
-    const barHtml = ['hot_water_mopping', 'hot_water_self_cleaning', 'extended_roller_preparation', 'cleaning_solution', 'self_cleaning_frequency', 'roller_drying_duration'].map(key => indicators[key]).join('');
+    const hidden = this.config.hidden_status_items;
+    const barHtml = STATUS_BAR_ITEMS.filter(([key]) => !hidden.includes(key)).map(([key]) => indicators[key] || '').join('');
+    const batteryVisible = !hidden.includes('battery');
+    root.querySelector('.battery').hidden = !batteryVisible;
+    root.querySelector('.station-status-bar').hidden = !this.config.show_status_bar || (!barHtml && !batteryVisible);
     if (bar._html !== barHtml) { bar.innerHTML = barHtml; bar._html = barHtml; }
     const html = settings.map(field => {
       const disabled = !field.available || this.stationBusy || this.busy || this.controlBusy;
@@ -1040,6 +1056,11 @@ class DysonCleaningPlannerEditor extends DysonRegistryElement {
           delete next.mode_entity; delete next.start_entity; delete next.room_entities; delete next.camera_entity;
           next.excluded_rooms = []; next.room_order = [];
         }
+      } else if (el.dataset.statusItem) {
+        const hidden = new Set(next.hidden_status_items ?? []);
+        if (el.checked) hidden.delete(el.dataset.statusItem);
+        else hidden.add(el.dataset.statusItem);
+        next.hidden_status_items = [...hidden];
       } else if (el.dataset.include) {
         next.excluded_rooms = (next.excluded_rooms ?? []).filter(id => id !== el.dataset.include);
         if (!el.checked) next.excluded_rooms.push(el.dataset.include);
@@ -1075,12 +1096,17 @@ class DysonCleaningPlannerEditor extends DysonRegistryElement {
       const entries = this.registry.filter(e => e.platform === DOMAIN && !e.disabled_by && e.device_id === device && e.entity_id.startsWith(`${domain}.`));
       return `<label>${label}<select data-focus="${key}" data-key="${key}"><option value="">Auto-detect</option>${entries.map(e => `<option value="${h(e.entity_id)}" ${config[key] === e.entity_id ? 'selected' : ''}>${h(e.name || e.original_name || e.entity_id)}</option>`).join('')}</select></label>`;
     };
-    this.paint(`<style>${styles}:host{padding:8px}label{display:grid;gap:8px;margin:0 0 16px;font-size:14px}input[type=text]{padding:12px;border:1px solid var(--dp-line);border-radius:8px;background:var(--dp-bg);color:inherit;width:100%}.entry{display:flex;gap:8px;align-items:center;margin:8px 0}.entry label{display:flex;align-items:center;flex:1;margin:0}.entry button{min-width:42px}h3{font-size:15px;margin-top:24px}</style>
+    this.paint(`<style>${styles}:host{padding:8px}label{display:grid;gap:8px;margin:0 0 16px;font-size:14px}input[type=text]{padding:12px;border:1px solid var(--dp-line);border-radius:8px;background:var(--dp-bg);color:inherit;width:100%}.entry{display:flex;gap:8px;align-items:center;margin:8px 0}.entry label{display:flex;align-items:center;flex:1;margin:0}.entry button{min-width:42px}h3{font-size:15px;margin-top:24px}.status-options{margin:12px 0 0;padding:8px 0 0 12px;border:0;border-top:1px solid var(--dp-line);min-width:0}.status-options:disabled{opacity:.5}</style>
       <label>Dyson device<select data-key="entity" data-focus="entity"><option value="">Select a device</option>${vacuums.map(e => `<option value="${h(e.entity_id)}" ${config.entity === e.entity_id ? 'selected' : ''}>${h(this._hass.states[e.entity_id]?.attributes?.friendly_name || e.entity_id)}</option>`).join('')}</select></label>
       <label>Title<input type="text" data-key="title" data-focus="title" value="${h(config.title ?? 'Plan a clean')}"></label>
       <label>Unsupported settings<select data-key="unsupported_settings" data-focus="unsupported"><option value="disabled" ${config.unsupported_settings !== 'hidden' ? 'selected' : ''}>Show disabled</option><option value="hidden" ${config.unsupported_settings === 'hidden' ? 'selected' : ''}>Hide</option></select></label>
       <div class="entry"><label><input type="checkbox" data-key="always_show_all_settings" data-focus="all-settings" ${config.always_show_all_settings === true ? 'checked' : ''}>Always show all settings</label></div>
       <p>Per-room settings are detected automatically. Saving and starting use the Dyson integration batch actions.</p>
+      <h3>Status bar</h3>
+      <div class="entry"><label><input type="checkbox" data-key="show_status_bar" data-focus="show-status-bar" ${config.show_status_bar !== false ? 'checked' : ''}>Show status bar</label></div>
+      <fieldset class="status-options" aria-label="Visible status indicators" ${config.show_status_bar === false ? 'disabled' : ''}>
+        ${STATUS_BAR_ITEMS.map(([key, label]) => `<div class="entry"><label><input type="checkbox" data-status-item="${key}" data-focus="status-${key}" ${!config.hidden_status_items?.includes(key) ? 'checked' : ''}>${label}</label></div>`).join('')}
+      </fieldset>
       <h3>Cleaning map</h3><div class="entry"><label><input type="checkbox" data-key="show_camera" data-focus="show-camera" ${config.show_camera !== false ? 'checked' : ''}>Show camera during a cleaning session</label></div>
       <p class="notice">Turning this off removes the map and stops image requests from this card.</p>
       ${field('camera_entity', 'Map camera', 'camera')}

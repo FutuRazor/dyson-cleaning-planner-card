@@ -1,4 +1,4 @@
-import { DOMAIN, ROOM_FIELDS, available, escapeHtml, normalizeConfig, discover, sendRoomDraft, cleaningView, canControl, controlCleaning, batteryStatus, activityStatus, dryingRemainingTime, dryingRemainingPercent, dockBlocksStart, startBlockReason, consumableStatus, stationSettings, changeStationSetting, stationActions, pressStationAction } from './core.js';
+import { STATUS_BAR_ITEMS, DOMAIN, ROOM_FIELDS, available, escapeHtml, normalizeConfig, discover, sendRoomDraft, cleaningView, canControl, controlCleaning, batteryStatus, activityStatus, dryingRemainingTime, dryingRemainingPercent, dockBlocksStart, startBlockReason, consumableStatus, stationSettings, changeStationSetting, stationActions, pressStationAction } from './core.js';
 
 function stationIndicator(field, refillStatus) {
   const { key, label, value } = field;
@@ -427,7 +427,11 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     }
     const indicators = Object.fromEntries(settings.map(field => [field.key, stationIndicator(field, refillStatus)]));
     const bar = root.querySelector('.station-indicators');
-    const barHtml = ['hot_water_mopping', 'hot_water_self_cleaning', 'extended_roller_preparation', 'cleaning_solution', 'self_cleaning_frequency', 'roller_drying_duration'].map(key => indicators[key]).join('');
+    const hidden = this.config.hidden_status_items;
+    const barHtml = STATUS_BAR_ITEMS.filter(([key]) => !hidden.includes(key)).map(([key]) => indicators[key] || '').join('');
+    const batteryVisible = !hidden.includes('battery');
+    root.querySelector('.battery').hidden = !batteryVisible;
+    root.querySelector('.station-status-bar').hidden = !this.config.show_status_bar || (!barHtml && !batteryVisible);
     if (bar._html !== barHtml) { bar.innerHTML = barHtml; bar._html = barHtml; }
     const html = settings.map(field => {
       const disabled = !field.available || this.stationBusy || this.busy || this.controlBusy;
