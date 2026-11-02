@@ -25,7 +25,7 @@ try {
   assert.equal((await card.locator('.notice').allTextContents()).some(text => text.includes('Editing sends no commands')), false, 'the editing explanation is removed');
   assert.equal(await card.locator('header .tag').count(), 0);
   await card.locator('.consumables-info').click();
-  assert.equal(await card.locator('.consumables-heading .tag').innerText(), 'v1.0.0');
+  assert.equal(await card.locator('.consumables-panel h3, .tag').count(), 0);
   await card.locator('.consumables-close').click();
   assert.equal(await card.locator('.battery-value').innerText(), '100%');
   assert.equal(await card.locator('.battery-bolt').isVisible(), true);

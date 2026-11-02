@@ -33,7 +33,7 @@ The v0.3.3a test build was verified in live Home Assistant: return status appear
 - Recheck scroll retention after room selection, expanding/collapsing settings and changing modes. Verify each view transition starts at the top, including reloading during an active clean.
 - During drying, verify the bar shrinks with remaining time, ends before Cancel and disappears without valid total/remaining values. Confirm 0 remaining yields an empty bar without inferring the dock is idle.
 
-1. Confirm the Info overlay heading shows v1.0.0 in both tabs and both planner/session views. Neither main card header should show a version. Confirm save_room_settings and start_rooms_with_settings are available with integration v1.5.0 or newer.
+1. Confirm the Info overlay starts with both tabs and a right-aligned close button in one row, with no Info heading or version badge. Check narrow and desktop widths in both planner/session views. Confirm save_room_settings and start_rooms_with_settings are available with integration v1.5.0 or newer.
 2. Type a title without pressing Enter; confirm immediate preview updates and stable cursor position. Expand two rooms. Confirm unselected rooms have no Not selected suffix. Select Clean repetitions in every cleaning mode, including Vacuum. Check mode-dependent visibility and enable Always show all settings to inspect all four dropdowns.
 3. Change several options. HA entities and the robot must remain unchanged during editing. Only the edited room should change in the card.
 4. Click Save settings. Confirm one `save_room_settings` action carries all changes, HA reflects the values, and cleaning does not start. The card's room selection must remain selected.
