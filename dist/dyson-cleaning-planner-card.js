@@ -467,8 +467,8 @@ function stationIndicator(field, refillStatus) {
       color = value === 'on' ? 'active-blue with-plus' : 'inactive-muted';
       break;
     case 'cleaning_solution':
-      if (!refill && refillStatus !== 'ok') return '';
-      icon = refill || value === 'on' ? 'mdi:bottle-tonic-plus' : 'mdi:bottle-tonic-off';
+      if (!refill && value !== 'off' && refillStatus !== 'ok') return '';
+      icon = refill || value === 'on' ? 'mdi:bottle-tonic-plus' : 'mdi:bottle-tonic';
       color = refill ? 'alarm-red blink' : value === 'on' ? 'active-cyan' : 'inactive-muted';
       if (refill) description = 'Refill required';
       break;
@@ -505,10 +505,10 @@ ha-card{position:relative}.consumables-info{min-height:32px;width:100%;padding:3
 .station-status-bar{padding:6px 24px 0}.station-indicators:empty{display:none}
 header,.station-rows{--hud-red:var(--error-color,#db4437);--hud-blue:var(--blue-color,#438bc7);--hud-cyan:var(--dp-accent)}
 .station-indicator{display:inline-flex;align-items:center;gap:2px;position:relative;flex:none;color:var(--dp-muted);white-space:nowrap}
-.station-indicator .status-icon{width:16px;height:16px;--mdc-icon-size:16px}
+.station-indicator .status-icon{display:inline-flex;align-items:center;justify-content:center;line-height:0;width:16px;height:16px;--mdc-icon-size:16px}
 .active-red,.alarm-red{color:var(--hud-red)}.active-blue{color:var(--hud-blue)}.active-cyan{color:var(--hud-cyan)}.inactive-muted{color:var(--dp-muted)}
 .with-plus::after{content:"+";position:absolute;right:-3px;top:-5px;font:bold 11px/1 monospace;color:currentColor}
-.status-text-5g{font:bold 11px/1.25 ui-monospace,monospace;padding:1px 3px;border-radius:3px;background:var(--dp-soft)}
+.status-text-5g{display:inline-flex;align-items:center;justify-content:center;height:16px;box-sizing:border-box;font:bold 11px/1 ui-monospace,monospace;padding:0 3px;border-radius:3px;background:var(--dp-soft)}
 @keyframes status-blink{50%{opacity:.4}}.blink{animation:status-blink 1.6s ease-in-out infinite}@media(prefers-reduced-motion:reduce){.blink{animation:none}}
 .header-main{display:grid;grid-template-columns:auto minmax(0,1fr) auto;grid-template-rows:auto auto;align-items:center;column-gap:13px;padding:4px var(--dp-padding) 10px}
 .header-main .robot{grid-row:1/3}.header-title{display:contents}.header-title h2{grid-area:1/2;margin:0}.header-title p{grid-area:2/2}.header-main .consumables-info{grid-area:1/3;width:auto}
