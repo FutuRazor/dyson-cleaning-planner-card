@@ -27,7 +27,7 @@ try {
   await card.locator('.consumables-info').click();
   assert.equal(await card.locator('.consumables-panel h3, .tag').count(), 0);
   await card.locator('.consumables-close').click();
-  assert.equal(await card.locator('.battery-value').innerText(), '100%');
+  assert.equal(await card.locator('.battery-fill').getAttribute('width'), '20');
   assert.equal(await card.locator('.battery-bolt').isVisible(), true);
   assert.equal(await card.locator('.battery').getAttribute('data-level'), 'high');
   assert.equal(await card.locator('.start').isDisabled(), true);
@@ -96,7 +96,7 @@ try {
   // Battery updates must not recreate the camera or discard the local request.
   for (const [percent, charging, level] of [['42', 'off', 'medium'], ['10', 'on', 'low'], ['0', 'unknown', 'low'], ['unavailable', 'unavailable', 'unknown']]) {
     await page.evaluate(({ percent, charging }) => { demo.hass.states[demo.battery].state = percent; demo.hass.states[demo.charging].state = charging; demo.card.hass = { ...demo.hass }; }, { percent, charging });
-    assert.equal(await card.locator('.battery-value').innerText(), percent === 'unavailable' ? '—' : `${percent}%`);
+    assert.equal(await card.locator('.battery-fill').getAttribute('width'), String((Number(percent) || 0) / 5));
     assert.equal(await card.locator('.battery').getAttribute('data-level'), level);
     assert.equal(await card.locator('.battery-bolt').isVisible(), charging === 'on');
     assert.equal(await page.evaluate(() => demo.map === demo.card.shadowRoot.querySelector('dyson-planner-map')), true);
@@ -142,9 +142,12 @@ try {
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     }
     const headerFits = await card.locator('header').evaluate(header => {
-      const title = header.querySelector('.header-title').getBoundingClientRect();
+      const title = header.querySelector('h2').getBoundingClientRect();
       const battery = header.querySelector('.battery').getBoundingClientRect();
-      return title.right <= battery.left && battery.right <= header.getBoundingClientRect().right;
+      const info = header.querySelector('.consumables-info').getBoundingClientRect();
+      return battery.bottom <= title.top && title.right <= info.left &&
+        Math.abs((title.top + title.bottom) - (info.top + info.bottom)) < 2 &&
+        battery.right <= header.getBoundingClientRect().right;
     });
     assert.equal(headerFits, true, `battery and title fit at ${width}px`);
   }

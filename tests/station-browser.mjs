@@ -22,7 +22,7 @@ try {
   await card.locator('[data-info-tab="station"]').click();
   assert.equal(await card.locator('.station-row').count(), 8);
   assert.equal(await card.locator('.station-row ha-switch').count(), 4);
-  assert.deepEqual(await card.locator('.station-row > span').allTextContents(), ['Hot water mopping', 'Cleaning solution', 'Extended roller preparation', 'Hot water self-cleaning', 'Self-cleaning frequency', 'Roller drying duration', 'Empty dust bin', 'Wash mop roller']);
+  assert.deepEqual(await card.locator('.station-label > span:last-child, div.station-row > span').allTextContents(), ['Hot water mopping', 'Cleaning solution', 'Extended roller preparation', 'Hot water self-cleaning', 'Self-cleaning frequency', 'Roller drying duration', 'Empty dust bin', 'Wash mop roller']);
   await card.locator('ha-switch[data-station="hot_water_mopping"] input').uncheck();
   await page.waitForFunction(() => !demo.card.stationBusy);
   assert.equal(await card.locator('.station-message').isVisible(), false);
@@ -33,6 +33,8 @@ try {
     { domain: 'switch', service: 'turn_off', data: { entity_id: 'switch.renamed_station_0' } },
     { domain: 'select', service: 'select_option', data: { entity_id: 'select.renamed_station_5', option: '5 hours' } }
   ]);
+  assert.equal(await card.locator('.station-status-bar .status-text-5g').last().innerText(), '5h');
+  assert.equal(await card.locator('.station-indicators .active-blue [icon="mdi:waves"]').count(), 1);
   await card.locator('[data-station-action="empty_bin"]').click();
   await page.waitForFunction(() => !demo.card.stationBusy);
   assert.equal(await card.locator('.station-message').isVisible(), false);
