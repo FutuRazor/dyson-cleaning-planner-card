@@ -535,6 +535,19 @@ header,.station-rows{--hud-red:var(--error-color,#db4437);--hud-blue:var(--blue-
 const registryRefreshEvents = new EventTarget();
 
 // Each instance owns its draft. Registry refresh also catches disabled or renamed entities.
+// HA mounts the visual editor and its preview in separate shadow trees in one dialog.
+const sessionPreviewOwners = new WeakMap();
+const previewViewChanged = 'dyson-planner-preview-view';
+
+function cardEditorDialog(element, previewOnly = false) {
+  let preview = false;
+  for (let node = element; node; node = node.assignedSlot || node.parentElement || node.getRootNode()?.host) {
+    if (node.matches?.('hui-card[preview], hui-section[preview]')) preview = true;
+    if (node.localName === 'hui-dialog-edit-card') return !previewOnly || preview ? node : null;
+  }
+  return null;
+}
+
 class DysonRegistryElement extends HTMLElement {
   constructor() { super(); this.attachShadow({ mode: 'open' }); this.registry = []; this.registryError = ''; }
   connectedCallback() {
@@ -653,7 +666,18 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     this.initialized = false; this.dirty = false; this.selected = []; this.settingDraft = {}; this.expanded.clear(); this.message = ''; this.lastRooms = [];
     this.update();
   }
-  disconnectedCallback() { super.disconnectedCallback(); this.clearPendingStart(); this.clearSessionEnd(); }
+  connectedCallback() {
+    this._previewDialog = cardEditorDialog(this, true);
+    this._previewChanged ??= () => this.update();
+    this._previewDialog?.addEventListener(previewViewChanged, this._previewChanged);
+    super.connectedCallback();
+    this.update();
+  }
+  disconnectedCallback() {
+    this._previewDialog?.removeEventListener(previewViewChanged, this._previewChanged);
+    this._previewDialog = null;
+    super.disconnectedCallback(); this.clearPendingStart(); this.clearSessionEnd();
+  }
   clearPendingStart() { clearTimeout(this._startTimer); this.pendingStart = false; }
   clearSessionEnd() { clearTimeout(this._sessionEndTimer); this._sessionEndTimer = null; }
   deferSessionEnd() {
@@ -668,7 +692,13 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       this.render();
     }, 5000);
   }
-  get view() { return cleaningView(this._hass, this.config?.entity, (this.busy && !this.saving) || this.pendingStart); }
+  get view() {
+    const view = cleaningView(this._hass, this.config?.entity, (this.busy && !this.saving) || this.pendingStart);
+    if (!view.active && this._previewDialog && sessionPreviewOwners.has(this._previewDialog)) {
+      return { active: true, live: true, simulated: true };
+    }
+    return view;
+  }
   getCardSize() { return this.view.active ? (this.config?.show_camera ? 9 : 5) : 3 + (this.model?.rooms.length ?? 3); }
   getGridOptions() { return { columns: 12, min_columns: 9, rows: 'auto', min_rows: 1 }; }
   getModel() { return discover(this._hass, this.registry, this.config); }
@@ -757,7 +787,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     this.render();
   }
   async start() {
-    if (this.busy || this.view.active || !this.isConnected) return;
+    if (this._previewDialog || this.busy || this.view.active || !this.isConnected) return;
     this.clearSessionEnd();
     this.busy = true; this.error = false;
     const config = this.config;
@@ -797,7 +827,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     } finally { this.busy = false; this.render(); }
   }
   async save() {
-    if (this.busy || this.view.active || !this.isConnected) return;
+    if (this._previewDialog || this.busy || this.view.active || !this.isConnected) return;
     const config = this.config, draft = structuredClone(this.settingDraft);
     this.busy = true; this.saving = true; this.error = false;
     this.message = 'Saving room settings …'; this.render();
@@ -819,7 +849,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     } finally { this.busy = false; this.saving = false; this.render(); }
   }
   async control(action) {
-    if (this.busy || this.controlBusy || !this.isConnected) return;
+    if (this._previewDialog || this.busy || this.controlBusy || !this.isConnected) return;
     const entity = this.config.entity;
     this.controlBusy = true; this.message = ''; this.error = false; this.render();
     try {
@@ -869,7 +899,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     if (this.consumablesOpen && !root.querySelector('.consumables-panel').contains(root.activeElement)) root.querySelector('.consumables-close').focus();
   }
   async setStationSetting(key, value, action = false) {
-    if (this.stationBusy || this.busy || this.controlBusy || !this.consumablesOpen) return;
+    if (this._previewDialog || this.stationBusy || this.busy || this.controlBusy || !this.consumablesOpen) return;
     const entity = this.config.entity;
     this.stationBusy = true; this.stationMessage = ''; this.stationError = false;
     this.updateConsumables();
@@ -898,7 +928,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     root.querySelector('.station-status-bar').hidden = !this.config.show_status_bar || (!barHtml && !batteryVisible);
     if (bar._html !== barHtml) { bar.innerHTML = barHtml; bar._html = barHtml; }
     const html = settings.map(field => {
-      const disabled = !field.available || this.stationBusy || this.busy || this.controlBusy;
+      const disabled = !!this._previewDialog || !field.available || this.stationBusy || this.busy || this.controlBusy;
       const attrs = `data-station="${field.key}" aria-label="${escapeHtml(field.label)}" ${disabled ? 'disabled' : ''}`;
       const control = field.domain === 'switch'
         ? `<ha-switch ${attrs} ${field.value === 'on' ? 'checked' : ''}></ha-switch>`
@@ -906,7 +936,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       return `<label class="station-row ${field.domain}"><span class="station-label">${indicators[field.key]}<span>${field.label}${!field.available ? '<small>Unavailable</small>' : ''}</span></span>${control}</label>`;
     }).join('');
     const actions = stationActions(this._hass, this.registry, this.config.entity).map(action => {
-      const disabled = !action.available || this.stationBusy || this.busy || this.controlBusy;
+      const disabled = !!this._previewDialog || !action.available || this.stationBusy || this.busy || this.controlBusy;
       return `<div class="station-row"><span>${action.label}${!action.available ? '<small>Unavailable</small>' : ''}</span><ha-button appearance="plain" size="s" data-station-action="${action.key}" aria-label="${action.label}" ${disabled ? 'disabled' : ''}>Press</ha-button></div>`;
     }).join('');
     const content = html + actions;
@@ -969,7 +999,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     }
     const cancel = row.querySelector('.cancel-drying');
     const supported = canControl(this._hass, this.config.entity, 'cancel_drying');
-    cancel.disabled = this.busy || this.controlBusy || !supported;
+    cancel.disabled = !!this._previewDialog || this.busy || this.controlBusy || !supported;
     cancel.title = supported ? 'Cancel drying' : 'Drying cancellation requires a connected robot and the integration cancel_drying action.';
   }
   renderSession(view) {
@@ -981,9 +1011,10 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     this.updateBattery();
     this.updateConsumables();
     this.updateStatus();
+    if (view.simulated) root.querySelector('.activity-status').hidden = true;
     const title = root.querySelector('.header-title h2');
     title.classList.add('session-title');
-    title.textContent = 'Cleaning session';
+    title.textContent = view.simulated ? 'Cleaning session preview' : 'Cleaning session';
     const chips = (this.requestedPlan?.rooms ?? []).map(r => `<li>${h(r.name)}</li>`).join('');
     const list = root.querySelector('.requested');
     if (list.innerHTML !== chips) list.innerHTML = chips;
@@ -996,7 +1027,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     toggle.querySelector('ha-icon').setAttribute('icon', paused ? 'mdi:play' : 'mdi:pause');
     for (const button of root.querySelectorAll('[data-control]')) {
       const supported = canControl(this._hass, this.config.entity, button.dataset.control);
-      button.disabled = this.busy || this.controlBusy || !supported;
+      button.disabled = !!this._previewDialog || this.busy || this.controlBusy || !supported;
       button.title = supported ? '' : 'This action is not available in the current robot state.';
     }
     const message = root.querySelector('.action-message');
@@ -1031,7 +1062,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       }).join('');
       return `<section class="room ${selected ? 'selected' : ''}"><div class="room-head"><label class="pick"><input type="checkbox" data-focus="room-${n}" data-room="${h(room.entity)}" ${selected ? 'checked' : ''} ${disabled ? 'disabled' : ''}><span><span class="name">${h(room.name)} ${selected ? `<span class="status">(${order})</span>` : ''}</span><span class="summary">${!room.available ? h(room.error || 'Unavailable') : h(valueOf('cleaning_mode') ?? 'Room settings unavailable')}</span></span></label><button class="expand" data-focus="expand-${n}" data-expand="${h(room.entity || room.name)}" aria-expanded="${open}" aria-controls="fields-${n}" aria-label="Settings for ${h(room.name)}"><span>Settings</span> ${open ? '⌃' : '⌄'}</button></div><div class="fields" id="fields-${n}" ${open ? '' : 'hidden'}>${fields}${!room.roomId ? '<p class="badge mode">Room ID unavailable. Check the updated integration and refresh rooms.</p>' : ''}</div></section>`;
     }).join('');
-    this.paint(`<style>${styles}</style><ha-card><div class="planner-content">${this.headerHtml()}${this.statusHtml()}<div class="rooms">${roomHtml}</div>${!rooms.length ? '<p class="empty">No enabled rooms found. Check the card configuration and room discovery.</p>' : ''}<footer><div class="summary-line"><span>${this.selected.length} of ${rooms.length} rooms selected</span><span class="status ${this.dirty ? 'draft-status' : ''}">${this.dirty ? `<button class="discard-draft" data-focus="reset" data-action="reset" ${this.busy ? 'disabled' : ''} title="Discard draft" aria-label="Discard draft"><ha-icon icon="mdi:trash-can-outline" aria-hidden="true"></ha-icon></button>Local draft` : 'From Home Assistant'}</span></div><div class="actions"><button data-action="save" data-focus="save" ${!hasChanges || this.busy || !canSave ? 'disabled' : ''}>${this.saving ? 'Saving …' : 'Save settings'}</button><button class="start" data-focus="start" data-action="start" ${this.selected.length === 0 || this.busy || startBlockReason(this._hass, this.config.entity) ? 'disabled' : ''}>Start clean</button></div>${!canSave || !canStart ? '<p class="notice badge">The updated Dyson integration actions are not available. Reload the integration and refresh this dashboard.</p>' : ''}${external ? '<p class="notice badge">Settings changed outside this card. Your edited values remain in the local draft.</p>' : ''}<p class="notice ${this.error ? 'error' : ''}" role="status" aria-live="polite">${h(this.message)}</p></footer></div>${this.consumablesHtml()}</ha-card>`, 'planner');
+    this.paint(`<style>${styles}</style><ha-card><div class="planner-content">${this.headerHtml()}${this.statusHtml()}<div class="rooms">${roomHtml}</div>${!rooms.length ? '<p class="empty">No enabled rooms found. Check the card configuration and room discovery.</p>' : ''}<footer><div class="summary-line"><span>${this.selected.length} of ${rooms.length} rooms selected</span><span class="status ${this.dirty ? 'draft-status' : ''}">${this.dirty ? `<button class="discard-draft" data-focus="reset" data-action="reset" ${this.busy ? 'disabled' : ''} title="Discard draft" aria-label="Discard draft"><ha-icon icon="mdi:trash-can-outline" aria-hidden="true"></ha-icon></button>Local draft` : 'From Home Assistant'}</span></div><div class="actions"><button data-action="save" data-focus="save" ${this._previewDialog || !hasChanges || this.busy || !canSave ? 'disabled' : ''}>${this.saving ? 'Saving …' : 'Save settings'}</button><button class="start" data-focus="start" data-action="start" ${this._previewDialog || this.selected.length === 0 || this.busy || startBlockReason(this._hass, this.config.entity) ? 'disabled' : ''}>Start clean</button></div>${!canSave || !canStart ? '<p class="notice badge">The updated Dyson integration actions are not available. Reload the integration and refresh this dashboard.</p>' : ''}${external ? '<p class="notice badge">Settings changed outside this card. Your edited values remain in the local draft.</p>' : ''}<p class="notice ${this.error ? 'error' : ''}" role="status" aria-live="polite">${h(this.message)}</p></footer></div>${this.consumablesHtml()}</ha-card>`, 'planner');
     this.updateBattery();
     this.updateConsumables();
     this.updateStatus();
@@ -1046,6 +1077,18 @@ if (!window.customCards.some(card => card.type === 'dyson-cleaning-planner-card'
 class DysonCleaningPlannerEditor extends DysonRegistryElement {
   constructor() {
     super();
+    const previewInteraction = event => {
+      const el = event.target.closest('input, select, button');
+      if (!el) return;
+      if (['show_camera', 'camera_entity', 'camera_rotation'].includes(el.dataset.key)) this.setSessionPreview(true);
+      else if (['unsupported_settings', 'always_show_all_settings'].includes(el.dataset.key)
+        || el.dataset.include || el.dataset.order || el.dataset.action === 'refresh') this.setSessionPreview(false);
+    };
+    for (const type of ['pointerdown', 'click', 'change', 'keydown']) {
+      this.shadowRoot.addEventListener(type, event => {
+        if (type !== 'keydown' || ['Enter', ' ', 'ArrowDown', 'ArrowUp', 'F4'].includes(event.key)) previewInteraction(event);
+      });
+    }
     this.shadowRoot.addEventListener('input', event => {
       const el = event.target;
       if (this.config && el.dataset.key === 'title') this.commit({ ...this.config, title: el.value });
@@ -1082,6 +1125,22 @@ class DysonCleaningPlannerEditor extends DysonRegistryElement {
         this.commit({ ...this.config, room_order: ids });
       }
     });
+  }
+  connectedCallback() {
+    this._previewDialog = cardEditorDialog(this);
+    super.connectedCallback();
+  }
+  disconnectedCallback() {
+    this.setSessionPreview(false);
+    this._previewDialog = null;
+    super.disconnectedCallback();
+  }
+  setSessionPreview(active) {
+    const dialog = this._previewDialog;
+    if (!dialog || (sessionPreviewOwners.get(dialog) === this) === active) return;
+    if (active) sessionPreviewOwners.set(dialog, this);
+    else sessionPreviewOwners.delete(dialog);
+    dialog.dispatchEvent(new Event(previewViewChanged));
   }
   setConfig(config) { this.config = { ...config }; this.update(); }
   commit(config) {
