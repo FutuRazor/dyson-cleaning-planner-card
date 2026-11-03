@@ -44,6 +44,7 @@ f.hass.callService = async (...args) => {
  if (args[0] === 'vacuum' && args[1] === 'return_to_base') f.hass.states[f.entity].state = 'returning';
  if (args[0] === 'vacuum' && args[1] === 'pause') f.hass.states[f.entity].state = 'paused';
  if (args[0] === 'button' && args[2].entity_id === 'button.renamed_empty_bin') f.hass.states[f.entity].attributes.dock_state = 'COLLECTING_DUST';
+ if (args[0] === 'button' && args[2].entity_id === 'button.renamed_dry_mop') f.hass.states[f.entity].attributes.dock_state = 'DRYING_MOP';
  if (args[0] === 'button' && args[2].entity_id === 'button.renamed_wash_mop') f.hass.states[f.entity].attributes.dock_state = 'WASHING_MOP';
  if (args[0] === 'vacuum' && args[1] === 'start') f.hass.states[f.entity].state = 'cleaning';
  card.hass = { ...f.hass }; document.querySelector('#log').textContent = JSON.stringify(f.calls, null, 2);
