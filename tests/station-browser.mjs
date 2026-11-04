@@ -20,9 +20,9 @@ try {
   assert.ok(await card.locator('#panel-station').isVisible());
   assert.deepEqual(await card.locator('[role=tab]').allTextContents(), ['Station settings', 'Consumables']);
   await card.locator('[data-info-tab="station"]').click();
-  assert.equal(await card.locator('.station-row').count(), 8);
+  assert.equal(await card.locator('.station-row').count(), 9);
   assert.equal(await card.locator('.station-row ha-switch').count(), 4);
-  assert.deepEqual(await card.locator('.station-label > span:last-child, div.station-row > span').allTextContents(), ['Hot water mopping', 'Cleaning solution', 'Extended roller preparation', 'Hot water self-cleaning', 'Self-cleaning frequency', 'Roller drying duration', 'Empty dust bin', 'Wash mop roller']);
+  assert.deepEqual(await card.locator('.station-label > span:last-child, div.station-row > span').allTextContents(), ['Hot water mopping', 'Cleaning solution', 'Extended roller preparation', 'Hot water self-cleaning', 'Self-cleaning frequency', 'Roller drying duration', 'Empty dust bin', 'Wash mop roller', 'Dry mop roller']);
   await card.locator('ha-switch[data-station="hot_water_mopping"] input').uncheck();
   await page.waitForFunction(() => !demo.card.stationBusy);
   assert.equal(await card.locator('.station-message').isVisible(), false);
@@ -41,9 +41,12 @@ try {
   await card.locator('[data-station-action="wash_mop"]').click();
   await page.waitForFunction(() => !demo.card.stationBusy);
   assert.equal(await card.locator('.station-message').isVisible(), false);
-  assert.deepEqual(await page.evaluate(() => demo.calls.slice(-2)), [
+  await card.locator('[data-station-action="dry_mop"]').click();
+  await page.waitForFunction(() => !demo.card.stationBusy);
+  assert.deepEqual(await page.evaluate(() => demo.calls.slice(-3)), [
     { domain: 'button', service: 'press', data: { entity_id: 'button.renamed_empty_bin' } },
-    { domain: 'button', service: 'press', data: { entity_id: 'button.renamed_wash_mop' } }
+    { domain: 'button', service: 'press', data: { entity_id: 'button.renamed_wash_mop' } },
+    { domain: 'button', service: 'press', data: { entity_id: 'button.renamed_dry_mop' } }
   ]);
   await page.evaluate(() => { demo.hass.states['button.renamed_empty_bin'].state = 'unavailable'; demo.card.hass = { ...demo.hass }; });
   assert.ok(await card.locator('[data-station-action="empty_bin"] button').isDisabled());

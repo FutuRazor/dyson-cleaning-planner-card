@@ -298,7 +298,8 @@ export const STATION_FIELDS = [
 
 export const STATION_ACTIONS = [
   ['empty_bin', 'Empty dust bin'],
-  ['wash_mop', 'Wash mop roller']
+  ['wash_mop', 'Wash mop roller'],
+  ['dry_mop', 'Dry mop roller']
 ];
 
 function deviceEntities(registry, entity, domain, suffix) {
