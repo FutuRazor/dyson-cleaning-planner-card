@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Add Classic and Modern themes with shared room drafts and ordered cleaning actions. Modern provides responsive room settings, a cyan outline and pointer for the open room, discrete power/water sliders and repetition buttons.
 - Compact the Info overlay by placing the close button beside the tabs and removing the heading and version badge.
 
 ## v1.0.0

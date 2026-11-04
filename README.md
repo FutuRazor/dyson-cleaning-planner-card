@@ -107,6 +107,8 @@ The **Info** button opens two tabs:
 
 ## Customization
 
+Choose **Classic** (default) or **Modern** in the card editor's **Theme** setting. Modern uses numbered selection circles, discrete sliders for Vacuum Power and Water level, and buttons for Clean repetitions. At card widths of 700 px or more, the open room's settings appear beside the room list; narrower cards expand them inline. Both themes use the same local draft and send selected rooms in click order.
+
 Open **Edit dashboard**, then edit the card to change its title, room visibility and display order, optional map and map rotation. You can also choose whether unavailable settings are hidden or disabled, and whether settings irrelevant to the selected cleaning mode remain visible.
 
 Where Home Assistant offers the **Layout** tab, height is automatic by default. A fixed height enables scrolling inside the card. Room edits preserve your scroll position; switching between planner and cleaning views starts at the top.
@@ -120,6 +122,7 @@ These options belong in the individual card's code editor, not in `configuration
 |---|---|
 | `entity` | Required Dyson vacuum entity |
 | `title` | Planner title; default: `Plan a clean` |
+| `theme` | `classic` (default) or `modern` |
 | `always_show_all_settings` | Keep all room settings visible; default: `false` |
 | `unsupported_settings` | `disabled` (default) or `hidden` |
 | `excluded_rooms` | Room switch entity IDs to hide |

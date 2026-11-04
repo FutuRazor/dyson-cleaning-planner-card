@@ -11,10 +11,11 @@ try {
   const errors = []; page.on('pageerror', e => errors.push(e.message));
   await page.goto(`http://127.0.0.1:${server.address().port}/`);
   await page.locator('#card .room').first().waitFor();
-  await page.evaluate(() => {
+  await page.evaluate(theme => {
+    demo.card.config.theme = theme;
     demo.card.style.height = '320px';
     demo.card.setConfig({ ...demo.card.config, grid_options: { columns: 9, rows: 5 } });
-  });
+  }, process.env.CARD_THEME || 'classic');
   for (const action of ['select', 'expand', 'mode']) {
     const result = await page.evaluate(async action => {
       const root = demo.card.shadowRoot;

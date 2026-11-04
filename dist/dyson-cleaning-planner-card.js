@@ -16,6 +16,7 @@ const STATUS_BAR_ITEMS = [
 
 function normalizeConfig(config) {
   if (!config || typeof config.entity !== 'string' || !config.entity.startsWith('vacuum.')) throw new Error('Select a vacuum entity.');
+  if (config.theme !== undefined && !['classic', 'modern'].includes(config.theme)) throw new Error('theme must be classic or modern.');
   if (config.unsupported_settings && !['disabled', 'hidden'].includes(config.unsupported_settings)) throw new Error('unsupported_settings must be disabled or hidden.');
   for (const key of ['excluded_rooms', 'room_order']) {
     if (config[key] !== undefined && (!Array.isArray(config[key]) || config[key].some(x => typeof x !== 'string'))) throw new Error(`${key} must be a list of entity IDs.`);
@@ -28,7 +29,7 @@ function normalizeConfig(config) {
   if (config.always_show_all_settings !== undefined && typeof config.always_show_all_settings !== 'boolean') throw new Error('always_show_all_settings must be true or false.');
   if (config.camera_rotation !== undefined && ![0, 90, 180, 270].includes(config.camera_rotation)) throw new Error('camera_rotation must be 0, 90, 180 or 270.');
   if (config.camera_entity && (typeof config.camera_entity !== 'string' || !config.camera_entity.startsWith('camera.'))) throw new Error('Select a camera entity.');
-  return { ...config, show_battery_percentage: config.show_battery_percentage ?? false, show_status_bar: config.show_status_bar ?? true, hidden_status_items: config.hidden_status_items ?? [], title: config.title ?? 'Plan a clean', always_show_all_settings: config.always_show_all_settings ?? false, unsupported_settings: config.unsupported_settings ?? 'disabled', excluded_rooms: config.excluded_rooms ?? [], room_order: config.room_order ?? [], show_camera: config.show_camera ?? true, camera_rotation: config.camera_rotation ?? 0 };
+  return { ...config, theme: config.theme ?? 'classic', show_battery_percentage: config.show_battery_percentage ?? false, show_status_bar: config.show_status_bar ?? true, hidden_status_items: config.hidden_status_items ?? [], title: config.title ?? 'Plan a clean', always_show_all_settings: config.always_show_all_settings ?? false, unsupported_settings: config.unsupported_settings ?? 'disabled', excluded_rooms: config.excluded_rooms ?? [], room_order: config.room_order ?? [], show_camera: config.show_camera ?? true, camera_rotation: config.camera_rotation ?? 0 };
 }
 
 // Entity IDs are user-editable. Match registry identity within ONE integration device.
@@ -531,6 +532,43 @@ header,.station-rows{--hud-red:var(--error-color,#db4437);--hud-blue:var(--blue-
 .activity-status{display:flex;align-items:center;gap:10px;margin:0 var(--dp-padding) 16px;padding:12px;border-radius:10px;background:var(--dp-soft);font-size:14px}.activity-status ha-icon{flex-shrink:0}.activity-copy{flex:1;min-width:0}.activity-remaining,.activity-start-block,.activity-fault{display:block;margin-top:4px;font-size:12px;line-height:1.5;color:var(--dp-muted);font-variant-numeric:tabular-nums}.drying-progress{display:block;width:100%;height:7px;margin-top:8px;border-radius:999px;background:var(--dp-line);overflow:hidden}.drying-progress-fill{display:block;height:100%;width:0;border-radius:inherit;background:var(--dp-accent)}.drying-control{flex-shrink:0}.cancel-drying{display:flex;align-items:center;justify-content:center;padding:8px;min-width:42px}.map-title{padding:0 var(--dp-padding)}
 .map-title{margin-bottom:4px}.map-caption{padding:0 var(--dp-padding);margin:0 0 10px;font-size:12px}.action-message:empty{display:none}.session-actions .pause{background:#ef8c00;color:#171717;border-color:transparent}.session-actions .resume{background:#2e7d32;color:#fff;border-color:transparent}.session-actions .home{background:#c62828;color:#fff;border-color:transparent}
 @media(max-width:400px){:host{--dp-padding:15px}.hint{padding:0 15px 14px}.rooms{padding:0 10px}footer{padding:18px 15px}.session{padding:4px 15px 0}.expand span{display:none}.actions{flex-direction:column}.session-actions{flex-direction:row}select{font-size:16px}.fields{gap:12px}}
+:host([data-theme=modern]) ha-card{container-type:inline-size}
+:host([data-theme=modern]) .rooms{padding:0 var(--dp-padding);gap:10px}
+:host([data-theme=modern]) .room{border-radius:16px;border-color:var(--dp-line);background:var(--dp-bg)}
+:host([data-theme=modern]) .room.selected{background:color-mix(in srgb,var(--room-color) 10%,var(--dp-bg));border-color:color-mix(in srgb,var(--room-color) 55%,var(--dp-line))}
+:host([data-theme=modern]) .room.open{border-color:#18c5d9;box-shadow:0 0 0 1px #18c5d9,0 0 12px #18c5d91a}
+:host([data-theme=modern]) .room-head{padding:10px 12px;min-height:72px}
+:host([data-theme=modern]) .pick{position:relative}
+:host([data-theme=modern]) .pick input{position:absolute;width:1px;height:1px;opacity:0}
+.selection-circle{display:flex;align-items:center;justify-content:center;width:32px;height:32px;flex:none;border:2px solid var(--dp-muted);border-radius:50%;font-weight:650;color:var(--primary-text-color)}
+.selected .selection-circle{background:var(--room-color);border-color:var(--room-color);color:#102026}
+.pick input:focus-visible+.selection-circle{outline:2px solid var(--dp-accent);outline-offset:4px}
+.pick input:disabled~span{opacity:.5}
+:host([data-theme=modern]) .fields{display:flex;flex-direction:column;gap:20px;padding:20px}
+.modern-room-title{display:none;margin:0;font-size:20px;font-weight:550}
+.modern-control{min-width:0}
+.field-label{display:block;font-size:13px;margin-bottom:8px;color:var(--primary-text-color)}
+.modern-control input[type=range]{width:100%;height:28px;margin:0;accent-color:var(--dp-accent);cursor:pointer}
+.modern-control input:disabled{opacity:.45;cursor:default}
+.slider-options{position:relative;min-height:44px;margin:0 7px}.slider-options button{position:absolute;left:calc(var(--stop)*100%);transform:translateX(-50%);width:30%}.slider-options button:first-child{transform:none;text-align:left}.slider-options button:last-child{transform:translateX(-100%);text-align:right}
+.slider-options button{border:0;background:transparent;padding:4px 2px;min-height:36px;font-size:12px;color:var(--dp-muted);overflow-wrap:anywhere}
+.slider-options button[aria-pressed=true]{color:var(--dp-accent);font-weight:650}
+.segments{display:flex;gap:3px;padding:3px;border:1px solid var(--dp-line);border-radius:12px}
+.segments button{flex:1;min-width:0;border:0;background:transparent;padding:8px}
+.segments button[aria-pressed=true]{background:var(--dp-accent);color:var(--text-primary-color,#fff)}
+:host([data-theme=modern]) .actions button{border-radius:13px}
+@container(min-width:700px){
+  :host([data-theme=modern]) .modern-rooms{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);column-gap:26px;grid-template-rows:repeat(var(--room-count),minmax(76px,auto));align-items:start}
+  :host([data-theme=modern]) .modern-rooms:not(:has(.room.open)){grid-template-columns:1fr}
+  :host([data-theme=modern]) .modern-rooms .room{display:contents}
+  :host([data-theme=modern]) .modern-rooms .room-head{grid-column:1;grid-row:var(--room-row);border:1px solid var(--dp-line);border-radius:16px;background:var(--dp-bg)}
+  :host([data-theme=modern]) .modern-rooms .selected .room-head{border-color:color-mix(in srgb,var(--room-color) 55%,var(--dp-line));background:color-mix(in srgb,var(--room-color) 10%,var(--dp-bg))}
+  :host([data-theme=modern]) .modern-rooms .open .room-head{border-color:#18c5d9;box-shadow:0 0 0 1px #18c5d9,0 0 12px #18c5d91a}
+  :host([data-theme=modern]) .modern-rooms .fields{grid-column:2;grid-row:1 / span var(--room-count);align-self:stretch;position:relative;border:1px solid var(--dp-line);border-radius:16px;background:var(--dp-bg);overflow:visible}
+  .modern-room-title{display:block}
+  :host([data-theme=modern]) .modern-rooms .fields::before{content:"";position:absolute;left:-8px;top:calc(var(--pointer-y,38px) - 8px);width:14px;height:14px;background:var(--dp-bg);border-left:1px solid var(--dp-line);border-bottom:1px solid var(--dp-line);transform:rotate(45deg)}
+}
+
 `;
 
 const registryRefreshEvents = new EventTarget();
@@ -662,6 +700,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     }
     this.consumablesOpen = false; this.stationMessage = ''; this.stationError = false;
     this.config = normalizeConfig(config);
+    this.setAttribute('data-theme', this.config.theme);
     const rows = config.grid_options?.rows ?? config.layout_options?.grid_rows;
     this.toggleAttribute('fixed-height', typeof rows === 'number' && Number.isFinite(rows) && rows > 0);
     this.initialized = false; this.dirty = false; this.selected = []; this.settingDraft = {}; this.expanded.clear(); this.message = ''; this.lastRooms = [];
@@ -672,11 +711,14 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     this._previewChanged ??= () => this.update();
     this._previewDialog?.addEventListener(previewViewChanged, this._previewChanged);
     super.connectedCallback();
+    this._modernObserver ??= new ResizeObserver(() => this.positionModernPointer());
+    this._modernObserver.observe(this);
     this.update();
   }
   disconnectedCallback() {
     this._previewDialog?.removeEventListener(previewViewChanged, this._previewChanged);
     this._previewDialog = null;
+    this._modernObserver?.disconnect();
     super.disconnectedCallback(); this.clearPendingStart(); this.clearSessionEnd();
   }
   clearPendingStart() { clearTimeout(this._startTimer); this.pendingStart = false; }
@@ -755,10 +797,11 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     } else if (el.dataset.setting && el.dataset.roomId) {
       const room = this.model.rooms.find(r => r.roomId === el.dataset.roomId);
       const field = room?.settings?.[el.dataset.setting];
-      if (!field?.options.includes(el.value)) return;
+      const value = el.type === 'range' ? field?.options[Number(el.value)] : el.value;
+      if (!field?.options.includes(value)) return;
       const values = this.settingDraft[room.roomId] ??= {};
-      if (el.value === field.value) delete values[el.dataset.setting];
-      else values[el.dataset.setting] = el.value;
+      if (value === field.value) delete values[el.dataset.setting];
+      else values[el.dataset.setting] = value;
       if (!Object.keys(values).length) delete this.settingDraft[room.roomId];
       // Release the native select before rendering to avoid restoring its picker focus.
       el.blur();
@@ -777,11 +820,19 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     if (el?.dataset.infoTab) { this.infoTab = el.dataset.infoTab; this.updateConsumables(); return; }
     if (this.consumablesOpen) return;
     if (!el || el.disabled || this.busy || this.controlBusy) return;
+    if (el.dataset.option !== undefined) {
+      this.onChange({ target: { dataset: el.dataset, value: el.dataset.option, blur() {} } });
+      return;
+    }
     if (el.dataset.control) { this.control(el.dataset.control); return; }
     if (this.view.active) return;
     if (el.dataset.expand !== undefined) {
       const id = el.dataset.expand;
-      this.expanded.has(id) ? this.expanded.delete(id) : this.expanded.add(id);
+      if (this.expanded.has(id)) this.expanded.delete(id);
+      else {
+        if (this.config.theme === 'modern') this.expanded.clear();
+        this.expanded.add(id);
+      }
     } else if (el.dataset.action === 'reset') this.resetDraft();
     else if (el.dataset.action === 'start') { this.start(); return; }
     else if (el.dataset.action === 'save') { this.save(); return; }
@@ -1036,6 +1087,26 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     message.classList.toggle('error', !!this.error);
     root.querySelector('dyson-planner-map')?.setOptions(this._hass, this.model.cameraEntity, this.config.camera_rotation, view.live);
   }
+  positionModernPointer() {
+    if (this.config?.theme !== 'modern') return;
+    const panel = this.shadowRoot.querySelector('.modern-rooms .fields:not([hidden])');
+    const head = this.shadowRoot.querySelector('.modern-rooms .room.open .room-head');
+    if (!panel || !head) return;
+    const target = head.getBoundingClientRect(), bounds = panel.getBoundingClientRect();
+    panel.style.setProperty('--pointer-y', `${target.top + target.height / 2 - bounds.top}px`);
+  }
+  modernControl(key, label, room, field, value, disabled, n) {
+    const h = escapeHtml, options = field.options;
+    const attrs = `data-setting="${key}" data-room-id="${h(room.roomId)}"`;
+    const name = `${label} ${room.name}`;
+    const valid = options.includes(value);
+    const blocked = disabled || !valid;
+    if (key === 'mop_repetitions') {
+      return `<div class="modern-control"><span class="field-label">${label}</span><div class="segments" role="group" aria-label="${h(name)}">${options.map((option, i) => `<button ${attrs} data-option="${h(option)}" style="--stop:${options.length > 1 ? i / (options.length - 1) : 0}" data-focus="${key}-${n}-${i}" aria-pressed="${value === option}" ${disabled ? 'disabled' : ''}>${h(option === 'One Pass' ? '1×' : option === 'Two Passes' ? '2×' : option)}</button>`).join('')}</div></div>`;
+    }
+    const index = options.indexOf(value);
+    return `<div class="modern-control"><label class="field-label" for="slider-${key}-${n}">${label}</label><input id="slider-${key}-${n}" type="range" min="0" max="${options.length - 1}" step="1" value="${Math.max(0, index)}" aria-label="${h(name)}" aria-valuetext="${h(valid ? value : 'Unavailable')}" ${attrs} data-focus="${key}-${n}" ${blocked || options.length < 2 ? 'disabled' : ''}><div class="slider-options" style="--options:${options.length}">${options.map((option, i) => `<button ${attrs} data-option="${h(option)}" style="--stop:${options.length > 1 ? i / (options.length - 1) : 0}" data-focus="${key}-${n}-${i}" aria-pressed="${value === option}" ${disabled ? 'disabled' : ''}>${h(option)}</button>`).join('')}</div>${!valid ? '<span class="badge">Unavailable</span>' : ''}</div>`;
+  }
   render() {
     if (!this.model) return;
     if (this.view.active) { this.renderSession(this.view); return; }
@@ -1045,6 +1116,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     const canSave = !!this._hass.services?.[DOMAIN]?.save_room_settings;
     const canStart = !!this._hass.services?.[DOMAIN]?.start_rooms_with_settings;
     const hasChanges = Object.keys(this.settingDraft).length > 0;
+    const modern = this.config.theme === 'modern';
     const roomHtml = rooms.map((room, n) => {
       const selected = this.selected.includes(room.entity), order = this.selected.indexOf(room.entity) + 1;
       const open = this.expanded.has(room.entity || room.name);
@@ -1059,14 +1131,20 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
         const field = room.settings?.[key];
         if (!field && this.config.unsupported_settings === 'hidden' && !this.config.always_show_all_settings) return '';
         const value = valueOf(key), options = field?.options ?? [];
+        if (modern && key !== 'cleaning_mode' && options.length) return this.modernControl(key, label, room, field, value, disabled, n);
         return `<label class="field ${key === 'cleaning_mode' ? 'mode' : ''}">${label}<select data-setting="${key}" data-room-id="${h(room.roomId)}" data-focus="${key}-${n}" aria-label="${label} ${h(room.name)}" ${disabled || !field ? 'disabled' : ''}>${!options.includes(value) ? '<option value="">Unavailable</option>' : ''}${options.map(option => `<option value="${h(option)}" ${value === option ? 'selected' : ''}>${h(option)}</option>`).join('')}</select>${!field ? '<span class="badge">Not available</span>' : ''}</label>`;
       }).join('');
+      if (modern) {
+        const colors = ['#18c5d9', '#e9b85b', '#b99ae4', '#79b9a5', '#e49baf'];
+        return `<section class="room ${selected ? 'selected' : ''} ${open ? 'open' : ''}" style="--room-color:${colors[n % colors.length]};--room-row:${n + 1}"><div class="room-head"><label class="pick"><input type="checkbox" data-focus="room-${n}" data-room="${h(room.entity)}" aria-label="Select ${h(room.name)}" ${selected ? 'checked' : ''} ${disabled ? 'disabled' : ''}><span class="selection-circle" aria-hidden="true">${selected ? order : ''}</span><span><span class="name">${h(room.name)}</span><span class="summary">${!room.available ? h(room.error || 'Unavailable') : h(valueOf('cleaning_mode') ?? 'Room settings unavailable')}</span></span></label><button class="expand" data-focus="expand-${n}" data-expand="${h(room.entity || room.name)}" aria-expanded="${open}" aria-controls="fields-${n}" aria-label="Settings for ${h(room.name)}">${open ? '⌃' : '›'}</button></div><div class="fields" id="fields-${n}" ${open ? '' : 'hidden'}><h3 class="modern-room-title">${h(room.name)}</h3>${fields}${!room.roomId ? '<p class="badge">Room ID unavailable</p>' : ''}</div></section>`;
+      }
       return `<section class="room ${selected ? 'selected' : ''}"><div class="room-head"><label class="pick"><input type="checkbox" data-focus="room-${n}" data-room="${h(room.entity)}" ${selected ? 'checked' : ''} ${disabled ? 'disabled' : ''}><span><span class="name">${h(room.name)} ${selected ? `<span class="status">(${order})</span>` : ''}</span><span class="summary">${!room.available ? h(room.error || 'Unavailable') : h(valueOf('cleaning_mode') ?? 'Room settings unavailable')}</span></span></label><button class="expand" data-focus="expand-${n}" data-expand="${h(room.entity || room.name)}" aria-expanded="${open}" aria-controls="fields-${n}" aria-label="Settings for ${h(room.name)}"><span>Settings</span> ${open ? '⌃' : '⌄'}</button></div><div class="fields" id="fields-${n}" ${open ? '' : 'hidden'}>${fields}${!room.roomId ? '<p class="badge mode">Room ID unavailable. Check the updated integration and refresh rooms.</p>' : ''}</div></section>`;
     }).join('');
-    this.paint(`<style>${styles}</style><ha-card><div class="planner-content">${this.headerHtml()}${this.statusHtml()}<div class="rooms">${roomHtml}</div>${!rooms.length ? '<p class="empty">No enabled rooms found. Check the card configuration and room discovery.</p>' : ''}<footer><div class="summary-line"><span>${this.selected.length} of ${rooms.length} rooms selected</span><span class="status ${this.dirty ? 'draft-status' : ''}">${this.dirty ? `<button class="discard-draft" data-focus="reset" data-action="reset" ${this.busy ? 'disabled' : ''} title="Discard draft" aria-label="Discard draft"><ha-icon icon="mdi:trash-can-outline" aria-hidden="true"></ha-icon></button>Local draft` : 'From Home Assistant'}</span></div><div class="actions"><button data-action="save" data-focus="save" ${this._previewDialog || !hasChanges || this.busy || !canSave ? 'disabled' : ''}>${this.saving ? 'Saving …' : 'Save settings'}</button><button class="start" data-focus="start" data-action="start" ${this._previewDialog || this.selected.length === 0 || this.busy || startBlockReason(this._hass, this.config.entity) ? 'disabled' : ''}>Start clean</button></div>${!canSave || !canStart ? '<p class="notice badge">The updated Dyson integration actions are not available. Reload the integration and refresh this dashboard.</p>' : ''}${external ? '<p class="notice badge">Settings changed outside this card. Your edited values remain in the local draft.</p>' : ''}<p class="notice ${this.error ? 'error' : ''}" role="status" aria-live="polite">${h(this.message)}</p></footer></div>${this.consumablesHtml()}</ha-card>`, 'planner');
+    this.paint(`<style>${styles}</style><ha-card><div class="planner-content">${this.headerHtml()}${this.statusHtml()}<div class="rooms ${modern ? 'modern-rooms' : ''}" style="--room-count:${rooms.length}">${roomHtml}</div>${!rooms.length ? '<p class="empty">No enabled rooms found. Check the card configuration and room discovery.</p>' : ''}<footer><div class="summary-line"><span>${this.selected.length} of ${rooms.length} rooms selected</span><span class="status ${this.dirty ? 'draft-status' : ''}">${this.dirty ? `<button class="discard-draft" data-focus="reset" data-action="reset" ${this.busy ? 'disabled' : ''} title="Discard draft" aria-label="Discard draft"><ha-icon icon="mdi:trash-can-outline" aria-hidden="true"></ha-icon></button>Local draft` : 'From Home Assistant'}</span></div><div class="actions"><button data-action="save" data-focus="save" ${this._previewDialog || !hasChanges || this.busy || !canSave ? 'disabled' : ''}>${this.saving ? 'Saving …' : 'Save settings'}</button><button class="start" data-focus="start" data-action="start" ${this._previewDialog || this.selected.length === 0 || this.busy || startBlockReason(this._hass, this.config.entity) ? 'disabled' : ''}>Start clean</button></div>${!canSave || !canStart ? '<p class="notice badge">The updated Dyson integration actions are not available. Reload the integration and refresh this dashboard.</p>' : ''}${external ? '<p class="notice badge">Settings changed outside this card. Your edited values remain in the local draft.</p>' : ''}<p class="notice ${this.error ? 'error' : ''}" role="status" aria-live="polite">${h(this.message)}</p></footer></div>${this.consumablesHtml()}</ha-card>`, 'planner');
     this.updateBattery();
     this.updateConsumables();
     this.updateStatus();
+    this.positionModernPointer();
   }
 }
 
@@ -1163,6 +1241,7 @@ class DysonCleaningPlannerEditor extends DysonRegistryElement {
     this.paint(`<style>${styles}:host{padding:8px}label{display:grid;gap:8px;margin:0 0 16px;font-size:14px}input[type=text]{padding:12px;border:1px solid var(--dp-line);border-radius:8px;background:var(--dp-bg);color:inherit;width:100%}.entry{display:flex;gap:8px;align-items:center;margin:8px 0}.entry label{display:flex;align-items:center;flex:1;margin:0}.entry button{min-width:42px}h3{font-size:15px;margin-top:24px}.status-options{margin:12px 0 0;padding:8px 0 0 12px;border:0;border-top:1px solid var(--dp-line);min-width:0}.status-options:disabled{opacity:.5}.battery-percentage-option{padding-left:24px}.battery-percentage-option:has(input[disabled]){opacity:.5}</style>
       <label>Dyson device<select data-key="entity" data-focus="entity"><option value="">Select a device</option>${vacuums.map(e => `<option value="${h(e.entity_id)}" ${config.entity === e.entity_id ? 'selected' : ''}>${h(this._hass.states[e.entity_id]?.attributes?.friendly_name || e.entity_id)}</option>`).join('')}</select></label>
       <label>Title<input type="text" data-key="title" data-focus="title" value="${h(config.title ?? 'Plan a clean')}"></label>
+      <label>Theme<select data-key="theme" data-focus="theme"><option value="classic" ${config.theme !== 'modern' ? 'selected' : ''}>Classic</option><option value="modern" ${config.theme === 'modern' ? 'selected' : ''}>Modern</option></select></label>
       <label>Unsupported settings<select data-key="unsupported_settings" data-focus="unsupported"><option value="disabled" ${config.unsupported_settings !== 'hidden' ? 'selected' : ''}>Show disabled</option><option value="hidden" ${config.unsupported_settings === 'hidden' ? 'selected' : ''}>Hide</option></select></label>
       <div class="entry"><label><input type="checkbox" data-key="always_show_all_settings" data-focus="all-settings" ${config.always_show_all_settings === true ? 'checked' : ''}>Always show all settings</label></div>
       <p>Per-room settings are detected automatically. Saving and starting use the Dyson integration batch actions.</p>
