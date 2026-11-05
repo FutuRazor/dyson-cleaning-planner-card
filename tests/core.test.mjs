@@ -28,6 +28,10 @@ test('disabled rooms are excluded even if still on the map; card exclusions rema
 });
 
 test('configuration validates and retains unrelated dashboard settings', () => {
+  assert.equal(normalizeConfig({ entity: 'vacuum.robot' }).theme, 'modern');
+  assert.equal(normalizeConfig({ entity: 'vacuum.robot', theme: 'modern' }).theme, 'modern');
+  assert.equal(normalizeConfig({ entity: 'vacuum.robot', theme: 'classic' }).theme, 'classic');
+  assert.throws(() => normalizeConfig({ entity: 'vacuum.robot', theme: 'invalid' }));
   assert.throws(() => normalizeConfig({ entity: 'switch.wrong' }));
   assert.throws(() => normalizeConfig({ entity: 'vacuum.robot', excluded_rooms: 'wrong' }));
   assert.equal(normalizeConfig({ entity: 'vacuum.robot', grid_options: { columns: 12 } }).grid_options.columns, 12);

@@ -1,0 +1,54 @@
+import { createRequire } from 'node:module';
+import assert from 'node:assert/strict';
+import { previewServer } from '../scripts/preview.mjs';
+const { chromium } = createRequire(import.meta.url)('playwright');
+const server = previewServer();
+await new Promise(r => server.listen(0,'127.0.0.1',r));
+const browser = await chromium.launch({channel:'msedge'});
+try {
+ const page = await browser.newPage({viewport:{width:1100,height:1100}});
+ await page.goto(`http://127.0.0.1:${server.address().port}/`);
+ const card=page.locator('#card');
+ await card.locator('.rooms').waitFor();
+ assert.equal(await card.getAttribute('data-theme'),'modern');
+ await page.locator('#settings').click();
+ await page.locator('#editor [data-key=theme]').selectOption('classic');
+ assert.equal(await card.getAttribute('data-theme'),'classic');
+ await page.locator('#editor [data-key=theme]').selectOption('modern');
+ assert.equal(await card.getAttribute('data-theme'),'modern');
+ await page.locator('#settings').click();
+ await page.evaluate(()=>{document.querySelector('main').style.maxWidth='1000px';document.body.classList.add('dark')});
+ await card.locator('[data-room]').nth(1).check();
+ await card.locator('[data-room]').nth(0).check();
+ assert.deepEqual(await card.locator('.selection-circle').allTextContents(),['2','1','','','']);
+ await card.locator('[data-expand]').nth(0).click();
+ assert.equal(await card.locator('.fields:visible').count(),1);
+ await card.locator('.fields:visible [data-setting=cleaning_mode]').selectOption('Vacuum and Mop');
+ assert.equal(await card.locator('.fields:visible input[data-setting=water_level]').getAttribute('max'),'3');
+ await card.locator('.fields:visible input[data-setting=cleaning_strategy]').evaluate(el=>{el.value='2';el.dispatchEvent(new Event('change',{bubbles:true}))});
+
+ assert.equal(await page.evaluate(()=>demo.calls.length),0);
+ const option=await card.locator('.fields:visible [data-setting=cleaning_strategy][aria-pressed=true]').textContent();
+ assert.ok(option);
+ const wide=await card.locator('.fields:visible').boundingBox();
+ const left=await card.locator('.room-head').first().boundingBox();
+ assert.ok(wide.x>left.x+left.width);
+ await page.screenshot({path:'modern-wide.png',fullPage:true});
+ // Opening an unselected room must not change the job sequence.
+ await card.locator('[data-expand]').nth(4).click();
+ assert.equal(await card.locator('.fields:visible').count(),1);
+ assert.deepEqual(await card.locator('.selection-circle').allTextContents(),['2','1','','','']);
+ await page.setViewportSize({width:390,height:1100});
+ assert.equal(await card.locator('.room-head .name').first().isVisible(),true);
+ const mobile=await card.locator('.fields:visible').boundingBox();
+ const row=await card.locator('.room-head').nth(4).boundingBox();
+ assert.ok(mobile.y>=row.y+row.height-1);
+ assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+ await page.screenshot({path:'modern-mobile.png',fullPage:true});
+ await card.locator('[data-action=start]').click();
+ await page.waitForFunction(()=>!demo.card.busy);
+ const start=await page.evaluate(()=>demo.calls.find(c=>c.service==='start_rooms_with_settings'));
+ assert.deepEqual(start.data.room_ids,['11','10']);
+ assert.equal(start.data.room_settings['10'].cleaning_strategy,option);
+ console.log('Modern responsive layout, unselected settings, local drafts and ordered start verified.');
+} finally {await browser.close();server.close();}

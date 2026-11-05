@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Default to Modern while preserving an explicitly selected Classic theme.
+- Refine Modern surfaces, stepped sliders and label alignment; center Info beside the title and subtitle and remove the repeated settings heading.
+- Keep split-view height stable across cleaning modes, distribute three controls with extra bottom space, and align exactly five compact room tiles with the settings panel without reducing tile gaps.
+
+- Separate Modern room selection (number circle) from opening settings (room text), reduce repetition button height, and reserve omitted controls only in split view to prevent mode changes from resizing the card.
+
+- Compact Modern room settings, keep room rows evenly spaced and enable the two-column layout from 480 px of available card width.
+
+- Add Classic and Modern themes with shared room drafts and ordered cleaning actions. Modern provides responsive room settings, a cyan outline and pointer for the open room, discrete power/water sliders and repetition buttons.
 - Compact the Info overlay by placing the close button beside the tabs and removing the heading and version badge.
 
 ## v1.0.0

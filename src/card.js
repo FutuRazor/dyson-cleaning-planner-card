@@ -60,12 +60,92 @@ header,.station-rows{--hud-red:var(--error-color,#db4437);--hud-blue:var(--blue-
 .status-text-5g{display:inline-flex;align-items:center;justify-content:center;height:16px;box-sizing:border-box;font:bold 11px/1 ui-monospace,monospace;padding:0 3px;border-radius:3px;background:var(--dp-soft)}
 @keyframes status-blink{50%{opacity:.4}}.blink{animation:status-blink 1.6s ease-in-out infinite}@media(prefers-reduced-motion:reduce){.blink{animation:none}}
 .header-main{display:grid;grid-template-columns:auto minmax(0,1fr) auto;grid-template-rows:auto auto;align-items:center;column-gap:13px;padding:4px var(--dp-padding) 10px}
-.header-main .robot{grid-row:1/3}.header-title{display:contents}.header-title h2{grid-area:1/2;margin:0}.header-title p{grid-area:2/2}.header-main .consumables-info{grid-area:1/3;width:auto}
+.header-main .robot{grid-row:1/3}.header-title{display:contents}.header-title h2{grid-area:1/2;margin:0}.header-title p{grid-area:2/2}.header-main .consumables-info{grid-area:1/3/3/4;align-self:center;width:auto}
 .robot{background:var(--dp-soft);color:var(--dp-accent);padding:13px;border-radius:15px;display:flex}ha-icon{width:24px;height:24px}h2{font-size:22px;font-weight:500;margin:0 0 5px}p{margin:0;font-size:13px;line-height:1.5;color:var(--dp-muted)}.hint{padding:0 24px 16px}.rooms{padding:0 16px;display:grid;gap:10px}.room{border:1px solid var(--dp-line);border-radius:13px;overflow:hidden}.selected{background:var(--dp-soft)}.room-head{display:flex;align-items:center;gap:8px;padding:10px 12px;min-height:74px}.pick{display:flex;align-items:center;gap:11px;flex:1;min-width:0;min-height:44px}.name{display:block;font-size:15px;font-weight:500;margin-bottom:5px;overflow-wrap:anywhere}.summary{display:block;font-size:12px;color:var(--dp-muted);line-height:1.5}.fields{border-top:1px solid var(--dp-line);padding:14px;background:var(--dp-bg);display:grid;grid-template-columns:1fr 1fr;gap:14px}.field{display:flex;flex-direction:column;gap:7px;font-size:12px;color:var(--dp-muted)}.mode{grid-column:1/-1}.fine{grid-column:1/-1;border-top:1px solid var(--dp-line);padding-top:12px;margin-top:2px}.badge{color:var(--warning-color,#995000);font-size:11px;line-height:1.5}button,select,input{font:inherit}button,select{color:inherit;border:1px solid var(--dp-line);background:var(--dp-bg);border-radius:9px;min-height:42px;padding:9px 12px;font-size:13px}button{cursor:pointer}button:disabled{cursor:default;opacity:.5}select{width:100%;min-width:0;background:var(--secondary-background-color,#f5f7f9);font-size:14px}select:disabled{color:var(--dp-muted);opacity:.65}.mode select{background:var(--dp-soft)}input[type=checkbox]{width:19px;height:19px;accent-color:var(--dp-accent);flex-shrink:0}.expand{border:0;background:transparent;white-space:nowrap}.order{display:flex;gap:5px;margin-top:10px}.order button{min-width:42px}footer{padding:20px 24px 24px}.draft-status{position:relative;padding-left:28px}.discard-draft{position:absolute;right:calc(100% - 24px);top:50%;transform:translateY(-50%);display:flex;align-items:center;justify-content:center;width:24px;height:24px;min-height:0;padding:0;border:0;background:transparent;color:var(--dp-muted)}.discard-draft ha-icon{width:20px;height:20px;--mdc-icon-size:20px;pointer-events:none}.summary-line{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:15px;font-size:13px}.actions{display:flex;gap:10px}.actions button{flex:1;min-height:46px}.start{background:var(--dp-accent);border-color:transparent;color:var(--text-primary-color,#fff)}.notice{margin-top:12px}.error{color:var(--error-color,#b3261e)}.reset{margin-top:12px;background:transparent}.empty{padding:16px 24px}.status{color:var(--dp-muted)}button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--dp-accent);outline-offset:3px}[hidden]{display:none!important}
 .session{padding:4px 24px 0}.session h3{margin:0 0 8px;font-size:20px;font-weight:500}.session .detail{margin-bottom:18px}.requested-label{font-size:12px;color:var(--dp-muted);margin-bottom:8px}.requested{display:flex;flex-wrap:wrap;gap:7px;list-style:none;padding:0;margin:0 0 10px}.requested li{background:var(--dp-soft);border:1px solid var(--dp-line);border-radius:18px;padding:7px 11px;font-size:13px;overflow-wrap:anywhere}.requested-note{margin-bottom:18px}.map-section{margin-top:20px}.map-title{font-size:13px;font-weight:500;margin:0 0 10px}.session-actions button{display:flex;align-items:center;justify-content:center;gap:8px}.session-actions ha-icon{width:20px;height:20px}.session-footer{padding-top:20px}
 .activity-status{display:flex;align-items:center;gap:10px;margin:0 var(--dp-padding) 16px;padding:12px;border-radius:10px;background:var(--dp-soft);font-size:14px}.activity-status ha-icon{flex-shrink:0}.activity-copy{flex:1;min-width:0}.activity-remaining,.activity-start-block,.activity-fault{display:block;margin-top:4px;font-size:12px;line-height:1.5;color:var(--dp-muted);font-variant-numeric:tabular-nums}.drying-progress{display:block;width:100%;height:7px;margin-top:8px;border-radius:999px;background:var(--dp-line);overflow:hidden}.drying-progress-fill{display:block;height:100%;width:0;border-radius:inherit;background:var(--dp-accent)}.drying-control{flex-shrink:0}.cancel-drying{display:flex;align-items:center;justify-content:center;padding:8px;min-width:42px}.map-title{padding:0 var(--dp-padding)}
 .map-title{margin-bottom:4px}.map-caption{padding:0 var(--dp-padding);margin:0 0 10px;font-size:12px}.action-message:empty{display:none}.session-actions .pause{background:#ef8c00;color:#171717;border-color:transparent}.session-actions .resume{background:#2e7d32;color:#fff;border-color:transparent}.session-actions .home{background:#c62828;color:#fff;border-color:transparent}
 @media(max-width:400px){:host{--dp-padding:15px}.hint{padding:0 15px 14px}.rooms{padding:0 10px}footer{padding:18px 15px}.session{padding:4px 15px 0}.expand span{display:none}.actions{flex-direction:column}.session-actions{flex-direction:row}select{font-size:16px}.fields{gap:12px}}
+/* Cool neutral surfaces keep cyan reserved for active controls. */
+:host([data-theme=modern]){--dp-modern-surface:color-mix(in srgb,#506773 14%,var(--dp-bg));--dp-modern-control:color-mix(in srgb,#8099a5 18%,var(--dp-modern-surface));--dp-modern-control-border:color-mix(in srgb,var(--primary-text-color,#20272d) 24%,var(--dp-modern-control))}
+:host([data-theme=modern]) .mode select,:host([data-theme=modern]) .segments{background:var(--dp-modern-control);border-color:var(--dp-modern-control-border)}
+:host([data-theme=modern]) ha-card{container-type:inline-size}
+:host([data-theme=modern]) .rooms{padding:0 var(--dp-padding);gap:10px}
+:host([data-theme=modern]) .room{border-radius:16px;border-color:var(--dp-line);background:var(--dp-modern-surface)}
+:host([data-theme=modern]) .room.selected{background:color-mix(in srgb,var(--room-color) 10%,var(--dp-bg));border-color:color-mix(in srgb,var(--room-color) 55%,var(--dp-line))}
+:host([data-theme=modern]) .room.open{border-color:#18c5d9;box-shadow:0 0 0 1px #18c5d9,0 0 12px #18c5d91a}
+:host([data-theme=modern]) .room-head{padding:10px 12px;min-height:72px}
+:host([data-theme=modern]) .pick{position:relative;flex:0 0 15%;min-width:44px;min-height:44px;justify-content:center;align-self:stretch;cursor:pointer}
+:host([data-theme=modern]) .room-settings-toggle{flex:1;min-width:0;align-self:stretch;display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:left;white-space:normal;padding:0 4px}
+:host([data-theme=modern]) .room-settings-toggle span{display:block}
+.room-settings-copy{min-width:0}
+.mode-spacer{display:none}
+:host([data-theme=modern]) .pick input{position:absolute;width:1px;height:1px;opacity:0}
+.selection-circle{display:flex;align-items:center;justify-content:center;width:32px;height:32px;flex:none;border:2px solid var(--dp-muted);border-radius:50%;font-weight:650;color:var(--primary-text-color)}
+.selected .selection-circle{background:var(--room-color);border-color:var(--room-color);color:#102026}
+.pick input:focus-visible+.selection-circle{outline:2px solid var(--dp-accent);outline-offset:4px}
+.pick input:disabled~span{opacity:.5}
+:host([data-theme=modern]) .fields{display:flex;flex-direction:column;gap:8px;padding:10px 14px;background:var(--dp-modern-surface)}
+.modern-control{min-width:0}
+.field-label{display:block;font-size:13px;margin-bottom:2px;color:var(--primary-text-color)}
+/* Tick centers share the native thumb's travel area (half its width at each end). */
+.stepped-slider{position:relative;height:24px}
+.slider-ticks{position:absolute;inset:0 10px;pointer-events:none;color:var(--dp-muted)}
+.slider-ticks::before{content:"";position:absolute;left:0;right:0;top:10.5px;height:3px;border-radius:2px;background:currentColor;opacity:.65}
+.slider-tick{position:absolute;left:calc(var(--stop)*100%);top:12px;transform:translate(-50%,-50%);width:10px;height:10px;border-radius:50%;background:currentColor}
+.modern-control .stepped-slider input[type=range]{position:relative;z-index:1;display:block;appearance:none;-webkit-appearance:none;width:100%;height:24px;margin:0;padding:0;border:0;background:transparent;cursor:pointer}
+.stepped-slider input::-webkit-slider-runnable-track{height:3px;background:transparent;border:0}
+.stepped-slider input::-moz-range-track{height:3px;background:transparent;border:0}
+.stepped-slider input::-moz-range-progress{background:transparent}
+.stepped-slider input::-webkit-slider-thumb{-webkit-appearance:none;box-sizing:border-box;width:20px;height:20px;margin-top:-8.5px;border:3px solid #f4fbfd;border-radius:50%;background:var(--dp-accent);box-shadow:0 1px 3px #0003}
+.stepped-slider input::-moz-range-thumb{box-sizing:border-box;width:20px;height:20px;border:3px solid #f4fbfd;border-radius:50%;background:var(--dp-accent);box-shadow:0 1px 3px #0003}
+.stepped-slider.disabled{opacity:.45}
+.modern-control .stepped-slider input:disabled{cursor:default}
+.slider-options{position:relative;min-height:28px;margin:0 10px}.slider-options button{position:absolute;left:calc(var(--stop)*100%);transform:translateX(-50%);width:30%}.slider-options button:first-child{left:-10px;transform:none;text-align:left;padding-left:0}.slider-options button:last-child{left:calc(100% + 10px);transform:translateX(-100%);text-align:right;padding-right:0}
+.slider-options button{border:0;background:transparent;padding:2px 2px;min-height:28px;font-size:12px;color:var(--dp-muted);overflow-wrap:anywhere}
+.slider-options button[aria-pressed=true]{color:var(--dp-accent);font-weight:650}
+.segments{display:flex;gap:3px;padding:3px;border:1px solid var(--dp-line);border-radius:12px}
+.segments button{flex:1;min-width:0;min-height:32px;border:0;background:transparent;padding:3px 8px;position:relative}
+.segments button::after{content:"";position:absolute;inset:-6px 0}
+.segments button[aria-pressed=true]{background:var(--dp-accent);color:var(--text-primary-color,#fff)}
+:host([data-theme=modern]) .actions button{border-radius:13px}
+:host([data-theme=modern]) .fields .field{gap:4px}
+:host([data-theme=modern]) .mode select{min-height:35px;padding:5px 10px}
+/* Keep room rows content-sized; the final flexible row absorbs panel height. */
+@container (min-width:480px) and (max-width:620px){
+  :host([data-theme=modern]) .room-head{padding:8px;gap:4px}
+  :host([data-theme=modern]) .pick{gap:8px}
+  :host([data-theme=modern]) .selection-circle{width:28px;height:28px}
+  :host([data-theme=modern]) .room-settings-toggle{padding:0;min-height:44px}
+}
+@container(min-width:480px){
+  :host([data-theme=modern]) .modern-rooms{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);column-gap:18px;row-gap:0;grid-template-rows:repeat(var(--room-count),max-content) minmax(0,1fr);align-items:start}
+  :host([data-theme=modern]) .modern-rooms:not(:has(.room.open)){grid-template-columns:1fr}
+  :host([data-theme=modern]) .modern-rooms .room{display:contents}
+  :host([data-theme=modern]) .modern-rooms .room-head{grid-column:1;grid-row:var(--room-row);margin-bottom:10px;border:1px solid var(--dp-line);border-radius:16px;background:var(--dp-modern-surface)}
+  :host([data-theme=modern]) .modern-rooms .room:last-child .room-head{margin-bottom:0}
+  :host([data-theme=modern]) .modern-rooms .fields:not(:has(>.mode-spacer)){justify-content:space-between}
+  :host([data-theme=modern]) .modern-rooms .selected .room-head{border-color:color-mix(in srgb,var(--room-color) 55%,var(--dp-line));background:color-mix(in srgb,var(--room-color) 10%,var(--dp-bg))}
+  :host([data-theme=modern]) .modern-rooms .open .room-head{border-color:#18c5d9;box-shadow:0 0 0 1px #18c5d9,0 0 12px #18c5d91a}
+  :host([data-theme=modern]) .modern-rooms .fields{grid-column:2;grid-row:1 / span calc(var(--room-count) + 1);align-self:stretch;position:relative;border:1px solid var(--dp-line);border-radius:16px;background:var(--dp-modern-surface);overflow:visible}
+  /* Reserve the omitted control at the bottom, only in split view. */
+  :host([data-theme=modern]) .mode-spacer{display:block;visibility:hidden;order:1}
+  :host([data-theme=modern]) .fields:has(>.mode-spacer)>:not(.mode-spacer){translate:0 var(--field-shift,0px)}
+  :host([data-theme=modern]) .modern-rooms .fields::before{content:"";position:absolute;left:-8px;top:calc(var(--pointer-y,38px) - 8px);width:14px;height:14px;background:var(--dp-modern-surface);border-left:1px solid var(--dp-line);border-bottom:1px solid var(--dp-line);transform:rotate(45deg)}
+}
+
+/* Compact only the tiles, not their 10px gaps, when five or more rooms are shown. */
+:host([data-theme=modern]) .modern-rooms:has(>.room:nth-child(5)) .room-head{min-height:52px;padding-block:3px}
+:host([data-theme=modern]) .modern-rooms:has(>.room:nth-child(5)) .name{margin-bottom:2px;line-height:1.2}
+:host([data-theme=modern]) .modern-rooms:has(>.room:nth-child(5)) .summary{line-height:1.25}
+
+@container(min-width:480px){
+  /* With exactly five rooms, share the settings height equally between tiles. */
+  :host([data-theme=modern]) .modern-rooms:has(>.room:nth-child(5)):not(:has(>.room:nth-child(6))):has(.room.open){grid-template-rows:repeat(5,minmax(52px,1fr));row-gap:10px}
+  :host([data-theme=modern]) .modern-rooms:has(>.room:nth-child(5)):not(:has(>.room:nth-child(6))):has(.room.open) .room-head{margin-bottom:0;align-self:stretch}
+  :host([data-theme=modern]) .modern-rooms:has(>.room:nth-child(5)):not(:has(>.room:nth-child(6))):has(.room.open) .fields{grid-row:1 / span 5}
+}
+
 `;
 
 const registryRefreshEvents = new EventTarget();
@@ -197,6 +277,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     }
     this.consumablesOpen = false; this.stationMessage = ''; this.stationError = false;
     this.config = normalizeConfig(config);
+    this.setAttribute('data-theme', this.config.theme);
     const rows = config.grid_options?.rows ?? config.layout_options?.grid_rows;
     this.toggleAttribute('fixed-height', typeof rows === 'number' && Number.isFinite(rows) && rows > 0);
     this.initialized = false; this.dirty = false; this.selected = []; this.settingDraft = {}; this.expanded.clear(); this.message = ''; this.lastRooms = [];
@@ -207,11 +288,14 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     this._previewChanged ??= () => this.update();
     this._previewDialog?.addEventListener(previewViewChanged, this._previewChanged);
     super.connectedCallback();
+    this._modernObserver ??= new ResizeObserver(() => this.positionModernPointer());
+    this._modernObserver.observe(this);
     this.update();
   }
   disconnectedCallback() {
     this._previewDialog?.removeEventListener(previewViewChanged, this._previewChanged);
     this._previewDialog = null;
+    this._modernObserver?.disconnect();
     super.disconnectedCallback(); this.clearPendingStart(); this.clearSessionEnd();
   }
   clearPendingStart() { clearTimeout(this._startTimer); this.pendingStart = false; }
@@ -290,10 +374,11 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     } else if (el.dataset.setting && el.dataset.roomId) {
       const room = this.model.rooms.find(r => r.roomId === el.dataset.roomId);
       const field = room?.settings?.[el.dataset.setting];
-      if (!field?.options.includes(el.value)) return;
+      const value = el.type === 'range' ? field?.options[Number(el.value)] : el.value;
+      if (!field?.options.includes(value)) return;
       const values = this.settingDraft[room.roomId] ??= {};
-      if (el.value === field.value) delete values[el.dataset.setting];
-      else values[el.dataset.setting] = el.value;
+      if (value === field.value) delete values[el.dataset.setting];
+      else values[el.dataset.setting] = value;
       if (!Object.keys(values).length) delete this.settingDraft[room.roomId];
       // Release the native select before rendering to avoid restoring its picker focus.
       el.blur();
@@ -312,11 +397,19 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     if (el?.dataset.infoTab) { this.infoTab = el.dataset.infoTab; this.updateConsumables(); return; }
     if (this.consumablesOpen) return;
     if (!el || el.disabled || this.busy || this.controlBusy) return;
+    if (el.dataset.option !== undefined) {
+      this.onChange({ target: { dataset: el.dataset, value: el.dataset.option, blur() {} } });
+      return;
+    }
     if (el.dataset.control) { this.control(el.dataset.control); return; }
     if (this.view.active) return;
     if (el.dataset.expand !== undefined) {
       const id = el.dataset.expand;
-      this.expanded.has(id) ? this.expanded.delete(id) : this.expanded.add(id);
+      if (this.expanded.has(id)) this.expanded.delete(id);
+      else {
+        if (this.config.theme === 'modern') this.expanded.clear();
+        this.expanded.add(id);
+      }
     } else if (el.dataset.action === 'reset') this.resetDraft();
     else if (el.dataset.action === 'start') { this.start(); return; }
     else if (el.dataset.action === 'save') { this.save(); return; }
@@ -571,6 +664,37 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     message.classList.toggle('error', !!this.error);
     root.querySelector('dyson-planner-map')?.setOptions(this._hass, this.model.cameraEntity, this.config.camera_rotation, view.live);
   }
+  positionModernPointer() {
+    if (this.config?.theme !== 'modern') return;
+    const panel = this.shadowRoot.querySelector('.modern-rooms .fields:not([hidden])');
+    const head = this.shadowRoot.querySelector('.modern-rooms .room.open .room-head');
+    if (!panel || !head) return;
+    const target = head.getBoundingClientRect(), bounds = panel.getBoundingClientRect();
+    panel.style.setProperty('--pointer-y', `${target.top + target.height / 2 - bounds.top}px`);
+    const fields = [...panel.children].filter(el => !el.classList.contains('mode-spacer'));
+    fields.forEach(el => el.style.removeProperty('--field-shift'));
+    const spacer = panel.querySelector('.mode-spacer');
+    if (!spacer || fields.length !== 3 || getComputedStyle(spacer).display === 'none') return;
+    // Keep half the spare space below three controls; distribute the rest between them.
+    const css = getComputedStyle(panel);
+    const gap = parseFloat(css.rowGap) || 0;
+    const available = panel.clientHeight - parseFloat(css.paddingTop) - parseFloat(css.paddingBottom);
+    const used = fields.reduce((sum, el) => sum + el.getBoundingClientRect().height, 0);
+    const extra = Math.max(0, available - used - gap * 2);
+    fields.forEach((el, i) => el.style.setProperty('--field-shift', `${extra * i / 4}px`));
+  }
+  modernControl(key, label, room, field, value, disabled, n) {
+    const h = escapeHtml, options = field.options;
+    const attrs = `data-setting="${key}" data-room-id="${h(room.roomId)}"`;
+    const name = `${label} ${room.name}`;
+    const valid = options.includes(value);
+    const blocked = disabled || !valid;
+    if (key === 'mop_repetitions') {
+      return `<div class="modern-control"><span class="field-label">${label}</span><div class="segments" role="group" aria-label="${h(name)}">${options.map((option, i) => `<button ${attrs} data-option="${h(option)}" style="--stop:${options.length > 1 ? i / (options.length - 1) : 0}" data-focus="${key}-${n}-${i}" aria-pressed="${value === option}" ${disabled ? 'disabled' : ''}>${h(option === 'One Pass' ? '1×' : option === 'Two Passes' ? '2×' : option)}</button>`).join('')}</div></div>`;
+    }
+    const index = options.indexOf(value);
+    return `<div class="modern-control"><label class="field-label" for="slider-${key}-${n}">${label}</label><div class="stepped-slider ${blocked ? 'disabled' : ''}"><div class="slider-ticks" aria-hidden="true">${options.map((_, i) => `<span class="slider-tick" style="--stop:${options.length > 1 ? i / (options.length - 1) : 0}"></span>`).join('')}</div><input id="slider-${key}-${n}" type="range" min="0" max="${options.length - 1}" step="1" value="${Math.max(0, index)}" aria-label="${h(name)}" aria-valuetext="${h(valid ? value : 'Unavailable')}" ${attrs} data-focus="${key}-${n}" ${blocked || options.length < 2 ? 'disabled' : ''}></div><div class="slider-options" style="--options:${options.length}">${options.map((option, i) => `<button ${attrs} data-option="${h(option)}" style="--stop:${options.length > 1 ? i / (options.length - 1) : 0}" data-focus="${key}-${n}-${i}" aria-pressed="${value === option}" ${disabled ? 'disabled' : ''}>${h(option)}</button>`).join('')}</div>${!valid ? '<span class="badge">Unavailable</span>' : ''}</div>`;
+  }
   render() {
     if (!this.model) return;
     if (this.view.active) { this.renderSession(this.view); return; }
@@ -580,28 +704,35 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     const canSave = !!this._hass.services?.[DOMAIN]?.save_room_settings;
     const canStart = !!this._hass.services?.[DOMAIN]?.start_rooms_with_settings;
     const hasChanges = Object.keys(this.settingDraft).length > 0;
+    const modern = this.config.theme === 'modern';
     const roomHtml = rooms.map((room, n) => {
       const selected = this.selected.includes(room.entity), order = this.selected.indexOf(room.entity) + 1;
       const open = this.expanded.has(room.entity || room.name);
       const disabled = this.busy || !room.available;
       const valueOf = key => this.settingDraft[room.roomId]?.[key] ?? room.settings?.[key]?.value;
       const fields = Object.entries(ROOM_FIELDS).map(([key, label]) => {
-        if (!this.config.always_show_all_settings) {
-          const mode = valueOf('cleaning_mode');
-          if (mode === 'Vacuum' && key === 'water_level') return '';
-          if (mode === 'Mop' && key === 'cleaning_strategy') return '';
-        }
+        const mode = valueOf('cleaning_mode');
+        const omitted = !this.config.always_show_all_settings &&
+          ((mode === 'Vacuum' && key === 'water_level') || (mode === 'Mop' && key === 'cleaning_strategy'));
+        if (omitted && !modern) return '';
+        const reserve = html => omitted ? `<div class="mode-spacer" inert aria-hidden="true">${html}</div>` : html;
         const field = room.settings?.[key];
         if (!field && this.config.unsupported_settings === 'hidden' && !this.config.always_show_all_settings) return '';
         const value = valueOf(key), options = field?.options ?? [];
-        return `<label class="field ${key === 'cleaning_mode' ? 'mode' : ''}">${label}<select data-setting="${key}" data-room-id="${h(room.roomId)}" data-focus="${key}-${n}" aria-label="${label} ${h(room.name)}" ${disabled || !field ? 'disabled' : ''}>${!options.includes(value) ? '<option value="">Unavailable</option>' : ''}${options.map(option => `<option value="${h(option)}" ${value === option ? 'selected' : ''}>${h(option)}</option>`).join('')}</select>${!field ? '<span class="badge">Not available</span>' : ''}</label>`;
+        if (modern && key !== 'cleaning_mode' && options.length) return reserve(this.modernControl(key, label, room, field, value, disabled, n));
+        return reserve(`<label class="field ${key === 'cleaning_mode' ? 'mode' : ''}">${label}<select data-setting="${key}" data-room-id="${h(room.roomId)}" data-focus="${key}-${n}" aria-label="${label} ${h(room.name)}" ${disabled || !field ? 'disabled' : ''}>${!options.includes(value) ? '<option value="">Unavailable</option>' : ''}${options.map(option => `<option value="${h(option)}" ${value === option ? 'selected' : ''}>${h(option)}</option>`).join('')}</select>${!field ? '<span class="badge">Not available</span>' : ''}</label>`);
       }).join('');
+      if (modern) {
+        const colors = ['#18c5d9', '#e9b85b', '#b99ae4', '#79b9a5', '#e49baf'];
+        return `<section class="room ${selected ? 'selected' : ''} ${open ? 'open' : ''}" style="--room-color:${colors[n % colors.length]};--room-row:${n + 1}"><div class="room-head"><label class="pick"><input type="checkbox" data-focus="room-${n}" data-room="${h(room.entity)}" aria-label="Select ${h(room.name)}" ${selected ? 'checked' : ''} ${disabled ? 'disabled' : ''}><span class="selection-circle" aria-hidden="true">${selected ? order : ''}</span></label><button class="expand room-settings-toggle" data-focus="expand-${n}" data-expand="${h(room.entity || room.name)}" aria-expanded="${open}" aria-controls="fields-${n}" aria-label="Settings for ${h(room.name)}"><span class="room-settings-copy"><span class="name">${h(room.name)}</span><span class="summary">${!room.available ? h(room.error || 'Unavailable') : h(valueOf('cleaning_mode') ?? 'Room settings unavailable')}</span></span><span aria-hidden="true">${open ? '⌃' : '›'}</span></button></div><div class="fields" id="fields-${n}" ${open ? '' : 'hidden'}>${fields}${!room.roomId ? '<p class="badge">Room ID unavailable</p>' : ''}</div></section>`;
+      }
       return `<section class="room ${selected ? 'selected' : ''}"><div class="room-head"><label class="pick"><input type="checkbox" data-focus="room-${n}" data-room="${h(room.entity)}" ${selected ? 'checked' : ''} ${disabled ? 'disabled' : ''}><span><span class="name">${h(room.name)} ${selected ? `<span class="status">(${order})</span>` : ''}</span><span class="summary">${!room.available ? h(room.error || 'Unavailable') : h(valueOf('cleaning_mode') ?? 'Room settings unavailable')}</span></span></label><button class="expand" data-focus="expand-${n}" data-expand="${h(room.entity || room.name)}" aria-expanded="${open}" aria-controls="fields-${n}" aria-label="Settings for ${h(room.name)}"><span>Settings</span> ${open ? '⌃' : '⌄'}</button></div><div class="fields" id="fields-${n}" ${open ? '' : 'hidden'}>${fields}${!room.roomId ? '<p class="badge mode">Room ID unavailable. Check the updated integration and refresh rooms.</p>' : ''}</div></section>`;
     }).join('');
-    this.paint(`<style>${styles}</style><ha-card><div class="planner-content">${this.headerHtml()}${this.statusHtml()}<div class="rooms">${roomHtml}</div>${!rooms.length ? '<p class="empty">No enabled rooms found. Check the card configuration and room discovery.</p>' : ''}<footer><div class="summary-line"><span>${this.selected.length} of ${rooms.length} rooms selected</span><span class="status ${this.dirty ? 'draft-status' : ''}">${this.dirty ? `<button class="discard-draft" data-focus="reset" data-action="reset" ${this.busy ? 'disabled' : ''} title="Discard draft" aria-label="Discard draft"><ha-icon icon="mdi:trash-can-outline" aria-hidden="true"></ha-icon></button>Local draft` : 'From Home Assistant'}</span></div><div class="actions"><button data-action="save" data-focus="save" ${this._previewDialog || !hasChanges || this.busy || !canSave ? 'disabled' : ''}>${this.saving ? 'Saving …' : 'Save settings'}</button><button class="start" data-focus="start" data-action="start" ${this._previewDialog || this.selected.length === 0 || this.busy || startBlockReason(this._hass, this.config.entity) ? 'disabled' : ''}>Start clean</button></div>${!canSave || !canStart ? '<p class="notice badge">The updated Dyson integration actions are not available. Reload the integration and refresh this dashboard.</p>' : ''}${external ? '<p class="notice badge">Settings changed outside this card. Your edited values remain in the local draft.</p>' : ''}<p class="notice ${this.error ? 'error' : ''}" role="status" aria-live="polite">${h(this.message)}</p></footer></div>${this.consumablesHtml()}</ha-card>`, 'planner');
+    this.paint(`<style>${styles}</style><ha-card><div class="planner-content">${this.headerHtml()}${this.statusHtml()}<div class="rooms ${modern ? 'modern-rooms' : ''}" style="--room-count:${rooms.length}">${roomHtml}</div>${!rooms.length ? '<p class="empty">No enabled rooms found. Check the card configuration and room discovery.</p>' : ''}<footer><div class="summary-line"><span>${this.selected.length} of ${rooms.length} rooms selected</span><span class="status ${this.dirty ? 'draft-status' : ''}">${this.dirty ? `<button class="discard-draft" data-focus="reset" data-action="reset" ${this.busy ? 'disabled' : ''} title="Discard draft" aria-label="Discard draft"><ha-icon icon="mdi:trash-can-outline" aria-hidden="true"></ha-icon></button>Local draft` : 'From Home Assistant'}</span></div><div class="actions"><button data-action="save" data-focus="save" ${this._previewDialog || !hasChanges || this.busy || !canSave ? 'disabled' : ''}>${this.saving ? 'Saving …' : 'Save settings'}</button><button class="start" data-focus="start" data-action="start" ${this._previewDialog || this.selected.length === 0 || this.busy || startBlockReason(this._hass, this.config.entity) ? 'disabled' : ''}>Start clean</button></div>${!canSave || !canStart ? '<p class="notice badge">The updated Dyson integration actions are not available. Reload the integration and refresh this dashboard.</p>' : ''}${external ? '<p class="notice badge">Settings changed outside this card. Your edited values remain in the local draft.</p>' : ''}<p class="notice ${this.error ? 'error' : ''}" role="status" aria-live="polite">${h(this.message)}</p></footer></div>${this.consumablesHtml()}</ha-card>`, 'planner');
     this.updateBattery();
     this.updateConsumables();
     this.updateStatus();
+    this.positionModernPointer();
   }
 }
 
