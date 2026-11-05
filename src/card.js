@@ -72,7 +72,11 @@ header,.station-rows{--hud-red:var(--error-color,#db4437);--hud-blue:var(--blue-
 :host([data-theme=modern]) .room.selected{background:color-mix(in srgb,var(--room-color) 10%,var(--dp-bg));border-color:color-mix(in srgb,var(--room-color) 55%,var(--dp-line))}
 :host([data-theme=modern]) .room.open{border-color:#18c5d9;box-shadow:0 0 0 1px #18c5d9,0 0 12px #18c5d91a}
 :host([data-theme=modern]) .room-head{padding:10px 12px;min-height:72px}
-:host([data-theme=modern]) .pick{position:relative}
+:host([data-theme=modern]) .pick{position:relative;flex:0 0 15%;min-width:44px;min-height:44px;justify-content:center;align-self:stretch;cursor:pointer}
+:host([data-theme=modern]) .room-settings-toggle{flex:1;min-width:0;align-self:stretch;display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:left;white-space:normal;padding:0 4px}
+:host([data-theme=modern]) .room-settings-toggle span{display:block}
+.room-settings-copy{min-width:0}
+.mode-spacer{display:none}
 :host([data-theme=modern]) .pick input{position:absolute;width:1px;height:1px;opacity:0}
 .selection-circle{display:flex;align-items:center;justify-content:center;width:32px;height:32px;flex:none;border:2px solid var(--dp-muted);border-radius:50%;font-weight:650;color:var(--primary-text-color)}
 .selected .selection-circle{background:var(--room-color);border-color:var(--room-color);color:#102026}
@@ -88,7 +92,8 @@ header,.station-rows{--hud-red:var(--error-color,#db4437);--hud-blue:var(--blue-
 .slider-options button{border:0;background:transparent;padding:4px 2px;min-height:36px;font-size:12px;color:var(--dp-muted);overflow-wrap:anywhere}
 .slider-options button[aria-pressed=true]{color:var(--dp-accent);font-weight:650}
 .segments{display:flex;gap:3px;padding:3px;border:1px solid var(--dp-line);border-radius:12px}
-.segments button{flex:1;min-width:0;border:0;background:transparent;padding:8px}
+.segments button{flex:1;min-width:0;min-height:32px;border:0;background:transparent;padding:3px 8px;position:relative}
+.segments button::after{content:"";position:absolute;inset:-6px 0}
 .segments button[aria-pressed=true]{background:var(--dp-accent);color:var(--text-primary-color,#fff)}
 :host([data-theme=modern]) .actions button{border-radius:13px}
 :host([data-theme=modern]) .fields .field{gap:4px}
@@ -97,7 +102,7 @@ header,.station-rows{--hud-red:var(--error-color,#db4437);--hud-blue:var(--blue-
   :host([data-theme=modern]) .room-head{padding:8px;gap:4px}
   :host([data-theme=modern]) .pick{gap:8px}
   :host([data-theme=modern]) .selection-circle{width:28px;height:28px}
-  :host([data-theme=modern]) .expand{padding:0;flex:0 0 24px;min-height:44px}
+  :host([data-theme=modern]) .room-settings-toggle{padding:0;min-height:44px}
 }
 @container(min-width:480px){
   :host([data-theme=modern]) .modern-rooms{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);column-gap:18px;grid-template-rows:repeat(var(--room-count),max-content) minmax(0,1fr);align-items:start}
@@ -108,6 +113,8 @@ header,.station-rows{--hud-red:var(--error-color,#db4437);--hud-blue:var(--blue-
   :host([data-theme=modern]) .modern-rooms .open .room-head{border-color:#18c5d9;box-shadow:0 0 0 1px #18c5d9,0 0 12px #18c5d91a}
   :host([data-theme=modern]) .modern-rooms .fields{grid-column:2;grid-row:1 / span calc(var(--room-count) + 1);align-self:stretch;position:relative;border:1px solid var(--dp-line);border-radius:16px;background:var(--dp-bg);overflow:visible}
   .modern-room-title{display:block}
+  /* Reserve the omitted control at the bottom, only in split view. */
+  :host([data-theme=modern]) .mode-spacer{display:block;visibility:hidden;order:1}
   :host([data-theme=modern]) .modern-rooms .fields::before{content:"";position:absolute;left:-8px;top:calc(var(--pointer-y,38px) - 8px);width:14px;height:14px;background:var(--dp-bg);border-left:1px solid var(--dp-line);border-bottom:1px solid var(--dp-line);transform:rotate(45deg)}
 }
 
@@ -665,20 +672,20 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       const disabled = this.busy || !room.available;
       const valueOf = key => this.settingDraft[room.roomId]?.[key] ?? room.settings?.[key]?.value;
       const fields = Object.entries(ROOM_FIELDS).map(([key, label]) => {
-        if (!this.config.always_show_all_settings) {
-          const mode = valueOf('cleaning_mode');
-          if (mode === 'Vacuum' && key === 'water_level') return '';
-          if (mode === 'Mop' && key === 'cleaning_strategy') return '';
-        }
+        const mode = valueOf('cleaning_mode');
+        const omitted = !this.config.always_show_all_settings &&
+          ((mode === 'Vacuum' && key === 'water_level') || (mode === 'Mop' && key === 'cleaning_strategy'));
+        if (omitted && !modern) return '';
+        const reserve = html => omitted ? `<div class="mode-spacer" inert aria-hidden="true">${html}</div>` : html;
         const field = room.settings?.[key];
         if (!field && this.config.unsupported_settings === 'hidden' && !this.config.always_show_all_settings) return '';
         const value = valueOf(key), options = field?.options ?? [];
-        if (modern && key !== 'cleaning_mode' && options.length) return this.modernControl(key, label, room, field, value, disabled, n);
-        return `<label class="field ${key === 'cleaning_mode' ? 'mode' : ''}">${label}<select data-setting="${key}" data-room-id="${h(room.roomId)}" data-focus="${key}-${n}" aria-label="${label} ${h(room.name)}" ${disabled || !field ? 'disabled' : ''}>${!options.includes(value) ? '<option value="">Unavailable</option>' : ''}${options.map(option => `<option value="${h(option)}" ${value === option ? 'selected' : ''}>${h(option)}</option>`).join('')}</select>${!field ? '<span class="badge">Not available</span>' : ''}</label>`;
+        if (modern && key !== 'cleaning_mode' && options.length) return reserve(this.modernControl(key, label, room, field, value, disabled, n));
+        return reserve(`<label class="field ${key === 'cleaning_mode' ? 'mode' : ''}">${label}<select data-setting="${key}" data-room-id="${h(room.roomId)}" data-focus="${key}-${n}" aria-label="${label} ${h(room.name)}" ${disabled || !field ? 'disabled' : ''}>${!options.includes(value) ? '<option value="">Unavailable</option>' : ''}${options.map(option => `<option value="${h(option)}" ${value === option ? 'selected' : ''}>${h(option)}</option>`).join('')}</select>${!field ? '<span class="badge">Not available</span>' : ''}</label>`);
       }).join('');
       if (modern) {
         const colors = ['#18c5d9', '#e9b85b', '#b99ae4', '#79b9a5', '#e49baf'];
-        return `<section class="room ${selected ? 'selected' : ''} ${open ? 'open' : ''}" style="--room-color:${colors[n % colors.length]};--room-row:${n + 1}"><div class="room-head"><label class="pick"><input type="checkbox" data-focus="room-${n}" data-room="${h(room.entity)}" aria-label="Select ${h(room.name)}" ${selected ? 'checked' : ''} ${disabled ? 'disabled' : ''}><span class="selection-circle" aria-hidden="true">${selected ? order : ''}</span><span><span class="name">${h(room.name)}</span><span class="summary">${!room.available ? h(room.error || 'Unavailable') : h(valueOf('cleaning_mode') ?? 'Room settings unavailable')}</span></span></label><button class="expand" data-focus="expand-${n}" data-expand="${h(room.entity || room.name)}" aria-expanded="${open}" aria-controls="fields-${n}" aria-label="Settings for ${h(room.name)}">${open ? '⌃' : '›'}</button></div><div class="fields" id="fields-${n}" ${open ? '' : 'hidden'}><h3 class="modern-room-title">${h(room.name)}</h3>${fields}${!room.roomId ? '<p class="badge">Room ID unavailable</p>' : ''}</div></section>`;
+        return `<section class="room ${selected ? 'selected' : ''} ${open ? 'open' : ''}" style="--room-color:${colors[n % colors.length]};--room-row:${n + 1}"><div class="room-head"><label class="pick"><input type="checkbox" data-focus="room-${n}" data-room="${h(room.entity)}" aria-label="Select ${h(room.name)}" ${selected ? 'checked' : ''} ${disabled ? 'disabled' : ''}><span class="selection-circle" aria-hidden="true">${selected ? order : ''}</span></label><button class="expand room-settings-toggle" data-focus="expand-${n}" data-expand="${h(room.entity || room.name)}" aria-expanded="${open}" aria-controls="fields-${n}" aria-label="Settings for ${h(room.name)}"><span class="room-settings-copy"><span class="name">${h(room.name)}</span><span class="summary">${!room.available ? h(room.error || 'Unavailable') : h(valueOf('cleaning_mode') ?? 'Room settings unavailable')}</span></span><span aria-hidden="true">${open ? '⌃' : '›'}</span></button></div><div class="fields" id="fields-${n}" ${open ? '' : 'hidden'}><h3 class="modern-room-title">${h(room.name)}</h3>${fields}${!room.roomId ? '<p class="badge">Room ID unavailable</p>' : ''}</div></section>`;
       }
       return `<section class="room ${selected ? 'selected' : ''}"><div class="room-head"><label class="pick"><input type="checkbox" data-focus="room-${n}" data-room="${h(room.entity)}" ${selected ? 'checked' : ''} ${disabled ? 'disabled' : ''}><span><span class="name">${h(room.name)} ${selected ? `<span class="status">(${order})</span>` : ''}</span><span class="summary">${!room.available ? h(room.error || 'Unavailable') : h(valueOf('cleaning_mode') ?? 'Room settings unavailable')}</span></span></label><button class="expand" data-focus="expand-${n}" data-expand="${h(room.entity || room.name)}" aria-expanded="${open}" aria-controls="fields-${n}" aria-label="Settings for ${h(room.name)}"><span>Settings</span> ${open ? '⌃' : '⌄'}</button></div><div class="fields" id="fields-${n}" ${open ? '' : 'hidden'}>${fields}${!room.roomId ? '<p class="badge mode">Room ID unavailable. Check the updated integration and refresh rooms.</p>' : ''}</div></section>`;
     }).join('');

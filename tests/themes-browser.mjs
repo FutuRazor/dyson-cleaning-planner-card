@@ -37,6 +37,7 @@ try {
  assert.equal(await card.locator('.fields:visible').count(),1);
  assert.deepEqual(await card.locator('.selection-circle').allTextContents(),['2','1','','','']);
  await page.setViewportSize({width:390,height:1100});
+ assert.equal(await card.locator('.room-head .name').first().isVisible(),true);
  const mobile=await card.locator('.fields:visible').boundingBox();
  const row=await card.locator('.room-head').nth(4).boundingBox();
  assert.ok(mobile.y>=row.y+row.height-1);

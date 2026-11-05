@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Separate Modern room selection (number circle) from opening settings (room text), reduce repetition button height, and reserve omitted controls only in split view to prevent mode changes from resizing the card.
+
 - Compact Modern room settings, keep room rows evenly spaced and enable the two-column layout from 480 px of available card width.
 
 - Add Classic and Modern themes with shared room drafts and ordered cleaning actions. Modern provides responsive room settings, a cyan outline and pointer for the open room, discrete power/water sliders and repetition buttons.
