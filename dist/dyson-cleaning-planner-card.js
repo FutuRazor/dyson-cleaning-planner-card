@@ -1,4 +1,4 @@
-/* Dyson Cleaning Planner Card v1.0.0 | MIT */
+/* Dyson Cleaning Planner Card v1.2.0 | MIT */
 const DOMAIN = 'dyson_spot_scrub';
 const ROOM_FIELDS = { cleaning_mode: 'Cleaning mode', cleaning_strategy: 'Vacuum Power', water_level: 'Water level', mop_repetitions: 'Clean repetitions' };
 const available = state => !!state && !['unavailable', 'unknown'].includes(state.state) && !state.attributes?.restored;
