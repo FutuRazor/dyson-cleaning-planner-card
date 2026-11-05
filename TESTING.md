@@ -1,4 +1,13 @@
-# Testing v1.0.0
+# Testing v1.2.0
+
+## v1.2.0 release acceptance
+
+- Run `npm run check`, `node tests/themes-browser.mjs` and `node tests/compact-theme-browser.mjs` with Playwright and Edge installed.
+- Verify Modern is the default, explicitly selected Classic is retained, and both use the same draft and ordered start payload.
+- Check separate circle/settings click targets, stepped sliders, mode-dependent fields and fixed-height scrolling.
+- Verify split-view alignment at 482, 560, 700 and 1000 px with 1, 2, 4 and 5 rooms. The mobile view remains content-sized.
+- The maintainer confirmed the final layout in live Home Assistant across different widths and room counts before release preparation.
+
 
 ## v0.3.5 acceptance
 
@@ -34,7 +43,7 @@ The v0.3.3a test build was verified in live Home Assistant: return status appear
 - During drying, verify the bar shrinks with remaining time, ends before Cancel and disappears without valid total/remaining values. Confirm 0 remaining yields an empty bar without inferring the dock is idle.
 
 1. Confirm the Info overlay starts with both tabs and a right-aligned close button in one row, with no Info heading or version badge. Check narrow and desktop widths in both planner/session views. Confirm save_room_settings and start_rooms_with_settings are available with integration v1.5.0 or newer.
-2. Type a title without pressing Enter; confirm immediate preview updates and stable cursor position. Expand two rooms. Confirm unselected rooms have no Not selected suffix. Select Clean repetitions in every cleaning mode, including Vacuum. Check mode-dependent visibility and enable Always show all settings to inspect all four dropdowns.
+2. Type a title without pressing Enter; confirm immediate preview updates and stable cursor position. In Classic, expand two rooms; in Modern, opening another room replaces the open settings. Confirm unselected rooms have no Not selected suffix. Select Clean repetitions in every cleaning mode, including Vacuum. Check mode-dependent visibility and enable Always show all settings to inspect all four settings.
 3. Change several options. HA entities and the robot must remain unchanged during editing. Only the edited room should change in the card.
 4. Click Save settings. Confirm one `save_room_settings` action carries all changes, HA reflects the values, and cleaning does not start. The card's room selection must remain selected.
 5. Change another setting, then use the trash icon beside Local draft. Confirm no service call occurs and current HA values return.

@@ -65,7 +65,7 @@ try {
   await card.locator('[data-setting="mop_repetitions"]').nth(0).selectOption('Two Passes');
   assert.equal(imageRequests, 0, 'planner does not fetch the camera');
   await mkdir(new URL('../artifacts/', import.meta.url), { recursive: true });
-  await shot('planner-v1.0.0');
+  await shot('planner-v1.2.0');
   await page.evaluate(() => { demo.hass.states[demo.ids[4]].state = 'unavailable'; demo.card.hass = { ...demo.hass }; });
   await page.evaluate(() => {
     demo.previewService = demo.hass.callService;
@@ -103,7 +103,7 @@ try {
     assert.equal(await card.locator('.requested li').count(), 2);
   }
   await page.evaluate(() => { demo.hass.states[demo.battery].state = '78'; demo.hass.states[demo.charging].state = 'off'; demo.card.hass = { ...demo.hass }; });
-  await shot('cleaning-desktop-v1.0.0');
+  await shot('cleaning-desktop-v1.2.0');
   const beforeControl = await page.evaluate(() => demo.calls.length);
   await card.locator('[data-control="pause"]').click();
   await page.waitForFunction(() => !demo.card.controlBusy);
@@ -154,7 +154,7 @@ try {
   await page.setViewportSize({ width: 390, height: 844 });
   assert.equal(await card.locator('.requested li').count(), 2);
   await page.locator('#settings').click();
-  await shot('cleaning-mobile-rotated-v1.0.0');
+  await shot('cleaning-mobile-rotated-v1.2.0');
   await map.scrollIntoViewIfNeeded();
   await page.route('**/preview/map.svg*', route => route.fulfill({ status: 503, body: 'Unavailable' }));
   await page.waitForFunction(() => demo.map.caption.textContent.includes('Showing the last received image.'), null, { timeout: 10000 });

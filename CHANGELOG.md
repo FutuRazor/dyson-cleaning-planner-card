@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v1.2.0
 
 - Default to Modern while preserving an explicitly selected Classic theme.
 - Refine Modern surfaces, stepped sliders and label alignment; center Info beside the title and subtitle and remove the repeated settings heading.

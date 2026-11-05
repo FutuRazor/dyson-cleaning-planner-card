@@ -2,7 +2,7 @@
 
 A Home Assistant dashboard card for planning room cleaning and keeping an eye on your Dyson Spot+Scrub AI.
 
-**Version 1.0.0**
+**Version 1.2.0**
 
 ## Requirements
 
@@ -11,16 +11,19 @@ A Home Assistant dashboard card for planning room cleaning and keeping an eye on
 
 ## Screenshots
 
+<p align="center">
+  <img src="docs/images/planner-wide.png" alt="Modern planner with room selection beside the cleaning settings" width="720">
+  <br>Modern planner — wide layout
+</p>
+
 <table>
   <tr>
-    <td align="center">
-      <img src="docs/images/room-planner.png" alt="Room selection and cleaning settings" width="320">
-      <br>Plan a clean
-    </td>
-    <td align="center">
-      <img src="docs/images/cleaning-session.png" alt="Cleaning status, selected rooms and live map" width="320">
-      <br>Follow the cleaning session
-    </td>
+    <td align="center"><img src="docs/images/planner-narrow.png" alt="Narrow Modern planner with settings expanded inside a room" width="300"><br>Narrow layout</td>
+    <td align="center"><img src="docs/images/cleaning-session.png" alt="Active mopping session with room badges, live map and Pause/Home controls" width="400"><br>Cleaning session</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/images/station-settings.png" alt="Station switches, preferences and dock action buttons" width="360"><br>Station settings</td>
+    <td align="center"><img src="docs/images/consumables.png" alt="Consumable remaining-life bars and cleaning-solution availability" width="360"><br>Consumables</td>
   </tr>
 </table>
 
@@ -83,12 +86,16 @@ Update through HACS, or replace the same JavaScript file for a manual installati
 
 ### Plan a clean
 
-Select rooms and adjust **Cleaning mode**, **Vacuum Power**, **Water level**, and **Clean repetitions**. Changes stay in a local draft until you choose:
+In **Modern**, tap the circle to select a room; its number shows the selection order. Tap the room name, mode or arrow to open its settings without changing the selection. **Classic** remains available in the editor.
+
+Adjust **Cleaning mode**, **Vacuum Power**, **Water level**, and **Clean repetitions**. Power and water sliders snap to the options supplied by the integration. Settings irrelevant to the current mode are hidden by default; repetitions remain available in every mode.
+
+Changes stay in a local draft until you choose:
 
 - **Save settings** — save changed room settings without starting a cleaning session.
 - **Start clean** — start the selected rooms with your chosen settings.
 
-The trash icon beside **Local draft** discards unsaved changes. Reloading the card also clears the draft. The robot may clean rooms in a different order from your selection.
+The trash icon beside **Local draft** discards unsaved changes. Reloading the card also clears the draft. Selected room IDs are sent in click order; the integration and robot execute the request. The display order configured in the editor is separate from this selection order.
 
 ### During and after cleaning
 
@@ -103,13 +110,19 @@ The **Info** button opens two tabs:
 - **Station settings:** hot-water options, cleaning solution, extended roller preparation, self-cleaning frequency and drying duration, plus **Empty dust bin**, **Wash mop roller** and **Dry mop roller**.
 - **Consumables:** remaining life for the brush bar, mop roller, side brushes and filters, plus cleaning-solution availability and whether its use is enabled.
 
+Controls depend on the entities and actions provided by your installed integration. Newer actions such as **Dry mop roller** require a version that provides them; unavailable controls cannot be used.
+
 **Station settings take effect immediately** and are separate from the room draft. Consumable bars change from the theme accent to orange and red as their remaining life decreases. The Info button highlights red when a consumable needs attention.
 
 ## Customization
 
-Choose **Modern** (default) or **Classic** in the card editor's **Theme** setting. Modern uses numbered selection circles, discrete sliders for Vacuum Power and Water level, and buttons for Clean repetitions. At card widths of 480 px or more, the open room's settings appear beside the room list; narrower cards expand them inline. Both themes use the same local draft and send selected rooms in click order.
+Choose **Modern** (default) or **Classic** in the card editor's **Theme** setting. Modern uses numbered selection circles, discrete sliders for Vacuum Power and Water level, and buttons for Clean repetitions. At card widths of 480 px or more, the open room's settings appear beside the room list; narrower cards expand them inline. Both themes use the same local draft and send selected rooms in click order. In the wide layout, changing cleaning modes preserves the settings-panel height. Room tiles become more compact from five displayed rooms onward; exactly five rows align with the settings panel.
 
 Open **Edit dashboard**, then edit the card to change its title, room visibility and display order, optional map and map rotation. You can also choose whether unavailable settings are hidden or disabled, and whether settings irrelevant to the selected cleaning mode remain visible.
+
+The **status bar** shows station preferences and battery status. Disable the entire bar or hide individual indicators in the editor. Battery percentage is optional and off by default.
+
+Interacting with **Map camera**, map visibility or rotation in the editor opens a simulated cleaning view in that preview only. Room visibility/order and room-setting display options return it to the planner. This preview sends no cleaning commands and does not switch other dashboard cards.
 
 Where Home Assistant offers the **Layout** tab, height is automatic by default. A fixed height enables scrolling inside the card. Room edits preserve your scroll position; switching between planner and cleaning views starts at the top.
 
@@ -131,12 +144,16 @@ These options belong in the individual card's code editor, not in `configuration
 | `show_camera` | Show the map during cleaning; default: `true` |
 | `camera_entity` | Optional camera entity on the same Dyson device |
 | `camera_rotation` | `0`, `90`, `180`, or `270` degrees |
+| `show_status_bar` | Show station indicators and battery; default: `true` |
+| `hidden_status_items` | Indicators to hide; configure through the visual editor; default: `[]` |
+| `show_battery_percentage` | Show the battery percentage beside the icon; default: `false` |
 
 </details>
 
 ## Limitations and troubleshooting
 
-- The card relies on the integration for room data, robot status and supported actions. It does not guarantee cleaning order or report confirmed progress for each room.
+- The card relies on the integration for room data, robot status and supported actions. Room badges may show the request made from this card; they are not confirmed per-room progress.
+- On upgrade, cards without an explicit `theme` use Modern. Select Classic in the editor to retain the previous layout.
 - After changes to the robot's map, use **Refresh rooms** below the room order in the card editor if needed.
 - If controls are unavailable, check the corresponding device and entities in Home Assistant and confirm that the required integration version is installed.
 
