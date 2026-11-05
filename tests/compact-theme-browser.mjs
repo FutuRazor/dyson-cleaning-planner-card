@@ -26,6 +26,15 @@ try {
     await card.locator('.fields:visible [data-setting=cleaning_mode]').selectOption(mode);
     const next=await card.locator('.fields:visible').boundingBox();
     assert.ok(Math.abs(next.height-panel.height)<1,`${width}/${count}/${mode}: stable settings height`);
+    if(mode !== 'Vacuum then Mop') {
+     const layout=await card.locator('.fields:visible').evaluate(el=>{
+      const fields=[...el.children].filter(e=>!e.classList.contains('mode-spacer'));
+      const boxes=fields.map(e=>e.getBoundingClientRect());
+      return {gaps:[boxes[1].top-boxes[0].bottom,boxes[2].top-boxes[1].bottom],bottom:el.getBoundingClientRect().bottom-boxes[2].bottom};
+     });
+     assert.ok(Math.abs(layout.gaps[0]-layout.gaps[1])<1,'three controls have equal spacing');
+     assert.ok(layout.bottom>11,'three controls retain extra bottom space');
+    }
     assert.ok(Math.abs(await card.evaluate(el=>el.getBoundingClientRect().height)-fullHeight)<1,`${width}/${count}/${mode}: stable card height`);
    }
    const head=card.locator('.room-head').first();
@@ -43,6 +52,13 @@ try {
    assert.ok(panel.x>=rows[0].x+rows[0].width,`${width}: side panel`);
    for(let i=1;i<rows.length;i++) assert.ok(Math.abs(rows[i].y-rows[i-1].y-rows[i-1].height-10)<1,`${width}/${count}: constant room gap`);
    if(count<=4) assert.ok(panel.height<420,`${width}/${count}: compact panel ${panel.height}`);
+   if(count===4) assert.ok(Math.abs(panel.y+panel.height-(rows[3].y+rows[3].height))<1,'settings align with four room rows');
+   if(count===5) {
+    assert.ok(rows.every(r=>r.height>=52),'five room tiles retain their minimum height');
+    assert.ok(Math.abs(panel.y+panel.height-(rows[4].y+rows[4].height))<1,'five rooms align with settings bottom');
+    assert.ok(Math.max(...rows.map(r=>r.height))-Math.min(...rows.map(r=>r.height))<1,'five tiles have equal heights');
+    assert.ok(rows[4].y+rows[4].height-rows[0].y<420,'five rooms remain compact');
+   }
    assert.ok(await card.evaluate(el=>el.shadowRoot.querySelector('.planner-content').scrollWidth<=el.clientWidth),`${width}: no horizontal overflow`);
    if(count===4 && (width===482 || width===1000)) await page.screenshot({path:`compact-${width}.png`,fullPage:true});
   }

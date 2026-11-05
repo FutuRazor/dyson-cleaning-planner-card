@@ -10,8 +10,10 @@ try {
  await page.goto(`http://127.0.0.1:${server.address().port}/`);
  const card=page.locator('#card');
  await card.locator('.rooms').waitFor();
- assert.equal(await card.getAttribute('data-theme'),'classic');
+ assert.equal(await card.getAttribute('data-theme'),'modern');
  await page.locator('#settings').click();
+ await page.locator('#editor [data-key=theme]').selectOption('classic');
+ assert.equal(await card.getAttribute('data-theme'),'classic');
  await page.locator('#editor [data-key=theme]').selectOption('modern');
  assert.equal(await card.getAttribute('data-theme'),'modern');
  await page.locator('#settings').click();
