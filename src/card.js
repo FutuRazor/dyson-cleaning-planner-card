@@ -78,27 +78,35 @@ header,.station-rows{--hud-red:var(--error-color,#db4437);--hud-blue:var(--blue-
 .selected .selection-circle{background:var(--room-color);border-color:var(--room-color);color:#102026}
 .pick input:focus-visible+.selection-circle{outline:2px solid var(--dp-accent);outline-offset:4px}
 .pick input:disabled~span{opacity:.5}
-:host([data-theme=modern]) .fields{display:flex;flex-direction:column;gap:20px;padding:20px}
-.modern-room-title{display:none;margin:0;font-size:20px;font-weight:550}
+:host([data-theme=modern]) .fields{display:flex;flex-direction:column;gap:12px;padding:14px}
+.modern-room-title{display:none;margin:0;font-size:18px;font-weight:600}
 .modern-control{min-width:0}
-.field-label{display:block;font-size:13px;margin-bottom:8px;color:var(--primary-text-color)}
+.field-label{display:block;font-size:13px;margin-bottom:4px;color:var(--primary-text-color)}
 .modern-control input[type=range]{width:100%;height:28px;margin:0;accent-color:var(--dp-accent);cursor:pointer}
 .modern-control input:disabled{opacity:.45;cursor:default}
-.slider-options{position:relative;min-height:44px;margin:0 7px}.slider-options button{position:absolute;left:calc(var(--stop)*100%);transform:translateX(-50%);width:30%}.slider-options button:first-child{transform:none;text-align:left}.slider-options button:last-child{transform:translateX(-100%);text-align:right}
+.slider-options{position:relative;min-height:36px;margin:0 7px}.slider-options button{position:absolute;left:calc(var(--stop)*100%);transform:translateX(-50%);width:30%}.slider-options button:first-child{transform:none;text-align:left}.slider-options button:last-child{transform:translateX(-100%);text-align:right}
 .slider-options button{border:0;background:transparent;padding:4px 2px;min-height:36px;font-size:12px;color:var(--dp-muted);overflow-wrap:anywhere}
 .slider-options button[aria-pressed=true]{color:var(--dp-accent);font-weight:650}
 .segments{display:flex;gap:3px;padding:3px;border:1px solid var(--dp-line);border-radius:12px}
 .segments button{flex:1;min-width:0;border:0;background:transparent;padding:8px}
 .segments button[aria-pressed=true]{background:var(--dp-accent);color:var(--text-primary-color,#fff)}
 :host([data-theme=modern]) .actions button{border-radius:13px}
-@container(min-width:700px){
-  :host([data-theme=modern]) .modern-rooms{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);column-gap:26px;grid-template-rows:repeat(var(--room-count),minmax(76px,auto));align-items:start}
+:host([data-theme=modern]) .fields .field{gap:4px}
+/* Keep room rows content-sized; the final flexible row absorbs panel height. */
+@container (min-width:480px) and (max-width:620px){
+  :host([data-theme=modern]) .room-head{padding:8px;gap:4px}
+  :host([data-theme=modern]) .pick{gap:8px}
+  :host([data-theme=modern]) .selection-circle{width:28px;height:28px}
+  :host([data-theme=modern]) .expand{padding:0;flex:0 0 24px;min-height:44px}
+}
+@container(min-width:480px){
+  :host([data-theme=modern]) .modern-rooms{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);column-gap:18px;grid-template-rows:repeat(var(--room-count),max-content) minmax(0,1fr);align-items:start}
   :host([data-theme=modern]) .modern-rooms:not(:has(.room.open)){grid-template-columns:1fr}
   :host([data-theme=modern]) .modern-rooms .room{display:contents}
   :host([data-theme=modern]) .modern-rooms .room-head{grid-column:1;grid-row:var(--room-row);border:1px solid var(--dp-line);border-radius:16px;background:var(--dp-bg)}
   :host([data-theme=modern]) .modern-rooms .selected .room-head{border-color:color-mix(in srgb,var(--room-color) 55%,var(--dp-line));background:color-mix(in srgb,var(--room-color) 10%,var(--dp-bg))}
   :host([data-theme=modern]) .modern-rooms .open .room-head{border-color:#18c5d9;box-shadow:0 0 0 1px #18c5d9,0 0 12px #18c5d91a}
-  :host([data-theme=modern]) .modern-rooms .fields{grid-column:2;grid-row:1 / span var(--room-count);align-self:stretch;position:relative;border:1px solid var(--dp-line);border-radius:16px;background:var(--dp-bg);overflow:visible}
+  :host([data-theme=modern]) .modern-rooms .fields{grid-column:2;grid-row:1 / span calc(var(--room-count) + 1);align-self:stretch;position:relative;border:1px solid var(--dp-line);border-radius:16px;background:var(--dp-bg);overflow:visible}
   .modern-room-title{display:block}
   :host([data-theme=modern]) .modern-rooms .fields::before{content:"";position:absolute;left:-8px;top:calc(var(--pointer-y,38px) - 8px);width:14px;height:14px;background:var(--dp-bg);border-left:1px solid var(--dp-line);border-bottom:1px solid var(--dp-line);transform:rotate(45deg)}
 }
