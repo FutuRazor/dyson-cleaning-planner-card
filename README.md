@@ -1,6 +1,22 @@
-# Dyson Cleaning Planner Card
+<p align="center">
+  <img src="docs/images/planner-banner.svg" alt="Dyson Cleaning Planner — a dashboard card for Home Assistant" width="1100">
+</p>
 
-A Home Assistant dashboard card for planning room cleaning and keeping an eye on your Dyson Spot+Scrub AI.
+<p align="center">
+  <a href="https://my.home-assistant.io/redirect/marketplace_repository/?owner=FutuRazor&amp;repository=dyson-cleaning-planner-card&amp;category=plugin">
+    <img src="https://my.home-assistant.io/badges/marketplace_repository.svg" alt="Open in Home Assistant Marketplace">
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/FutuRazor/dyson-cleaning-planner-card/releases/latest"><img src="https://img.shields.io/github/v/release/FutuRazor/dyson-cleaning-planner-card?label=release&amp;color=009fbd" alt="Latest release"></a>
+  <a href="https://github.com/FutuRazor/dyson-cleaning-planner-card/actions/workflows/validate.yml"><img src="https://github.com/FutuRazor/dyson-cleaning-planner-card/actions/workflows/validate.yml/badge.svg?branch=main" alt="Validation status on main"></a>
+  <a href="https://futurazor.github.io/dyson-cleaning-planner-card/preview/index.html"><img src="https://img.shields.io/badge/preview-try_it-009fbd" alt="Try the interactive preview"></a>
+</p>
+
+<p align="center">
+  Plan room cleaning, adjust each room's settings, and follow your Dyson's progress in Home Assistant.
+</p>
 
 **Version 1.2.0**
 
