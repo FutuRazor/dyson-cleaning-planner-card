@@ -1,4 +1,4 @@
-# Integration contract — card v1.2.0
+# Integration contract — card v1.3.0
 
 This document describes what the **current card actually reads and sends**, based on `src/core.js`, `src/card.js`, `src/editor.js` and `src/map.js`. It is a frontend contract, not a specification of Dyson's MQTT protocol or a guarantee about the integration's internal implementation.
 

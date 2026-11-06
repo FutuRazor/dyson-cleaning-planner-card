@@ -1,4 +1,14 @@
-# Testing v1.2.0
+# Testing v1.3.0
+
+## v1.3.0 release acceptance
+
+- Run `npm run check` and `node tests/languages-browser.mjs` with Playwright and Edge available.
+- Verify Automatic follows the Home Assistant user language, explicit English/German overrides apply per card, and unsupported languages fall back to English.
+- Check translated planner, session, Info overlay, visual editor and tooltips in Modern and Classic; room/device names and custom titles must remain unchanged.
+- Switch languages with a local draft and confirm selection and settings are retained. Save and Start must still send the original integration values.
+- Check narrow and wide layouts for clipping, wrapping and horizontal overflow. Recheck scroll retention and editor session previews.
+- The maintainer confirmed the language feature in live Home Assistant: no clipped or incorrectly formatted text was observed.
+
 
 ## v1.2.0 release acceptance
 

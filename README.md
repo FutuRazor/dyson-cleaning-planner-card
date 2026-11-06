@@ -18,7 +18,7 @@
   Plan room cleaning, adjust each room's settings, and follow your Dyson's progress in Home Assistant.
 </p>
 
-**Version 1.2.0**
+**Version 1.3.0**
 
 ## Requirements
 

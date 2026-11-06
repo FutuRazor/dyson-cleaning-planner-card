@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.3.0
+
+- Add English and German translations for the card, visual editor, station settings, consumables, status messages and tooltips.
+- Follow the Home Assistant user language by default, with per-card language overrides and English fallback for unsupported languages.
+- Preserve room/device names, custom titles, local drafts and original integration option values when changing language.
+- Bundle translations into the distribution file and document how to add more languages.
+
+Validation: 39 automated tests, language/layout/scroll/editor browser checks and GitHub validation passed. The maintainer confirmed the language feature in live Home Assistant without clipped or incorrectly formatted text.
+
 ## v1.2.0
 
 - Default to Modern while preserving an explicitly selected Classic theme.
