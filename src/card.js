@@ -109,8 +109,21 @@ header,.station-rows{--hud-red:var(--error-color,#db4437);--hud-blue:var(--blue-
 .segments button::after{content:"";position:absolute;inset:-6px 0}
 .segments button[aria-pressed=true]{background:var(--dp-accent);color:var(--text-primary-color,#fff)}
 :host([data-theme=modern]) .actions button{border-radius:13px}
+/* Compact planner framing; session controls retain their existing touch targets. */
+:host([data-theme=modern]){--dp-padding:20px}
+:host([data-theme=modern]) .station-status-bar{padding-inline:var(--dp-padding)}
+:host([data-theme=modern]) header{border-bottom:1px solid var(--dp-line);margin-bottom:12px}
+:host([data-theme=modern]) .consumables-info:not(.attention),:host([data-theme=modern]) button[data-action=save]{background:var(--dp-modern-surface)}
+:host([data-theme=modern]) footer:not(.session-footer){margin:14px var(--dp-padding) 0;padding:12px 0 14px;border-top:1px solid var(--dp-line)}
+:host([data-theme=modern]) footer:not(.session-footer) .actions button{min-height:38px;padding-block:6px}
+:host([data-theme=modern]) footer:not(.session-footer) .notice:empty{display:none}
+:host([data-theme=modern]) .field.mode{font-size:13px;color:var(--primary-text-color,#20272d)}
+:host([data-theme=modern]) .mode select:not(:disabled){color:var(--dp-accent)}
+:host([data-theme=modern]) .mode select option{color:var(--primary-text-color,#20272d);background:var(--dp-modern-control)}
+@media(max-width:400px){:host([data-theme=modern]){--dp-padding:12px}}
 :host([data-theme=modern]) .fields .field{gap:4px}
-:host([data-theme=modern]) .mode select{min-height:35px;padding:5px 10px}
+:host([data-theme=modern]) .mode select{min-height:35px;padding:5px 10px;font-size:13px}
+@media(max-width:400px){:host([data-theme=modern]) .mode select{font-size:16px}}
 /* Keep room rows content-sized; the final flexible row absorbs panel height. */
 @container (min-width:480px) and (max-width:620px){
   :host([data-theme=modern]) .room-head{padding:8px;gap:4px}
