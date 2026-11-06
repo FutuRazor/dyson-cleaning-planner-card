@@ -7,7 +7,7 @@ A Home Assistant dashboard card for planning room cleaning and keeping an eye on
 ## Requirements
 
 - [Dyson Spot+Scrub integration by UNsync3D](https://github.com/UNsync3D/ha-dyson-spot-scrub), **v1.5.0 or newer**, installed and configured in Home Assistant.
-- [HACS](https://www.hacs.xyz/) for the recommended installation method. Manual installation is also supported.
+- **Home Assistant Marketplace** for the recommended installation method on Home Assistant **2026.11 or newer**. On older versions, use [HACS](https://www.hacs.xyz/). Manual installation is also supported.
 
 ## Screenshots
 
@@ -31,7 +31,17 @@ A Home Assistant dashboard card for planning room cleaning and keeping an eye on
 
 ## Installation
 
-### HACS (recommended)
+### Marketplace (recommended — Home Assistant 2026.11 or newer)
+
+1. Open **Settings → Marketplace**.
+2. Select **Add from link** in the upper-right corner.
+3. Enter `https://github.com/FutuRazor/dyson-cleaning-planner-card` and select **Add**. If asked for the content type, choose **Dashboard**. Connect your GitHub account if prompted.
+4. Open **Dyson Cleaning Planner Card** and select **Install**.
+5. Reload your Home Assistant page, then add the card to your dashboard as described below.
+
+You can install through **Add from link** even before the card is listed in the public catalog. If it is already listed, find and install it directly. See the [Marketplace instructions](https://www.home-assistant.io/integrations/marketplace) for details.
+
+### HACS (Home Assistant versions before 2026.11)
 
 1. Open **HACS** in Home Assistant.
 2. Open the **⋮ menu → Custom repositories**.
@@ -66,21 +76,23 @@ Open your dashboard and choose **Edit dashboard → Add card**. Search for **Dys
 The visual editor handles the usual setup; no YAML is required.
 
 <details>
-<summary>If the card does not appear after a HACS installation</summary>
+<summary>If the card does not appear after a Marketplace or HACS installation</summary>
 
-Reload the page first. If the card is still missing, check **Settings → Dashboards → ⋮ → Resources** for this JavaScript module:
+Reload the page first. Marketplace normally registers the dashboard resource automatically. If the card is still missing, check **Settings → Dashboards → ⋮ → Resources** for its JavaScript module:
 
 ```text
-/hacsfiles/dyson-cleaning-planner-card/dyson-cleaning-planner-card.js
+/local/community/dyson-cleaning-planner-card/dyson-cleaning-planner-card.js
 ```
 
-Add it only if it is missing. If you manage dashboard resources in YAML, register that URL in your `lovelace.resources` configuration instead.
+An existing HACS installation may use `/hacsfiles/dyson-cleaning-planner-card/dyson-cleaning-planner-card.js`; that path continues to work after migration. Keep any version parameter already present in the URL. Do not add a second resource if either path is already registered.
+
+Add the resource only if it is missing. If you manage dashboard resources in YAML, follow the installation dialog's instructions and register it in your `lovelace.resources` configuration instead.
 
 </details>
 
 ### Updates
 
-Update through HACS, or replace the same JavaScript file for a manual installation. Reload the page; if the old version remains, use **Ctrl+F5** on a desktop browser or clear the frontend cache in your browser/app. You do not normally need to change the resource URL.
+Update through Marketplace (or HACS on older Home Assistant versions), or replace the same JavaScript file for a manual installation. Reload the page; if the old version remains, use **Ctrl+F5** on a desktop browser or clear the frontend cache in your browser/app. You do not normally need to change the resource URL.
 
 ## Using the card
 

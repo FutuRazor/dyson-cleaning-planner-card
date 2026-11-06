@@ -575,8 +575,21 @@ header,.station-rows{--hud-red:var(--error-color,#db4437);--hud-blue:var(--blue-
 .segments button::after{content:"";position:absolute;inset:-6px 0}
 .segments button[aria-pressed=true]{background:var(--dp-accent);color:var(--text-primary-color,#fff)}
 :host([data-theme=modern]) .actions button{border-radius:13px}
+/* Compact planner framing; session controls retain their existing touch targets. */
+:host([data-theme=modern]){--dp-padding:20px}
+:host([data-theme=modern]) .station-status-bar{padding-inline:var(--dp-padding)}
+:host([data-theme=modern]) header{border-bottom:1px solid var(--dp-line);margin-bottom:12px}
+:host([data-theme=modern]) .consumables-info:not(.attention),:host([data-theme=modern]) button[data-action=save]{background:var(--dp-modern-surface)}
+:host([data-theme=modern]) footer:not(.session-footer){margin:14px var(--dp-padding) 0;padding:12px 0 14px;border-top:1px solid var(--dp-line)}
+:host([data-theme=modern]) footer:not(.session-footer) .actions button{min-height:38px;padding-block:6px}
+:host([data-theme=modern]) footer:not(.session-footer) .notice:empty{display:none}
+:host([data-theme=modern]) .field.mode{font-size:13px;color:var(--primary-text-color,#20272d)}
+:host([data-theme=modern]) .mode select:not(:disabled){color:var(--dp-accent)}
+:host([data-theme=modern]) .mode select option{color:var(--primary-text-color,#20272d);background:var(--dp-modern-control)}
+@media(max-width:400px){:host([data-theme=modern]){--dp-padding:12px}}
 :host([data-theme=modern]) .fields .field{gap:4px}
-:host([data-theme=modern]) .mode select{min-height:35px;padding:5px 10px}
+:host([data-theme=modern]) .mode select{min-height:35px;padding:5px 10px;font-size:13px}
+@media(max-width:400px){:host([data-theme=modern]) .mode select{font-size:16px}}
 /* Keep room rows content-sized; the final flexible row absorbs panel height. */
 @container (min-width:480px) and (max-width:620px){
   :host([data-theme=modern]) .room-head{padding:8px;gap:4px}
@@ -1043,7 +1056,9 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     message.classList.toggle('error', !!this.stationError);
   }
   headerHtml() {
-    return `<header><div class="station-status-bar"><div class="station-indicators"></div><div class="battery" role="img"><svg viewBox="0 0 32 20" aria-hidden="true"><rect x="1" y="3" width="26" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="29" y="7" width="3" height="6" rx="1" fill="currentColor"/><rect class="battery-fill" x="4" y="6" width="0" height="8" rx="1" fill="currentColor"/><path class="battery-bolt" d="M17 1 9 11h6l-2 8L23 8h-7Z" fill="var(--dp-bg)" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" hidden/></svg><span class="battery-value" aria-hidden="true" hidden></span></div></div><div class="header-main"><div class="robot"><ha-icon icon="mdi:robot-vacuum"></ha-icon></div><div class="header-title"><h2>${escapeHtml(this.config.title)}</h2><p>Dyson Spot+Scrub</p></div><button class="consumables-info" data-action="consumables" data-focus="consumables-info" aria-label="Consumables" aria-haspopup="dialog" aria-expanded="false" title="Consumables">Info</button></div></header>`;
+    const name = this._hass?.states?.[this.config.entity]?.attributes?.friendly_name;
+    const subtitle = typeof name === 'string' && name.trim() ? name : this.config.entity;
+    return `<header><div class="station-status-bar"><div class="station-indicators"></div><div class="battery" role="img"><svg viewBox="0 0 32 20" aria-hidden="true"><rect x="1" y="3" width="26" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="29" y="7" width="3" height="6" rx="1" fill="currentColor"/><rect class="battery-fill" x="4" y="6" width="0" height="8" rx="1" fill="currentColor"/><path class="battery-bolt" d="M17 1 9 11h6l-2 8L23 8h-7Z" fill="var(--dp-bg)" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" hidden/></svg><span class="battery-value" aria-hidden="true" hidden></span></div></div><div class="header-main"><div class="robot"><ha-icon icon="mdi:robot-vacuum"></ha-icon></div><div class="header-title"><h2>${escapeHtml(this.config.title)}</h2><p>${escapeHtml(subtitle)}</p></div><button class="consumables-info" data-action="consumables" data-focus="consumables-info" aria-label="Consumables" aria-haspopup="dialog" aria-expanded="false" title="Consumables">Info</button></div></header>`;
   }
   updateBattery() {
     const state = batteryStatus(this._hass, this.model);
