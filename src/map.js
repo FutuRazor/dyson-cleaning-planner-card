@@ -1,9 +1,10 @@
+import { translate } from './localize.js';
 import { available, fitMap } from './core.js';
 
 // Owns image refresh independently from card rendering. No direct Dyson calls.
 class DysonPlannerMap extends HTMLElement {
   constructor() {
-    super(); this.attachShadow({ mode: 'open' });
+    super(); this.language = 'en'; this.messageKey = 'Loading cleaning map …'; this.attachShadow({ mode: 'open' });
     this.shadowRoot.innerHTML = `<style>
       :host{display:block;min-width:0}.viewport{position:relative;width:100%;aspect-ratio:4/3;overflow:hidden;background:var(--secondary-background-color,#f5f7f9);isolation:isolate}
       img{position:absolute;left:50%;top:50%;max-width:none;max-height:none;transform-origin:center;visibility:hidden}.placeholder{position:absolute;inset:0;display:grid;place-items:center;padding:16px;text-align:center;color:var(--secondary-text-color,#52616e);font:13px/1.5 Arial,sans-serif}
@@ -32,7 +33,10 @@ class DysonPlannerMap extends HTMLElement {
     if (this.objectUrl) URL.revokeObjectURL(this.objectUrl);
     this.objectUrl = undefined; this.img.removeAttribute('src'); this.img.style.visibility = 'hidden';
   }
-  setOptions(hass, entity, rotation, live) {
+  setOptions(hass, entity, rotation, live, language = 'en') {
+    this.language = language;
+    this.img.alt = translate(language, 'Live cleaning map');
+    if (this.messageKey) this.showMessage(this.messageKey);
     if (this.entity !== entity || this.hass?.connection !== hass.connection) {
       this.cancel();
       if (this.objectUrl) URL.revokeObjectURL(this.objectUrl);
@@ -60,10 +64,12 @@ class DysonPlannerMap extends HTMLElement {
     const delay = Math.max(0, 5000 - (Date.now() - (this.lastAttempt ?? 0)));
     this.timer = setTimeout(() => this.refresh(), delay);
   }
-  showMessage(message) {
+  showMessage(key) {
+    this.messageKey = key;
+    const message = translate(this.language, key);
     this.placeholder.hidden = !!this.objectUrl;
     this.placeholder.textContent = message;
-    this.caption.textContent = this.objectUrl ? `${message} Showing the last received image.` : message;
+    this.caption.textContent = this.objectUrl ? translate(this.language, '{message} Showing the last received image.', { message }) : message;
   }
   async refresh() {
     if (!this.isConnected || !this.inView || document.hidden || !this.live) return;
@@ -91,7 +97,7 @@ class DysonPlannerMap extends HTMLElement {
       this.imageWidth = image.naturalWidth; this.imageHeight = image.naturalHeight;
       this.img.src = this.objectUrl; this.img.style.visibility = 'visible';
       this.placeholder.hidden = true; this.resize();
-      this.caption.textContent = '';
+      this.caption.textContent = ''; this.messageKey = null;
       if (previous) URL.revokeObjectURL(previous);
     } catch {
       if (controller === this.abortController) this.showMessage('Map update unavailable.');

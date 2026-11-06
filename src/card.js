@@ -1,6 +1,8 @@
+import { resolveLanguage, translate, uiMessage, UiError } from './localize.js';
 import { STATUS_BAR_ITEMS, DOMAIN, ROOM_FIELDS, available, escapeHtml, normalizeConfig, discover, sendRoomDraft, cleaningView, canControl, controlCleaning, batteryStatus, activityStatus, dryingRemainingTime, dryingRemainingPercent, dockBlocksStart, startBlockReason, consumableStatus, stationSettings, changeStationSetting, stationActions, pressStationAction } from './core.js';
 
-function stationIndicator(field, refillStatus) {
+function stationIndicator(field, refillStatus, language = 'en') {
+  const t = (key, params) => translate(language, key, params);
   const { key, label, value } = field;
   const refill = key === 'cleaning_solution' && refillStatus === 'refill_required';
   if (!field.available && !refill) return '';
@@ -34,7 +36,7 @@ function stationIndicator(field, refillStatus) {
     }
     default: return '';
   }
-  const text = escapeHtml(label + ': ' + description);
+  const text = escapeHtml(t(label) + ': ' + t(description));
   return `<span class="station-indicator ${color}" role="img" aria-label="${text}" title="${text}">${icon ? `<ha-icon icon="${icon}" class="status-icon" aria-hidden="true"></ha-icon>` : ''}${short ? `<span class="status-text-5g">${short}</span>` : ''}</span>`;
 }
 
@@ -192,6 +194,9 @@ class DysonRegistryElement extends HTMLElement {
     this._registryTimer = setInterval(() => this.loadRegistry(), 30000);
   }
   disconnectedCallback() { clearInterval(this._registryTimer); registryRefreshEvents.removeEventListener('refresh', this._onRegistryRefresh); }
+  get language() { return resolveLanguage(this.config, this._hass); }
+  t(key, params) { return translate(this.language, key, params); }
+  ht(key, params) { return escapeHtml(this.t(key, params)); }
   set hass(value) {
     const changed = this._hass?.connection !== value?.connection;
     this._hass = value;
@@ -284,12 +289,20 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     return { type: 'custom:dyson-cleaning-planner-card', entity: entry?.entity_id ?? Object.keys(hass.states).find(id => id.startsWith('vacuum.') && Array.isArray(hass.states[id].attributes.rooms)) ?? '' };
   }
   setConfig(config) {
+    let normalized;
+    try { normalized = normalizeConfig(config); }
+    catch (error) { throw new Error(translate(resolveLanguage(config, this._hass), error)); }
+    const withoutLanguage = value => JSON.stringify({ ...value, language: undefined });
+    if (this.config && withoutLanguage(this.config) === withoutLanguage(normalized)) {
+      // Keep the configuration identity used by in-flight save/start requests.
+      this.config.language = normalized.language; this.update(); return;
+    }
     if (this.config?.entity !== config.entity) {
       this.clearSessionEnd();
       this.clearPendingStart(); this.requestedPlan = null; this.sessionObserved = false;
     }
     this.consumablesOpen = false; this.stationMessage = ''; this.stationError = false;
-    this.config = normalizeConfig(config);
+    this.config = normalized;
     this.setAttribute('data-theme', this.config.theme);
     const rows = config.grid_options?.rows ?? config.layout_options?.grid_rows;
     this.toggleAttribute('fixed-height', typeof rows === 'number' && Number.isFinite(rows) && rows > 0);
@@ -434,7 +447,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     this.busy = true; this.error = false;
     const config = this.config;
     try {
-      if (this.registryError) throw new Error(this.registryError);
+      if (this.registryError) throw new UiError(this.registryError);
       const model = this.getModel();
       // Keep this request visible while the integration call is pending; the
       // robot can report an active session before callService resolves.
@@ -465,7 +478,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     } catch (error) {
       if (!cleaningView(this._hass, config.entity).active) this.requestedPlan = null;
       this.error = true;
-      if (this.config === config) this.message = `${error.message} No automatic retry will be made.`;
+      if (this.config === config) this.message = uiMessage('{error} No automatic retry will be made.', { error });
     } finally { this.busy = false; this.render(); }
   }
   async save() {
@@ -480,14 +493,14 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
         if (this.config !== config || !this.isConnected) return;
         const model = this.getModel();
         if (Object.entries(draft).every(([id, fields]) => Object.entries(fields).every(([key, value]) => model.rooms.find(r => r.roomId === id)?.settings?.[key]?.value === value))) break;
-        if (Date.now() >= deadline) throw new Error('Save was sent, but Home Assistant has not reflected all values yet. The draft was kept; check the robot before retrying.');
+        if (Date.now() >= deadline) throw new UiError('Save was sent, but Home Assistant has not reflected all values yet. The draft was kept; check the robot before retrying.');
         await new Promise(resolve => setTimeout(resolve, 100));
       }
       this.settingDraft = {}; this.model = this.getModel(); this.updateDirty();
       this.baseline = this.liveSignature();
       this.message = 'Settings sent. Home Assistant values updated. Room selection remains local.';
     } catch (error) {
-      if (this.config === config) { this.error = true; this.message = error.message; }
+      if (this.config === config) { this.error = true; this.message = error; }
     } finally { this.busy = false; this.saving = false; this.render(); }
   }
   async control(action) {
@@ -499,11 +512,11 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       if (this.config.entity !== entity) return;
       this.message = '';
     } catch (error) {
-      if (this.config.entity === entity) { this.error = true; this.message = error.message; }
+      if (this.config.entity === entity) { this.error = true; this.message = error; }
     } finally { this.controlBusy = false; this.render(); }
   }
   consumablesHtml() {
-    return `<div class="consumables-overlay" hidden><section class="consumables-panel" role="dialog" aria-modal="true" aria-label="Robot information"><div class="info-toolbar"><div class="info-tabs" role="tablist" aria-label="Robot information"><button id="tab-station" role="tab" data-info-tab="station" aria-controls="panel-station">Station settings</button><button id="tab-consumables" role="tab" data-info-tab="consumables" aria-controls="panel-consumables">Consumables</button></div><button class="consumables-close" data-action="close-consumables" data-focus="consumables-close" aria-label="Close information"><ha-icon icon="mdi:close" aria-hidden="true"></ha-icon></button></div><div id="panel-station" role="tabpanel" aria-labelledby="tab-station"><div class="station-rows"></div><p class="station-message notice" role="status" aria-live="polite"></p></div><div id="panel-consumables" role="tabpanel" aria-labelledby="tab-consumables" hidden><div class="consumables-rows"></div></div></section></div>`;
+    return `<div class="consumables-overlay" hidden><section class="consumables-panel" role="dialog" aria-modal="true" aria-label="${this.ht("Robot information")}"><div class="info-toolbar"><div class="info-tabs" role="tablist" aria-label="${this.ht("Robot information")}"><button id="tab-station" role="tab" data-info-tab="station" aria-controls="panel-station">${this.ht("Station settings")}</button><button id="tab-consumables" role="tab" data-info-tab="consumables" aria-controls="panel-consumables">${this.ht("Consumables")}</button></div><button class="consumables-close" data-action="close-consumables" data-focus="consumables-close" aria-label="${this.ht("Close information")}"><ha-icon icon="mdi:close" aria-hidden="true"></ha-icon></button></div><div id="panel-station" role="tabpanel" aria-labelledby="tab-station"><div class="station-rows"></div><p class="station-message notice" role="status" aria-live="polite"></p></div><div id="panel-consumables" role="tabpanel" aria-labelledby="tab-consumables" hidden><div class="consumables-rows"></div></div></section></div>`;
   }
   toggleConsumables(open) {
     this.consumablesOpen = open;
@@ -521,8 +534,8 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     const warning = rows.some(row => row.level === 'low');
     const button = root.querySelector('.consumables-info');
     button.classList.toggle('attention', warning);
-    button.setAttribute('aria-label', warning ? 'Consumables: replacement needed soon' : 'Robot information');
-    button.title = warning ? 'Consumables: replacement needed soon' : 'Robot information';
+    button.setAttribute('aria-label', this.t(warning ? 'Consumables: replacement needed soon' : 'Robot information'));
+    button.title = this.t(warning ? 'Consumables: replacement needed soon' : 'Robot information');
     button.setAttribute('aria-expanded', String(!!this.consumablesOpen));
     root.querySelector('.consumables-overlay').hidden = !this.consumablesOpen;
     root.querySelector('.planner-content').inert = !!this.consumablesOpen;
@@ -532,9 +545,9 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
         const setting = settings.find(field => field.key === 'cleaning_solution');
         const usage = setting?.available ? (setting.value === 'on' ? 'Enabled' : 'Disabled') : 'Status unavailable';
         const icon = ready ? 'mdi:check' : refill ? 'mdi:water-alert-outline' : 'mdi:help-circle-outline';
-        return `<div class="consumable-row consumable-solution"><div class="consumable-label"><span>${escapeHtml(row.name)}</span><span class="consumable-value">${usage}</span></div><span class="consumable-chip ${ready ? 'ready' : refill ? 'refill' : 'unknown'}"><ha-icon icon="${icon}" aria-hidden="true"></ha-icon><span>${escapeHtml(row.text)}</span></span></div>`;
+        return `<div class="consumable-row consumable-solution"><div class="consumable-label"><span>${this.ht(row.name)}</span><span class="consumable-value">${this.ht(usage)}</span></div><span class="consumable-chip ${ready ? 'ready' : refill ? 'refill' : 'unknown'}"><ha-icon icon="${icon}" aria-hidden="true"></ha-icon><span>${row.remaining === null ? this.ht(row.text) : this.ht('{percent}% remaining', { percent: row.remaining })}</span></span></div>`;
       }
-      return `<div class="consumable-row"><div class="consumable-label"><span>${escapeHtml(row.name)}</span><span class="consumable-value">${escapeHtml(row.text)}</span></div>${row.remaining === null ? '' : `<div class="consumable-track" role="meter" aria-label="${escapeHtml(row.name)} remaining life" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${row.remaining}"><span class="consumable-fill ${row.level}" style="width:${row.remaining}%"></span></div>`}</div>`;
+      return `<div class="consumable-row"><div class="consumable-label"><span>${this.ht(row.name)}</span><span class="consumable-value">${row.remaining === null ? this.ht(row.text) : this.ht('{percent}% remaining', { percent: row.remaining })}</span></div>${row.remaining === null ? '' : `<div class="consumable-track" role="meter" aria-label="${this.ht('{name} remaining life', { name: this.t(row.name) })}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${row.remaining}"><span class="consumable-fill ${row.level}" style="width:${row.remaining}%"></span></div>`}</div>`;
     }).join('');
     const host = root.querySelector('.consumables-rows');
     if (host.innerHTML !== content) host.innerHTML = content;
@@ -549,7 +562,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       if (action) await pressStationAction(this._hass, this.registry, entity, key);
       else await changeStationSetting(this._hass, this.registry, entity, key, value);
     } catch (error) {
-      if (this.config.entity === entity) { this.stationMessage = error.message; this.stationError = true; }
+      if (this.config.entity === entity) { this.stationMessage = error; this.stationError = true; }
     } finally { this.stationBusy = false; this.updateConsumables(); }
   }
   updateStationSettings(settings, refillStatus) {
@@ -561,7 +574,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       button.tabIndex = tab === name ? 0 : -1;
       root.querySelector(`#panel-${name}`).hidden = tab !== name;
     }
-    const indicators = Object.fromEntries(settings.map(field => [field.key, stationIndicator(field, refillStatus)]));
+    const indicators = Object.fromEntries(settings.map(field => [field.key, stationIndicator(field, refillStatus, this.language)]));
     const bar = root.querySelector('.station-indicators');
     const hidden = this.config.hidden_status_items;
     const barHtml = STATUS_BAR_ITEMS.filter(([key]) => !hidden.includes(key)).map(([key]) => indicators[key] || '').join('');
@@ -571,34 +584,38 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     if (bar._html !== barHtml) { bar.innerHTML = barHtml; bar._html = barHtml; }
     const html = settings.map(field => {
       const disabled = !!this._previewDialog || !field.available || this.stationBusy || this.busy || this.controlBusy;
-      const attrs = `data-station="${field.key}" aria-label="${escapeHtml(field.label)}" ${disabled ? 'disabled' : ''}`;
+      const attrs = `data-station="${field.key}" aria-label="${this.ht(field.label)}" ${disabled ? 'disabled' : ''}`;
       const control = field.domain === 'switch'
         ? `<ha-switch ${attrs} ${field.value === 'on' ? 'checked' : ''}></ha-switch>`
-        : `<select ${attrs}>${!field.options.includes(field.value) ? '<option value="">Unavailable</option>' : ''}${field.options.map(v => `<option value="${escapeHtml(v)}" ${v === field.value ? 'selected' : ''}>${escapeHtml(v)}</option>`).join('')}</select>`;
-      return `<label class="station-row ${field.domain}"><span class="station-label">${indicators[field.key]}<span>${field.label}${!field.available ? '<small>Unavailable</small>' : ''}</span></span>${control}</label>`;
+        : `<select ${attrs}>${!field.options.includes(field.value) ? `<option value="">${this.ht("Unavailable")}</option>` : ''}${field.options.map(v => `<option value="${escapeHtml(v)}" ${v === field.value ? 'selected' : ''}>${this.ht(v)}</option>`).join('')}</select>`;
+      return `<label class="station-row ${field.domain}"><span class="station-label">${indicators[field.key]}<span>${this.ht(field.label)}${!field.available ? `<small>${this.ht("Unavailable")}</small>` : ''}</span></span>${control}</label>`;
     }).join('');
     const actions = stationActions(this._hass, this.registry, this.config.entity).map(action => {
       const disabled = !!this._previewDialog || !action.available || this.stationBusy || this.busy || this.controlBusy;
-      return `<div class="station-row station-action"><span>${action.label}${!action.available ? '<small>Unavailable</small>' : ''}</span><ha-button appearance="plain" size="s" data-station-action="${action.key}" aria-label="${action.label}" ${disabled ? 'disabled' : ''}>Press</ha-button></div>`;
+      return `<div class="station-row station-action"><span>${this.ht(action.label)}${!action.available ? `<small>${this.ht("Unavailable")}</small>` : ''}</span><ha-button appearance="plain" size="s" data-station-action="${action.key}" aria-label="${this.ht(action.label)}" ${disabled ? 'disabled' : ''}>${this.ht("Press")}</ha-button></div>`;
     }).join('');
     const content = html + actions;
     const host = root.querySelector('.station-rows');
     if (host._stationHtml !== content) { host.innerHTML = content; host._stationHtml = content; }
     const message = root.querySelector('.station-message');
-    message.textContent = this.stationMessage || '';
+    message.textContent = this.t(this.stationMessage);
     message.hidden = !this.stationMessage;
     message.classList.toggle('error', !!this.stationError);
   }
   headerHtml() {
     const name = this._hass?.states?.[this.config.entity]?.attributes?.friendly_name;
     const subtitle = typeof name === 'string' && name.trim() ? name : this.config.entity;
-    return `<header><div class="station-status-bar"><div class="station-indicators"></div><div class="battery" role="img"><svg viewBox="0 0 32 20" aria-hidden="true"><rect x="1" y="3" width="26" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="29" y="7" width="3" height="6" rx="1" fill="currentColor"/><rect class="battery-fill" x="4" y="6" width="0" height="8" rx="1" fill="currentColor"/><path class="battery-bolt" d="M17 1 9 11h6l-2 8L23 8h-7Z" fill="var(--dp-bg)" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" hidden/></svg><span class="battery-value" aria-hidden="true" hidden></span></div></div><div class="header-main"><div class="robot"><ha-icon icon="mdi:robot-vacuum"></ha-icon></div><div class="header-title"><h2>${escapeHtml(this.config.title)}</h2><p>${escapeHtml(subtitle)}</p></div><button class="consumables-info" data-action="consumables" data-focus="consumables-info" aria-label="Consumables" aria-haspopup="dialog" aria-expanded="false" title="Consumables">Info</button></div></header>`;
+    return `<header><div class="station-status-bar"><div class="station-indicators"></div><div class="battery" role="img"><svg viewBox="0 0 32 20" aria-hidden="true"><rect x="1" y="3" width="26" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="29" y="7" width="3" height="6" rx="1" fill="currentColor"/><rect class="battery-fill" x="4" y="6" width="0" height="8" rx="1" fill="currentColor"/><path class="battery-bolt" d="M17 1 9 11h6l-2 8L23 8h-7Z" fill="var(--dp-bg)" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" hidden/></svg><span class="battery-value" aria-hidden="true" hidden></span></div></div><div class="header-main"><div class="robot"><ha-icon icon="mdi:robot-vacuum"></ha-icon></div><div class="header-title"><h2>${escapeHtml(this.config.title || this.t('Plan a clean'))}</h2><p>${escapeHtml(subtitle)}</p></div><button class="consumables-info" data-action="consumables" data-focus="consumables-info" aria-label="${this.ht("Consumables")}" aria-haspopup="dialog" aria-expanded="false" title="${this.ht("Consumables")}">${this.ht("Info")}</button></div></header>`;
   }
   updateBattery() {
     const state = batteryStatus(this._hass, this.model);
     const element = this.shadowRoot.querySelector('.battery');
     element.dataset.level = state.level;
-    element.title = state.label; element.setAttribute('aria-label', state.label);
+    const battery = state.percent === null ? this.t('Battery level unavailable') : this.t('Battery: {percent}%', { percent: state.percent });
+    const charge = this._hass?.states?.[this.model.chargingEntity];
+    const charging = this._hass?.connected !== false && available(charge) && ['on', 'off'].includes(charge.state) ? this.t(charge.state === 'on' ? 'Charging' : 'Not charging') : this.t('Charging status unavailable');
+    const label = this.t('{battery}. {charging}.', { battery, charging });
+    element.title = label; element.setAttribute('aria-label', label);
     const percentage = element.querySelector('.battery-value');
     percentage.hidden = !this.config.show_battery_percentage || state.percent === null;
     percentage.textContent = percentage.hidden ? '' : `${state.percent}%`;
@@ -606,13 +623,13 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     element.querySelector('.battery-bolt').toggleAttribute('hidden', !state.charging);
   }
   statusHtml() {
-    return `<div class="activity-status" role="status" aria-live="polite" hidden><ha-icon class="activity-icon" aria-hidden="true"></ha-icon><div class="activity-copy"><span class="activity-text"></span><span class="activity-fault" hidden></span><span class="activity-start-block" hidden></span><span class="activity-remaining" hidden></span><div class="drying-progress" role="progressbar" aria-label="Drying time remaining" aria-valuemin="0" aria-valuemax="100" hidden><span class="drying-progress-fill"></span></div></div><span class="drying-control" hidden><button class="cancel-drying" data-control="cancel_drying" data-focus="cancel-drying" disabled aria-label="Cancel drying"><ha-icon icon="mdi:close" aria-hidden="true"></ha-icon></button></span></div>`;
+    return `<div class="activity-status" role="status" aria-live="polite" hidden><ha-icon class="activity-icon" aria-hidden="true"></ha-icon><div class="activity-copy"><span class="activity-text"></span><span class="activity-fault" hidden></span><span class="activity-start-block" hidden></span><span class="activity-remaining" hidden></span><div class="drying-progress" role="progressbar" aria-label="${this.ht("Drying time remaining")}" aria-valuemin="0" aria-valuemax="100" hidden><span class="drying-progress-fill"></span></div></div><span class="drying-control" hidden><button class="cancel-drying" data-control="cancel_drying" data-focus="cancel-drying" disabled aria-label="${this.ht("Cancel drying")}"><ha-icon icon="mdi:close" aria-hidden="true"></ha-icon></button></span></div>`;
   }
   updateStatus() {
     const status = activityStatus(this._hass, this.config.entity, (this.busy && !this.saving) || this.pendingStart);
     const row = this.shadowRoot.querySelector('.activity-status');
     row.hidden = !status;
-    row.querySelector('.activity-text').textContent = status?.text ?? '';
+    row.querySelector('.activity-text').textContent = this.t(status?.text);
     // Display the integration's current explanation without retaining or inferring faults.
     const fault = this._hass?.states?.[this.config.entity]?.attributes?.fault;
     const detail = status?.text === 'Robot needs attention' && typeof fault === 'string' ? fault.trim() : '';
@@ -623,19 +640,19 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     const blockNote = row.querySelector('.activity-start-block');
     const block = startBlockReason(this._hass, this.config.entity);
     blockNote.hidden = this.view.active || !block || block === status?.text || dockBlocksStart(this._hass, this.config.entity);
-    blockNote.textContent = block ?? '';
+    blockNote.textContent = this.t(block);
     row.querySelector('.activity-icon').setAttribute('icon', status?.icon ?? 'mdi:robot-vacuum');
     row.querySelector('.drying-control').hidden = !status?.drying;
     const remaining = row.querySelector('.activity-remaining');
     const time = status?.drying ? dryingRemainingTime(this._hass, this.config.entity, this.registry) : null;
     remaining.hidden = !status?.drying;
-    remaining.textContent = time === null ? 'Remaining time: unavailable' : `Remaining time: ${time} (hh:mm)`;
+    remaining.textContent = time === null ? this.t('Remaining time: unavailable') : this.t('Remaining time: {time} (hh:mm)', { time });
     const progress = row.querySelector('.drying-progress');
     const percent = status?.drying ? dryingRemainingPercent(this._hass, this.config.entity, this.registry) : null;
     progress.hidden = percent === null;
     if (percent !== null) {
       progress.setAttribute('aria-valuenow', String(Math.round(percent)));
-      progress.setAttribute('aria-valuetext', `Remaining time: ${time} (hh:mm)`);
+      progress.setAttribute('aria-valuetext', this.t('Remaining time: {time} (hh:mm)', { time }));
       progress.querySelector('.drying-progress-fill').style.width = `${percent}%`;
     } else {
       progress.removeAttribute('aria-valuenow');
@@ -644,13 +661,13 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     const cancel = row.querySelector('.cancel-drying');
     const supported = canControl(this._hass, this.config.entity, 'cancel_drying');
     cancel.disabled = !!this._previewDialog || this.busy || this.controlBusy || !supported;
-    cancel.title = supported ? 'Cancel drying' : 'Drying cancellation requires a connected robot and the integration cancel_drying action.';
+    cancel.title = this.t(supported ? 'Cancel drying' : 'Drying cancellation requires a connected robot and the integration cancel_drying action.');
   }
   renderSession(view) {
     const h = escapeHtml;
     // Keep the map element mounted across status and message updates so polling,
     // the last good image and in-flight requests are independent of card renders.
-    this.paint(`<style>${styles}</style><ha-card><div class="planner-content">${this.headerHtml()}${this.statusHtml()}<section class="session"><ul class="requested"></ul></section>${this.config.show_camera ? '<div class="map-section"><div class="map-title">Cleaning map</div><p class="map-caption">Refreshes about every 5 seconds</p><dyson-planner-map></dyson-planner-map></div>' : ''}<footer class="session-footer"><div class="actions session-actions"><button class="session-toggle" data-control="pause" data-focus="session-toggle"><ha-icon></ha-icon><span></span></button><button class="home" data-control="return_to_base" data-focus="home"><ha-icon icon="mdi:home-import-outline"></ha-icon>Home</button></div><p class="notice action-message" role="status" aria-live="polite"></p></footer></div>${this.consumablesHtml()}</ha-card>`, 'session');
+    this.paint(`<style>${styles}</style><ha-card><div class="planner-content">${this.headerHtml()}${this.statusHtml()}<section class="session"><ul class="requested"></ul></section>${this.config.show_camera ? `<div class="map-section"><div class="map-title">${this.ht("Cleaning map")}</div><p class="map-caption">${this.ht("Refreshes about every 5 seconds")}</p><dyson-planner-map></dyson-planner-map></div>` : ''}<footer class="session-footer"><div class="actions session-actions"><button class="session-toggle" data-control="pause" data-focus="session-toggle"><ha-icon></ha-icon><span></span></button><button class="home" data-control="return_to_base" data-focus="home"><ha-icon icon="mdi:home-import-outline"></ha-icon>${this.ht("Home")}</button></div><p class="notice action-message" role="status" aria-live="polite"></p></footer></div>${this.consumablesHtml()}</ha-card>`, 'session');
     const root = this.shadowRoot;
     this.updateBattery();
     this.updateConsumables();
@@ -658,7 +675,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     if (view.simulated) root.querySelector('.activity-status').hidden = true;
     const title = root.querySelector('.header-title h2');
     title.classList.add('session-title');
-    title.textContent = view.simulated ? 'Cleaning session preview' : 'Cleaning session';
+    title.textContent = this.t(view.simulated ? 'Cleaning session preview' : 'Cleaning session');
     const chips = (this.requestedPlan?.rooms ?? []).map(r => `<li>${h(r.name)}</li>`).join('');
     const list = root.querySelector('.requested');
     if (list.innerHTML !== chips) list.innerHTML = chips;
@@ -667,17 +684,17 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     const toggle = root.querySelector('.session-toggle');
     toggle.dataset.control = paused ? 'start' : 'pause';
     toggle.classList.toggle('resume', paused); toggle.classList.toggle('pause', !paused);
-    toggle.querySelector('span').textContent = paused ? 'Resume' : 'Pause';
+    toggle.querySelector('span').textContent = this.t(paused ? 'Resume' : 'Pause');
     toggle.querySelector('ha-icon').setAttribute('icon', paused ? 'mdi:play' : 'mdi:pause');
     for (const button of root.querySelectorAll('[data-control]')) {
       const supported = canControl(this._hass, this.config.entity, button.dataset.control);
       button.disabled = !!this._previewDialog || this.busy || this.controlBusy || !supported;
-      button.title = supported ? '' : 'This action is not available in the current robot state.';
+      button.title = supported ? '' : this.t('This action is not available in the current robot state.');
     }
     const message = root.querySelector('.action-message');
-    message.textContent = this.message;
+    message.textContent = this.t(this.message);
     message.classList.toggle('error', !!this.error);
-    root.querySelector('dyson-planner-map')?.setOptions(this._hass, this.model.cameraEntity, this.config.camera_rotation, view.live);
+    root.querySelector('dyson-planner-map')?.setOptions(this._hass, this.model.cameraEntity, this.config.camera_rotation, view.live, this.language);
   }
   positionModernPointer() {
     if (this.config?.theme !== 'modern') return;
@@ -705,10 +722,10 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     const valid = options.includes(value);
     const blocked = disabled || !valid;
     if (key === 'mop_repetitions') {
-      return `<div class="modern-control"><span class="field-label">${label}</span><div class="segments" role="group" aria-label="${h(name)}">${options.map((option, i) => `<button ${attrs} data-option="${h(option)}" style="--stop:${options.length > 1 ? i / (options.length - 1) : 0}" data-focus="${key}-${n}-${i}" aria-pressed="${value === option}" ${disabled ? 'disabled' : ''}>${h(option === 'One Pass' ? '1×' : option === 'Two Passes' ? '2×' : option)}</button>`).join('')}</div></div>`;
+      return `<div class="modern-control"><span class="field-label">${label}</span><div class="segments" role="group" aria-label="${h(name)}">${options.map((option, i) => `<button ${attrs} data-option="${h(option)}" style="--stop:${options.length > 1 ? i / (options.length - 1) : 0}" data-focus="${key}-${n}-${i}" aria-pressed="${value === option}" ${disabled ? 'disabled' : ''}>${h(option === 'One Pass' ? '1×' : option === 'Two Passes' ? '2×' : this.t(option))}</button>`).join('')}</div></div>`;
     }
     const index = options.indexOf(value);
-    return `<div class="modern-control"><label class="field-label" for="slider-${key}-${n}">${label}</label><div class="stepped-slider ${blocked ? 'disabled' : ''}"><div class="slider-ticks" aria-hidden="true">${options.map((_, i) => `<span class="slider-tick" style="--stop:${options.length > 1 ? i / (options.length - 1) : 0}"></span>`).join('')}</div><input id="slider-${key}-${n}" type="range" min="0" max="${options.length - 1}" step="1" value="${Math.max(0, index)}" aria-label="${h(name)}" aria-valuetext="${h(valid ? value : 'Unavailable')}" ${attrs} data-focus="${key}-${n}" ${blocked || options.length < 2 ? 'disabled' : ''}></div><div class="slider-options" style="--options:${options.length}">${options.map((option, i) => `<button ${attrs} data-option="${h(option)}" style="--stop:${options.length > 1 ? i / (options.length - 1) : 0}" data-focus="${key}-${n}-${i}" aria-pressed="${value === option}" ${disabled ? 'disabled' : ''}>${h(option)}</button>`).join('')}</div>${!valid ? '<span class="badge">Unavailable</span>' : ''}</div>`;
+    return `<div class="modern-control"><label class="field-label" for="slider-${key}-${n}">${label}</label><div class="stepped-slider ${blocked ? 'disabled' : ''}"><div class="slider-ticks" aria-hidden="true">${options.map((_, i) => `<span class="slider-tick" style="--stop:${options.length > 1 ? i / (options.length - 1) : 0}"></span>`).join('')}</div><input id="slider-${key}-${n}" type="range" min="0" max="${options.length - 1}" step="1" value="${Math.max(0, index)}" aria-label="${h(name)}" aria-valuetext="${this.ht(valid ? value : 'Unavailable')}" ${attrs} data-focus="${key}-${n}" ${blocked || options.length < 2 ? 'disabled' : ''}></div><div class="slider-options" style="--options:${options.length}">${options.map((option, i) => `<button ${attrs} data-option="${h(option)}" style="--stop:${options.length > 1 ? i / (options.length - 1) : 0}" data-focus="${key}-${n}-${i}" aria-pressed="${value === option}" ${disabled ? 'disabled' : ''}>${this.ht(option)}</button>`).join('')}</div>${!valid ? `<span class="badge">${this.ht("Unavailable")}</span>` : ''}</div>`;
   }
   render() {
     if (!this.model) return;
@@ -725,7 +742,8 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       const open = this.expanded.has(room.entity || room.name);
       const disabled = this.busy || !room.available;
       const valueOf = key => this.settingDraft[room.roomId]?.[key] ?? room.settings?.[key]?.value;
-      const fields = Object.entries(ROOM_FIELDS).map(([key, label]) => {
+      const fields = Object.entries(ROOM_FIELDS).map(([key, originalLabel]) => {
+        const label = this.t(originalLabel);
         const mode = valueOf('cleaning_mode');
         const omitted = !this.config.always_show_all_settings &&
           ((mode === 'Vacuum' && key === 'water_level') || (mode === 'Mop' && key === 'cleaning_strategy'));
@@ -735,15 +753,15 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
         if (!field && this.config.unsupported_settings === 'hidden' && !this.config.always_show_all_settings) return '';
         const value = valueOf(key), options = field?.options ?? [];
         if (modern && key !== 'cleaning_mode' && options.length) return reserve(this.modernControl(key, label, room, field, value, disabled, n));
-        return reserve(`<label class="field ${key === 'cleaning_mode' ? 'mode' : ''}">${label}<select data-setting="${key}" data-room-id="${h(room.roomId)}" data-focus="${key}-${n}" aria-label="${label} ${h(room.name)}" ${disabled || !field ? 'disabled' : ''}>${!options.includes(value) ? '<option value="">Unavailable</option>' : ''}${options.map(option => `<option value="${h(option)}" ${value === option ? 'selected' : ''}>${h(option)}</option>`).join('')}</select>${!field ? '<span class="badge">Not available</span>' : ''}</label>`);
+        return reserve(`<label class="field ${key === 'cleaning_mode' ? 'mode' : ''}">${label}<select data-setting="${key}" data-room-id="${h(room.roomId)}" data-focus="${key}-${n}" aria-label="${label} ${h(room.name)}" ${disabled || !field ? 'disabled' : ''}>${!options.includes(value) ? `<option value="">${this.ht("Unavailable")}</option>` : ''}${options.map(option => `<option value="${h(option)}" ${value === option ? 'selected' : ''}>${this.ht(option)}</option>`).join('')}</select>${!field ? `<span class="badge">${this.ht("Not available")}</span>` : ''}</label>`);
       }).join('');
       if (modern) {
         const colors = ['#18c5d9', '#e9b85b', '#b99ae4', '#79b9a5', '#e49baf'];
-        return `<section class="room ${selected ? 'selected' : ''} ${open ? 'open' : ''}" style="--room-color:${colors[n % colors.length]};--room-row:${n + 1}"><div class="room-head"><label class="pick"><input type="checkbox" data-focus="room-${n}" data-room="${h(room.entity)}" aria-label="Select ${h(room.name)}" ${selected ? 'checked' : ''} ${disabled ? 'disabled' : ''}><span class="selection-circle" aria-hidden="true">${selected ? order : ''}</span></label><button class="expand room-settings-toggle" data-focus="expand-${n}" data-expand="${h(room.entity || room.name)}" aria-expanded="${open}" aria-controls="fields-${n}" aria-label="Settings for ${h(room.name)}"><span class="room-settings-copy"><span class="name">${h(room.name)}</span><span class="summary">${!room.available ? h(room.error || 'Unavailable') : h(valueOf('cleaning_mode') ?? 'Room settings unavailable')}</span></span><span aria-hidden="true">${open ? '⌃' : '›'}</span></button></div><div class="fields" id="fields-${n}" ${open ? '' : 'hidden'}>${fields}${!room.roomId ? '<p class="badge">Room ID unavailable</p>' : ''}</div></section>`;
+        return `<section class="room ${selected ? 'selected' : ''} ${open ? 'open' : ''}" style="--room-color:${colors[n % colors.length]};--room-row:${n + 1}"><div class="room-head"><label class="pick"><input type="checkbox" data-focus="room-${n}" data-room="${h(room.entity)}" aria-label="${this.ht('Select {name}', { name: room.name })}" ${selected ? 'checked' : ''} ${disabled ? 'disabled' : ''}><span class="selection-circle" aria-hidden="true">${selected ? order : ''}</span></label><button class="expand room-settings-toggle" data-focus="expand-${n}" data-expand="${h(room.entity || room.name)}" aria-expanded="${open}" aria-controls="fields-${n}" aria-label="${this.ht('Settings for {name}', { name: room.name })}"><span class="room-settings-copy"><span class="name">${h(room.name)}</span><span class="summary">${!room.available ? this.ht(room.error || 'Unavailable') : this.ht(valueOf('cleaning_mode') ?? 'Room settings unavailable')}</span></span><span aria-hidden="true">${open ? '⌃' : '›'}</span></button></div><div class="fields" id="fields-${n}" ${open ? '' : 'hidden'}>${fields}${!room.roomId ? `<p class="badge">${this.ht("Room ID unavailable")}</p>` : ''}</div></section>`;
       }
-      return `<section class="room ${selected ? 'selected' : ''}"><div class="room-head"><label class="pick"><input type="checkbox" data-focus="room-${n}" data-room="${h(room.entity)}" ${selected ? 'checked' : ''} ${disabled ? 'disabled' : ''}><span><span class="name">${h(room.name)} ${selected ? `<span class="status">(${order})</span>` : ''}</span><span class="summary">${!room.available ? h(room.error || 'Unavailable') : h(valueOf('cleaning_mode') ?? 'Room settings unavailable')}</span></span></label><button class="expand" data-focus="expand-${n}" data-expand="${h(room.entity || room.name)}" aria-expanded="${open}" aria-controls="fields-${n}" aria-label="Settings for ${h(room.name)}"><span>Settings</span> ${open ? '⌃' : '⌄'}</button></div><div class="fields" id="fields-${n}" ${open ? '' : 'hidden'}>${fields}${!room.roomId ? '<p class="badge mode">Room ID unavailable. Check the updated integration and refresh rooms.</p>' : ''}</div></section>`;
+      return `<section class="room ${selected ? 'selected' : ''}"><div class="room-head"><label class="pick"><input type="checkbox" data-focus="room-${n}" data-room="${h(room.entity)}" ${selected ? 'checked' : ''} ${disabled ? 'disabled' : ''}><span><span class="name">${h(room.name)} ${selected ? `<span class="status">(${order})</span>` : ''}</span><span class="summary">${!room.available ? this.ht(room.error || 'Unavailable') : this.ht(valueOf('cleaning_mode') ?? 'Room settings unavailable')}</span></span></label><button class="expand" data-focus="expand-${n}" data-expand="${h(room.entity || room.name)}" aria-expanded="${open}" aria-controls="fields-${n}" aria-label="${this.ht('Settings for {name}', { name: room.name })}"><span>${this.ht("Settings")}</span> ${open ? '⌃' : '⌄'}</button></div><div class="fields" id="fields-${n}" ${open ? '' : 'hidden'}>${fields}${!room.roomId ? `<p class="badge mode">${this.ht("Room ID unavailable. Check the updated integration and refresh rooms.")}</p>` : ''}</div></section>`;
     }).join('');
-    this.paint(`<style>${styles}</style><ha-card><div class="planner-content">${this.headerHtml()}${this.statusHtml()}<div class="rooms ${modern ? 'modern-rooms' : ''}" style="--room-count:${rooms.length}">${roomHtml}</div>${!rooms.length ? '<p class="empty">No enabled rooms found. Check the card configuration and room discovery.</p>' : ''}<footer><div class="summary-line"><span>${this.selected.length} of ${rooms.length} rooms selected</span><span class="status ${this.dirty ? 'draft-status' : ''}">${this.dirty ? `<button class="discard-draft" data-focus="reset" data-action="reset" ${this.busy ? 'disabled' : ''} title="Discard draft" aria-label="Discard draft"><ha-icon icon="mdi:trash-can-outline" aria-hidden="true"></ha-icon></button>Local draft` : 'From Home Assistant'}</span></div><div class="actions"><button data-action="save" data-focus="save" ${this._previewDialog || !hasChanges || this.busy || !canSave ? 'disabled' : ''}>${this.saving ? 'Saving …' : 'Save settings'}</button><button class="start" data-focus="start" data-action="start" ${this._previewDialog || this.selected.length === 0 || this.busy || startBlockReason(this._hass, this.config.entity) ? 'disabled' : ''}>Start clean</button></div>${!canSave || !canStart ? '<p class="notice badge">The updated Dyson integration actions are not available. Reload the integration and refresh this dashboard.</p>' : ''}${external ? '<p class="notice badge">Settings changed outside this card. Your edited values remain in the local draft.</p>' : ''}<p class="notice ${this.error ? 'error' : ''}" role="status" aria-live="polite">${h(this.message)}</p></footer></div>${this.consumablesHtml()}</ha-card>`, 'planner');
+    this.paint(`<style>${styles}</style><ha-card><div class="planner-content">${this.headerHtml()}${this.statusHtml()}<div class="rooms ${modern ? 'modern-rooms' : ''}" style="--room-count:${rooms.length}">${roomHtml}</div>${!rooms.length ? `<p class="empty">${this.ht("No enabled rooms found. Check the card configuration and room discovery.")}</p>` : ''}<footer><div class="summary-line"><span>${this.ht('{selected} of {total} rooms selected', { selected: this.selected.length, total: rooms.length })}</span><span class="status ${this.dirty ? 'draft-status' : ''}">${this.dirty ? `<button class="discard-draft" data-focus="reset" data-action="reset" ${this.busy ? 'disabled' : ''} title="${this.ht("Discard draft")}" aria-label="${this.ht("Discard draft")}"><ha-icon icon="mdi:trash-can-outline" aria-hidden="true"></ha-icon></button>${this.ht('Local draft')}` : this.ht('From Home Assistant')}</span></div><div class="actions"><button data-action="save" data-focus="save" ${this._previewDialog || !hasChanges || this.busy || !canSave ? 'disabled' : ''}>${this.ht(this.saving ? 'Saving …' : 'Save settings')}</button><button class="start" data-focus="start" data-action="start" ${this._previewDialog || this.selected.length === 0 || this.busy || startBlockReason(this._hass, this.config.entity) ? 'disabled' : ''}>${this.ht("Start clean")}</button></div>${!canSave || !canStart ? `<p class="notice badge">${this.ht("The updated Dyson integration actions are not available. Reload the integration and refresh this dashboard.")}</p>` : ''}${external ? `<p class="notice badge">${this.ht("Settings changed outside this card. Your edited values remain in the local draft.")}</p>` : ''}<p class="notice ${this.error ? 'error' : ''}" role="status" aria-live="polite">${this.ht(this.message)}</p></footer></div>${this.consumablesHtml()}</ha-card>`, 'planner');
     this.updateBattery();
     this.updateConsumables();
     this.updateStatus();

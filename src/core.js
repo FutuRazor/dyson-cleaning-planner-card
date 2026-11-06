@@ -1,3 +1,4 @@
+import { UiError } from './localize.js';
 export const DOMAIN = 'dyson_spot_scrub';
 export const ROOM_FIELDS = { cleaning_mode: 'Cleaning mode', cleaning_strategy: 'Vacuum Power', water_level: 'Water level', mop_repetitions: 'Clean repetitions' };
 export const available = state => !!state && !['unavailable', 'unknown'].includes(state.state) && !state.attributes?.restored;
@@ -14,21 +15,22 @@ export const STATUS_BAR_ITEMS = [
 ];
 
 export function normalizeConfig(config) {
-  if (!config || typeof config.entity !== 'string' || !config.entity.startsWith('vacuum.')) throw new Error('Select a vacuum entity.');
-  if (config.theme !== undefined && !['classic', 'modern'].includes(config.theme)) throw new Error('theme must be classic or modern.');
-  if (config.unsupported_settings && !['disabled', 'hidden'].includes(config.unsupported_settings)) throw new Error('unsupported_settings must be disabled or hidden.');
+  if (!config || typeof config.entity !== 'string' || !config.entity.startsWith('vacuum.')) throw new UiError('Select a vacuum entity.');
+  if (config.language !== undefined && !['auto', 'en', 'de'].includes(config.language)) throw new UiError('language must be auto, en or de.');
+  if (config.theme !== undefined && !['classic', 'modern'].includes(config.theme)) throw new UiError('theme must be classic or modern.');
+  if (config.unsupported_settings && !['disabled', 'hidden'].includes(config.unsupported_settings)) throw new UiError('unsupported_settings must be disabled or hidden.');
   for (const key of ['excluded_rooms', 'room_order']) {
-    if (config[key] !== undefined && (!Array.isArray(config[key]) || config[key].some(x => typeof x !== 'string'))) throw new Error(`${key} must be a list of entity IDs.`);
+    if (config[key] !== undefined && (!Array.isArray(config[key]) || config[key].some(x => typeof x !== 'string'))) throw new UiError('{key} must be a list of entity IDs.', { key });
   }
-  if (config.room_entities !== undefined && (!config.room_entities || typeof config.room_entities !== 'object' || Array.isArray(config.room_entities) || Object.values(config.room_entities).some(x => typeof x !== 'string' || !x.startsWith('switch.')))) throw new Error('room_entities must map room names to switch entities.');
-  if (config.show_battery_percentage !== undefined && typeof config.show_battery_percentage !== 'boolean') throw new Error('show_battery_percentage must be true or false.');
-  if (config.show_status_bar !== undefined && typeof config.show_status_bar !== 'boolean') throw new Error('show_status_bar must be true or false.');
-  if (config.hidden_status_items !== undefined && (!Array.isArray(config.hidden_status_items) || config.hidden_status_items.some(item => typeof item !== 'string'))) throw new Error('hidden_status_items must be a list of indicator keys.');
-  if (config.show_camera !== undefined && typeof config.show_camera !== 'boolean') throw new Error('show_camera must be true or false.');
-  if (config.always_show_all_settings !== undefined && typeof config.always_show_all_settings !== 'boolean') throw new Error('always_show_all_settings must be true or false.');
-  if (config.camera_rotation !== undefined && ![0, 90, 180, 270].includes(config.camera_rotation)) throw new Error('camera_rotation must be 0, 90, 180 or 270.');
-  if (config.camera_entity && (typeof config.camera_entity !== 'string' || !config.camera_entity.startsWith('camera.'))) throw new Error('Select a camera entity.');
-  return { ...config, theme: config.theme ?? 'modern', show_battery_percentage: config.show_battery_percentage ?? false, show_status_bar: config.show_status_bar ?? true, hidden_status_items: config.hidden_status_items ?? [], title: config.title ?? 'Plan a clean', always_show_all_settings: config.always_show_all_settings ?? false, unsupported_settings: config.unsupported_settings ?? 'disabled', excluded_rooms: config.excluded_rooms ?? [], room_order: config.room_order ?? [], show_camera: config.show_camera ?? true, camera_rotation: config.camera_rotation ?? 0 };
+  if (config.room_entities !== undefined && (!config.room_entities || typeof config.room_entities !== 'object' || Array.isArray(config.room_entities) || Object.values(config.room_entities).some(x => typeof x !== 'string' || !x.startsWith('switch.')))) throw new UiError('room_entities must map room names to switch entities.');
+  if (config.show_battery_percentage !== undefined && typeof config.show_battery_percentage !== 'boolean') throw new UiError('show_battery_percentage must be true or false.');
+  if (config.show_status_bar !== undefined && typeof config.show_status_bar !== 'boolean') throw new UiError('show_status_bar must be true or false.');
+  if (config.hidden_status_items !== undefined && (!Array.isArray(config.hidden_status_items) || config.hidden_status_items.some(item => typeof item !== 'string'))) throw new UiError('hidden_status_items must be a list of indicator keys.');
+  if (config.show_camera !== undefined && typeof config.show_camera !== 'boolean') throw new UiError('show_camera must be true or false.');
+  if (config.always_show_all_settings !== undefined && typeof config.always_show_all_settings !== 'boolean') throw new UiError('always_show_all_settings must be true or false.');
+  if (config.camera_rotation !== undefined && ![0, 90, 180, 270].includes(config.camera_rotation)) throw new UiError('camera_rotation must be 0, 90, 180 or 270.');
+  if (config.camera_entity && (typeof config.camera_entity !== 'string' || !config.camera_entity.startsWith('camera.'))) throw new UiError('Select a camera entity.');
+  return { ...config, language: config.language ?? 'auto', theme: config.theme ?? 'modern', show_battery_percentage: config.show_battery_percentage ?? false, show_status_bar: config.show_status_bar ?? true, hidden_status_items: config.hidden_status_items ?? [], title: config.title ?? '', always_show_all_settings: config.always_show_all_settings ?? false, unsupported_settings: config.unsupported_settings ?? 'disabled', excluded_rooms: config.excluded_rooms ?? [], room_order: config.room_order ?? [], show_camera: config.show_camera ?? true, camera_rotation: config.camera_rotation ?? 0 };
 }
 
 // Entity IDs are user-editable. Match registry identity within ONE integration device.
@@ -96,12 +98,12 @@ export function batteryStatus(hass, model) {
 const draftRequests = new Set();
 export async function sendRoomDraft({ hass, model, config, selected = [], draft = {}, start = false }) {
   const service = start ? 'start_rooms_with_settings' : 'save_room_settings';
-  if (hass?.connected === false) throw new Error('Home Assistant is not connected.');
-  if (!hass.services?.[DOMAIN]?.[service]) throw new Error(`Update the Dyson integration: ${DOMAIN}.${service} is unavailable.`);
+  if (hass?.connected === false) throw new UiError('Home Assistant is not connected.');
+  if (!hass.services?.[DOMAIN]?.[service]) throw new UiError('Update the Dyson integration: {action} is unavailable.', { action: `${DOMAIN}.${service}` });
   const vacuum = hass.states[config.entity];
-  if (!available(vacuum)) throw new Error('The robot is unavailable.');
-  if (start && !['docked', 'idle'].includes(vacuum.state)) throw new Error('Start is only available when the Dyson is ready (docked or idle).');
-  if (start && startBlockReason(hass, config.entity)) throw new Error(startBlockReason(hass, config.entity));
+  if (!available(vacuum)) throw new UiError('The robot is unavailable.');
+  if (start && !['docked', 'idle'].includes(vacuum.state)) throw new UiError('Start is only available when the Dyson is ready (docked or idle).');
+  if (start && startBlockReason(hass, config.entity)) throw new UiError(startBlockReason(hass, config.entity));
   const byId = new Map();
   for (const room of model.rooms) {
     if (!room.roomId) continue;
@@ -110,7 +112,7 @@ export async function sendRoomDraft({ hass, model, config, selected = [], draft 
   }
   const resolve = id => {
     const rooms = byId.get(id);
-    if (rooms?.length !== 1 || !rooms[0].available || rooms[0].excluded) throw new Error('A room in your draft is unavailable or ambiguous. Review or discard the draft.');
+    if (rooms?.length !== 1 || !rooms[0].available || rooms[0].excluded) throw new UiError('A room in your draft is unavailable or ambiguous. Review or discard the draft.');
     return rooms[0];
   };
   const settings = {};
@@ -118,17 +120,17 @@ export async function sendRoomDraft({ hass, model, config, selected = [], draft 
     const room = resolve(id);
     for (const [key, value] of Object.entries(values)) {
       const field = room.settings?.[key];
-      if (!field || !available(hass.states[field.entity]) || !field.options.includes(value)) throw new Error(`${ROOM_FIELDS[key] ?? key} is no longer available for ${room.name}.`);
+      if (!field || !available(hass.states[field.entity]) || !field.options.includes(value)) throw new UiError('{setting} is no longer available for {room}.', { setting: { key: ROOM_FIELDS[key] ?? key }, room: room.name });
       if (hass.states[field.entity].state !== value) (settings[id] ??= {})[key] = value;
     }
   }
   const rooms = start ? selected.map(entity => {
     const room = model.rooms.find(r => r.entity === entity);
-    if (!room?.roomId) throw new Error('A selected room has no stable room ID. Refresh rooms and check the integration.');
+    if (!room?.roomId) throw new UiError('A selected room has no stable room ID. Refresh rooms and check the integration.');
     return resolve(room.roomId);
   }) : [];
-  if (start && (!rooms.length || new Set(rooms.map(r => r.roomId)).size !== rooms.length)) throw new Error('Select at least one room without duplicates.');
-  if (draftRequests.has(config.entity)) throw new Error('An action for this Dyson is already running in this browser.');
+  if (start && (!rooms.length || new Set(rooms.map(r => r.roomId)).size !== rooms.length)) throw new UiError('Select at least one room without duplicates.');
+  if (draftRequests.has(config.entity)) throw new UiError('An action for this Dyson is already running in this browser.');
   if (!start && !Object.keys(settings).length) return { rooms: [], settings, sent: false };
   const data = { entity_id: config.entity, room_settings: settings };
   if (start) data.room_ids = rooms.map(r => r.roomId);
@@ -252,7 +254,7 @@ export function canControl(hass, entity, action) {
 }
 
 export async function controlCleaning(hass, entity, action) {
-  if (!canControl(hass, entity, action)) throw new Error('This action is not available for the current robot state.');
+  if (!canControl(hass, entity, action)) throw new UiError('This action is not available for the current robot state.');
   // Queue cancellation belongs to the integration. Do not toggle room switches here.
   await hass.callService(action === 'cancel_drying' ? DOMAIN : 'vacuum', action, { entity_id: entity });
 }
@@ -321,7 +323,7 @@ export function stationActions(hass, registry, entity) {
 
 export async function pressStationAction(hass, registry, entity, key) {
   const action = stationActions(hass, registry, entity).find(item => item.key === key);
-  if (!action?.available) throw new Error('This station action is unavailable.');
+  if (!action?.available) throw new UiError('This station action is unavailable.');
   await hass.callService('button', 'press', { entity_id: action.entity });
 }
 
@@ -341,12 +343,12 @@ export function stationSettings(hass, registry, entity) {
 
 export async function changeStationSetting(hass, registry, entity, key, value) {
   const field = stationSettings(hass, registry, entity).find(f => f.key === key);
-  if (!field?.available) throw new Error('This station setting is unavailable.');
+  if (!field?.available) throw new UiError('This station setting is unavailable.');
   if (field.domain === 'switch') {
-    if (typeof value !== 'boolean') throw new Error('Invalid station switch value.');
+    if (typeof value !== 'boolean') throw new UiError('Invalid station switch value.');
     await hass.callService('switch', value ? 'turn_on' : 'turn_off', { entity_id: field.entity });
   } else {
-    if (!field.options.includes(value)) throw new Error('Invalid station option.');
+    if (!field.options.includes(value)) throw new UiError('Invalid station option.');
     await hass.callService('select', 'select_option', { entity_id: field.entity, option: value });
   }
 }
