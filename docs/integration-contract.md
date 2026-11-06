@@ -6,6 +6,8 @@ Both Modern and Classic use this same contract. The documented minimum integrati
 
 ## 1. Dependency overview
 
+Language selection (`auto`, `en`, `de`) is display-only and adds no integration requirement. Automatic follows the current Home Assistant user's language, falling back to English. Known option labels and card-owned status messages are translated; entity IDs, room/device names, raw option values, action names and payloads are unchanged. Unknown options and external error messages remain in their original language. See [Translations](translations.md).
+
 | Feature | Required input | If absent or invalid |
 |---|---|---|
 | Device discovery | Configured `vacuum.*`, entity registry entry, Dyson platform and device association | No usable room discovery |

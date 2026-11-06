@@ -144,6 +144,16 @@ Controls depend on the entities and actions provided by your installed integrati
 
 ## Customization
 
+### Language
+
+Choose **Automatic**, **English**, or **Deutsch** in the card editor. Automatic (the default) follows the current Home Assistant user’s language and falls back to English for unsupported languages. The card and its visual editor use the selected language.
+
+Room and device names, custom titles, and values sent to the integration stay unchanged. Leave the title empty to use the translated default; an existing explicit title such as `Plan a clean` stays as entered. Unknown integration options and external error messages remain in their original language.
+
+Additional languages can be added through the [translation guide](docs/translations.md).
+
+### Appearance
+
 Choose **Modern** (default) or **Classic** in the card editor's **Theme** setting. Modern uses numbered selection circles, discrete sliders for Vacuum Power and Water level, and buttons for Clean repetitions. At card widths of 480 px or more, the open room's settings appear beside the room list; narrower cards expand them inline. Both themes use the same local draft and send selected rooms in click order. In the wide layout, changing cleaning modes preserves the settings-panel height. Room tiles become more compact from five displayed rooms onward; exactly five rows align with the settings panel.
 
 Open **Edit dashboard**, then edit the card to change its title, room visibility and display order, optional map and map rotation. You can also choose whether unavailable settings are hidden or disabled, and whether settings irrelevant to the selected cleaning mode remain visible.
@@ -162,7 +172,8 @@ These options belong in the individual card's code editor, not in `configuration
 | Option | Description |
 |---|---|
 | `entity` | Required Dyson vacuum entity |
-| `title` | Planner title; default: `Plan a clean` |
+| `title` | Custom planner title; empty or omitted uses the translated default |
+| `language` | `auto` (default), `en`, or `de`; applies to this card and its editor |
 | `theme` | `modern` (default) or `classic` |
 | `always_show_all_settings` | Keep all room settings visible; default: `false` |
 | `unsupported_settings` | `disabled` (default) or `hidden` |
@@ -190,3 +201,4 @@ These options belong in the individual card's code editor, not in `configuration
 ## License
 
 [MIT](LICENSE) · Copyright (c) 2026 FutuRazor.
+
