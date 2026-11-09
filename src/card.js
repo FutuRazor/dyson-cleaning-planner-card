@@ -41,6 +41,7 @@ function stationIndicator(field, refillStatus, language = 'en') {
 }
 
 const styles = `
+.header-buttons{display:flex;flex-direction:column;gap:5px;align-self:center}.header-buttons .zone-open{min-height:32px;padding:3px 10px;font-size:12px;background:var(--dp-modern-surface,var(--dp-bg));color:var(--dp-muted)}
 /* Only constrain the content when the dashboard assigns an explicit row count. */
 :host([fixed-height]){height:100%;min-height:0}
 :host([fixed-height]) ha-card{height:100%;min-height:0}
@@ -263,7 +264,9 @@ class DysonRegistryElement extends HTMLElement {
 class DysonCleaningPlannerCard extends DysonRegistryElement {
   constructor() {
     super(); this.selected = []; this.settingDraft = {}; this.dirty = false; this.busy = false; this.expanded = new Set(); this.message = '';
-    this.controlBusy = false; this.pendingStart = false; this.requestedPlan = null;
+    this.controlBusy = false; this.pendingStart = false; this.requestedPlan = null; this.zoneView = false;
+    this.shadowRoot.addEventListener('zone-back', () => { this.zoneView = false; this.render(); });
+    this.shadowRoot.addEventListener('zone-started', () => this.zoneStarted());
     this.shadowRoot.addEventListener('change', event => this.onChange(event));
     this.shadowRoot.addEventListener('click', event => this.onClick(event));
     this.shadowRoot.addEventListener('keydown', event => {
@@ -302,6 +305,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       this.clearPendingStart(); this.requestedPlan = null; this.sessionObserved = false;
     }
     this.consumablesOpen = false; this.stationMessage = ''; this.stationError = false;
+    this.zoneView = false;
     this.config = normalized;
     this.setAttribute('data-theme', this.config.theme);
     const rows = config.grid_options?.rows ?? config.layout_options?.grid_rows;
@@ -427,6 +431,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       this.onChange({ target: { dataset: el.dataset, value: el.dataset.option, blur() {} } });
       return;
     }
+    if (el.dataset.action === 'zones' && !this.view.active) { this.zoneView = true; this.requestedPlan = null; this.render(); return; }
     if (el.dataset.control) { this.control(el.dataset.control); return; }
     if (this.view.active) return;
     if (el.dataset.expand !== undefined) {
@@ -605,7 +610,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
   headerHtml() {
     const name = this._hass?.states?.[this.config.entity]?.attributes?.friendly_name;
     const subtitle = typeof name === 'string' && name.trim() ? name : this.config.entity;
-    return `<header><div class="station-status-bar"><div class="station-indicators"></div><div class="battery" role="img"><svg viewBox="0 0 32 20" aria-hidden="true"><rect x="1" y="3" width="26" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="29" y="7" width="3" height="6" rx="1" fill="currentColor"/><rect class="battery-fill" x="4" y="6" width="0" height="8" rx="1" fill="currentColor"/><path class="battery-bolt" d="M17 1 9 11h6l-2 8L23 8h-7Z" fill="var(--dp-bg)" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" hidden/></svg><span class="battery-value" aria-hidden="true" hidden></span></div></div><div class="header-main"><div class="robot"><ha-icon icon="mdi:robot-vacuum"></ha-icon></div><div class="header-title"><h2>${escapeHtml(this.config.title || this.t('Plan a clean'))}</h2><p>${escapeHtml(subtitle)}</p></div><button class="consumables-info" data-action="consumables" data-focus="consumables-info" aria-label="${this.ht("Consumables")}" aria-haspopup="dialog" aria-expanded="false" title="${this.ht("Consumables")}">${this.ht("Info")}</button></div></header>`;
+    return `<header><div class="station-status-bar"><div class="station-indicators"></div><div class="battery" role="img"><svg viewBox="0 0 32 20" aria-hidden="true"><rect x="1" y="3" width="26" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="29" y="7" width="3" height="6" rx="1" fill="currentColor"/><rect class="battery-fill" x="4" y="6" width="0" height="8" rx="1" fill="currentColor"/><path class="battery-bolt" d="M17 1 9 11h6l-2 8L23 8h-7Z" fill="var(--dp-bg)" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" hidden/></svg><span class="battery-value" aria-hidden="true" hidden></span></div></div><div class="header-main"><div class="robot"><ha-icon icon="mdi:robot-vacuum"></ha-icon></div><div class="header-title"><h2>${escapeHtml(this.config.title || this.t('Plan a clean'))}</h2><p>${escapeHtml(subtitle)}</p></div><div class="header-buttons">${!this.view.active && !this.zoneView ? `<button class="zone-open" data-action="zones" data-focus="zones">${this.ht("Zone")}</button>` : ''}<button class="consumables-info" data-action="consumables" data-focus="consumables-info" aria-label="${this.ht("Consumables")}" aria-haspopup="dialog" aria-expanded="false" title="${this.ht("Consumables")}">${this.ht("Info")}</button></div></div></header>`;
   }
   updateBattery() {
     const state = batteryStatus(this._hass, this.model);
@@ -727,9 +732,38 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     const index = options.indexOf(value);
     return `<div class="modern-control"><label class="field-label" for="slider-${key}-${n}">${label}</label><div class="stepped-slider ${blocked ? 'disabled' : ''}"><div class="slider-ticks" aria-hidden="true">${options.map((_, i) => `<span class="slider-tick" style="--stop:${options.length > 1 ? i / (options.length - 1) : 0}"></span>`).join('')}</div><input id="slider-${key}-${n}" type="range" min="0" max="${options.length - 1}" step="1" value="${Math.max(0, index)}" aria-label="${h(name)}" aria-valuetext="${this.ht(valid ? value : 'Unavailable')}" ${attrs} data-focus="${key}-${n}" ${blocked || options.length < 2 ? 'disabled' : ''}></div><div class="slider-options" style="--options:${options.length}">${options.map((option, i) => `<button ${attrs} data-option="${h(option)}" style="--stop:${options.length > 1 ? i / (options.length - 1) : 0}" data-focus="${key}-${n}-${i}" aria-pressed="${value === option}" ${disabled ? 'disabled' : ''}>${this.ht(option)}</button>`).join('')}</div>${!valid ? `<span class="badge">${this.ht("Unavailable")}</span>` : ''}</div>`;
   }
+  zoneStarted() {
+    this.zoneView = false; this.requestedPlan = null; this.message = ''; this.error = false;
+    this.clearPendingStart();
+    if (!cleaningView(this._hass, this.config.entity).live) {
+      this.pendingStart = true;
+      this._startTimer = setTimeout(() => {
+        this.pendingStart = false;
+        if (!cleaningView(this._hass, this.config.entity).live) {
+          this.error = true;
+          this.message = 'The start was sent, but the robot has not reported an active session. Check its status before trying again.';
+        }
+        this.update();
+      }, 30000);
+    }
+    this.update();
+  }
+  renderZone() {
+    this.paint(`<style>${styles}</style><ha-card><div class="planner-content">${this.headerHtml()}${this.statusHtml()}<dyson-planner-zone></dyson-planner-zone></div>${this.consumablesHtml()}</ha-card>`, 'zone');
+    this.shadowRoot.querySelector('.header-title h2').textContent = this.t('Zone cleaning');
+    this.updateBattery(); this.updateConsumables(); this.updateStatus();
+    const camera = this.model.cameraEntity;
+    const robotEntry = this.registry.find(e => e.entity_id === this.config.entity);
+    const cameraEntry = this.registry.find(e => e.entity_id === camera);
+    const trusted = !!(robotEntry?.device_id && robotEntry.platform === DOMAIN && cameraEntry?.platform === DOMAIN
+      && robotEntry.device_id === cameraEntry.device_id);
+    this.shadowRoot.querySelector('dyson-planner-zone').setOptions({ hass:this._hass, vacuum:this.config.entity,
+      camera, trusted, rotation:this.config.camera_rotation, language:this.language, preview:!!this._previewDialog });
+  }
   render() {
     if (!this.model) return;
-    if (this.view.active) { this.renderSession(this.view); return; }
+    if (this.view.active) { this.zoneView = false; this.renderSession(this.view); return; }
+    if (this.zoneView) { this.renderZone(); return; }
     const h = escapeHtml, model = this.model;
     const rooms = model.rooms.filter(r => !r.excluded);
     const external = this.dirty && !this.busy && this.baseline !== this.liveSignature();
