@@ -60,7 +60,8 @@ class DysonPlannerZone extends HTMLElement {
     if (this.calibration && String(this.hass.states[this.vacuum]?.attributes?.map_id) !== this.calibration.map_id) {
       this.controller?.abort(); this.clear(); this.note = 'The active map changed. Reload the map and select a new zone.';
     }
-    this.labels(); this.draw();
+    if (this._labelsLanguage !== this.language) { this.labels(); this._labelsLanguage = this.language; }
+    this.draw();
     if (!this.attempted && this.trusted && this.camera) this.load();
   }
   t(key) { return translate(this.language, key); }
@@ -132,34 +133,45 @@ class DysonPlannerZone extends HTMLElement {
   draw() {
     if (!this.svg) return;
     const c = this.calibration, rotated = this.rotation === 90 || this.rotation === 270;
-    this.svg.toggleAttribute('hidden', !c);
-    if (c) {
-      this.width = rotated ? c.image_height : c.image_width; this.height = rotated ? c.image_width : c.image_height;
-      this.svg.setAttribute('viewBox', `0 0 ${this.width} ${this.height}`);
-      this.image.setAttribute('width', c.image_width); this.image.setAttribute('height', c.image_height);
-      const transform = this.rotation === 90 ? `translate(${c.image_height} 0) rotate(90)`
-        : this.rotation === 180 ? `translate(${c.image_width} ${c.image_height}) rotate(180)`
-        : this.rotation === 270 ? `translate(0 ${c.image_width}) rotate(270)` : '';
-      this.image.setAttribute('transform', transform);
-    }
-    for (const el of [this.area,this.handle,this.hint]) el.toggleAttribute('hidden', !this.rect);
-    if (c && this.rect) {
-      const [x,y,x2,y2] = this.rect, size = Math.min(this.width * .14, 36 * this.width / (this.svg.getBoundingClientRect().width || this.width));
-      for (const [key,value] of Object.entries({ x:x*this.width,y:y*this.height,width:(x2-x)*this.width,height:(y2-y)*this.height })) this.area.setAttribute(key,value);
-      for (const [key,value] of Object.entries({ x:x2*this.width-size,y:y2*this.height-size,width:size,height:size })) this.handle.setAttribute(key,value);
-      this.hint.setAttribute('x',x2*this.width-size/2); this.hint.setAttribute('y',y2*this.height-size/2);
-      this.hint.style.fontSize = `${size*.65}px`;
+    // Safari can scroll a focused SVG back into view when its geometry is
+    // rewritten. HA telemetry must not touch the frozen selection's DOM.
+    const geometry = JSON.stringify([c, this.rotation, this.rect, this.svg.getBoundingClientRect().width]);
+    const geometryChanged = geometry !== this._geometry;
+    this._geometry = geometry;
+    if (geometryChanged) {
+      this.svg.toggleAttribute('hidden', !c);
+      if (c) {
+        this.width = rotated ? c.image_height : c.image_width; this.height = rotated ? c.image_width : c.image_height;
+        this.svg.setAttribute('viewBox', `0 0 ${this.width} ${this.height}`);
+        this.image.setAttribute('width', c.image_width); this.image.setAttribute('height', c.image_height);
+        const transform = this.rotation === 90 ? `translate(${c.image_height} 0) rotate(90)`
+          : this.rotation === 180 ? `translate(${c.image_width} ${c.image_height}) rotate(180)`
+          : this.rotation === 270 ? `translate(0 ${c.image_width}) rotate(270)` : '';
+        this.image.setAttribute('transform', transform);
+      }
+      for (const el of [this.area,this.handle,this.hint]) el.toggleAttribute('hidden', !this.rect);
+      if (c && this.rect) {
+        const [x,y,x2,y2] = this.rect, size = Math.min(this.width * .14, 36 * this.width / (this.svg.getBoundingClientRect().width || this.width));
+        for (const [key,value] of Object.entries({ x:x*this.width,y:y*this.height,width:(x2-x)*this.width,height:(y2-y)*this.height })) this.area.setAttribute(key,value);
+        for (const [key,value] of Object.entries({ x:x2*this.width-size,y:y2*this.height-size,width:size,height:size })) this.handle.setAttribute(key,value);
+        this.hint.setAttribute('x',x2*this.width-size/2); this.hint.setAttribute('y',y2*this.height-size/2);
+        this.hint.style.fontSize = `${size*.65}px`;
+      }
     }
     const ready = zoneCanStart(this.hass,this.vacuum,this.camera,c,this.trusted,this.preview);
     for (const action of ['add','remove','refresh','back','start']) {
-      this.shadowRoot.querySelector(`[data-do="${action}"]`).disabled = !!this.sending
+      const button = this.shadowRoot.querySelector(`[data-do="${action}"]`);
+      const disabled = !!this.sending
         || (action === 'start' && (!ready || !this.rect || !!this.controller))
         || (action === 'add' && (!c || !!this.rect)) || (action === 'remove' && !this.rect)
         || (action === 'refresh' && !!this.controller);
+      if (button.disabled !== disabled) button.disabled = disabled;
     }
-    this.shadowRoot.querySelector('.message').textContent = this.t(this.note || (!this.trusted ? 'Camera must belong to the selected robot.'
+    const message = this.t(this.note || (!this.trusted ? 'Camera must belong to the selected robot.'
       : !c ? 'A calibrated map is required. Reload the map.' : !ready ? 'Zone start unavailable: check robot readiness, map and integration action.'
       : !this.rect ? 'Add a rectangle to select the cleaning area.' : 'Map frozen for selection. Room settings remain unchanged.'));
+    const notice = this.shadowRoot.querySelector('.message');
+    if (notice.textContent !== message) notice.textContent = message;
   }
   point(event) {
     const p = new DOMPoint(event.clientX,event.clientY).matrixTransform(this.svg.getScreenCTM().inverse());

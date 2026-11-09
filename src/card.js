@@ -750,7 +750,8 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
   }
   renderZone() {
     this.paint(`<style>${styles}</style><ha-card><div class="planner-content">${this.headerHtml()}${this.statusHtml()}<dyson-planner-zone></dyson-planner-zone></div>${this.consumablesHtml()}</ha-card>`, 'zone');
-    this.shadowRoot.querySelector('.header-title h2').textContent = this.t('Zone cleaning');
+    const title = this.shadowRoot.querySelector('.header-title h2');
+    if (title.textContent !== this.t('Zone cleaning')) title.textContent = this.t('Zone cleaning');
     this.updateBattery(); this.updateConsumables(); this.updateStatus();
     const camera = this.model.cameraEntity;
     const robotEntry = this.registry.find(e => e.entity_id === this.config.entity);
