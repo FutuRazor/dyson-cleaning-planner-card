@@ -199,9 +199,7 @@ export const en = {
   "Zone": "Zone",
   "Zone cleaning": "Zone cleaning",
   "Zone selection": "Zone selection",
-  "Vacuum · Auto · One pass. Add a zone, then drag it or resize its lower-right corner.": "Vacuum · Auto · One pass. Add a zone, then drag it or resize its lower-right corner.",
-  "+ Add zone": "+ Add zone",
-  "Remove zone": "Remove zone",
+  "Vacuum · Auto · One pass. Drag the zone or resize its lower-right corner.": "Vacuum · Auto · One pass. Drag the zone or resize its lower-right corner.",
   "Reload map": "Reload map",
   "Back to rooms": "Back to rooms",
   "Move zone. Use the arrow keys.": "Move zone. Use the arrow keys.",
@@ -215,7 +213,6 @@ export const en = {
   "Map loading timed out. Reload the map.": "Map loading timed out. Reload the map.",
   "A calibrated map is required. Reload the map.": "A calibrated map is required. Reload the map.",
   "Zone start unavailable: check robot readiness, map and integration action.": "Zone start unavailable: check robot readiness, map and integration action.",
-  "Add a rectangle to select the cleaning area.": "Add a rectangle to select the cleaning area.",
   "Map frozen for selection. Room settings remain unchanged.": "Map frozen for selection. Room settings remain unchanged.",
   "Sending zone start …": "Sending zone start …",
   "Zone start failed. Check the robot before retrying.": "Zone start failed. Check the robot before retrying."

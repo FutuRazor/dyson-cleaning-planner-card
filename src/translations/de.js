@@ -199,9 +199,7 @@ export const de = {
   "Zone": "Zone",
   "Zone cleaning": "Zonenreinigung",
   "Zone selection": "Zonenauswahl",
-  "Vacuum · Auto · One pass. Add a zone, then drag it or resize its lower-right corner.": "Saugen · Auto · Ein Durchgang. Zone hinzufügen, verschieben oder an der unteren rechten Ecke vergrößern.",
-  "+ Add zone": "+ Zone hinzufügen",
-  "Remove zone": "Zone entfernen",
+  "Vacuum · Auto · One pass. Drag the zone or resize its lower-right corner.": "Saugen · Auto · Ein Durchgang. Zone verschieben oder an der unteren rechten Ecke vergrößern.",
   "Reload map": "Karte neu laden",
   "Back to rooms": "Zurück zu den Räumen",
   "Move zone. Use the arrow keys.": "Zone mit den Pfeiltasten verschieben.",
@@ -215,7 +213,6 @@ export const de = {
   "Map loading timed out. Reload the map.": "Zeitüberschreitung beim Laden. Karte neu laden.",
   "A calibrated map is required. Reload the map.": "Eine kalibrierte Karte wird benötigt. Karte neu laden.",
   "Zone start unavailable: check robot readiness, map and integration action.": "Zonenstart nicht verfügbar: Startbereitschaft, Karte und Integrationsaktion prüfen.",
-  "Add a rectangle to select the cleaning area.": "Ein Rechteck hinzufügen, um den Reinigungsbereich auszuwählen.",
   "Map frozen for selection. Room settings remain unchanged.": "Kartenbild für die Auswahl fixiert. Raumeinstellungen bleiben unverändert.",
   "Sending zone start …": "Zonenstart wird gesendet …",
   "Zone start failed. Check the robot before retrying.": "Zonenstart fehlgeschlagen. Vor einem erneuten Versuch den Roboter prüfen."

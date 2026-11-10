@@ -8,7 +8,7 @@ which provides `dyson_spot_scrub.clean_zone`, the vacuum's `map_id` and
 ## Use
 
 1. Open **Zone** in the planner header. The existing room draft is kept.
-2. Wait for the calibrated camera snapshot, then press **+ Add zone**.
+2. Wait for the verified camera snapshot. A blue zone appears automatically.
 3. Drag the rectangle to move it. Drag its bottom-right handle to resize it.
    Mouse, touch and keyboard arrow controls are supported; Shift increases the
    keyboard step. One rectangle is supported in this prototype.
@@ -61,3 +61,5 @@ successful transport still requires robot telemetry to confirm the start.
 The offline preview's usual SVG map is not calibrated and cannot start a zone.
 The browser test supplies its own calibrated PNG. Real robot testing remains
 necessary; no release version is changed for this test branch.
+
+Reloading preserves the selection only when the map ID and image transform are unchanged. Camera requests remove width/height parameters and verify the original PNG fingerprint and dimensions before enabling Start.

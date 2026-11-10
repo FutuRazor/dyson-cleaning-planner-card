@@ -23,9 +23,11 @@ try {
   }),'base64');
   const hash = createHash('sha256').update(png).digest('hex');
   // The integration currently inherits HA's JPEG content type for PNG data.
-  await page.route('**/api/camera_proxy/**',route => route.fulfill({body:png,contentType:'image/jpeg'}));
+  const imageRequests=[];
+  await page.route('**/api/camera_proxy/**',route => { imageRequests.push(new URL(route.request().url())); return route.fulfill({body:png,contentType:'image/jpeg'}); });
   await page.evaluate(hash => {
     demo.hass.hassUrl = path => location.origin+path;
+    demo.hass.states[demo.camera].attributes.entity_picture='/api/camera_proxy/'+demo.camera+'?token=test&width=100&height=50';
     demo.hass.services.dyson_spot_scrub.clean_zone = {};
     Object.assign(demo.hass.states[demo.entity].attributes,{map_id:'123',ready_to_start:true});
     demo.hass.states[demo.camera].attributes.map_calibration={version:1,units:'m',map_id:'123',image_width:800,image_height:400,pixels_per_metre:80,padding:40,min_x:-1,max_y:2,image_sha256:hash};
@@ -37,7 +39,9 @@ try {
     await page.evaluate(rotation => { demo.card.config.camera_rotation=rotation; demo.card.render(); },rotation);
     await page.locator('[data-action="zones"]').click();
     const zone=page.locator('dyson-planner-zone');
-    await zone.locator('[data-do="add"]').click();
+    await zone.locator('.area').waitFor({state:'visible'});
+    assert.equal(await zone.locator('[data-do="add"]').count(),0);
+    assert.equal(await zone.locator('[data-do="remove"]').count(),0);
     assert.equal(await zone.locator('[data-do="start"]').isEnabled(),true);
     // Telemetry updates preserve both the component and the local rectangle.
     await page.evaluate(() => {
@@ -51,13 +55,17 @@ try {
     assert.notDeepEqual(await zone.evaluate(el=>el.rect),[.3,.3,.7,.7]);
     await zone.locator('.handle').focus(); await page.keyboard.press('ArrowRight');
     assert.equal(await zone.locator('[data-do="start"]').isEnabled(),true);
+    const beforeReload=await zone.evaluate(el=>[...el.rect]);
+    await zone.locator('[data-do="refresh"]').click();
+    await zone.locator('.area').waitFor({state:'visible'});
+    assert.deepEqual(await zone.evaluate(el=>el.rect),beforeReload);
     await zone.locator('[data-do="back"]').click();
     assert.deepEqual(await page.evaluate(()=>demo.card.selected),selection);
   }
   await page.setViewportSize({width:390,height:1000});
   await page.locator('[data-action="zones"]').click();
   const zone=page.locator('dyson-planner-zone');
-  await zone.locator('[data-do="add"]').click();
+  await zone.locator('.area').waitFor({state:'visible'});
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
   const client = useWebkit ? null : await page.context().newCDPSession(page);
   const touchEvent = async data => {
@@ -114,7 +122,7 @@ try {
   assert.equal(calls[0].data.entity_id,await page.evaluate(()=>demo.entity));
   // Simulate session completion, then reject a stale calibration and map switch.
   await page.evaluate(()=>{demo.card.clearPendingStart(); demo.card.update();});
-  await page.locator('[data-action="zones"]').click(); await zone.locator('[data-do="add"]').click();
+  await page.locator('[data-action="zones"]').click(); await zone.locator('.area').waitFor({state:'visible'});
   await page.evaluate(()=>{demo.hass.states[demo.entity].attributes.map_id='456'; demo.card.hass={...demo.hass};});
   assert.equal(await zone.locator('[data-do="start"]').isDisabled(),true);
   assert.equal(await zone.evaluate(el=>el.rect),null);
@@ -126,7 +134,9 @@ try {
   await zone.locator('[data-do="refresh"]').click();
   await zone.locator('.message').filter({hasText:'Image and calibration do not match'}).waitFor();
   assert.equal(await zone.locator('[data-do="start"]').isDisabled(),true);
-  assert.equal(await zone.locator('[data-do="add"]').isDisabled(),true);
+  assert.equal(await zone.evaluate(el=>el.rect),null);
+  assert.ok(imageRequests.length>0);
+  assert.ok(imageRequests.every(url=>!url.searchParams.has('width')&&!url.searchParams.has('height')&&url.searchParams.get('token')==='test'));
   assert.deepEqual(errors,[]);
   console.log('Zone browser checks passed: rotation, dragging, keyboard resize, mobile, draft, guards, action.');
 } finally { await browser.close(); await new Promise(resolve=>server.close(resolve)); }

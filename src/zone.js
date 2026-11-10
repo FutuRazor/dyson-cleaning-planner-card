@@ -18,7 +18,7 @@ class DysonPlannerZone extends HTMLElement {
       .handle{fill:var(--dp-accent);stroke:white;stroke-width:2;vector-effect:non-scaling-stroke;cursor:nwse-resize;touch-action:none}
       [tabindex]:focus{outline:none;stroke:white;stroke-width:3}.hint{fill:white;pointer-events:none;font:22px sans-serif}
       [hidden]{display:none!important}
-    </style><p class="intro"></p><div class="toolbar"><button data-do="add"></button><button data-do="remove"></button><button data-do="refresh"></button></div>
+    </style><p class="intro"></p><div class="toolbar"><button data-do="refresh"></button></div>
     <svg hidden aria-label="Zone selection"><image/><rect class="area" tabindex="0" role="button"/><rect class="handle" tabindex="0" role="button" rx="6"/><text class="hint" text-anchor="middle" dominant-baseline="central">↘</text></svg>
     <p class="message" role="status" aria-live="polite"></p><div class="actions"><button class="back" data-do="back"></button><button class="start" data-do="start"></button></div>`;
     this.svg = this.shadowRoot.querySelector('svg');
@@ -31,8 +31,6 @@ class DysonPlannerZone extends HTMLElement {
       if (!action || event.target.closest('button').disabled) return;
       if (action === 'back') this.dispatchEvent(new CustomEvent('zone-back', { bubbles: true, composed: true }));
       if (action === 'refresh') this.load();
-      if (action === 'add') { this.rect = [.3,.3,.7,.7]; this.draw(); }
-      if (action === 'remove') { this.rect = null; this.draw(); }
       if (action === 'start') this.start();
     });
     this.svg.addEventListener('pointerdown', event => this.pointerDown(event));
@@ -66,8 +64,8 @@ class DysonPlannerZone extends HTMLElement {
   }
   t(key) { return translate(this.language, key); }
   labels() {
-    this.shadowRoot.querySelector('.intro').textContent = this.t('Vacuum · Auto · One pass. Add a zone, then drag it or resize its lower-right corner.');
-    for (const [action, label] of Object.entries({add:'+ Add zone',remove:'Remove zone',refresh:'Reload map',back:'Back to rooms',start:'Start clean'})) {
+    this.shadowRoot.querySelector('.intro').textContent = this.t('Vacuum · Auto · One pass. Drag the zone or resize its lower-right corner.');
+    for (const [action, label] of Object.entries({refresh:'Reload map',back:'Back to rooms',start:'Start clean'})) {
       this.shadowRoot.querySelector(`[data-do="${action}"]`).textContent = this.t(label);
     }
     this.svg.setAttribute('aria-label', this.t('Zone selection'));
@@ -81,6 +79,7 @@ class DysonPlannerZone extends HTMLElement {
   }
   async load() {
     if (this.sending) return;
+    const previous = this.calibration && this.rect ? { calibration: this.calibration, rect: [...this.rect] } : null;
     this.controller?.abort(); this.clear(); this.attempted = true;
     const controller = new AbortController(); this.controller = controller;
     const timeout = setTimeout(() => controller.abort(), 12000);
@@ -94,6 +93,8 @@ class DysonPlannerZone extends HTMLElement {
         const picture = this.hass.states[this.camera]?.attributes?.entity_picture;
         if (typeof picture !== 'string' || !picture.startsWith('/api/camera_proxy/')) throw new Error('Camera image unavailable.');
         const url = new URL(this.hass.hassUrl ? this.hass.hassUrl(picture) : picture, location.href);
+        // Never request a resized proxy image: calibration hashes original bytes.
+        url.searchParams.delete('width'); url.searchParams.delete('height');
         url.searchParams.set('_zone', String(Date.now()));
         const response = await fetch(url, { signal: controller.signal, cache: 'no-store', credentials: 'same-origin' });
         if (!response.ok) throw new Error('Camera image unavailable.');
@@ -116,6 +117,9 @@ class DysonPlannerZone extends HTMLElement {
             if (img.naturalWidth !== c.image_width || img.naturalHeight !== c.image_height) throw new Error('Image and calibration do not match. Reload the map.');
             this.calibration = structuredClone(c); this.calibration.map_id = String(c.map_id);
             this.objectUrl = objectUrl; objectUrl = null; this.image.setAttribute('href', this.objectUrl);
+            const sameTransform = previous && ['version','map_id','units','image_width','image_height','pixels_per_metre','padding','min_x','max_y']
+              .every(key => String(previous.calibration[key]) === String(c[key]));
+            this.rect = sameTransform ? previous.rect : [.3,.3,.7,.7];
             this.note = ''; return;
           }
           await new Promise(resolve => setTimeout(resolve, 150));
@@ -159,17 +163,16 @@ class DysonPlannerZone extends HTMLElement {
       }
     }
     const ready = zoneCanStart(this.hass,this.vacuum,this.camera,c,this.trusted,this.preview);
-    for (const action of ['add','remove','refresh','back','start']) {
+    for (const action of ['refresh','back','start']) {
       const button = this.shadowRoot.querySelector(`[data-do="${action}"]`);
       const disabled = !!this.sending
         || (action === 'start' && (!ready || !this.rect || !!this.controller))
-        || (action === 'add' && (!c || !!this.rect)) || (action === 'remove' && !this.rect)
         || (action === 'refresh' && !!this.controller);
       if (button.disabled !== disabled) button.disabled = disabled;
     }
     const message = this.t(this.note || (!this.trusted ? 'Camera must belong to the selected robot.'
       : !c ? 'A calibrated map is required. Reload the map.' : !ready ? 'Zone start unavailable: check robot readiness, map and integration action.'
-      : !this.rect ? 'Add a rectangle to select the cleaning area.' : 'Map frozen for selection. Room settings remain unchanged.'));
+      : 'Map frozen for selection. Room settings remain unchanged.'));
     const notice = this.shadowRoot.querySelector('.message');
     if (notice.textContent !== message) notice.textContent = message;
   }
