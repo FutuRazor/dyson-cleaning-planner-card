@@ -98,6 +98,7 @@ try {
     let geometryMutations = 0;
     const observer = new MutationObserver(rows => { geometryMutations += rows.length; });
     observer.observe(el.svg,{attributes:true,childList:true,subtree:true,characterData:true});
+    await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
     const before = window.scrollY;
     const rect = [...el.rect];
     for (let i=0;i<5;i++) {
@@ -115,10 +116,20 @@ try {
   await page.evaluate(()=>{ demo.hass.states[demo.entity].attributes.ready_to_start=false; demo.card.hass={...demo.hass}; });
   assert.equal(await zone.locator('[data-do="start"]').isDisabled(),true);
   await page.evaluate(()=>{ demo.hass.states[demo.entity].attributes.ready_to_start=true; demo.card.hass={...demo.hass}; });
+  const originalRect=await zone.evaluate(el=>[...el.rect]);
+  const callsBefore=await page.evaluate(()=>demo.calls.length);
+  await zone.locator('[data-do="settings"]').click();
+  await zone.locator('.zone-power').fill('1');
+  await page.screenshot({path:'artifacts/zone-settings.png'});
+  assert.equal(await zone.locator('#zone-water').isDisabled(),true);
+  assert.equal(await zone.locator('#zone-mode option:disabled').count(),3);
+  await zone.locator('[data-do="close-settings"]').click();
+  assert.deepEqual(await zone.evaluate(el=>el.rect),originalRect);
+  assert.equal(await page.evaluate(()=>demo.calls.length),callsBefore);
   await zone.locator('[data-do="start"]').click();
   await page.locator('#card h2').filter({hasText:'Cleaning session'}).waitFor();
   const calls=await page.evaluate(()=>demo.calls.filter(c=>c.service==='clean_zone'));
-  assert.equal(calls.length,1); assert.equal(calls[0].data.map_id,'123'); assert.equal(calls[0].data.rectangle.length,4);
+  assert.equal(calls[0].data.cleaning_strategy,'boost'); assert.equal(calls.length,1); assert.equal(calls[0].data.map_id,'123'); assert.equal(calls[0].data.rectangle.length,4);
   assert.equal(calls[0].data.entity_id,await page.evaluate(()=>demo.entity));
   // Simulate session completion, then reject a stale calibration and map switch.
   await page.evaluate(()=>{demo.card.clearPendingStart(); demo.card.update();});

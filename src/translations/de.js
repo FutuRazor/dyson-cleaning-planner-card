@@ -1,5 +1,12 @@
 // German display text. Entity names and protocol values are never rewritten.
 export const de = {
+  "Close": "Schließen",
+  "One pass": "Ein Durchgang",
+  "Drag the zone or resize its lower-right corner.": "Zone verschieben oder an der unteren rechten Ecke vergrößern.",
+  "Settings are sent only when you start the zone clean.": "Die Einstellungen werden erst beim Start der Zonenreinigung gesendet.",
+  "Two passes are not yet available.": "Zwei Durchgänge sind noch nicht verfügbar.",
+  "Not yet available": "Noch nicht verfügbar",
+  "Other cleaning modes are not yet available.": "Weitere Reinigungsmodi sind noch nicht verfügbar.",
   "Plan a clean": "Reinigung planen",
   "Cleaning session": "Reinigung",
   "Cleaning session preview": "Reinigungsvorschau",

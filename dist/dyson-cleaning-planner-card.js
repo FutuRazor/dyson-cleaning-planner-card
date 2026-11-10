@@ -1,6 +1,13 @@
 /* Dyson Cleaning Planner Card v1.3.0 | MIT */
 // English messages are also stable translation keys. Never use translated labels in action payloads.
 const en = {
+  "Close": "Close",
+  "One pass": "One pass",
+  "Drag the zone or resize its lower-right corner.": "Drag the zone or resize its lower-right corner.",
+  "Settings are sent only when you start the zone clean.": "Settings are sent only when you start the zone clean.",
+  "Two passes are not yet available.": "Two passes are not yet available.",
+  "Not yet available": "Not yet available",
+  "Other cleaning modes are not yet available.": "Other cleaning modes are not yet available.",
   "Plan a clean": "Plan a clean",
   "Cleaning session": "Cleaning session",
   "Cleaning session preview": "Cleaning session preview",
@@ -221,6 +228,13 @@ const en = {
 
 // German display text. Entity names and protocol values are never rewritten.
 const de = {
+  "Close": "Schließen",
+  "One pass": "Ein Durchgang",
+  "Drag the zone or resize its lower-right corner.": "Zone verschieben oder an der unteren rechten Ecke vergrößern.",
+  "Settings are sent only when you start the zone clean.": "Die Einstellungen werden erst beim Start der Zonenreinigung gesendet.",
+  "Two passes are not yet available.": "Zwei Durchgänge sind noch nicht verfügbar.",
+  "Not yet available": "Noch nicht verfügbar",
+  "Other cleaning modes are not yet available.": "Weitere Reinigungsmodi sind noch nicht verfügbar.",
   "Plan a clean": "Reinigung planen",
   "Cleaning session": "Reinigung",
   "Cleaning session preview": "Reinigungsvorschau",
@@ -1001,7 +1015,7 @@ function zoneSha256(bytes) {
 // Owns the frozen image and pointer interaction. HA updates never replace its DOM.
 class DysonPlannerZone extends HTMLElement {
   constructor() {
-    super(); this.attachShadow({ mode: 'open' }); this.language = 'en';
+    super(); this.attachShadow({ mode: 'open' }); this.language = 'en'; this.strategy = 'auto';
     this.shadowRoot.innerHTML = `<style>
       :host{display:block;color:var(--primary-text-color);font:inherit}*{box-sizing:border-box}
       .intro,.toolbar,.message,.actions{margin:12px var(--dp-padding,20px)}
@@ -1014,10 +1028,28 @@ class DysonPlannerZone extends HTMLElement {
       .area{fill:color-mix(in srgb,var(--dp-accent) 22%,transparent);stroke:var(--dp-accent);stroke-width:2;vector-effect:non-scaling-stroke;cursor:move;touch-action:none}
       .handle{fill:var(--dp-accent);stroke:white;stroke-width:2;vector-effect:non-scaling-stroke;cursor:nwse-resize;touch-action:none}
       [tabindex]:focus{outline:none;stroke:white;stroke-width:3}.hint{fill:white;pointer-events:none;font:22px sans-serif}
+      dialog{color:var(--primary-text-color);background:var(--dp-modern-surface,var(--dp-bg,#202426));border:1px solid var(--dp-line);border-radius:20px;padding:20px;width:min(420px,calc(100vw - 32px));max-height:85dvh;overflow:auto;box-sizing:border-box}
+      dialog::backdrop{background:#0008}dialog header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:12px}
+      dialog h3{margin:0;font-size:18px}dialog label{display:block;margin:18px 0 8px}dialog select{width:100%;font:inherit;padding:10px;border:1px solid var(--dp-line);border-radius:12px;background:var(--dp-modern-control,var(--dp-bg));color:var(--primary-text-color)}
+      .zone-power{width:100%;accent-color:var(--dp-accent);margin:8px 0}.power-labels{display:flex;justify-content:space-between;font-size:13px;color:var(--dp-muted)}.power-labels .selected{color:var(--dp-accent);font-weight:600}
+      .unavailable{opacity:.5}.unavailable select{cursor:not-allowed}.settings-note{font-size:12px;color:var(--dp-muted);margin:8px 0}.repetitions{display:flex;gap:6px}.repetitions button{flex:1}.repetitions .selected{background:var(--dp-accent);color:white}
       [hidden]{display:none!important}
-    </style><p class="intro"></p><div class="toolbar"><button data-do="refresh"></button></div>
+    </style><p class="intro"></p><div class="toolbar"><button data-do="refresh"></button><button data-do="settings"></button></div>
     <svg hidden aria-label="Zone selection"><image/><rect class="area" tabindex="0" role="button"/><rect class="handle" tabindex="0" role="button" rx="6"/><text class="hint" text-anchor="middle" dominant-baseline="central">↘</text></svg>
-    <p class="message" role="status" aria-live="polite"></p><div class="actions"><button class="back" data-do="back"></button><button class="start" data-do="start"></button></div>`;
+    <p class="message" role="status" aria-live="polite"></p><div class="actions"><button class="back" data-do="back"></button><button class="start" data-do="start"></button></div>
+    <dialog aria-labelledby="zone-settings-title"><header><h3 id="zone-settings-title" data-i18n="Settings"></h3><button data-do="close-settings" aria-label="Close">×</button></header>
+      <label for="zone-mode" data-i18n="Cleaning mode"></label><select id="zone-mode"><option data-i18n="Vacuum"></option><option disabled data-i18n="Vacuum and Mop"></option><option disabled data-i18n="Mop"></option><option disabled data-i18n="Vacuum then Mop"></option></select>
+      <p class="settings-note" data-i18n="Other cleaning modes are not yet available."></p>
+      <label for="zone-power" data-i18n="Vacuum Power"></label><input id="zone-power" class="zone-power" type="range" min="0" max="3" step="1" value="0" list="zone-power-ticks"><datalist id="zone-power-ticks"><option value="0"></option><option value="1"></option><option value="2"></option><option value="3"></option></datalist>
+      <div class="power-labels">${['Auto','Boost','Quiet','Quick'].map(name=>`<span data-i18n="${name}"></span>`).join('')}</div>
+      <div class="unavailable"><label for="zone-water" data-i18n="Water level"></label><select id="zone-water" disabled><option data-i18n="Not yet available"></option></select></div>
+      <label data-i18n="Clean repetitions"></label><div class="repetitions"><button type="button" class="selected" disabled>1×</button><button type="button" disabled>2×</button></div><p class="settings-note" data-i18n="Two passes are not yet available."></p>
+      <p class="settings-note" data-i18n="Settings are sent only when you start the zone clean."></p>
+    </dialog>`;
+    this.dialog = this.shadowRoot.querySelector('dialog');
+    this.shadowRoot.querySelector('.zone-power').addEventListener('input', event => {
+      this.strategy = ['auto','boost','quiet','quick'][Number(event.target.value)]; this.labels();
+    });
     this.svg = this.shadowRoot.querySelector('svg');
     this.image = this.shadowRoot.querySelector('image');
     this.area = this.shadowRoot.querySelector('.area');
@@ -1028,6 +1060,8 @@ class DysonPlannerZone extends HTMLElement {
       if (!action || event.target.closest('button').disabled) return;
       if (action === 'back') this.dispatchEvent(new CustomEvent('zone-back', { bubbles: true, composed: true }));
       if (action === 'refresh') this.load();
+      if (action === 'settings') this.dialog.showModal();
+      if (action === 'close-settings') this.dialog.close();
       if (action === 'start') this.start();
     });
     this.svg.addEventListener('pointerdown', event => this.pointerDown(event));
@@ -1061,8 +1095,11 @@ class DysonPlannerZone extends HTMLElement {
   }
   t(key) { return translate(this.language, key); }
   labels() {
-    this.shadowRoot.querySelector('.intro').textContent = this.t('Vacuum · Auto · One pass. Drag the zone or resize its lower-right corner.');
-    for (const [action, label] of Object.entries({refresh:'Reload map',back:'Back to rooms',start:'Start clean'})) {
+    this.shadowRoot.querySelector('.intro').textContent = `${this.t('Vacuum')} · ${this.t(this.strategy[0].toUpperCase()+this.strategy.slice(1))} · ${this.t('One pass')}. ${this.t('Drag the zone or resize its lower-right corner.')}`;
+    for (const el of this.shadowRoot.querySelectorAll('[data-i18n]')) el.textContent = this.t(el.dataset.i18n);
+    this.shadowRoot.querySelector('[data-do="close-settings"]').setAttribute('aria-label',this.t('Close'));
+    [...this.shadowRoot.querySelectorAll('.power-labels span')].forEach((el,i)=>el.classList.toggle('selected',i===['auto','boost','quiet','quick'].indexOf(this.strategy)));
+    for (const [action, label] of Object.entries({settings:'Settings',refresh:'Reload map',back:'Back to rooms',start:'Start clean'})) {
       this.shadowRoot.querySelector(`[data-do="${action}"]`).textContent = this.t(label);
     }
     this.svg.setAttribute('aria-label', this.t('Zone selection'));
@@ -1160,7 +1197,7 @@ class DysonPlannerZone extends HTMLElement {
       }
     }
     const ready = zoneCanStart(this.hass,this.vacuum,this.camera,c,this.trusted,this.preview);
-    for (const action of ['refresh','back','start']) {
+    for (const action of ['settings','refresh','back','start']) {
       const button = this.shadowRoot.querySelector(`[data-do="${action}"]`);
       const disabled = !!this.sending
         || (action === 'start' && (!ready || !this.rect || !!this.controller))
@@ -1196,7 +1233,7 @@ class DysonPlannerZone extends HTMLElement {
   }
   async start() {
     if (this.sending || !this.rect || !zoneCanStart(this.hass,this.vacuum,this.camera,this.calibration,this.trusted,this.preview)) return;
-    const data = { entity_id:this.vacuum,map_id:this.calibration.map_id,rectangle:zoneRobotRectangle(this.rect,this.calibration,this.rotation) };
+    const data = { entity_id:this.vacuum,map_id:this.calibration.map_id,rectangle:zoneRobotRectangle(this.rect,this.calibration,this.rotation),cleaning_strategy:this.strategy };
     this.sending = true; this.note = 'Sending zone start …'; this.draw();
     try {
       await this.hass.callService('dyson_spot_scrub','clean_zone',data);

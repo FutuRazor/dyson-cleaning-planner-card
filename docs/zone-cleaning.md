@@ -63,3 +63,5 @@ The browser test supplies its own calibrated PNG. Real robot testing remains
 necessary; no release version is changed for this test branch.
 
 Reloading preserves the selection only when the map ID and image transform are unchanged. Camera requests remove width/height parameters and verify the original PNG fingerprint and dimensions before enabling Start.
+
+Open Settings to choose Auto, Boost, Quiet or Quick vacuum power. Settings stay local until Start clean. Other cleaning modes, water level and two-pass cleaning remain disabled pending protocol captures. Update the integration test branch before using power selection.

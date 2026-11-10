@@ -1,5 +1,12 @@
 // English messages are also stable translation keys. Never use translated labels in action payloads.
 export const en = {
+  "Close": "Close",
+  "One pass": "One pass",
+  "Drag the zone or resize its lower-right corner.": "Drag the zone or resize its lower-right corner.",
+  "Settings are sent only when you start the zone clean.": "Settings are sent only when you start the zone clean.",
+  "Two passes are not yet available.": "Two passes are not yet available.",
+  "Not yet available": "Not yet available",
+  "Other cleaning modes are not yet available.": "Other cleaning modes are not yet available.",
   "Plan a clean": "Plan a clean",
   "Cleaning session": "Cleaning session",
   "Cleaning session preview": "Cleaning session preview",
