@@ -14,6 +14,13 @@ try {
   const errors = []; page.on('pageerror',e => errors.push(e.message));
   await page.goto(`http://127.0.0.1:${server.address().port}/`);
   await page.locator('#card .room').first().waitFor();
+  const headerLayout=await page.locator('#card').evaluate(card=>{
+    const root=card.shadowRoot,info=root.querySelector('[data-action="consumables"]').getBoundingClientRect(),zone=root.querySelector('[data-action="zones"]').getBoundingClientRect();
+    return {infoY:info.bottom,zoneY:zone.top,infoX:info.right,zoneX:zone.right};
+  });
+  assert.ok(headerLayout.zoneY>=headerLayout.infoY);
+  assert.ok(Math.abs(headerLayout.infoX-headerLayout.zoneX)<1);
+
   const png = Buffer.from(await page.evaluate(() => {
     const canvas = document.createElement('canvas'); canvas.width=800; canvas.height=400;
     const ctx=canvas.getContext('2d'); ctx.fillStyle='#20252b'; ctx.fillRect(0,0,800,400);
@@ -94,6 +101,8 @@ try {
   // updates must neither rewrite the SVG nor bring it back into view on Safari.
   await zone.locator('.handle').focus();
   await zone.locator('[data-do="start"]').scrollIntoViewIfNeeded();
+  // Let the browser finish scrollIntoView and touch momentum before measuring telemetry.
+  await page.waitForTimeout(400);
   const scrollCheck = await zone.evaluate(async el => {
     let geometryMutations = 0;
     const observer = new MutationObserver(rows => { geometryMutations += rows.length; });
@@ -120,6 +129,15 @@ try {
   const callsBefore=await page.evaluate(()=>demo.calls.length);
   await zone.locator('[data-do="settings"]').click();
   await zone.locator('.zone-power').fill('1');
+  const overlayBounds=await zone.evaluate(el=>{
+    const card=el.getRootNode().querySelector('ha-card').getBoundingClientRect();
+    const overlay=el.dialog.getBoundingClientRect();
+    return {cardTop:card.top,overlayTop:overlay.top,cardLeft:card.left,overlayLeft:overlay.left,cardWidth:card.width,overlayWidth:overlay.width};
+  });
+  assert.ok(Math.abs(overlayBounds.cardTop-overlayBounds.overlayTop)<2);
+  assert.ok(Math.abs(overlayBounds.cardLeft-overlayBounds.overlayLeft)<2);
+  assert.ok(Math.abs(overlayBounds.cardWidth-overlayBounds.overlayWidth)<3);
+  await page.evaluate(()=>window.scrollTo(0,0));
   await page.screenshot({path:'artifacts/zone-settings.png'});
   assert.equal(await zone.locator('#zone-water').isDisabled(),true);
   assert.equal(await zone.locator('#zone-mode option:disabled').count(),3);

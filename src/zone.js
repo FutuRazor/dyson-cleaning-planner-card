@@ -17,25 +17,59 @@ class DysonPlannerZone extends HTMLElement {
       .area{fill:color-mix(in srgb,var(--dp-accent) 22%,transparent);stroke:var(--dp-accent);stroke-width:2;vector-effect:non-scaling-stroke;cursor:move;touch-action:none}
       .handle{fill:var(--dp-accent);stroke:white;stroke-width:2;vector-effect:non-scaling-stroke;cursor:nwse-resize;touch-action:none}
       [tabindex]:focus{outline:none;stroke:white;stroke-width:3}.hint{fill:white;pointer-events:none;font:22px sans-serif}
-      dialog{color:var(--primary-text-color);background:var(--dp-modern-surface,var(--dp-bg,#202426));border:1px solid var(--dp-line);border-radius:20px;padding:20px;width:min(420px,calc(100vw - 32px));max-height:85dvh;overflow:auto;box-sizing:border-box}
-      dialog::backdrop{background:#0008}dialog header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:12px}
-      dialog h3{margin:0;font-size:18px}dialog label{display:block;margin:18px 0 8px}dialog select{width:100%;font:inherit;padding:10px;border:1px solid var(--dp-line);border-radius:12px;background:var(--dp-modern-control,var(--dp-bg));color:var(--primary-text-color)}
-      .zone-power{width:100%;accent-color:var(--dp-accent);margin:8px 0}.power-labels{display:flex;justify-content:space-between;font-size:13px;color:var(--dp-muted)}.power-labels .selected{color:var(--dp-accent);font-weight:600}
-      .unavailable{opacity:.5}.unavailable select{cursor:not-allowed}.settings-note{font-size:12px;color:var(--dp-muted);margin:8px 0}.repetitions{display:flex;gap:6px}.repetitions button{flex:1}.repetitions .selected{background:var(--dp-accent);color:white}
+      .settings-overlay{position:absolute;inset:0;z-index:5;background:#0005;padding:12px;display:flex;align-items:flex-start}
+      .settings-panel{width:100%;max-height:min(100%,75vh);overflow-y:auto;overscroll-behavior:contain;background:var(--dp-bg);border:1px solid var(--dp-line);border-radius:14px;padding:18px;box-shadow:0 8px 30px #0003}
+      .settings-panel header{display:flex;align-items:stretch;gap:8px;margin-bottom:20px}.settings-panel h3{flex:1;margin:0;align-self:center;font-size:16px;font-weight:500}
+      .settings-panel [data-do=close-settings]{display:flex;align-items:center;justify-content:center;flex:0 0 42px;min-width:42px;padding:8px;min-height:42px;border-radius:9px;background:var(--dp-bg)}ha-icon{width:24px;height:24px}
+      .settings-fields{padding:10px 14px;border:1px solid var(--dp-line);border-radius:14px;background:var(--dp-modern-surface,var(--dp-bg))}
+      .settings-panel label{display:block;font-size:13px;color:var(--primary-text-color);margin:12px 0 4px}.settings-panel label:first-child{margin-top:0}
+      .settings-panel select{width:100%;font:inherit;font-size:14px;min-height:34px;padding:6px 10px;border:1px solid var(--dp-modern-control-border,var(--dp-line));border-radius:9px;background:var(--dp-modern-control,var(--dp-bg));color:var(--dp-accent)}
+      .unavailable{opacity:.5}.settings-note{font-size:12px;color:var(--dp-muted);margin:6px 0 10px}
+      .segments{background:var(--dp-modern-control,var(--dp-bg));border-color:var(--dp-modern-control-border,var(--dp-line))}
+      .actions{margin:14px var(--dp-padding,20px) 0;padding:12px 0 14px;border-top:1px solid var(--dp-line);gap:10px;flex-wrap:nowrap}
+      .actions button{flex:1;min-width:0;min-height:38px;padding:6px 12px;border-radius:13px;font-size:13px}.back{background:var(--dp-modern-surface,var(--dp-bg))}
+.stepped-slider{position:relative;height:24px}
+.slider-ticks{position:absolute;inset:0 10px;pointer-events:none;color:var(--dp-muted)}
+.slider-ticks::before{content:"";position:absolute;left:0;right:0;top:10.5px;height:3px;border-radius:2px;background:currentColor;opacity:.65}
+.slider-tick{position:absolute;left:calc(var(--stop)*100%);top:12px;transform:translate(-50%,-50%);width:10px;height:10px;border-radius:50%;background:currentColor}
+.stepped-slider input[type=range]{position:relative;z-index:1;display:block;appearance:none;-webkit-appearance:none;width:100%;height:24px;margin:0;padding:0;border:0;background:transparent;cursor:pointer}
+.stepped-slider input::-webkit-slider-runnable-track{height:3px;background:transparent;border:0}
+.stepped-slider input::-moz-range-track{height:3px;background:transparent;border:0}
+.stepped-slider input::-moz-range-progress{background:transparent}
+.stepped-slider input::-webkit-slider-thumb{-webkit-appearance:none;box-sizing:border-box;width:20px;height:20px;margin-top:-8.5px;border:3px solid #f4fbfd;border-radius:50%;background:var(--dp-accent);box-shadow:0 1px 3px #0003}
+.stepped-slider input::-moz-range-thumb{box-sizing:border-box;width:20px;height:20px;border:3px solid #f4fbfd;border-radius:50%;background:var(--dp-accent);box-shadow:0 1px 3px #0003}
+.stepped-slider.disabled{opacity:.45}
+.stepped-slider input:disabled{cursor:default}
+.slider-options{position:relative;min-height:28px;margin:0 10px}.slider-options button{position:absolute;left:calc(var(--stop)*100%);transform:translateX(-50%);width:30%}.slider-options button:first-child{left:-10px;transform:none;text-align:left;padding-left:0}.slider-options button:last-child{left:calc(100% + 10px);transform:translateX(-100%);text-align:right;padding-right:0}
+.slider-options button{border:0;background:transparent;padding:2px 2px;min-height:28px;font-size:12px;color:var(--dp-muted);overflow-wrap:anywhere}
+.slider-options button[aria-pressed=true]{color:var(--dp-accent);font-weight:650}
+.segments{display:flex;gap:3px;padding:3px;border:1px solid var(--dp-line);border-radius:12px}
+.segments button{flex:1;min-width:0;min-height:32px;border:0;background:transparent;padding:3px 8px;position:relative}
+.segments button::after{content:"";position:absolute;inset:-6px 0}
+.segments button[aria-pressed=true]{background:var(--dp-accent);color:var(--text-primary-color,#fff)}
       [hidden]{display:none!important}
     </style><p class="intro"></p><div class="toolbar"><button data-do="refresh"></button><button data-do="settings"></button></div>
     <svg hidden aria-label="Zone selection"><image/><rect class="area" tabindex="0" role="button"/><rect class="handle" tabindex="0" role="button" rx="6"/><text class="hint" text-anchor="middle" dominant-baseline="central">↘</text></svg>
     <p class="message" role="status" aria-live="polite"></p><div class="actions"><button class="back" data-do="back"></button><button class="start" data-do="start"></button></div>
-    <dialog aria-labelledby="zone-settings-title"><header><h3 id="zone-settings-title" data-i18n="Settings"></h3><button data-do="close-settings" aria-label="Close">×</button></header>
+    <div class="settings-overlay" hidden><section class="settings-panel" role="dialog" aria-modal="true" aria-labelledby="zone-settings-title"><header><h3 id="zone-settings-title" data-i18n="Settings"></h3><button data-do="close-settings" aria-label="Close"><ha-icon icon="mdi:close" aria-hidden="true"></ha-icon></button></header><div class="settings-fields">
       <label for="zone-mode" data-i18n="Cleaning mode"></label><select id="zone-mode"><option data-i18n="Vacuum"></option><option disabled data-i18n="Vacuum and Mop"></option><option disabled data-i18n="Mop"></option><option disabled data-i18n="Vacuum then Mop"></option></select>
       <p class="settings-note" data-i18n="Other cleaning modes are not yet available."></p>
-      <label for="zone-power" data-i18n="Vacuum Power"></label><input id="zone-power" class="zone-power" type="range" min="0" max="3" step="1" value="0" list="zone-power-ticks"><datalist id="zone-power-ticks"><option value="0"></option><option value="1"></option><option value="2"></option><option value="3"></option></datalist>
-      <div class="power-labels">${['Auto','Boost','Quiet','Quick'].map(name=>`<span data-i18n="${name}"></span>`).join('')}</div>
+      <label for="zone-power" data-i18n="Vacuum Power"></label><div class="stepped-slider"><div class="slider-ticks" aria-hidden="true">${[0,1,2,3].map(i=>`<span class="slider-tick" style="--stop:${i/3}"></span>`).join('')}</div><input id="zone-power" class="zone-power" type="range" min="0" max="3" step="1" value="0"></div>
+      <div class="slider-options">${['Auto','Boost','Quiet','Quick'].map((name,i)=>`<button type="button" data-power="${i}" style="--stop:${i/3}" data-i18n="${name}"></button>`).join('')}</div>
       <div class="unavailable"><label for="zone-water" data-i18n="Water level"></label><select id="zone-water" disabled><option data-i18n="Not yet available"></option></select></div>
-      <label data-i18n="Clean repetitions"></label><div class="repetitions"><button type="button" class="selected" disabled>1×</button><button type="button" disabled>2×</button></div><p class="settings-note" data-i18n="Two passes are not yet available."></p>
+      <label data-i18n="Clean repetitions"></label><div class="segments"><button type="button" aria-pressed="true" disabled>1×</button><button type="button" disabled>2×</button></div><p class="settings-note" data-i18n="Two passes are not yet available."></p>
       <p class="settings-note" data-i18n="Settings are sent only when you start the zone clean."></p>
-    </dialog>`;
-    this.dialog = this.shadowRoot.querySelector('dialog');
+    </div></section></div>`;
+    this.dialog = this.shadowRoot.querySelector('.settings-overlay');
+    this.dialog.addEventListener('keydown', event => {
+      if (event.key === 'Escape') { event.preventDefault(); this.closeSettings(); }
+      if (event.key === 'Tab') {
+        const items=[...this.dialog.querySelectorAll('button:not(:disabled),select:not(:disabled),input:not(:disabled)')];
+        const first=items[0],last=items.at(-1),active=this.shadowRoot.activeElement;
+        if (event.shiftKey && active===first) { event.preventDefault(); last.focus({preventScroll:true}); }
+        else if (!event.shiftKey && active===last) { event.preventDefault(); first.focus({preventScroll:true}); }
+      }
+    });
     this.shadowRoot.querySelector('.zone-power').addEventListener('input', event => {
       this.strategy = ['auto','boost','quiet','quick'][Number(event.target.value)]; this.labels();
     });
@@ -45,12 +79,14 @@ class DysonPlannerZone extends HTMLElement {
     this.handle = this.shadowRoot.querySelector('.handle');
     this.hint = this.shadowRoot.querySelector('.hint');
     this.shadowRoot.addEventListener('click', event => {
+      const power = event.target.closest('[data-power]');
+      if (power && !this.sending) { this.shadowRoot.querySelector('.zone-power').value=power.dataset.power; this.strategy=['auto','boost','quiet','quick'][Number(power.dataset.power)]; this.labels(); return; }
       const action = event.target.closest('button')?.dataset.do;
       if (!action || event.target.closest('button').disabled) return;
       if (action === 'back') this.dispatchEvent(new CustomEvent('zone-back', { bubbles: true, composed: true }));
       if (action === 'refresh') this.load();
-      if (action === 'settings') this.dialog.showModal();
-      if (action === 'close-settings') this.dialog.close();
+      if (action === 'settings') { this.dialog.hidden=false; this.shadowRoot.querySelector('[data-do="close-settings"]').focus({preventScroll:true}); }
+      if (action === 'close-settings') this.closeSettings();
       if (action === 'start') this.start();
     });
     this.svg.addEventListener('pointerdown', event => this.pointerDown(event));
@@ -63,6 +99,10 @@ class DysonPlannerZone extends HTMLElement {
       this.adjust(this.rect, event.key === 'ArrowLeft' ? -step : event.key === 'ArrowRight' ? step : 0,
         event.key === 'ArrowUp' ? -step : event.key === 'ArrowDown' ? step : 0, event.target === this.handle);
     });
+  }
+  closeSettings() {
+    this.dialog.hidden=true;
+    this.shadowRoot.querySelector('[data-do="settings"]').focus({preventScroll:true});
   }
   connectedCallback() { this.observer = new ResizeObserver(() => this.draw()); this.observer.observe(this); }
   disconnectedCallback() {
@@ -87,7 +127,8 @@ class DysonPlannerZone extends HTMLElement {
     this.shadowRoot.querySelector('.intro').textContent = `${this.t('Vacuum')} · ${this.t(this.strategy[0].toUpperCase()+this.strategy.slice(1))} · ${this.t('One pass')}. ${this.t('Drag the zone or resize its lower-right corner.')}`;
     for (const el of this.shadowRoot.querySelectorAll('[data-i18n]')) el.textContent = this.t(el.dataset.i18n);
     this.shadowRoot.querySelector('[data-do="close-settings"]').setAttribute('aria-label',this.t('Close'));
-    [...this.shadowRoot.querySelectorAll('.power-labels span')].forEach((el,i)=>el.classList.toggle('selected',i===['auto','boost','quiet','quick'].indexOf(this.strategy)));
+    [...this.shadowRoot.querySelectorAll('[data-power]')].forEach((el,i)=>el.setAttribute('aria-pressed',String(i===['auto','boost','quiet','quick'].indexOf(this.strategy))));
+    this.shadowRoot.querySelector('.zone-power').setAttribute('aria-valuetext',this.t(this.strategy[0].toUpperCase()+this.strategy.slice(1)));
     for (const [action, label] of Object.entries({settings:'Settings',refresh:'Reload map',back:'Back to rooms',start:'Start clean'})) {
       this.shadowRoot.querySelector(`[data-do="${action}"]`).textContent = this.t(label);
     }
