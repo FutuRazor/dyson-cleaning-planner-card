@@ -1,10 +1,10 @@
 import { translate } from './localize.js';
-import { validZoneCalibration, zoneRobotRectangle, zoneCanStart, zoneSha256 } from './zone-core.js';
+import { validZoneCalibration, zoneRobotRectangle, zoneCanStart, zoneSha256, zoneSettingsPayload } from './zone-core.js';
 
 // Owns the frozen image and pointer interaction. HA updates never replace its DOM.
 class DysonPlannerZone extends HTMLElement {
   constructor() {
-    super(); this.attachShadow({ mode: 'open' }); this.language = 'en'; this.strategy = 'auto';
+    super(); this.attachShadow({ mode: 'open' }); this.language = 'en'; this.strategy = 'auto'; this.mode = 'vacuum'; this.water = 'low'; this.passes = 1;
     this.shadowRoot.innerHTML = `<style>
       :host{display:block;color:var(--primary-text-color);font:inherit}*{box-sizing:border-box}
       .intro,.toolbar,.message,.actions{margin:12px var(--dp-padding,20px)}
@@ -53,12 +53,14 @@ class DysonPlannerZone extends HTMLElement {
     <svg hidden aria-label="Zone selection"><image/><rect class="area" tabindex="0" role="button"/><rect class="handle" tabindex="0" role="button" rx="6"/><text class="hint" text-anchor="middle" dominant-baseline="central">↘</text></svg>
     <p class="message" role="status" aria-live="polite"></p><div class="actions"><div class="secondary-actions"><button class="reload" data-do="refresh"><ha-icon icon="mdi:reload" aria-hidden="true"></ha-icon></button><button class="zone-settings-open" data-do="settings" aria-haspopup="dialog"><span class="zone-mode-label"></span><ha-icon icon="mdi:cog" aria-hidden="true"></ha-icon></button></div><button class="start" data-do="start"></button></div>
     <div class="settings-overlay" hidden><section class="settings-panel" role="dialog" aria-modal="true" aria-labelledby="zone-settings-title"><header><h3 id="zone-settings-title" data-i18n="Settings"></h3><button data-do="close-settings" aria-label="Close"><ha-icon icon="mdi:close" aria-hidden="true"></ha-icon></button></header><div class="settings-fields">
-      <label for="zone-mode" data-i18n="Cleaning mode"></label><select id="zone-mode"><option data-i18n="Vacuum"></option><option disabled data-i18n="Vacuum and Mop"></option><option disabled data-i18n="Mop"></option><option disabled data-i18n="Vacuum then Mop"></option></select>
-      <p class="settings-note" data-i18n="Other cleaning modes are not yet available."></p>
+      <label for="zone-mode" data-i18n="Cleaning mode"></label><select id="zone-mode"><option value="vacuum" data-i18n="Vacuum"></option><option value="vacuumAndMop" data-i18n="Vacuum and Mop"></option><option value="mop" data-i18n="Mop"></option><option value="vacuumThenMop" data-i18n="Vacuum then Mop"></option></select>
+      <div class="power-setting">
       <label for="zone-power" data-i18n="Vacuum Power"></label><div class="stepped-slider"><div class="slider-ticks" aria-hidden="true">${[0,1,2,3].map(i=>`<span class="slider-tick" style="--stop:${i/3}"></span>`).join('')}</div><input id="zone-power" class="zone-power" type="range" min="0" max="3" step="1" value="0"></div>
       <div class="slider-options">${['Auto','Boost','Quiet','Quick'].map((name,i)=>`<button type="button" data-power="${i}" style="--stop:${i/3}" data-i18n="${name}"></button>`).join('')}</div>
-      <div class="unavailable"><label for="zone-water" data-i18n="Water level"></label><select id="zone-water" disabled><option data-i18n="Not yet available"></option></select></div>
-      <label data-i18n="Clean repetitions"></label><div class="segments"><button type="button" aria-pressed="true" disabled>1×</button><button type="button" disabled>2×</button></div><p class="settings-note" data-i18n="Two passes are not yet available."></p>
+      </div><div class="water-setting"><label for="zone-water" data-i18n="Water level"></label>
+      <div class="stepped-slider"><div class="slider-ticks" aria-hidden="true">${[0,1,2,3].map(i=>`<span class="slider-tick" style="--stop:${i/3}"></span>`).join('')}</div><input id="zone-water" type="range" min="0" max="3" step="1" value="1"></div>
+      <div class="slider-options">${['Very Low','Low','Medium','High'].map((name,i)=>`<button type="button" data-water="${i}" style="--stop:${i/3}" data-i18n="${name}"></button>`).join('')}</div></div>
+      <label data-i18n="Clean repetitions"></label><div class="segments"><button type="button" data-passes="1" aria-pressed="true">1×</button><button type="button" data-passes="2" aria-pressed="false">2×</button></div><p class="settings-note experimental-passes" hidden data-i18n="Two passes in this mode are experimental."></p>
       <p class="settings-note" data-i18n="Settings are sent only when you start the zone clean."></p>
     </div></section></div>`;
     this.dialog = this.shadowRoot.querySelector('.settings-overlay');
@@ -72,7 +74,16 @@ class DysonPlannerZone extends HTMLElement {
       }
     });
     this.shadowRoot.querySelector('.zone-power').addEventListener('input', event => {
+      if (this.sending) return;
       this.strategy = ['auto','boost','quiet','quick'][Number(event.target.value)]; this.labels();
+    });
+    this.shadowRoot.querySelector('#zone-mode').addEventListener('change', event => {
+      if (this.sending) return;
+      this.mode=event.target.value; event.target.blur(); this.labels();
+    });
+    this.shadowRoot.querySelector('#zone-water').addEventListener('input', event => {
+      if (this.sending) return;
+      this.water=['veryLow','low','medium','high'][Number(event.target.value)]; this.labels();
     });
     this.svg = this.shadowRoot.querySelector('svg');
     this.image = this.shadowRoot.querySelector('image');
@@ -82,6 +93,9 @@ class DysonPlannerZone extends HTMLElement {
     this.shadowRoot.addEventListener('click', event => {
       const power = event.target.closest('[data-power]');
       if (power && !this.sending) { this.shadowRoot.querySelector('.zone-power').value=power.dataset.power; this.strategy=['auto','boost','quiet','quick'][Number(power.dataset.power)]; this.labels(); return; }
+      const water=event.target.closest('[data-water]'), passes=event.target.closest('[data-passes]');
+      if (water && !this.sending) { this.water=['veryLow','low','medium','high'][Number(water.dataset.water)]; this.labels(); return; }
+      if (passes && !this.sending) { this.passes=Number(passes.dataset.passes); this.labels(); return; }
       const action = event.target.closest('button')?.dataset.do;
       if (!action || event.target.closest('button').disabled) return;
       if (action === 'refresh') this.load();
@@ -101,7 +115,7 @@ class DysonPlannerZone extends HTMLElement {
     });
   }
   snapshot() {
-    return { strategy:this.strategy, calibration:this.calibration, rect:this.rect ? [...this.rect] : null,
+    return { strategy:this.strategy, mode:this.mode, water:this.water, passes:this.passes, calibration:this.calibration, rect:this.rect ? [...this.rect] : null,
       vacuum:this.vacuum, camera:this.camera, rotation:this.rotation };
   }
   closeSettings() {
@@ -123,6 +137,7 @@ class DysonPlannerZone extends HTMLElement {
       const saved=options.draft;
       this.restoreDraft=saved?.vacuum===this.vacuum && saved?.camera===this.camera && saved?.rotation===this.rotation ? saved : null;
       this.strategy=this.restoreDraft?.strategy || 'auto';
+      this.mode=this.restoreDraft?.mode || 'vacuum'; this.water=this.restoreDraft?.water || 'low'; this.passes=this.restoreDraft?.passes || 1;
       this.shadowRoot.querySelector('.zone-power').value=['auto','boost','quiet','quick'].indexOf(this.strategy);
       this._labelsLanguage=null;
     }
@@ -140,16 +155,26 @@ class DysonPlannerZone extends HTMLElement {
     this.shadowRoot.querySelector('[data-do="close-settings"]').setAttribute('aria-label',this.t('Close'));
     [...this.shadowRoot.querySelectorAll('[data-power]')].forEach((el,i)=>el.setAttribute('aria-pressed',String(i===['auto','boost','quiet','quick'].indexOf(this.strategy))));
     this.shadowRoot.querySelector('.zone-power').setAttribute('aria-valuetext',this.t(this.strategy[0].toUpperCase()+this.strategy.slice(1)));
+    this.shadowRoot.querySelector('#zone-mode').value=this.mode;
+    this.shadowRoot.querySelector('.power-setting').hidden=this.mode==='mop';
+    this.shadowRoot.querySelector('.water-setting').hidden=this.mode==='vacuum';
+    this.shadowRoot.querySelector('.zone-power').value=['auto','boost','quiet','quick'].indexOf(this.strategy);
+    const waterIndex=['veryLow','low','medium','high'].indexOf(this.water);
+    this.shadowRoot.querySelector('#zone-water').value=waterIndex;
+    this.shadowRoot.querySelector('#zone-water').setAttribute('aria-valuetext',this.t(['Very Low','Low','Medium','High'][waterIndex]));
+    [...this.shadowRoot.querySelectorAll('[data-water]')].forEach((el,i)=>el.setAttribute('aria-pressed',String(i===waterIndex)));
+    [...this.shadowRoot.querySelectorAll('[data-passes]')].forEach(el=>el.setAttribute('aria-pressed',String(Number(el.dataset.passes)===this.passes)));
+    this.shadowRoot.querySelector('.experimental-passes').hidden=!(this.passes===2 && ['vacuum','vacuumThenMop'].includes(this.mode));
     for (const [action, label] of Object.entries({start:'Start clean'})) {
       this.shadowRoot.querySelector(`[data-do="${action}"]`).textContent = this.t(label);
     }
     this.shadowRoot.querySelector('[data-do="refresh"]').setAttribute('aria-label',this.t('Reload map'));
     this.shadowRoot.querySelector('[data-do="refresh"]').title=this.t('Reload map');
-    // Vacuum is the only verified zone mode; update this label when more modes are supported.
-    this.shadowRoot.querySelector('.zone-mode-label').textContent=this.t('Vacuum');
+    const modeLabel=this.t({vacuum:'Vacuum',vacuumAndMop:'Vacuum and Mop',mop:'Mop',vacuumThenMop:'Vacuum then Mop'}[this.mode]);
+    this.shadowRoot.querySelector('.zone-mode-label').textContent=modeLabel;
     const settingsButton=this.shadowRoot.querySelector('[data-do="settings"]');
-    settingsButton.setAttribute('aria-label',`${this.t('Vacuum')} – ${this.t('Settings')}`);
-    settingsButton.title=`${this.t('Vacuum')} – ${this.t('Settings')}`;
+    settingsButton.setAttribute('aria-label',`${modeLabel} – ${this.t('Settings')}`);
+    settingsButton.title=`${modeLabel} – ${this.t('Settings')}`;
     this.svg.setAttribute('aria-label', this.t('Zone selection'));
     this.area.setAttribute('aria-label', this.t('Move zone. Use the arrow keys.'));
     this.handle.setAttribute('aria-label', this.t('Resize zone. Use the arrow keys.'));
@@ -289,7 +314,7 @@ class DysonPlannerZone extends HTMLElement {
   }
   async start() {
     if (this.sending || !this.rect || !zoneCanStart(this.hass,this.vacuum,this.camera,this.calibration,this.trusted,this.preview)) return;
-    const data = { entity_id:this.vacuum,map_id:this.calibration.map_id,rectangle:zoneRobotRectangle(this.rect,this.calibration,this.rotation),cleaning_strategy:this.strategy };
+    const data = { entity_id:this.vacuum,map_id:this.calibration.map_id,rectangle:zoneRobotRectangle(this.rect,this.calibration,this.rotation),...zoneSettingsPayload(this.mode,this.strategy,this.water,this.passes) };
     this.sending = true; this.note = 'Sending zone start …'; this.draw();
     try {
       await this.hass.callService('dyson_spot_scrub','clean_zone',data);

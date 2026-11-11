@@ -158,8 +158,17 @@ try {
   assert.ok(Math.abs(overlayBounds.cardWidth-overlayBounds.overlayWidth)<3);
   await page.evaluate(()=>window.scrollTo(0,0));
   await page.screenshot({path:'artifacts/zone-settings.png'});
-  assert.equal(await zone.locator('#zone-water').isDisabled(),true);
-  assert.equal(await zone.locator('#zone-mode option:disabled').count(),3);
+  assert.equal(await zone.locator('#zone-water').isVisible(),false);
+  assert.equal(await zone.locator('#zone-mode option:disabled').count(),0);
+  await zone.locator('#zone-mode').selectOption('mop');
+  assert.equal(await zone.locator('.zone-power').isVisible(),false);
+  assert.equal(await zone.locator('#zone-water').isVisible(),true);
+  await zone.locator('#zone-water').fill('3');
+  await zone.locator('[data-passes="2"]').click();
+  await zone.locator('#zone-mode').selectOption('vacuumThenMop');
+  assert.equal(await zone.locator('.zone-power').isVisible(),true);
+  assert.equal(await zone.locator('.experimental-passes').isVisible(),true);
+  await page.screenshot({path:'artifacts/zone-settings-all-modes.png'});
   await zone.locator('[data-do="close-settings"]').click();
   assert.deepEqual(await zone.evaluate(el=>el.rect),originalRect);
   assert.equal(await page.evaluate(()=>demo.calls.length),callsBefore);
@@ -169,10 +178,14 @@ try {
   await zone.locator('.area').waitFor({state:'visible'});
   assert.deepEqual(await zone.evaluate(el=>el.rect),originalRect);
   assert.equal(await zone.evaluate(el=>el.strategy),'boost');
+  assert.deepEqual(await zone.evaluate(el=>[el.mode,el.water,el.passes]),['vacuumThenMop','high',2]);
   await zone.locator('[data-do="start"]').click();
   await page.locator('#card h2').filter({hasText:'Cleaning session'}).waitFor();
   assert.equal(await page.locator('.planning-tabs').count(),0);
   const calls=await page.evaluate(()=>demo.calls.filter(c=>c.service==='clean_zone'));
+  assert.equal(calls[0].data.clean_type,'vacuumThenMop');
+  assert.equal(calls[0].data.water_level,'high');
+  assert.equal(calls[0].data.mop_passes,2); assert.equal(calls[0].data.dry_passes,1);
   assert.equal(calls[0].data.cleaning_strategy,'boost'); assert.equal(calls.length,1); assert.equal(calls[0].data.map_id,'123'); assert.equal(calls[0].data.rectangle.length,4);
   assert.equal(calls[0].data.entity_id,await page.evaluate(()=>demo.entity));
   // Simulate session completion, then reject a stale calibration and map switch.

@@ -12,11 +12,13 @@ which provides `dyson_spot_scrub.clean_zone`, the vacuum's `map_id` and
 3. Drag the rectangle to move it. Drag its bottom-right handle to resize it.
    Mouse, touch and keyboard arrow controls are supported; Shift increases the
    keyboard step. One rectangle is supported in this prototype.
-4. Press **Start clean**. This requests **Vacuum, the selected power (Auto by default), one pass**, without saving
-   or changing room settings. The normal cleaning-session view follows.
+4. Open the mode/settings button to choose the cleaning mode, power, water level
+   and repetitions. Only relevant controls appear for each mode.
+5. Press **Start clean** to send the local zone settings without saving or changing
+   room settings. The normal cleaning-session view follows.
 
-**Back to rooms** returns to the room planner. **Reload map** clears the rectangle
-and fetches a new snapshot. The camera selected in the card editor is used even
+**Rooms** returns to the room planner. **Reload map** fetches a new snapshot
+and preserves the rectangle only if its map and transform still match. The camera selected in the card editor is used even
 if the session camera display is hidden. Its configured 0/90/180/270° rotation
 also applies to zone selection. The camera must belong to the selected robot.
 
@@ -42,6 +44,11 @@ data:
   entity_id: vacuum.your_robot
   map_id: "<active map ID>"
   rectangle: [x_min, y_min, x_max, y_max]
+  clean_type: vacuumAndMop
+  cleaning_strategy: auto
+  water_level: low
+  mop_passes: 2
+  dry_passes: 1
 ```
 
 Coordinates are in robot metres, not pixels. This is a geometry transform, not
@@ -64,6 +71,16 @@ necessary; no release version is changed for this test branch.
 
 Reloading preserves the selection only when the map ID and image transform are unchanged. Camera requests remove width/height parameters and verify the original PNG fingerprint and dimensions before enabling Start.
 
-Open Settings to choose Auto, Boost, Quiet or Quick vacuum power. Settings stay local until Start clean. Other cleaning modes, water level and two-pass cleaning remain disabled pending protocol captures. Update the integration test branch before using power selection.
+Update the integration test branch before using these settings:
+- Modes: Vacuum, Vacuum and Mop, Mop, Vacuum then Mop.
+- Power: Auto, Boost, Quiet, Quick (hidden for Mop).
+- Water: Very Low, Low, Medium, High (hidden for Vacuum).
+- Repetitions: 1× or 2×. For Vacuum this sets dry passes; for all mopping modes
+  it sets mop passes and leaves dry passes at 1.
 
-Rooms and Zone tabs switch between planning views and retain local selections and zone power. Returning to Zone verifies a fresh image and restores the rectangle only for the same robot, camera, rotation, map and transform. The bottom bar contains Reload and Settings in its left half and Start in its right half. Only loading, readiness and error notices are shown. Tabs disappear during a cleaning session.
+Two passes for Vacuum then Mop and vacuum-only zones are experimental and
+labelled accordingly. Captures confirm two mop passes for Mop and Vacuum and
+Mop. Settings stay local until Start; app command captures do not replace a
+completed hardware test. Other robot models still need owner confirmation.
+
+Rooms and Zone tabs switch between planning views and retain local selections and all zone settings. Returning to Zone verifies a fresh image and restores the rectangle only for the same robot, camera, rotation, map and transform. The bottom bar contains Reload and Settings in its left half and Start in its right half. Only loading, readiness and error notices are shown. Tabs disappear during a cleaning session.

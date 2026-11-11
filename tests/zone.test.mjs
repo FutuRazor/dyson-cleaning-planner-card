@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash, randomBytes } from 'node:crypto';
-import { validZoneCalibration, zoneRobotRectangle, zoneSha256, zoneCanStart } from '../src/zone-core.js';
+import { validZoneCalibration, zoneRobotRectangle, zoneSha256, zoneCanStart, zoneSettingsPayload } from '../src/zone-core.js';
 
 const calibration = { version:1,units:'m',map_id:'123',image_width:800,image_height:400,pixels_per_metre:80,padding:40,min_x:-1,max_y:2,image_sha256:'a'.repeat(64) };
 test('rotated image selections map to the same physical rectangle at all four rotations', () => {
@@ -34,4 +34,19 @@ test('zone start requires explicit readiness, a trusted camera, current map and 
   hass.states.camera.state='unavailable'; assert.equal(ready(),false);
   hass.states.camera.state='idle';
   delete hass.services.dyson_spot_scrub.clean_zone; assert.equal(ready(),false);
+});
+
+test('zone modes preserve independent mop and dry passes and neutralise unused settings', () => {
+  for (const mode of ['vacuum','vacuumAndMop','mop','vacuumThenMop']) {
+    for (const passes of [1,2]) {
+      const data=zoneSettingsPayload(mode,'boost','high',passes);
+      assert.equal(data.clean_type,mode);
+      assert.equal(data.mop_passes,mode==='vacuum'?1:passes);
+      assert.equal(data.dry_passes,mode==='vacuum'?passes:1);
+      assert.equal(data.water_level,mode==='vacuum'?'low':'high');
+      assert.equal(data.cleaning_strategy,mode==='mop'?'auto':'boost');
+    }
+  }
+  assert.throws(()=>zoneSettingsPayload('invalid','auto','low',1));
+  assert.throws(()=>zoneSettingsPayload('mop','auto','low',3));
 });

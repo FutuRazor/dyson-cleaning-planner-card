@@ -57,3 +57,16 @@ export function zoneSha256(bytes) {
   }
   return h.map(v => v.toString(16).padStart(8,'0')).join('');
 }
+
+
+// Repetitions apply to vacuum passes in vacuum-only mode, otherwise to mop
+// passes. Two passes for vacuumThenMop remain an explicit hardware experiment.
+export function zoneSettingsPayload(mode, strategy, water, passes) {
+  if (!['vacuum','vacuumAndMop','mop','vacuumThenMop'].includes(mode)
+      || !['auto','boost','quiet','quick'].includes(strategy)
+      || !['veryLow','low','medium','high'].includes(water)
+      || ![1,2].includes(passes)) throw new Error('Invalid zone settings');
+  return { clean_type:mode, cleaning_strategy:mode==='mop'?'auto':strategy,
+    water_level:mode==='vacuum'?'low':water,
+    mop_passes:mode==='vacuum'?1:passes, dry_passes:mode==='vacuum'?passes:1 };
+}
