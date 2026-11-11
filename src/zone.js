@@ -27,7 +27,7 @@ class DysonPlannerZone extends HTMLElement {
       .unavailable{opacity:.5}.settings-note{font-size:12px;color:var(--dp-muted);margin:6px 0 10px}
       .segments{background:var(--dp-modern-control,var(--dp-bg));border-color:var(--dp-modern-control-border,var(--dp-line))}
       .actions{margin:14px var(--dp-padding,20px) 0;padding:12px 0 14px;border-top:1px solid var(--dp-line);gap:10px;flex-wrap:nowrap}
-      .actions button{flex:1;min-width:0;min-height:38px;padding:6px 12px;border-radius:13px;font-size:13px}.back{background:var(--dp-modern-surface,var(--dp-bg))}
+      .actions{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.secondary-actions{display:flex;gap:8px;min-width:0}.actions .reload{flex:0 0 38px;padding:6px;display:flex;align-items:center;justify-content:center}.actions button{flex:1;min-width:0;min-height:38px;padding:6px 12px;border-radius:13px;font-size:13px}.back{background:var(--dp-modern-surface,var(--dp-bg))}
 .stepped-slider{position:relative;height:24px}
 .slider-ticks{position:absolute;inset:0 10px;pointer-events:none;color:var(--dp-muted)}
 .slider-ticks::before{content:"";position:absolute;left:0;right:0;top:10.5px;height:3px;border-radius:2px;background:currentColor;opacity:.65}
@@ -48,9 +48,9 @@ class DysonPlannerZone extends HTMLElement {
 .segments button::after{content:"";position:absolute;inset:-6px 0}
 .segments button[aria-pressed=true]{background:var(--dp-accent);color:var(--text-primary-color,#fff)}
       [hidden]{display:none!important}
-    </style><p class="intro"></p><div class="toolbar"><button data-do="refresh"></button><button data-do="settings"></button></div>
+    </style>
     <svg hidden aria-label="Zone selection"><image/><rect class="area" tabindex="0" role="button"/><rect class="handle" tabindex="0" role="button" rx="6"/><text class="hint" text-anchor="middle" dominant-baseline="central">↘</text></svg>
-    <p class="message" role="status" aria-live="polite"></p><div class="actions"><button class="back" data-do="back"></button><button class="start" data-do="start"></button></div>
+    <p class="message" role="status" aria-live="polite"></p><div class="actions"><div class="secondary-actions"><button class="reload" data-do="refresh"><ha-icon icon="mdi:reload" aria-hidden="true"></ha-icon></button><button data-do="settings"></button></div><button class="start" data-do="start"></button></div>
     <div class="settings-overlay" hidden><section class="settings-panel" role="dialog" aria-modal="true" aria-labelledby="zone-settings-title"><header><h3 id="zone-settings-title" data-i18n="Settings"></h3><button data-do="close-settings" aria-label="Close"><ha-icon icon="mdi:close" aria-hidden="true"></ha-icon></button></header><div class="settings-fields">
       <label for="zone-mode" data-i18n="Cleaning mode"></label><select id="zone-mode"><option data-i18n="Vacuum"></option><option disabled data-i18n="Vacuum and Mop"></option><option disabled data-i18n="Mop"></option><option disabled data-i18n="Vacuum then Mop"></option></select>
       <p class="settings-note" data-i18n="Other cleaning modes are not yet available."></p>
@@ -83,7 +83,6 @@ class DysonPlannerZone extends HTMLElement {
       if (power && !this.sending) { this.shadowRoot.querySelector('.zone-power').value=power.dataset.power; this.strategy=['auto','boost','quiet','quick'][Number(power.dataset.power)]; this.labels(); return; }
       const action = event.target.closest('button')?.dataset.do;
       if (!action || event.target.closest('button').disabled) return;
-      if (action === 'back') this.dispatchEvent(new CustomEvent('zone-back', { bubbles: true, composed: true }));
       if (action === 'refresh') this.load();
       if (action === 'settings') { this.dialog.hidden=false; this.shadowRoot.querySelector('[data-do="close-settings"]').focus({preventScroll:true}); }
       if (action === 'close-settings') this.closeSettings();
@@ -100,6 +99,10 @@ class DysonPlannerZone extends HTMLElement {
         event.key === 'ArrowUp' ? -step : event.key === 'ArrowDown' ? step : 0, event.target === this.handle);
     });
   }
+  snapshot() {
+    return { strategy:this.strategy, calibration:this.calibration, rect:this.rect ? [...this.rect] : null,
+      vacuum:this.vacuum, camera:this.camera, rotation:this.rotation };
+  }
   closeSettings() {
     this.dialog.hidden=true;
     this.shadowRoot.querySelector('[data-do="settings"]').focus({preventScroll:true});
@@ -114,7 +117,14 @@ class DysonPlannerZone extends HTMLElement {
     const changed = this.vacuum !== options.vacuum || this.camera !== options.camera || this.rotation !== options.rotation
       || this.hass?.connection !== options.hass.connection;
     Object.assign(this, options);
-    if (changed) { this.controller?.abort(); this.attempted = false; this.clear(); }
+    if (changed) {
+      this.controller?.abort(); this.attempted = false; this.clear();
+      const saved=options.draft;
+      this.restoreDraft=saved?.vacuum===this.vacuum && saved?.camera===this.camera && saved?.rotation===this.rotation ? saved : null;
+      this.strategy=this.restoreDraft?.strategy || 'auto';
+      this.shadowRoot.querySelector('.zone-power').value=['auto','boost','quiet','quick'].indexOf(this.strategy);
+      this._labelsLanguage=null;
+    }
     if (this.calibration && String(this.hass.states[this.vacuum]?.attributes?.map_id) !== this.calibration.map_id) {
       this.controller?.abort(); this.clear(); this.note = 'The active map changed. Reload the map and select a new zone.';
     }
@@ -124,14 +134,16 @@ class DysonPlannerZone extends HTMLElement {
   }
   t(key) { return translate(this.language, key); }
   labels() {
-    this.shadowRoot.querySelector('.intro').textContent = `${this.t('Vacuum')} · ${this.t(this.strategy[0].toUpperCase()+this.strategy.slice(1))} · ${this.t('One pass')}. ${this.t('Drag the zone or resize its lower-right corner.')}`;
+
     for (const el of this.shadowRoot.querySelectorAll('[data-i18n]')) el.textContent = this.t(el.dataset.i18n);
     this.shadowRoot.querySelector('[data-do="close-settings"]').setAttribute('aria-label',this.t('Close'));
     [...this.shadowRoot.querySelectorAll('[data-power]')].forEach((el,i)=>el.setAttribute('aria-pressed',String(i===['auto','boost','quiet','quick'].indexOf(this.strategy))));
     this.shadowRoot.querySelector('.zone-power').setAttribute('aria-valuetext',this.t(this.strategy[0].toUpperCase()+this.strategy.slice(1)));
-    for (const [action, label] of Object.entries({settings:'Settings',refresh:'Reload map',back:'Back to rooms',start:'Start clean'})) {
+    for (const [action, label] of Object.entries({settings:'Settings',start:'Start clean'})) {
       this.shadowRoot.querySelector(`[data-do="${action}"]`).textContent = this.t(label);
     }
+    this.shadowRoot.querySelector('[data-do="refresh"]').setAttribute('aria-label',this.t('Reload map'));
+    this.shadowRoot.querySelector('[data-do="refresh"]').title=this.t('Reload map');
     this.svg.setAttribute('aria-label', this.t('Zone selection'));
     this.area.setAttribute('aria-label', this.t('Move zone. Use the arrow keys.'));
     this.handle.setAttribute('aria-label', this.t('Resize zone. Use the arrow keys.'));
@@ -143,7 +155,8 @@ class DysonPlannerZone extends HTMLElement {
   }
   async load() {
     if (this.sending) return;
-    const previous = this.calibration && this.rect ? { calibration: this.calibration, rect: [...this.rect] } : null;
+    const previous = this.calibration && this.rect ? { calibration: this.calibration, rect: [...this.rect] } : this.restoreDraft;
+    this.restoreDraft = null;
     this.controller?.abort(); this.clear(); this.attempted = true;
     const controller = new AbortController(); this.controller = controller;
     const timeout = setTimeout(() => controller.abort(), 12000);
@@ -181,7 +194,7 @@ class DysonPlannerZone extends HTMLElement {
             if (img.naturalWidth !== c.image_width || img.naturalHeight !== c.image_height) throw new Error('Image and calibration do not match. Reload the map.');
             this.calibration = structuredClone(c); this.calibration.map_id = String(c.map_id);
             this.objectUrl = objectUrl; objectUrl = null; this.image.setAttribute('href', this.objectUrl);
-            const sameTransform = previous && ['version','map_id','units','image_width','image_height','pixels_per_metre','padding','min_x','max_y']
+            const sameTransform = previous?.calibration && previous.rect && ['version','map_id','units','image_width','image_height','pixels_per_metre','padding','min_x','max_y']
               .every(key => String(previous.calibration[key]) === String(c[key]));
             this.rect = sameTransform ? previous.rect : [.3,.3,.7,.7];
             this.note = ''; return;
@@ -227,7 +240,7 @@ class DysonPlannerZone extends HTMLElement {
       }
     }
     const ready = zoneCanStart(this.hass,this.vacuum,this.camera,c,this.trusted,this.preview);
-    for (const action of ['settings','refresh','back','start']) {
+    for (const action of ['settings','refresh','start']) {
       const button = this.shadowRoot.querySelector(`[data-do="${action}"]`);
       const disabled = !!this.sending
         || (action === 'start' && (!ready || !this.rect || !!this.controller))
@@ -236,8 +249,9 @@ class DysonPlannerZone extends HTMLElement {
     }
     const message = this.t(this.note || (!this.trusted ? 'Camera must belong to the selected robot.'
       : !c ? 'A calibrated map is required. Reload the map.' : !ready ? 'Zone start unavailable: check robot readiness, map and integration action.'
-      : 'Map frozen for selection. Room settings remain unchanged.'));
+      : ''));
     const notice = this.shadowRoot.querySelector('.message');
+    notice.hidden = !message;
     if (notice.textContent !== message) notice.textContent = message;
   }
   point(event) {

@@ -1,5 +1,7 @@
 // German display text. Entity names and protocol values are never rewritten.
 export const de = {
+  "Cleaning selection": "Reinigungsauswahl",
+  "Rooms": "Räume",
   "Close": "Schließen",
   "One pass": "Ein Durchgang",
   "Drag the zone or resize its lower-right corner.": "Zone verschieben oder an der unteren rechten Ecke vergrößern.",

@@ -1,5 +1,7 @@
 // English messages are also stable translation keys. Never use translated labels in action payloads.
 export const en = {
+  "Cleaning selection": "Cleaning selection",
+  "Rooms": "Rooms",
   "Close": "Close",
   "One pass": "One pass",
   "Drag the zone or resize its lower-right corner.": "Drag the zone or resize its lower-right corner.",

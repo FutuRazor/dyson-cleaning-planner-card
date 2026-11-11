@@ -14,12 +14,8 @@ try {
   const errors = []; page.on('pageerror',e => errors.push(e.message));
   await page.goto(`http://127.0.0.1:${server.address().port}/`);
   await page.locator('#card .room').first().waitFor();
-  const headerLayout=await page.locator('#card').evaluate(card=>{
-    const root=card.shadowRoot,info=root.querySelector('[data-action="consumables"]').getBoundingClientRect(),zone=root.querySelector('[data-action="zones"]').getBoundingClientRect();
-    return {infoY:info.bottom,zoneY:zone.top,infoX:info.right,zoneX:zone.right};
-  });
-  assert.ok(headerLayout.zoneY>=headerLayout.infoY);
-  assert.ok(Math.abs(headerLayout.infoX-headerLayout.zoneX)<1);
+  assert.equal(await page.locator('.header-main [data-action="zones"]').count(),0);
+  assert.equal(await page.locator('.planning-tabs [data-action="rooms"]').getAttribute('aria-pressed'),'true');
 
   const png = Buffer.from(await page.evaluate(() => {
     const canvas = document.createElement('canvas'); canvas.width=800; canvas.height=400;
@@ -66,7 +62,7 @@ try {
     await zone.locator('[data-do="refresh"]').click();
     await zone.locator('.area').waitFor({state:'visible'});
     assert.deepEqual(await zone.evaluate(el=>el.rect),beforeReload);
-    await zone.locator('[data-do="back"]').click();
+    await page.locator('.planning-tabs [data-action="rooms"]').click();
     assert.deepEqual(await page.evaluate(()=>demo.card.selected),selection);
   }
   await page.setViewportSize({width:390,height:1000});
@@ -125,6 +121,15 @@ try {
   await page.evaluate(()=>{ demo.hass.states[demo.entity].attributes.ready_to_start=false; demo.card.hass={...demo.hass}; });
   assert.equal(await zone.locator('[data-do="start"]').isDisabled(),true);
   await page.evaluate(()=>{ demo.hass.states[demo.entity].attributes.ready_to_start=true; demo.card.hass={...demo.hass}; });
+  assert.equal(await zone.locator('.intro').count(),0);
+  assert.equal(await zone.locator('.toolbar').count(),0);
+  assert.equal(await zone.locator('.message').isHidden(),true);
+  const layout=await zone.evaluate(el=>{
+    const a=el.shadowRoot.querySelector('.secondary-actions').getBoundingClientRect(),b=el.shadowRoot.querySelector('.start').getBoundingClientRect(),r=el.shadowRoot.querySelector('.reload').getBoundingClientRect();
+    return {left:a.width,right:b.width,reloadHeight:r.height,startHeight:b.height};
+  });
+  assert.ok(Math.abs(layout.left-layout.right)<1);
+  assert.ok(Math.abs(layout.reloadHeight-layout.startHeight)<1);
   const originalRect=await zone.evaluate(el=>[...el.rect]);
   const callsBefore=await page.evaluate(()=>demo.calls.length);
   await zone.locator('[data-do="settings"]').click();
@@ -144,8 +149,15 @@ try {
   await zone.locator('[data-do="close-settings"]').click();
   assert.deepEqual(await zone.evaluate(el=>el.rect),originalRect);
   assert.equal(await page.evaluate(()=>demo.calls.length),callsBefore);
+  await page.locator('.planning-tabs [data-action="rooms"]').click();
+  assert.deepEqual(await page.evaluate(()=>demo.card.selected),selection);
+  await page.locator('.planning-tabs [data-action="zones"]').click();
+  await zone.locator('.area').waitFor({state:'visible'});
+  assert.deepEqual(await zone.evaluate(el=>el.rect),originalRect);
+  assert.equal(await zone.evaluate(el=>el.strategy),'boost');
   await zone.locator('[data-do="start"]').click();
   await page.locator('#card h2').filter({hasText:'Cleaning session'}).waitFor();
+  assert.equal(await page.locator('.planning-tabs').count(),0);
   const calls=await page.evaluate(()=>demo.calls.filter(c=>c.service==='clean_zone'));
   assert.equal(calls[0].data.cleaning_strategy,'boost'); assert.equal(calls.length,1); assert.equal(calls[0].data.map_id,'123'); assert.equal(calls[0].data.rectangle.length,4);
   assert.equal(calls[0].data.entity_id,await page.evaluate(()=>demo.entity));

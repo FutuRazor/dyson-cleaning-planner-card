@@ -7,12 +7,12 @@ which provides `dyson_spot_scrub.clean_zone`, the vacuum's `map_id` and
 
 ## Use
 
-1. Open **Zone** in the planner header. The existing room draft is kept.
+1. Choose the **Zone** tab below the header and status messages. The existing room draft is kept.
 2. Wait for the verified camera snapshot. A blue zone appears automatically.
 3. Drag the rectangle to move it. Drag its bottom-right handle to resize it.
    Mouse, touch and keyboard arrow controls are supported; Shift increases the
    keyboard step. One rectangle is supported in this prototype.
-4. Press **Start clean**. This requests **Vacuum, Auto, one pass**, without saving
+4. Press **Start clean**. This requests **Vacuum, the selected power (Auto by default), one pass**, without saving
    or changing room settings. The normal cleaning-session view follows.
 
 **Back to rooms** returns to the room planner. **Reload map** clears the rectangle
@@ -65,3 +65,5 @@ necessary; no release version is changed for this test branch.
 Reloading preserves the selection only when the map ID and image transform are unchanged. Camera requests remove width/height parameters and verify the original PNG fingerprint and dimensions before enabling Start.
 
 Open Settings to choose Auto, Boost, Quiet or Quick vacuum power. Settings stay local until Start clean. Other cleaning modes, water level and two-pass cleaning remain disabled pending protocol captures. Update the integration test branch before using power selection.
+
+Rooms and Zone tabs switch between planning views and retain local selections and zone power. Returning to Zone verifies a fresh image and restores the rectangle only for the same robot, camera, rotation, map and transform. The bottom bar contains Reload and Settings in its left half and Start in its right half. Only loading, readiness and error notices are shown. Tabs disappear during a cleaning session.
