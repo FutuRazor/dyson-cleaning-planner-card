@@ -52,6 +52,20 @@ try {
       demo.card.hass={...demo.hass};
       if (zone!==demo.card.shadowRoot.querySelector('dyson-planner-zone')) throw new Error('Zone remounted');
     });
+    // The resize grip sits corner-to-corner outside the zone, then flips inside
+    // at the image edges. Its visual movement must not affect drag coordinates.
+    await zone.evaluate(el => {
+      const original = [...el.rect];
+      for (const end of [.6, 1]) {
+        el.rect = [.2,.2,end,end]; el.draw();
+        const box = el.handle.getBBox();
+        const expectedX = end*el.width - (end === 1 ? box.width : 0);
+        const expectedY = end*el.height - (end === 1 ? box.height : 0);
+        if (Math.abs(box.x-expectedX) > .01 || Math.abs(box.y-expectedY) > .01) throw new Error('Grip position');
+        if (box.x < 0 || box.y < 0 || box.x+box.width > el.width+.01 || box.y+box.height > el.height+.01) throw new Error('Grip outside image');
+      }
+      el.rect = original; el.draw();
+    });
     const box=await zone.locator('.area').boundingBox();
     await page.mouse.move(box.x+box.width/2,box.y+box.height/2); await page.mouse.down();
     await page.mouse.move(box.x+box.width/2+20,box.y+box.height/2+15); await page.mouse.up();

@@ -1255,8 +1255,14 @@ class DysonPlannerZone extends HTMLElement {
       if (c && this.rect) {
         const [x,y,x2,y2] = this.rect, size = Math.min(this.width * .14, 36 * this.width / (this.svg.getBoundingClientRect().width || this.width));
         for (const [key,value] of Object.entries({ x:x*this.width,y:y*this.height,width:(x2-x)*this.width,height:(y2-y)*this.height })) this.area.setAttribute(key,value);
-        for (const [key,value] of Object.entries({ x:x2*this.width-size,y:y2*this.height-size,width:size,height:size })) this.handle.setAttribute(key,value);
-        this.hint.setAttribute('x',x2*this.width-size/2); this.hint.setAttribute('y',y2*this.height-size/2);
+        // Keep the grip outside the selected area when there is room. Flip each
+        // axis inward near the image edge without changing the zone or drag origin.
+        const edgeX = x2*this.width, edgeY = y2*this.height;
+        const strokeMargin = this.width / (this.svg.getBoundingClientRect().width || this.width);
+        const handleX = this.width-edgeX >= size+strokeMargin ? edgeX : edgeX-size;
+        const handleY = this.height-edgeY >= size+strokeMargin ? edgeY : edgeY-size;
+        for (const [key,value] of Object.entries({ x:handleX,y:handleY,width:size,height:size })) this.handle.setAttribute(key,value);
+        this.hint.setAttribute('x',handleX+size/2); this.hint.setAttribute('y',handleY+size/2);
         this.hint.style.fontSize = `${size*.65}px`;
       }
     }
