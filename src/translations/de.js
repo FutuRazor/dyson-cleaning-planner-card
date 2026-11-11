@@ -225,5 +225,5 @@ export const de = {
   "Map frozen for selection. Room settings remain unchanged.": "Kartenbild für die Auswahl fixiert. Raumeinstellungen bleiben unverändert.",
   "Sending zone start …": "Zonenstart wird gesendet …",
   "Zone start failed. Check the robot before retrying.": "Zonenstart fehlgeschlagen. Vor einem erneuten Versuch den Roboter prüfen.",
-  "Two passes in this mode are experimental.": "Zwei Durchgänge sind in diesem Modus experimentell."
+  "Mop repetitions": "Wischdurchgänge"
 };

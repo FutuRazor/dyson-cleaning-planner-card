@@ -225,5 +225,5 @@ export const en = {
   "Map frozen for selection. Room settings remain unchanged.": "Map frozen for selection. Room settings remain unchanged.",
   "Sending zone start …": "Sending zone start …",
   "Zone start failed. Check the robot before retrying.": "Zone start failed. Check the robot before retrying.",
-  "Two passes in this mode are experimental.": "Two passes in this mode are experimental."
+  "Mop repetitions": "Mop repetitions"
 };

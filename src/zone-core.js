@@ -59,8 +59,8 @@ export function zoneSha256(bytes) {
 }
 
 
-// Repetitions apply to vacuum passes in vacuum-only mode, otherwise to mop
-// passes. Two passes for vacuumThenMop remain an explicit hardware experiment.
+// Spot+Scrub zone tests confirm mopPasses controls repetitions even for vacuum.
+// In vacuumThenMop it repeats only mopping; dryPasses stays at one.
 export function zoneSettingsPayload(mode, strategy, water, passes) {
   if (!['vacuum','vacuumAndMop','mop','vacuumThenMop'].includes(mode)
       || !['auto','boost','quiet','quick'].includes(strategy)
@@ -68,5 +68,5 @@ export function zoneSettingsPayload(mode, strategy, water, passes) {
       || ![1,2].includes(passes)) throw new Error('Invalid zone settings');
   return { clean_type:mode, cleaning_strategy:mode==='mop'?'auto':strategy,
     water_level:mode==='vacuum'?'low':water,
-    mop_passes:mode==='vacuum'?1:passes, dry_passes:mode==='vacuum'?passes:1 };
+    mop_passes:passes, dry_passes:1 };
 }

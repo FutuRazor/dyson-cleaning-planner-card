@@ -167,7 +167,11 @@ try {
   await zone.locator('[data-passes="2"]').click();
   await zone.locator('#zone-mode').selectOption('vacuumThenMop');
   assert.equal(await zone.locator('.zone-power').isVisible(),true);
-  assert.equal(await zone.locator('.experimental-passes').isVisible(),true);
+  assert.equal(await zone.locator('.repetitions-label').textContent(),'Mop repetitions');
+  await zone.locator('#zone-mode').selectOption('vacuum');
+  assert.equal(await zone.locator('.repetitions-label').textContent(),'Clean repetitions');
+  await zone.locator('#zone-mode').selectOption('vacuumThenMop');
+  assert.equal(await zone.locator('.experimental-passes').count(),0);
   await page.screenshot({path:'artifacts/zone-settings-all-modes.png'});
   await zone.locator('[data-do="close-settings"]').click();
   assert.deepEqual(await zone.evaluate(el=>el.rect),originalRect);

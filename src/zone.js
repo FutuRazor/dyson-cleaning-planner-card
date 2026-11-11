@@ -60,7 +60,7 @@ class DysonPlannerZone extends HTMLElement {
       </div><div class="water-setting"><label for="zone-water" data-i18n="Water level"></label>
       <div class="stepped-slider"><div class="slider-ticks" aria-hidden="true">${[0,1,2,3].map(i=>`<span class="slider-tick" style="--stop:${i/3}"></span>`).join('')}</div><input id="zone-water" type="range" min="0" max="3" step="1" value="1"></div>
       <div class="slider-options">${['Very Low','Low','Medium','High'].map((name,i)=>`<button type="button" data-water="${i}" style="--stop:${i/3}" data-i18n="${name}"></button>`).join('')}</div></div>
-      <label data-i18n="Clean repetitions"></label><div class="segments"><button type="button" data-passes="1" aria-pressed="true">1×</button><button type="button" data-passes="2" aria-pressed="false">2×</button></div><p class="settings-note experimental-passes" hidden data-i18n="Two passes in this mode are experimental."></p>
+      <label class="repetitions-label"></label><div class="segments"><button type="button" data-passes="1" aria-pressed="true">1×</button><button type="button" data-passes="2" aria-pressed="false">2×</button></div>
       <p class="settings-note" data-i18n="Settings are sent only when you start the zone clean."></p>
     </div></section></div>`;
     this.dialog = this.shadowRoot.querySelector('.settings-overlay');
@@ -164,7 +164,7 @@ class DysonPlannerZone extends HTMLElement {
     this.shadowRoot.querySelector('#zone-water').setAttribute('aria-valuetext',this.t(['Very Low','Low','Medium','High'][waterIndex]));
     [...this.shadowRoot.querySelectorAll('[data-water]')].forEach((el,i)=>el.setAttribute('aria-pressed',String(i===waterIndex)));
     [...this.shadowRoot.querySelectorAll('[data-passes]')].forEach(el=>el.setAttribute('aria-pressed',String(Number(el.dataset.passes)===this.passes)));
-    this.shadowRoot.querySelector('.experimental-passes').hidden=!(this.passes===2 && ['vacuum','vacuumThenMop'].includes(this.mode));
+    this.shadowRoot.querySelector('.repetitions-label').textContent=this.t(this.mode==='vacuumThenMop'?'Mop repetitions':'Clean repetitions');
     for (const [action, label] of Object.entries({start:'Start clean'})) {
       this.shadowRoot.querySelector(`[data-do="${action}"]`).textContent = this.t(label);
     }

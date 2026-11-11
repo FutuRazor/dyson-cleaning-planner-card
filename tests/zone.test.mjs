@@ -36,13 +36,13 @@ test('zone start requires explicit readiness, a trusted camera, current map and 
   delete hass.services.dyson_spot_scrub.clean_zone; assert.equal(ready(),false);
 });
 
-test('zone modes preserve independent mop and dry passes and neutralise unused settings', () => {
+test('zone repetitions use the hardware-verified common counter and keep dry passes at one', () => {
   for (const mode of ['vacuum','vacuumAndMop','mop','vacuumThenMop']) {
     for (const passes of [1,2]) {
       const data=zoneSettingsPayload(mode,'boost','high',passes);
       assert.equal(data.clean_type,mode);
-      assert.equal(data.mop_passes,mode==='vacuum'?1:passes);
-      assert.equal(data.dry_passes,mode==='vacuum'?passes:1);
+      assert.equal(data.mop_passes,passes);
+      assert.equal(data.dry_passes,1);
       assert.equal(data.water_level,mode==='vacuum'?'low':'high');
       assert.equal(data.cleaning_strategy,mode==='mop'?'auto':'boost');
     }

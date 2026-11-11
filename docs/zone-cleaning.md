@@ -75,12 +75,14 @@ Update the integration test branch before using these settings:
 - Modes: Vacuum, Vacuum and Mop, Mop, Vacuum then Mop.
 - Power: Auto, Boost, Quiet, Quick (hidden for Mop).
 - Water: Very Low, Low, Medium, High (hidden for Vacuum).
-- Repetitions: 1× or 2×. For Vacuum this sets dry passes; for all mopping modes
-  it sets mop passes and leaves dry passes at 1.
+- Repetitions: 1× or 2×, sent as `mop_passes`; `dry_passes` always stays at 1.
+  For Vacuum then Mop the label is **Mop repetitions**: vacuuming runs once,
+  followed by one or two mop passes. Other modes use **Clean repetitions**.
 
-Two passes for Vacuum then Mop and vacuum-only zones are experimental and
-labelled accordingly. Captures confirm two mop passes for Mop and Vacuum and
-Mop. Settings stay local until Start; app command captures do not replace a
-completed hardware test. Other robot models still need owner confirmation.
+Spot+Scrub AI hardware tests on 11 November confirmed two vacuum passes using
+`mop_passes: 2`, and one vacuum pass followed by two mop passes in Vacuum then
+Mop. Requesting `dry_passes: 2` produced no second vacuum pass in either mode.
+The card therefore does not offer an independent vacuum-pass selector.
+Other robot models still need owner confirmation. Settings stay local until Start.
 
 Rooms and Zone tabs switch between planning views and retain local selections and all zone settings. Returning to Zone verifies a fresh image and restores the rectangle only for the same robot, camera, rotation, map and transform. The bottom bar contains Reload and Settings in its left half and Start in its right half. Only loading, readiness and error notices are shown. Tabs disappear during a cleaning session.
