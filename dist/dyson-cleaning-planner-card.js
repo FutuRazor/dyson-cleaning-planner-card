@@ -256,7 +256,7 @@ const de = {
   "Vacuum": "Saugen",
   "Mop": "Wischen",
   "Vacuum and Mop": "Saugen und Wischen",
-  "Vacuum then Mop": "Saugen, dann wischen",
+  "Vacuum then Mop": "Saugen dann wischen",
   "Auto": "Auto",
   "Boost": "Boost",
   "Quiet": "Leise",
