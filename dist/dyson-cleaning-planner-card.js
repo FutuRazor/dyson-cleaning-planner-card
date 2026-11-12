@@ -1,6 +1,15 @@
-/* Dyson Cleaning Planner Card v1.3.0 | MIT */
+/* Dyson Cleaning Planner Card v1.4.0 | MIT */
 // English messages are also stable translation keys. Never use translated labels in action payloads.
 const en = {
+  "Cleaning selection": "Cleaning selection",
+  "Rooms": "Rooms",
+  "Close": "Close",
+  "One pass": "One pass",
+  "Drag the zone or resize its lower-right corner.": "Drag the zone or resize its lower-right corner.",
+  "Settings are sent only when you start the zone clean.": "Settings are sent only when you start the zone clean.",
+  "Two passes are not yet available.": "Two passes are not yet available.",
+  "Not yet available": "Not yet available",
+  "Other cleaning modes are not yet available.": "Other cleaning modes are not yet available.",
   "Plan a clean": "Plan a clean",
   "Cleaning session": "Cleaning session",
   "Cleaning session preview": "Cleaning session preview",
@@ -196,12 +205,41 @@ const en = {
   "{error} No automatic retry will be made.": "{error} No automatic retry will be made.",
   "Saving room settings …": "Saving room settings …",
   "Save was sent, but Home Assistant has not reflected all values yet. The draft was kept; check the robot before retrying.": "Save was sent, but Home Assistant has not reflected all values yet. The draft was kept; check the robot before retrying.",
-  "Settings sent. Home Assistant values updated. Room selection remains local.": "Settings sent. Home Assistant values updated. Room selection remains local."
+  "Settings sent. Home Assistant values updated. Room selection remains local.": "Settings sent. Home Assistant values updated. Room selection remains local.",
+  "Zone": "Zone",
+  "Zone cleaning": "Zone cleaning",
+  "Zone selection": "Zone selection",
+  "Vacuum · Auto · One pass. Drag the zone or resize its lower-right corner.": "Vacuum · Auto · One pass. Drag the zone or resize its lower-right corner.",
+  "Reload map": "Reload map",
+  "Back to rooms": "Back to rooms",
+  "Move zone. Use the arrow keys.": "Move zone. Use the arrow keys.",
+  "Resize zone. Use the arrow keys.": "Resize zone. Use the arrow keys.",
+  "The active map changed. Reload the map and select a new zone.": "The active map changed. Reload the map and select a new zone.",
+  "Loading calibrated map …": "Loading calibrated map …",
+  "Camera must belong to the selected robot.": "Camera must belong to the selected robot.",
+  "Camera image unavailable.": "Camera image unavailable.",
+  "A calibrated PNG image is required.": "A calibrated PNG image is required.",
+  "Image and calibration do not match. Reload the map.": "Image and calibration do not match. Reload the map.",
+  "Map loading timed out. Reload the map.": "Map loading timed out. Reload the map.",
+  "A calibrated map is required. Reload the map.": "A calibrated map is required. Reload the map.",
+  "Zone start unavailable: check robot readiness, map and integration action.": "Zone start unavailable: check robot readiness, map and integration action.",
+  "Map frozen for selection. Room settings remain unchanged.": "Map frozen for selection. Room settings remain unchanged.",
+  "Sending zone start …": "Sending zone start …",
+  "Zone start failed. Check the robot before retrying.": "Zone start failed. Check the robot before retrying.",
+  "Mop repetitions": "Mop repetitions"
 };
-
 
 // German display text. Entity names and protocol values are never rewritten.
 const de = {
+  "Cleaning selection": "Reinigungsauswahl",
+  "Rooms": "Räume",
+  "Close": "Schließen",
+  "One pass": "Ein Durchgang",
+  "Drag the zone or resize its lower-right corner.": "Zone verschieben oder an der unteren rechten Ecke vergrößern.",
+  "Settings are sent only when you start the zone clean.": "Die Einstellungen werden erst beim Start der Zonenreinigung gesendet.",
+  "Two passes are not yet available.": "Zwei Durchgänge sind noch nicht verfügbar.",
+  "Not yet available": "Noch nicht verfügbar",
+  "Other cleaning modes are not yet available.": "Weitere Reinigungsmodi sind noch nicht verfügbar.",
   "Plan a clean": "Reinigung planen",
   "Cleaning session": "Reinigung",
   "Cleaning session preview": "Reinigungsvorschau",
@@ -219,7 +257,7 @@ const de = {
   "Vacuum": "Saugen",
   "Mop": "Wischen",
   "Vacuum and Mop": "Saugen und Wischen",
-  "Vacuum then Mop": "Erst saugen, dann wischen",
+  "Vacuum then Mop": "Saugen dann wischen",
   "Auto": "Auto",
   "Boost": "Boost",
   "Quiet": "Leise",
@@ -397,9 +435,29 @@ const de = {
   "{error} No automatic retry will be made.": "{error} Es erfolgt kein automatischer Wiederholungsversuch.",
   "Saving room settings …": "Raumeinstellungen werden gespeichert …",
   "Save was sent, but Home Assistant has not reflected all values yet. The draft was kept; check the robot before retrying.": "Speichern wurde gesendet, aber Home Assistant zeigt noch nicht alle Werte. Der Entwurf bleibt erhalten; vor einem erneuten Versuch den Roboter prüfen.",
-  "Settings sent. Home Assistant values updated. Room selection remains local.": "Einstellungen gesendet und Werte in Home Assistant aktualisiert. Die Raumauswahl bleibt lokal."
+  "Settings sent. Home Assistant values updated. Room selection remains local.": "Einstellungen gesendet und Werte in Home Assistant aktualisiert. Die Raumauswahl bleibt lokal.",
+  "Zone": "Zone",
+  "Zone cleaning": "Zonenreinigung",
+  "Zone selection": "Zonenauswahl",
+  "Vacuum · Auto · One pass. Drag the zone or resize its lower-right corner.": "Saugen · Auto · Ein Durchgang. Zone verschieben oder an der unteren rechten Ecke vergrößern.",
+  "Reload map": "Karte neu laden",
+  "Back to rooms": "Zurück zu den Räumen",
+  "Move zone. Use the arrow keys.": "Zone mit den Pfeiltasten verschieben.",
+  "Resize zone. Use the arrow keys.": "Zonengröße mit den Pfeiltasten ändern.",
+  "The active map changed. Reload the map and select a new zone.": "Die aktive Karte hat sich geändert. Karte neu laden und eine neue Zone auswählen.",
+  "Loading calibrated map …": "Kalibrierte Karte wird geladen …",
+  "Camera must belong to the selected robot.": "Die Kamera muss zum ausgewählten Roboter gehören.",
+  "Camera image unavailable.": "Kamerabild nicht verfügbar.",
+  "A calibrated PNG image is required.": "Ein kalibriertes PNG-Bild wird benötigt.",
+  "Image and calibration do not match. Reload the map.": "Bild und Kalibrierung passen nicht zusammen. Karte neu laden.",
+  "Map loading timed out. Reload the map.": "Zeitüberschreitung beim Laden. Karte neu laden.",
+  "A calibrated map is required. Reload the map.": "Eine kalibrierte Karte wird benötigt. Karte neu laden.",
+  "Zone start unavailable: check robot readiness, map and integration action.": "Zonenstart nicht verfügbar: Startbereitschaft, Karte und Integrationsaktion prüfen.",
+  "Map frozen for selection. Room settings remain unchanged.": "Kartenbild für die Auswahl fixiert. Raumeinstellungen bleiben unverändert.",
+  "Sending zone start …": "Zonenstart wird gesendet …",
+  "Zone start failed. Check the robot before retrying.": "Zonenstart fehlgeschlagen. Vor einem erneuten Versuch den Roboter prüfen.",
+  "Mop repetitions": "Wischdurchgänge"
 };
-
 
 
 const LANGUAGES = { en, de };
@@ -899,6 +957,405 @@ class DysonPlannerMap extends HTMLElement {
 }
 if (!customElements.get('dyson-planner-map')) customElements.define('dyson-planner-map', DysonPlannerMap);
 
+// Geometry is expressed in the displayed, rotated image's normalised coordinates.
+function validZoneCalibration(c) {
+  return c?.version === 1 && c.units === 'm' && /^\d+$/.test(String(c.map_id)) && Number(c.map_id) > 0
+    && ['image_width', 'image_height', 'pixels_per_metre'].every(k => Number.isFinite(c[k]) && c[k] > 0)
+    && ['padding', 'min_x', 'max_y'].every(k => Number.isFinite(c[k])) && c.padding >= 0
+    && /^[a-f0-9]{64}$/.test(c.image_sha256);
+}
+
+function zoneRobotRectangle(rect, calibration, rotation = 0) {
+  if (!validZoneCalibration(calibration) || ![0, 90, 180, 270].includes(rotation)
+      || !Array.isArray(rect) || rect.length !== 4 || rect.some(v => !Number.isFinite(v) || v < 0 || v > 1)
+      || rect[0] >= rect[2] || rect[1] >= rect[3]) throw new Error('Invalid zone geometry');
+  const points = [[rect[0], rect[1]], [rect[2], rect[1]], [rect[2], rect[3]], [rect[0], rect[3]]].map(([u, v]) => {
+    const [x, y] = rotation === 90 ? [v, 1-u] : rotation === 180 ? [1-u, 1-v] : rotation === 270 ? [1-v, u] : [u, v];
+    return [calibration.min_x + (x * calibration.image_width - calibration.padding) / calibration.pixels_per_metre,
+      calibration.max_y - (y * calibration.image_height - calibration.padding) / calibration.pixels_per_metre];
+  });
+  return [Math.min(...points.map(p => p[0])), Math.min(...points.map(p => p[1])),
+    Math.max(...points.map(p => p[0])), Math.max(...points.map(p => p[1]))];
+}
+
+function zoneCanStart(hass, vacuum, camera, calibration, trusted, preview) {
+  const state = hass?.states?.[vacuum], cameraState = hass?.states?.[camera];
+  return !!(!preview && trusted && hass?.connected !== false && hass?.services?.dyson_spot_scrub?.clean_zone
+    && state && !['unknown', 'unavailable'].includes(state.state) && state.attributes?.ready_to_start === true
+    && cameraState && !['unknown', 'unavailable'].includes(cameraState.state) && validZoneCalibration(calibration)
+    && String(state.attributes.map_id) === String(calibration.map_id)
+    && String(cameraState.attributes?.map_calibration?.map_id) === String(calibration.map_id));
+}
+
+// SHA-256 fallback for HA served over plain HTTP, where crypto.subtle is absent.
+// The hash binds a camera snapshot to its calibration; it is not authentication.
+function zoneSha256(bytes) {
+  const rotr = (x, n) => (x >>> n) | (x << (32 - n));
+  const primes = [];
+  for (let n = 2; primes.length < 64; n++) if (!primes.some(p => n % p === 0)) primes.push(n);
+  const h = primes.slice(0, 8).map(p => (Math.sqrt(p) % 1 * 2 ** 32) >>> 0);
+  const k = primes.map(p => (Math.cbrt(p) % 1 * 2 ** 32) >>> 0);
+  const padded = new Uint8Array(Math.ceil((bytes.length + 9) / 64) * 64);
+  padded.set(bytes); padded[bytes.length] = 128;
+  const data = new DataView(padded.buffer), bits = bytes.length * 8;
+  data.setUint32(padded.length - 8, Math.floor(bits / 2 ** 32)); data.setUint32(padded.length - 4, bits >>> 0);
+  const w = new Uint32Array(64);
+  for (let offset = 0; offset < padded.length; offset += 64) {
+    for (let i = 0; i < 16; i++) w[i] = data.getUint32(offset + i * 4);
+    for (let i = 16; i < 64; i++) {
+      const a = w[i-15], b = w[i-2];
+      w[i] = w[i-16] + (rotr(a,7)^rotr(a,18)^(a>>>3)) + w[i-7] + (rotr(b,17)^rotr(b,19)^(b>>>10));
+    }
+    let [a,b,c,d,e,f,g,j] = h;
+    for (let i = 0; i < 64; i++) {
+      const t1 = (j + (rotr(e,6)^rotr(e,11)^rotr(e,25)) + ((e&f)^(~e&g)) + k[i] + w[i]) | 0;
+      const t2 = ((rotr(a,2)^rotr(a,13)^rotr(a,22)) + ((a&b)^(a&c)^(b&c))) | 0;
+      j=g; g=f; f=e; e=(d+t1)|0; d=c; c=b; b=a; a=(t1+t2)|0;
+    }
+    [a,b,c,d,e,f,g,j].forEach((v,i) => { h[i]=(h[i]+v)>>>0; });
+  }
+  return h.map(v => v.toString(16).padStart(8,'0')).join('');
+}
+
+
+// Spot+Scrub zone tests confirm mopPasses controls repetitions even for vacuum.
+// In vacuumThenMop it repeats only mopping; dryPasses stays at one.
+function zoneSettingsPayload(mode, strategy, water, passes) {
+  if (!['vacuum','vacuumAndMop','mop','vacuumThenMop'].includes(mode)
+      || !['auto','boost','quiet','quick'].includes(strategy)
+      || !['veryLow','low','medium','high'].includes(water)
+      || ![1,2].includes(passes)) throw new Error('Invalid zone settings');
+  return { clean_type:mode, cleaning_strategy:mode==='mop'?'auto':strategy,
+    water_level:mode==='vacuum'?'low':water,
+    mop_passes:passes, dry_passes:1 };
+}
+
+
+// Owns the frozen image and pointer interaction. HA updates never replace its DOM.
+class DysonPlannerZone extends HTMLElement {
+  constructor() {
+    super(); this.attachShadow({ mode: 'open' }); this.language = 'en'; this.strategy = 'auto'; this.mode = 'vacuum'; this.water = 'low'; this.passes = 1;
+    this.shadowRoot.innerHTML = `<style>
+      :host{display:block;color:var(--primary-text-color);font:inherit}*{box-sizing:border-box}
+      .intro,.toolbar,.message,.actions{margin:12px var(--dp-padding,20px)}
+      .intro,.message{font-size:13px;color:var(--dp-muted);line-height:1.5}.message{min-height:20px}
+      .toolbar,.actions{display:flex;gap:8px;flex-wrap:wrap}.actions{padding-bottom:14px}
+      button{font:inherit;color:inherit;border:1px solid var(--dp-line);border-radius:12px;padding:8px 12px;min-height:44px;background:var(--dp-modern-surface,var(--dp-bg));cursor:pointer}
+      button:disabled{opacity:.45;cursor:default}button:focus-visible{outline:2px solid var(--dp-accent);outline-offset:2px}
+      .start{background:var(--dp-accent);color:var(--text-primary-color,#fff);flex:1}.back{flex:1}
+      svg{display:block;width:100%;height:auto;background:var(--dp-bg);overflow:hidden}
+      .area{fill:color-mix(in srgb,var(--dp-accent) 22%,transparent);stroke:var(--dp-accent);stroke-width:2;vector-effect:non-scaling-stroke;cursor:move;touch-action:none}
+      .handle{fill:var(--dp-accent);stroke:white;stroke-width:2;vector-effect:non-scaling-stroke;cursor:nwse-resize;touch-action:none}
+      [tabindex]:focus{outline:none;stroke:white;stroke-width:3}.hint{fill:white;pointer-events:none;font:22px sans-serif}
+      .settings-overlay{position:absolute;inset:0;z-index:5;background:#0005;padding:12px;display:flex;align-items:flex-start}
+      .settings-panel{width:100%;max-height:min(100%,75vh);overflow-y:auto;overscroll-behavior:contain;background:var(--dp-bg);border:1px solid var(--dp-line);border-radius:14px;padding:18px;box-shadow:0 8px 30px #0003}
+      .settings-panel header{display:flex;align-items:stretch;gap:8px;margin-bottom:20px}.settings-panel h3{flex:1;margin:0;align-self:center;font-size:16px;font-weight:500}
+      .settings-panel [data-do=close-settings]{display:flex;align-items:center;justify-content:center;flex:0 0 42px;min-width:42px;padding:8px;min-height:42px;border-radius:9px;background:var(--dp-bg)}ha-icon{width:24px;height:24px}
+      .settings-fields{padding:10px 14px;border:1px solid var(--dp-line);border-radius:14px;background:var(--dp-modern-surface,var(--dp-bg))}
+      .settings-panel label{display:block;font-size:13px;color:var(--primary-text-color);margin:12px 0 4px}.settings-panel label:first-child{margin-top:0}
+      .settings-panel select{width:100%;font:inherit;font-size:14px;min-height:34px;padding:6px 10px;border:1px solid var(--dp-modern-control-border,var(--dp-line));border-radius:9px;background:var(--dp-modern-control,var(--dp-bg));color:var(--dp-accent)}
+      .unavailable{opacity:.5}.settings-note{font-size:12px;color:var(--dp-muted);margin:6px 0 10px}
+      .segments{background:var(--dp-modern-control,var(--dp-bg));border-color:var(--dp-modern-control-border,var(--dp-line))}
+      .actions{margin:14px var(--dp-padding,20px) 0;padding:12px 0 14px;border-top:1px solid var(--dp-line);gap:10px;flex-wrap:nowrap}
+      .actions{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.secondary-actions{display:flex;gap:8px;min-width:0}.actions .reload{flex:0 0 38px;padding:6px;display:flex;align-items:center;justify-content:center}.actions button{flex:1;min-width:0;min-height:38px;padding:6px 12px;border-radius:13px;font-size:13px}.back{background:var(--dp-modern-surface,var(--dp-bg))}
+.stepped-slider{position:relative;height:24px}
+.slider-ticks{position:absolute;inset:0 10px;pointer-events:none;color:var(--dp-muted)}
+.slider-ticks::before{content:"";position:absolute;left:0;right:0;top:10.5px;height:3px;border-radius:2px;background:currentColor;opacity:.65}
+.slider-tick{position:absolute;left:calc(var(--stop)*100%);top:12px;transform:translate(-50%,-50%);width:10px;height:10px;border-radius:50%;background:currentColor}
+.stepped-slider input[type=range]{position:relative;z-index:1;display:block;appearance:none;-webkit-appearance:none;width:100%;height:24px;margin:0;padding:0;border:0;background:transparent;cursor:pointer}
+.stepped-slider input::-webkit-slider-runnable-track{height:3px;background:transparent;border:0}
+.stepped-slider input::-moz-range-track{height:3px;background:transparent;border:0}
+.stepped-slider input::-moz-range-progress{background:transparent}
+.stepped-slider input::-webkit-slider-thumb{-webkit-appearance:none;box-sizing:border-box;width:20px;height:20px;margin-top:-8.5px;border:3px solid #f4fbfd;border-radius:50%;background:var(--dp-accent);box-shadow:0 1px 3px #0003}
+.stepped-slider input::-moz-range-thumb{box-sizing:border-box;width:20px;height:20px;border:3px solid #f4fbfd;border-radius:50%;background:var(--dp-accent);box-shadow:0 1px 3px #0003}
+.stepped-slider.disabled{opacity:.45}
+.stepped-slider input:disabled{cursor:default}
+.slider-options{position:relative;min-height:28px;margin:0 10px}.slider-options button{position:absolute;left:calc(var(--stop)*100%);transform:translateX(-50%);width:30%}.slider-options button:first-child{left:-10px;transform:none;text-align:left;padding-left:0}.slider-options button:last-child{left:calc(100% + 10px);transform:translateX(-100%);text-align:right;padding-right:0}
+.slider-options button{border:0;background:transparent;padding:2px 2px;min-height:28px;font-size:12px;color:var(--dp-muted);overflow-wrap:anywhere}
+.slider-options button[aria-pressed=true]{color:var(--dp-accent);font-weight:650}
+.segments{display:flex;gap:3px;padding:3px;border:1px solid var(--dp-line);border-radius:12px}
+.segments button{flex:1;min-width:0;min-height:32px;border:0;background:transparent;padding:3px 8px;position:relative}
+.segments button::after{content:"";position:absolute;inset:-6px 0}
+.segments button[aria-pressed=true]{background:var(--dp-accent);color:var(--text-primary-color,#fff)}
+      .zone-settings-open{display:flex;align-items:center;justify-content:space-between;gap:6px;text-align:left}.zone-mode-label{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.zone-settings-open ha-icon{display:flex;align-items:center;justify-content:center;line-height:0;align-self:center;flex:0 0 15px;width:15px;height:15px;--mdc-icon-size:15px}
+      [hidden]{display:none!important}
+    </style>
+    <svg hidden aria-label="Zone selection"><image/><rect class="area" tabindex="0" role="button"/><rect class="handle" tabindex="0" role="button" rx="6"/><text class="hint" text-anchor="middle" dominant-baseline="central">↘</text></svg>
+    <p class="message" role="status" aria-live="polite"></p><div class="actions"><div class="secondary-actions"><button class="reload" data-do="refresh"><ha-icon icon="mdi:reload" aria-hidden="true"></ha-icon></button><button class="zone-settings-open" data-do="settings" aria-haspopup="dialog"><span class="zone-mode-label"></span><ha-icon icon="mdi:cog" aria-hidden="true"></ha-icon></button></div><button class="start" data-do="start"></button></div>
+    <div class="settings-overlay" hidden><section class="settings-panel" role="dialog" aria-modal="true" aria-labelledby="zone-settings-title"><header><h3 id="zone-settings-title" data-i18n="Settings"></h3><button data-do="close-settings" aria-label="Close"><ha-icon icon="mdi:close" aria-hidden="true"></ha-icon></button></header><div class="settings-fields">
+      <label for="zone-mode" data-i18n="Cleaning mode"></label><select id="zone-mode"><option value="vacuum" data-i18n="Vacuum"></option><option value="vacuumAndMop" data-i18n="Vacuum and Mop"></option><option value="mop" data-i18n="Mop"></option><option value="vacuumThenMop" data-i18n="Vacuum then Mop"></option></select>
+      <div class="power-setting">
+      <label for="zone-power" data-i18n="Vacuum Power"></label><div class="stepped-slider"><div class="slider-ticks" aria-hidden="true">${[0,1,2,3].map(i=>`<span class="slider-tick" style="--stop:${i/3}"></span>`).join('')}</div><input id="zone-power" class="zone-power" type="range" min="0" max="3" step="1" value="0"></div>
+      <div class="slider-options">${['Auto','Boost','Quiet','Quick'].map((name,i)=>`<button type="button" data-power="${i}" style="--stop:${i/3}" data-i18n="${name}"></button>`).join('')}</div>
+      </div><div class="water-setting"><label for="zone-water" data-i18n="Water level"></label>
+      <div class="stepped-slider"><div class="slider-ticks" aria-hidden="true">${[0,1,2,3].map(i=>`<span class="slider-tick" style="--stop:${i/3}"></span>`).join('')}</div><input id="zone-water" type="range" min="0" max="3" step="1" value="1"></div>
+      <div class="slider-options">${['Very Low','Low','Medium','High'].map((name,i)=>`<button type="button" data-water="${i}" style="--stop:${i/3}" data-i18n="${name}"></button>`).join('')}</div></div>
+      <label class="repetitions-label"></label><div class="segments"><button type="button" data-passes="1" aria-pressed="true">1×</button><button type="button" data-passes="2" aria-pressed="false">2×</button></div>
+      <p class="settings-note" data-i18n="Settings are sent only when you start the zone clean."></p>
+    </div></section></div>`;
+    this.dialog = this.shadowRoot.querySelector('.settings-overlay');
+    this.dialog.addEventListener('keydown', event => {
+      if (event.key === 'Escape') { event.preventDefault(); this.closeSettings(); }
+      if (event.key === 'Tab') {
+        const items=[...this.dialog.querySelectorAll('button:not(:disabled),select:not(:disabled),input:not(:disabled)')];
+        const first=items[0],last=items.at(-1),active=this.shadowRoot.activeElement;
+        if (event.shiftKey && active===first) { event.preventDefault(); last.focus({preventScroll:true}); }
+        else if (!event.shiftKey && active===last) { event.preventDefault(); first.focus({preventScroll:true}); }
+      }
+    });
+    this.shadowRoot.querySelector('.zone-power').addEventListener('input', event => {
+      if (this.sending) return;
+      this.strategy = ['auto','boost','quiet','quick'][Number(event.target.value)]; this.labels();
+    });
+    this.shadowRoot.querySelector('#zone-mode').addEventListener('change', event => {
+      if (this.sending) return;
+      this.mode=event.target.value; event.target.blur(); this.labels();
+    });
+    this.shadowRoot.querySelector('#zone-water').addEventListener('input', event => {
+      if (this.sending) return;
+      this.water=['veryLow','low','medium','high'][Number(event.target.value)]; this.labels();
+    });
+    this.svg = this.shadowRoot.querySelector('svg');
+    this.image = this.shadowRoot.querySelector('image');
+    this.area = this.shadowRoot.querySelector('.area');
+    this.handle = this.shadowRoot.querySelector('.handle');
+    this.hint = this.shadowRoot.querySelector('.hint');
+    this.shadowRoot.addEventListener('click', event => {
+      const power = event.target.closest('[data-power]');
+      if (power && !this.sending) { this.shadowRoot.querySelector('.zone-power').value=power.dataset.power; this.strategy=['auto','boost','quiet','quick'][Number(power.dataset.power)]; this.labels(); return; }
+      const water=event.target.closest('[data-water]'), passes=event.target.closest('[data-passes]');
+      if (water && !this.sending) { this.water=['veryLow','low','medium','high'][Number(water.dataset.water)]; this.labels(); return; }
+      if (passes && !this.sending) { this.passes=Number(passes.dataset.passes); this.labels(); return; }
+      const action = event.target.closest('button')?.dataset.do;
+      if (!action || event.target.closest('button').disabled) return;
+      if (action === 'refresh') this.load();
+      if (action === 'settings') { this.dialog.hidden=false; this.shadowRoot.querySelector('[data-do="close-settings"]').focus({preventScroll:true}); }
+      if (action === 'close-settings') this.closeSettings();
+      if (action === 'start') this.start();
+    });
+    this.svg.addEventListener('pointerdown', event => this.pointerDown(event));
+    this.svg.addEventListener('pointermove', event => this.pointerMove(event));
+    for (const name of ['pointerup', 'pointercancel', 'lostpointercapture']) this.svg.addEventListener(name, () => { this.drag = null; });
+    this.svg.addEventListener('keydown', event => {
+      if (!this.rect || this.sending || !['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key)) return;
+      event.preventDefault();
+      const step = event.shiftKey ? .05 : .01;
+      this.adjust(this.rect, event.key === 'ArrowLeft' ? -step : event.key === 'ArrowRight' ? step : 0,
+        event.key === 'ArrowUp' ? -step : event.key === 'ArrowDown' ? step : 0, event.target === this.handle);
+    });
+  }
+  snapshot() {
+    return { strategy:this.strategy, mode:this.mode, water:this.water, passes:this.passes, calibration:this.calibration, rect:this.rect ? [...this.rect] : null,
+      vacuum:this.vacuum, camera:this.camera, rotation:this.rotation };
+  }
+  closeSettings() {
+    this.dialog.hidden=true;
+    this.shadowRoot.querySelector('[data-do="settings"]').focus({preventScroll:true});
+  }
+  connectedCallback() { this.observer = new ResizeObserver(() => this.draw()); this.observer.observe(this); }
+  disconnectedCallback() {
+    this.controller?.abort(); this.observer?.disconnect(); this.drag = null;
+    if (this.objectUrl) URL.revokeObjectURL(this.objectUrl);
+    this.objectUrl = null; this.calibration = null;
+  }
+  setOptions(options) {
+    const changed = this.vacuum !== options.vacuum || this.camera !== options.camera || this.rotation !== options.rotation
+      || this.hass?.connection !== options.hass.connection;
+    Object.assign(this, options);
+    if (changed) {
+      this.controller?.abort(); this.attempted = false; this.clear();
+      const saved=options.draft;
+      this.restoreDraft=saved?.vacuum===this.vacuum && saved?.camera===this.camera && saved?.rotation===this.rotation ? saved : null;
+      this.strategy=this.restoreDraft?.strategy || 'auto';
+      this.mode=this.restoreDraft?.mode || 'vacuum'; this.water=this.restoreDraft?.water || 'low'; this.passes=this.restoreDraft?.passes || 1;
+      this.shadowRoot.querySelector('.zone-power').value=['auto','boost','quiet','quick'].indexOf(this.strategy);
+      this._labelsLanguage=null;
+    }
+    if (this.calibration && String(this.hass.states[this.vacuum]?.attributes?.map_id) !== this.calibration.map_id) {
+      this.controller?.abort(); this.clear(); this.note = 'The active map changed. Reload the map and select a new zone.';
+    }
+    if (this._labelsLanguage !== this.language) { this.labels(); this._labelsLanguage = this.language; }
+    this.draw();
+    if (!this.attempted && this.trusted && this.camera) this.load();
+  }
+  t(key) { return translate(this.language, key); }
+  labels() {
+
+    for (const el of this.shadowRoot.querySelectorAll('[data-i18n]')) el.textContent = this.t(el.dataset.i18n);
+    this.shadowRoot.querySelector('[data-do="close-settings"]').setAttribute('aria-label',this.t('Close'));
+    [...this.shadowRoot.querySelectorAll('[data-power]')].forEach((el,i)=>el.setAttribute('aria-pressed',String(i===['auto','boost','quiet','quick'].indexOf(this.strategy))));
+    this.shadowRoot.querySelector('.zone-power').setAttribute('aria-valuetext',this.t(this.strategy[0].toUpperCase()+this.strategy.slice(1)));
+    this.shadowRoot.querySelector('#zone-mode').value=this.mode;
+    this.shadowRoot.querySelector('.power-setting').hidden=this.mode==='mop';
+    this.shadowRoot.querySelector('.water-setting').hidden=this.mode==='vacuum';
+    this.shadowRoot.querySelector('.zone-power').value=['auto','boost','quiet','quick'].indexOf(this.strategy);
+    const waterIndex=['veryLow','low','medium','high'].indexOf(this.water);
+    this.shadowRoot.querySelector('#zone-water').value=waterIndex;
+    this.shadowRoot.querySelector('#zone-water').setAttribute('aria-valuetext',this.t(['Very Low','Low','Medium','High'][waterIndex]));
+    [...this.shadowRoot.querySelectorAll('[data-water]')].forEach((el,i)=>el.setAttribute('aria-pressed',String(i===waterIndex)));
+    [...this.shadowRoot.querySelectorAll('[data-passes]')].forEach(el=>el.setAttribute('aria-pressed',String(Number(el.dataset.passes)===this.passes)));
+    this.shadowRoot.querySelector('.repetitions-label').textContent=this.t(this.mode==='vacuumThenMop'?'Mop repetitions':'Clean repetitions');
+    for (const [action, label] of Object.entries({start:'Start clean'})) {
+      this.shadowRoot.querySelector(`[data-do="${action}"]`).textContent = this.t(label);
+    }
+    this.shadowRoot.querySelector('[data-do="refresh"]').setAttribute('aria-label',this.t('Reload map'));
+    this.shadowRoot.querySelector('[data-do="refresh"]').title=this.t('Reload map');
+    const modeLabel=this.t({vacuum:'Vacuum',vacuumAndMop:'Vacuum and Mop',mop:'Mop',vacuumThenMop:'Vacuum then Mop'}[this.mode]);
+    this.shadowRoot.querySelector('.zone-mode-label').textContent=modeLabel;
+    const settingsButton=this.shadowRoot.querySelector('[data-do="settings"]');
+    settingsButton.setAttribute('aria-label',`${modeLabel} – ${this.t('Settings')}`);
+    settingsButton.title=`${modeLabel} – ${this.t('Settings')}`;
+    this.svg.setAttribute('aria-label', this.t('Zone selection'));
+    this.area.setAttribute('aria-label', this.t('Move zone. Use the arrow keys.'));
+    this.handle.setAttribute('aria-label', this.t('Resize zone. Use the arrow keys.'));
+  }
+  clear() {
+    this.calibration = null; this.rect = null; this.drag = null;
+    if (this.objectUrl) URL.revokeObjectURL(this.objectUrl);
+    this.objectUrl = null; this.image.removeAttribute('href');
+  }
+  async load() {
+    if (this.sending) return;
+    const previous = this.calibration && this.rect ? { calibration: this.calibration, rect: [...this.rect] } : this.restoreDraft;
+    this.restoreDraft = null;
+    this.controller?.abort(); this.clear(); this.attempted = true;
+    const controller = new AbortController(); this.controller = controller;
+    const timeout = setTimeout(() => controller.abort(), 12000);
+    this.note = 'Loading calibrated map …'; this.draw();
+    let objectUrl;
+    try {
+      if (!this.trusted) throw new Error('Camera must belong to the selected robot.');
+      // A camera GET may publish its calibration after the image response arrives.
+      // Retry reads only; a cleaning command is never retried automatically.
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const picture = this.hass.states[this.camera]?.attributes?.entity_picture;
+        if (typeof picture !== 'string' || !picture.startsWith('/api/camera_proxy/')) throw new Error('Camera image unavailable.');
+        const url = new URL(this.hass.hassUrl ? this.hass.hassUrl(picture) : picture, location.href);
+        // Never request a resized proxy image: calibration hashes original bytes.
+        url.searchParams.delete('width'); url.searchParams.delete('height');
+        url.searchParams.set('_zone', String(Date.now()));
+        const response = await fetch(url, { signal: controller.signal, cache: 'no-store', credentials: 'same-origin' });
+        if (!response.ok) throw new Error('Camera image unavailable.');
+        const blob = await response.blob();
+        if (blob.size > 20 * 1024 * 1024) throw new Error('A calibrated PNG image is required.');
+        const bytes = new Uint8Array(await blob.arrayBuffer());
+        // HA cameras may retain their default JPEG content type for PNG bytes.
+        if (![137,80,78,71,13,10,26,10].every((v,i) => bytes[i] === v)) throw new Error('A calibrated PNG image is required.');
+        const hash = globalThis.crypto?.subtle
+          ? [...new Uint8Array(await crypto.subtle.digest('SHA-256', bytes))].map(v => v.toString(16).padStart(2,'0')).join('')
+          : zoneSha256(bytes);
+        for (let poll = 0; poll < 8; poll++) {
+          if (controller.signal.aborted || this.controller !== controller || !this.isConnected) return;
+          const c = this.hass.states[this.camera]?.attributes?.map_calibration;
+          if (validZoneCalibration(c) && c.image_sha256 === hash
+              && String(this.hass.states[this.vacuum]?.attributes?.map_id) === String(c.map_id)) {
+            objectUrl = URL.createObjectURL(new Blob([bytes], { type: 'image/png' }));
+            const img = new Image(); img.src = objectUrl; await img.decode();
+            if (controller.signal.aborted || this.controller !== controller || !this.isConnected) return;
+            if (img.naturalWidth !== c.image_width || img.naturalHeight !== c.image_height) throw new Error('Image and calibration do not match. Reload the map.');
+            this.calibration = structuredClone(c); this.calibration.map_id = String(c.map_id);
+            this.objectUrl = objectUrl; objectUrl = null; this.image.setAttribute('href', this.objectUrl);
+            const sameTransform = previous?.calibration && previous.rect && ['version','map_id','units','image_width','image_height','pixels_per_metre','padding','min_x','max_y']
+              .every(key => String(previous.calibration[key]) === String(c[key]));
+            this.rect = sameTransform ? previous.rect : [.3,.3,.7,.7];
+            this.note = ''; return;
+          }
+          await new Promise(resolve => setTimeout(resolve, 150));
+        }
+      }
+      throw new Error('Image and calibration do not match. Reload the map.');
+    } catch (error) {
+      if (this.controller === controller) this.note = controller.signal.aborted ? 'Map loading timed out. Reload the map.' : error.message;
+    } finally {
+      clearTimeout(timeout);
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+      if (this.controller === controller) { this.controller = null; this.draw(); }
+    }
+  }
+  draw() {
+    if (!this.svg) return;
+    const c = this.calibration, rotated = this.rotation === 90 || this.rotation === 270;
+    // Safari can scroll a focused SVG back into view when its geometry is
+    // rewritten. HA telemetry must not touch the frozen selection's DOM.
+    const geometry = JSON.stringify([c, this.rotation, this.rect, this.svg.getBoundingClientRect().width]);
+    const geometryChanged = geometry !== this._geometry;
+    this._geometry = geometry;
+    if (geometryChanged) {
+      this.svg.toggleAttribute('hidden', !c);
+      if (c) {
+        this.width = rotated ? c.image_height : c.image_width; this.height = rotated ? c.image_width : c.image_height;
+        this.svg.setAttribute('viewBox', `0 0 ${this.width} ${this.height}`);
+        this.image.setAttribute('width', c.image_width); this.image.setAttribute('height', c.image_height);
+        const transform = this.rotation === 90 ? `translate(${c.image_height} 0) rotate(90)`
+          : this.rotation === 180 ? `translate(${c.image_width} ${c.image_height}) rotate(180)`
+          : this.rotation === 270 ? `translate(0 ${c.image_width}) rotate(270)` : '';
+        this.image.setAttribute('transform', transform);
+      }
+      for (const el of [this.area,this.handle,this.hint]) el.toggleAttribute('hidden', !this.rect);
+      if (c && this.rect) {
+        const [x,y,x2,y2] = this.rect, size = Math.min(this.width * .14, 36 * this.width / (this.svg.getBoundingClientRect().width || this.width));
+        for (const [key,value] of Object.entries({ x:x*this.width,y:y*this.height,width:(x2-x)*this.width,height:(y2-y)*this.height })) this.area.setAttribute(key,value);
+        // Keep the grip outside the selected area when there is room. Flip each
+        // axis inward near the image edge without changing the zone or drag origin.
+        const edgeX = x2*this.width, edgeY = y2*this.height;
+        const strokeMargin = this.width / (this.svg.getBoundingClientRect().width || this.width);
+        const handleX = this.width-edgeX >= size+strokeMargin ? edgeX : edgeX-size;
+        const handleY = this.height-edgeY >= size+strokeMargin ? edgeY : edgeY-size;
+        for (const [key,value] of Object.entries({ x:handleX,y:handleY,width:size,height:size })) this.handle.setAttribute(key,value);
+        this.hint.setAttribute('x',handleX+size/2); this.hint.setAttribute('y',handleY+size/2);
+        this.hint.style.fontSize = `${size*.65}px`;
+      }
+    }
+    const ready = zoneCanStart(this.hass,this.vacuum,this.camera,c,this.trusted,this.preview);
+    for (const action of ['settings','refresh','start']) {
+      const button = this.shadowRoot.querySelector(`[data-do="${action}"]`);
+      const disabled = !!this.sending
+        || (action === 'start' && (!ready || !this.rect || !!this.controller))
+        || (action === 'refresh' && !!this.controller);
+      if (button.disabled !== disabled) button.disabled = disabled;
+    }
+    const message = this.t(this.note || (!this.trusted ? 'Camera must belong to the selected robot.'
+      : !c ? 'A calibrated map is required. Reload the map.' : !ready ? 'Zone start unavailable: check robot readiness, map and integration action.'
+      : ''));
+    const notice = this.shadowRoot.querySelector('.message');
+    notice.hidden = !message;
+    if (notice.textContent !== message) notice.textContent = message;
+  }
+  point(event) {
+    const p = new DOMPoint(event.clientX,event.clientY).matrixTransform(this.svg.getScreenCTM().inverse());
+    return [p.x/this.width,p.y/this.height];
+  }
+  pointerDown(event) {
+    if (!this.rect || this.sending || (event.pointerType === 'mouse' && event.button !== 0)
+      || ![this.area,this.handle].includes(event.target)) return;
+    event.preventDefault(); this.drag = { id:event.pointerId,start:this.point(event),rect:[...this.rect],resize:event.target === this.handle };
+    this.svg.setPointerCapture(event.pointerId);
+  }
+  pointerMove(event) {
+    if (!this.drag || this.drag.id !== event.pointerId) return;
+    event.preventDefault(); const p = this.point(event);
+    this.adjust(this.drag.rect,p[0]-this.drag.start[0],p[1]-this.drag.start[1],this.drag.resize);
+  }
+  adjust(rect,dx,dy,resize) {
+    const [x,y,x2,y2] = rect;
+    if (resize) this.rect = [x,y,Math.min(1,Math.max(x+.04,x2+dx)),Math.min(1,Math.max(y+.04,y2+dy))];
+    else { dx=Math.max(-x,Math.min(1-x2,dx)); dy=Math.max(-y,Math.min(1-y2,dy)); this.rect=[x+dx,y+dy,x2+dx,y2+dy]; }
+    this.draw();
+  }
+  async start() {
+    if (this.sending || !this.rect || !zoneCanStart(this.hass,this.vacuum,this.camera,this.calibration,this.trusted,this.preview)) return;
+    const data = { entity_id:this.vacuum,map_id:this.calibration.map_id,rectangle:zoneRobotRectangle(this.rect,this.calibration,this.rotation),...zoneSettingsPayload(this.mode,this.strategy,this.water,this.passes) };
+    this.sending = true; this.note = 'Sending zone start …'; this.draw();
+    try {
+      await this.hass.callService('dyson_spot_scrub','clean_zone',data);
+      if (this.isConnected) this.dispatchEvent(new CustomEvent('zone-started',{bubbles:true,composed:true}));
+    } catch (error) {
+      if (this.isConnected) this.note = error.message || 'Zone start failed. Check the robot before retrying.';
+    } finally { this.sending = false; if (this.isConnected) this.draw(); }
+  }
+}
+if (!customElements.get('dyson-planner-zone')) customElements.define('dyson-planner-zone', DysonPlannerZone);
+
 
 function stationIndicator(field, refillStatus, language = 'en') {
   const t = (key, params) => translate(language, key, params);
@@ -940,6 +1397,9 @@ function stationIndicator(field, refillStatus, language = 'en') {
 }
 
 const styles = `
+.planning-tabs{display:flex;margin:0 var(--dp-padding) 14px;border-bottom:1px solid var(--dp-line)}.planning-tabs button{flex:1;min-width:0;border:0;border-bottom:3px solid transparent;border-radius:0;background:transparent;color:var(--dp-muted);padding:9px 8px;min-height:42px}.planning-tabs button[aria-pressed=true]{color:var(--primary-text-color);border-bottom-color:var(--dp-accent)}
+
+.header-buttons{grid-area:1/3/3/4;display:flex;flex-direction:column;gap:5px;align-self:center}.header-buttons .zone-open{min-height:32px;padding:3px 10px;font-size:12px;background:var(--dp-modern-surface,var(--dp-bg));color:var(--dp-muted)}
 /* Only constrain the content when the dashboard assigns an explicit row count. */
 :host([fixed-height]){height:100%;min-height:0}
 :host([fixed-height]) ha-card{height:100%;min-height:0}
@@ -961,7 +1421,7 @@ header,.station-rows{--hud-red:var(--error-color,#db4437);--hud-blue:var(--blue-
 .status-text-5g{display:inline-flex;align-items:center;justify-content:center;height:16px;box-sizing:border-box;font:bold 11px/1 ui-monospace,monospace;padding:0 3px;border-radius:3px;background:var(--dp-soft)}
 @keyframes status-blink{50%{opacity:.4}}.blink{animation:status-blink 1.6s ease-in-out infinite}@media(prefers-reduced-motion:reduce){.blink{animation:none}}
 .header-main{display:grid;grid-template-columns:auto minmax(0,1fr) auto;grid-template-rows:auto auto;align-items:center;column-gap:13px;padding:4px var(--dp-padding) 10px}
-.header-main .robot{grid-row:1/3}.header-title{display:contents}.header-title h2{grid-area:1/2;margin:0}.header-title p{grid-area:2/2}.header-main .consumables-info{grid-area:1/3/3/4;align-self:center;width:auto}
+.header-main .robot{grid-row:1/3}.header-title{display:contents}.header-title h2{grid-area:1/2;margin:0}.header-title p{grid-area:2/2}.header-main .header-buttons .consumables-info{align-self:stretch;width:100%}
 .robot{background:var(--dp-soft);color:var(--dp-accent);padding:13px;border-radius:15px;display:flex}ha-icon{width:24px;height:24px}h2{font-size:22px;font-weight:500;margin:0 0 5px}p{margin:0;font-size:13px;line-height:1.5;color:var(--dp-muted)}.hint{padding:0 24px 16px}.rooms{padding:0 16px;display:grid;gap:10px}.room{border:1px solid var(--dp-line);border-radius:13px;overflow:hidden}.selected{background:var(--dp-soft)}.room-head{display:flex;align-items:center;gap:8px;padding:10px 12px;min-height:74px}.pick{display:flex;align-items:center;gap:11px;flex:1;min-width:0;min-height:44px}.name{display:block;font-size:15px;font-weight:500;margin-bottom:5px;overflow-wrap:anywhere}.summary{display:block;font-size:12px;color:var(--dp-muted);line-height:1.5}.fields{border-top:1px solid var(--dp-line);padding:14px;background:var(--dp-bg);display:grid;grid-template-columns:1fr 1fr;gap:14px}.field{display:flex;flex-direction:column;gap:7px;font-size:12px;color:var(--dp-muted)}.mode{grid-column:1/-1}.fine{grid-column:1/-1;border-top:1px solid var(--dp-line);padding-top:12px;margin-top:2px}.badge{color:var(--warning-color,#995000);font-size:11px;line-height:1.5}button,select,input{font:inherit}button,select{color:inherit;border:1px solid var(--dp-line);background:var(--dp-bg);border-radius:9px;min-height:42px;padding:9px 12px;font-size:13px}button{cursor:pointer}button:disabled{cursor:default;opacity:.5}select{width:100%;min-width:0;background:var(--secondary-background-color,#f5f7f9);font-size:14px}select:disabled{color:var(--dp-muted);opacity:.65}.mode select{background:var(--dp-soft)}input[type=checkbox]{width:19px;height:19px;accent-color:var(--dp-accent);flex-shrink:0}.expand{border:0;background:transparent;white-space:nowrap}.order{display:flex;gap:5px;margin-top:10px}.order button{min-width:42px}footer{padding:20px 24px 24px}.draft-status{position:relative;padding-left:28px}.discard-draft{position:absolute;right:calc(100% - 24px);top:50%;transform:translateY(-50%);display:flex;align-items:center;justify-content:center;width:24px;height:24px;min-height:0;padding:0;border:0;background:transparent;color:var(--dp-muted)}.discard-draft ha-icon{width:20px;height:20px;--mdc-icon-size:20px;pointer-events:none}.summary-line{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:15px;font-size:13px}.actions{display:flex;gap:10px}.actions button{flex:1;min-height:46px}.start{background:var(--dp-accent);border-color:transparent;color:var(--text-primary-color,#fff)}.notice{margin-top:12px}.error{color:var(--error-color,#b3261e)}.reset{margin-top:12px;background:transparent}.empty{padding:16px 24px}.status{color:var(--dp-muted)}button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--dp-accent);outline-offset:3px}[hidden]{display:none!important}
 .session{padding:4px 24px 0}.session h3{margin:0 0 8px;font-size:20px;font-weight:500}.session .detail{margin-bottom:18px}.requested-label{font-size:12px;color:var(--dp-muted);margin-bottom:8px}.requested{display:flex;flex-wrap:wrap;gap:7px;list-style:none;padding:0;margin:0 0 10px}.requested li{background:var(--dp-soft);border:1px solid var(--dp-line);border-radius:18px;padding:7px 11px;font-size:13px;overflow-wrap:anywhere}.requested-note{margin-bottom:18px}.map-section{margin-top:20px}.map-title{font-size:13px;font-weight:500;margin:0 0 10px}.session-actions button{display:flex;align-items:center;justify-content:center;gap:8px}.session-actions ha-icon{width:20px;height:20px}.session-footer{padding-top:20px}
 .activity-status{display:flex;align-items:center;gap:10px;margin:0 var(--dp-padding) 16px;padding:12px;border-radius:10px;background:var(--dp-soft);font-size:14px}.activity-status ha-icon{flex-shrink:0}.activity-copy{flex:1;min-width:0}.activity-remaining,.activity-start-block,.activity-fault{display:block;margin-top:4px;font-size:12px;line-height:1.5;color:var(--dp-muted);font-variant-numeric:tabular-nums}.drying-progress{display:block;width:100%;height:7px;margin-top:8px;border-radius:999px;background:var(--dp-line);overflow:hidden}.drying-progress-fill{display:block;height:100%;width:0;border-radius:inherit;background:var(--dp-accent)}.drying-control{flex-shrink:0}.cancel-drying{display:flex;align-items:center;justify-content:center;padding:8px;min-width:42px}.map-title{padding:0 var(--dp-padding)}
@@ -1162,7 +1622,9 @@ class DysonRegistryElement extends HTMLElement {
 class DysonCleaningPlannerCard extends DysonRegistryElement {
   constructor() {
     super(); this.selected = []; this.settingDraft = {}; this.dirty = false; this.busy = false; this.expanded = new Set(); this.message = '';
-    this.controlBusy = false; this.pendingStart = false; this.requestedPlan = null;
+    this.controlBusy = false; this.pendingStart = false; this.requestedPlan = null; this.zoneView = false;
+
+    this.shadowRoot.addEventListener('zone-started', () => this.zoneStarted());
     this.shadowRoot.addEventListener('change', event => this.onChange(event));
     this.shadowRoot.addEventListener('click', event => this.onClick(event));
     this.shadowRoot.addEventListener('keydown', event => {
@@ -1201,6 +1663,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       this.clearPendingStart(); this.requestedPlan = null; this.sessionObserved = false;
     }
     this.consumablesOpen = false; this.stationMessage = ''; this.stationError = false;
+    this.zoneView = false; this.zoneDraft = null;
     this.config = normalized;
     this.setAttribute('data-theme', this.config.theme);
     const rows = config.grid_options?.rows ?? config.layout_options?.grid_rows;
@@ -1325,6 +1788,12 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     if (el.dataset.option !== undefined) {
       this.onChange({ target: { dataset: el.dataset, value: el.dataset.option, blur() {} } });
       return;
+    }
+    if (['zones','rooms'].includes(el.dataset.action) && !this.view.active) {
+      const zone = this.shadowRoot.querySelector('dyson-planner-zone');
+      if (zone?.sending) return;
+      if (zone) this.zoneDraft = zone.snapshot();
+      this.zoneView = el.dataset.action === 'zones'; this.requestedPlan = null; this.render(); return;
     }
     if (el.dataset.control) { this.control(el.dataset.control); return; }
     if (this.view.active) return;
@@ -1504,7 +1973,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
   headerHtml() {
     const name = this._hass?.states?.[this.config.entity]?.attributes?.friendly_name;
     const subtitle = typeof name === 'string' && name.trim() ? name : this.config.entity;
-    return `<header><div class="station-status-bar"><div class="station-indicators"></div><div class="battery" role="img"><svg viewBox="0 0 32 20" aria-hidden="true"><rect x="1" y="3" width="26" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="29" y="7" width="3" height="6" rx="1" fill="currentColor"/><rect class="battery-fill" x="4" y="6" width="0" height="8" rx="1" fill="currentColor"/><path class="battery-bolt" d="M17 1 9 11h6l-2 8L23 8h-7Z" fill="var(--dp-bg)" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" hidden/></svg><span class="battery-value" aria-hidden="true" hidden></span></div></div><div class="header-main"><div class="robot"><ha-icon icon="mdi:robot-vacuum"></ha-icon></div><div class="header-title"><h2>${escapeHtml(this.config.title || this.t('Plan a clean'))}</h2><p>${escapeHtml(subtitle)}</p></div><button class="consumables-info" data-action="consumables" data-focus="consumables-info" aria-label="${this.ht("Consumables")}" aria-haspopup="dialog" aria-expanded="false" title="${this.ht("Consumables")}">${this.ht("Info")}</button></div></header>`;
+    return `<header><div class="station-status-bar"><div class="station-indicators"></div><div class="battery" role="img"><svg viewBox="0 0 32 20" aria-hidden="true"><rect x="1" y="3" width="26" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="29" y="7" width="3" height="6" rx="1" fill="currentColor"/><rect class="battery-fill" x="4" y="6" width="0" height="8" rx="1" fill="currentColor"/><path class="battery-bolt" d="M17 1 9 11h6l-2 8L23 8h-7Z" fill="var(--dp-bg)" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" hidden/></svg><span class="battery-value" aria-hidden="true" hidden></span></div></div><div class="header-main"><div class="robot"><ha-icon icon="mdi:robot-vacuum"></ha-icon></div><div class="header-title"><h2>${escapeHtml(this.config.title || this.t('Plan a clean'))}</h2><p>${escapeHtml(subtitle)}</p></div><div class="header-buttons"><button class="consumables-info" data-action="consumables" data-focus="consumables-info" aria-label="${this.ht("Consumables")}" aria-haspopup="dialog" aria-expanded="false" title="${this.ht("Consumables")}">${this.ht("Info")}</button></div></div></header>`;
   }
   updateBattery() {
     const state = batteryStatus(this._hass, this.model);
@@ -1626,9 +2095,46 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     const index = options.indexOf(value);
     return `<div class="modern-control"><label class="field-label" for="slider-${key}-${n}">${label}</label><div class="stepped-slider ${blocked ? 'disabled' : ''}"><div class="slider-ticks" aria-hidden="true">${options.map((_, i) => `<span class="slider-tick" style="--stop:${options.length > 1 ? i / (options.length - 1) : 0}"></span>`).join('')}</div><input id="slider-${key}-${n}" type="range" min="0" max="${options.length - 1}" step="1" value="${Math.max(0, index)}" aria-label="${h(name)}" aria-valuetext="${this.ht(valid ? value : 'Unavailable')}" ${attrs} data-focus="${key}-${n}" ${blocked || options.length < 2 ? 'disabled' : ''}></div><div class="slider-options" style="--options:${options.length}">${options.map((option, i) => `<button ${attrs} data-option="${h(option)}" style="--stop:${options.length > 1 ? i / (options.length - 1) : 0}" data-focus="${key}-${n}-${i}" aria-pressed="${value === option}" ${disabled ? 'disabled' : ''}>${this.ht(option)}</button>`).join('')}</div>${!valid ? `<span class="badge">${this.ht("Unavailable")}</span>` : ''}</div>`;
   }
+  zoneStarted() {
+    this.zoneView = false; this.zoneDraft = null; this.requestedPlan = null; this.message = ''; this.error = false;
+    this.clearPendingStart();
+    if (!cleaningView(this._hass, this.config.entity).live) {
+      this.pendingStart = true;
+      this._startTimer = setTimeout(() => {
+        this.pendingStart = false;
+        if (!cleaningView(this._hass, this.config.entity).live) {
+          this.error = true;
+          this.message = 'The start was sent, but the robot has not reported an active session. Check its status before trying again.';
+        }
+        this.update();
+      }, 30000);
+    }
+    this.update();
+  }
+  planningTabsHtml() {
+    return `<nav class="planning-tabs" aria-label="${this.ht('Cleaning selection')}"><button data-action="rooms" aria-pressed="${!this.zoneView}">${this.ht('Rooms')}</button><button data-action="zones" aria-pressed="${!!this.zoneView}">${this.ht('Zone')}</button></nav>`;
+  }
+  renderZone() {
+    this.paint(`<style>${styles}</style><ha-card><div class="planner-content">${this.headerHtml()}${this.statusHtml()}${this.planningTabsHtml()}<dyson-planner-zone></dyson-planner-zone></div>${this.consumablesHtml()}</ha-card>`, 'zone');
+    const title = this.shadowRoot.querySelector('.header-title h2');
+    if (title.textContent !== this.t('Zone cleaning')) title.textContent = this.t('Zone cleaning');
+    this.updateBattery(); this.updateConsumables(); this.updateStatus();
+    const camera = this.model.cameraEntity;
+    const robotEntry = this.registry.find(e => e.entity_id === this.config.entity);
+    const cameraEntry = this.registry.find(e => e.entity_id === camera);
+    const trusted = !!(robotEntry?.device_id && robotEntry.platform === DOMAIN && cameraEntry?.platform === DOMAIN
+      && robotEntry.device_id === cameraEntry.device_id);
+    this.shadowRoot.querySelector('dyson-planner-zone').setOptions({ hass:this._hass, vacuum:this.config.entity,
+      camera, trusted, draft:this.zoneDraft, theme:this.config.theme, rotation:this.config.camera_rotation, language:this.language, preview:!!this._previewDialog });
+  }
   render() {
     if (!this.model) return;
-    if (this.view.active) { this.renderSession(this.view); return; }
+    const view = this.view;
+    if (view.active && (!this.zoneView || view.live)) {
+      if (view.live) { this.zoneView = false; this.zoneDraft = null; }
+      this.renderSession(view); return;
+    }
+    if (this.zoneView) { this.renderZone(); return; }
     const h = escapeHtml, model = this.model;
     const rooms = model.rooms.filter(r => !r.excluded);
     const external = this.dirty && !this.busy && this.baseline !== this.liveSignature();
@@ -1660,7 +2166,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       }
       return `<section class="room ${selected ? 'selected' : ''}"><div class="room-head"><label class="pick"><input type="checkbox" data-focus="room-${n}" data-room="${h(room.entity)}" ${selected ? 'checked' : ''} ${disabled ? 'disabled' : ''}><span><span class="name">${h(room.name)} ${selected ? `<span class="status">(${order})</span>` : ''}</span><span class="summary">${!room.available ? this.ht(room.error || 'Unavailable') : this.ht(valueOf('cleaning_mode') ?? 'Room settings unavailable')}</span></span></label><button class="expand" data-focus="expand-${n}" data-expand="${h(room.entity || room.name)}" aria-expanded="${open}" aria-controls="fields-${n}" aria-label="${this.ht('Settings for {name}', { name: room.name })}"><span>${this.ht("Settings")}</span> ${open ? '⌃' : '⌄'}</button></div><div class="fields" id="fields-${n}" ${open ? '' : 'hidden'}>${fields}${!room.roomId ? `<p class="badge mode">${this.ht("Room ID unavailable. Check the updated integration and refresh rooms.")}</p>` : ''}</div></section>`;
     }).join('');
-    this.paint(`<style>${styles}</style><ha-card><div class="planner-content">${this.headerHtml()}${this.statusHtml()}<div class="rooms ${modern ? 'modern-rooms' : ''}" style="--room-count:${rooms.length}">${roomHtml}</div>${!rooms.length ? `<p class="empty">${this.ht("No enabled rooms found. Check the card configuration and room discovery.")}</p>` : ''}<footer><div class="summary-line"><span>${this.ht('{selected} of {total} rooms selected', { selected: this.selected.length, total: rooms.length })}</span><span class="status ${this.dirty ? 'draft-status' : ''}">${this.dirty ? `<button class="discard-draft" data-focus="reset" data-action="reset" ${this.busy ? 'disabled' : ''} title="${this.ht("Discard draft")}" aria-label="${this.ht("Discard draft")}"><ha-icon icon="mdi:trash-can-outline" aria-hidden="true"></ha-icon></button>${this.ht('Local draft')}` : this.ht('From Home Assistant')}</span></div><div class="actions"><button data-action="save" data-focus="save" ${this._previewDialog || !hasChanges || this.busy || !canSave ? 'disabled' : ''}>${this.ht(this.saving ? 'Saving …' : 'Save settings')}</button><button class="start" data-focus="start" data-action="start" ${this._previewDialog || this.selected.length === 0 || this.busy || startBlockReason(this._hass, this.config.entity) ? 'disabled' : ''}>${this.ht("Start clean")}</button></div>${!canSave || !canStart ? `<p class="notice badge">${this.ht("The updated Dyson integration actions are not available. Reload the integration and refresh this dashboard.")}</p>` : ''}${external ? `<p class="notice badge">${this.ht("Settings changed outside this card. Your edited values remain in the local draft.")}</p>` : ''}<p class="notice ${this.error ? 'error' : ''}" role="status" aria-live="polite">${this.ht(this.message)}</p></footer></div>${this.consumablesHtml()}</ha-card>`, 'planner');
+    this.paint(`<style>${styles}</style><ha-card><div class="planner-content">${this.headerHtml()}${this.statusHtml()}${this.planningTabsHtml()}<div class="rooms ${modern ? 'modern-rooms' : ''}" style="--room-count:${rooms.length}">${roomHtml}</div>${!rooms.length ? `<p class="empty">${this.ht("No enabled rooms found. Check the card configuration and room discovery.")}</p>` : ''}<footer><div class="summary-line"><span>${this.ht('{selected} of {total} rooms selected', { selected: this.selected.length, total: rooms.length })}</span><span class="status ${this.dirty ? 'draft-status' : ''}">${this.dirty ? `<button class="discard-draft" data-focus="reset" data-action="reset" ${this.busy ? 'disabled' : ''} title="${this.ht("Discard draft")}" aria-label="${this.ht("Discard draft")}"><ha-icon icon="mdi:trash-can-outline" aria-hidden="true"></ha-icon></button>${this.ht('Local draft')}` : this.ht('From Home Assistant')}</span></div><div class="actions"><button data-action="save" data-focus="save" ${this._previewDialog || !hasChanges || this.busy || !canSave ? 'disabled' : ''}>${this.ht(this.saving ? 'Saving …' : 'Save settings')}</button><button class="start" data-focus="start" data-action="start" ${this._previewDialog || this.selected.length === 0 || this.busy || startBlockReason(this._hass, this.config.entity) ? 'disabled' : ''}>${this.ht("Start clean")}</button></div>${!canSave || !canStart ? `<p class="notice badge">${this.ht("The updated Dyson integration actions are not available. Reload the integration and refresh this dashboard.")}</p>` : ''}${external ? `<p class="notice badge">${this.ht("Settings changed outside this card. Your edited values remain in the local draft.")}</p>` : ''}<p class="notice ${this.error ? 'error' : ''}" role="status" aria-live="polite">${this.ht(this.message)}</p></footer></div>${this.consumablesHtml()}</ha-card>`, 'planner');
     this.updateBattery();
     this.updateConsumables();
     this.updateStatus();

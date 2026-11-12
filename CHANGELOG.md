@@ -1,5 +1,18 @@
 # Changelog
 
+## v1.4.0
+
+- Add Rooms and Zone planning tabs with independent local drafts.
+- Select one movable, resizable rectangle on a verified camera snapshot, including rotated maps and touch controls.
+- Add zone settings for all four cleaning modes, vacuum power, water level and repetitions. Vacuum then Mop exposes mop repetitions and keeps one vacuum pass.
+- Use the Spot+Scrub hardware-verified repetition counter, including two-pass vacuum zone cleaning.
+- Keep the resize handle reachable at image edges and preserve scrolling during map selection.
+- Require matching map calibration and robot readiness before sending a single zone-start action.
+- Normalize build line endings for reproducible Windows/Linux bundles.
+- Refresh planner/session screenshots, add a zone screenshot, and set the planned minimum integration version to v2.1.0.
+
+Release preparation: confirm the upstream integration v2.1.0 release contains the zone action and calibration before publishing. Other models still need hardware confirmation.
+
 ## v1.3.0
 
 - Add English and German translations for the card, visual editor, station settings, consumables, status messages and tooltips.

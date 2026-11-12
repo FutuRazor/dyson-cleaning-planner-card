@@ -94,7 +94,7 @@ try {
       const bar = el.querySelector('.consumable-track').getBoundingClientRect();
       return bar.left > label.right && bar.height === 12 && Math.abs((bar.top + bar.bottom - label.top - label.bottom) / 2) < 1;
     }), true);
-    await page.screenshot({ path: `artifacts/consumables-v1.3.0-${width}.png`, fullPage: true });
+    await page.screenshot({ path: `artifacts/consumables-v1.4.0-${width}.png`, fullPage: true });
   }
   assert.deepEqual(errors, []);
   console.log('Consumables browser checks passed: live values, warning, focus, draft, no commands, map persistence and mobile layout.');

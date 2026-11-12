@@ -1,4 +1,14 @@
-# Testing v1.3.0
+# Testing v1.4.0
+
+## v1.4.0 release acceptance
+
+- Run `npm run check` and `node tests/zone-browser.mjs`; verify the compiled bundle is reproducible.
+- Verify Rooms/Zone draft retention, rotated-map selection, edge-aware resize handles, touch input and fixed-height scrolling.
+- Check all modes and their relevant settings, English/German repetition labels, and one service call only when Start is pressed.
+- Reject missing/mismatched calibration, changed map IDs, a foreign camera and unavailable start readiness.
+- Maintainer hardware tests confirmed vacuum zone cleaning, selection at 270° on iPhone and zones spanning two rooms. Further tests confirmed two vacuum passes with `mop_passes: 2`, and one vacuum pass followed by two mop passes in Vacuum then Mop.
+- `dry_passes: 2` did not produce a second vacuum pass on the tested Spot+Scrub AI; the card keeps it at 1.
+- Before release, confirm integration v2.1.0 includes the matching zone action and calibration. Do not infer support for untested models.
 
 ## v1.3.0 release acceptance
 

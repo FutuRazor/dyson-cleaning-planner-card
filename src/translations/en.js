@@ -1,5 +1,14 @@
 // English messages are also stable translation keys. Never use translated labels in action payloads.
 export const en = {
+  "Cleaning selection": "Cleaning selection",
+  "Rooms": "Rooms",
+  "Close": "Close",
+  "One pass": "One pass",
+  "Drag the zone or resize its lower-right corner.": "Drag the zone or resize its lower-right corner.",
+  "Settings are sent only when you start the zone clean.": "Settings are sent only when you start the zone clean.",
+  "Two passes are not yet available.": "Two passes are not yet available.",
+  "Not yet available": "Not yet available",
+  "Other cleaning modes are not yet available.": "Other cleaning modes are not yet available.",
   "Plan a clean": "Plan a clean",
   "Cleaning session": "Cleaning session",
   "Cleaning session preview": "Cleaning session preview",
@@ -195,6 +204,26 @@ export const en = {
   "{error} No automatic retry will be made.": "{error} No automatic retry will be made.",
   "Saving room settings …": "Saving room settings …",
   "Save was sent, but Home Assistant has not reflected all values yet. The draft was kept; check the robot before retrying.": "Save was sent, but Home Assistant has not reflected all values yet. The draft was kept; check the robot before retrying.",
-  "Settings sent. Home Assistant values updated. Room selection remains local.": "Settings sent. Home Assistant values updated. Room selection remains local."
+  "Settings sent. Home Assistant values updated. Room selection remains local.": "Settings sent. Home Assistant values updated. Room selection remains local.",
+  "Zone": "Zone",
+  "Zone cleaning": "Zone cleaning",
+  "Zone selection": "Zone selection",
+  "Vacuum · Auto · One pass. Drag the zone or resize its lower-right corner.": "Vacuum · Auto · One pass. Drag the zone or resize its lower-right corner.",
+  "Reload map": "Reload map",
+  "Back to rooms": "Back to rooms",
+  "Move zone. Use the arrow keys.": "Move zone. Use the arrow keys.",
+  "Resize zone. Use the arrow keys.": "Resize zone. Use the arrow keys.",
+  "The active map changed. Reload the map and select a new zone.": "The active map changed. Reload the map and select a new zone.",
+  "Loading calibrated map …": "Loading calibrated map …",
+  "Camera must belong to the selected robot.": "Camera must belong to the selected robot.",
+  "Camera image unavailable.": "Camera image unavailable.",
+  "A calibrated PNG image is required.": "A calibrated PNG image is required.",
+  "Image and calibration do not match. Reload the map.": "Image and calibration do not match. Reload the map.",
+  "Map loading timed out. Reload the map.": "Map loading timed out. Reload the map.",
+  "A calibrated map is required. Reload the map.": "A calibrated map is required. Reload the map.",
+  "Zone start unavailable: check robot readiness, map and integration action.": "Zone start unavailable: check robot readiness, map and integration action.",
+  "Map frozen for selection. Room settings remain unchanged.": "Map frozen for selection. Room settings remain unchanged.",
+  "Sending zone start …": "Sending zone start …",
+  "Zone start failed. Check the robot before retrying.": "Zone start failed. Check the robot before retrying.",
+  "Mop repetitions": "Mop repetitions"
 };
-
