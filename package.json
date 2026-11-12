@@ -6,6 +6,7 @@
   "description": "Home Assistant Lovelace cleaning planner for Dyson Spot+Scrub",
   "scripts": {
     "build": "node scripts/build.mjs",
+    "deploy": "copy /Y dist\\dyson-cleaning-planner-card.js \"\\\\192.168.178.54\\config\\www\\dyson-planer-card\\dyson-cleaning-planner-card.js\"",
     "test": "node --test tests/*.test.mjs",
     "check": "node --check src/core.js && node --check src/map.js && node --check src/zone-core.js && node --check src/zone.js && node --check src/card.js && node --check src/editor.js && npm test && npm run build"
   },
