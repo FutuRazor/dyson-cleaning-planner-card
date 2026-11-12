@@ -2129,7 +2129,11 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
   }
   render() {
     if (!this.model) return;
-    if (this.view.active) { this.zoneView = false; this.zoneDraft = null; this.renderSession(this.view); return; }
+    const view = this.view;
+    if (view.active && (!this.zoneView || view.live)) {
+      if (view.live) { this.zoneView = false; this.zoneDraft = null; }
+      this.renderSession(view); return;
+    }
     if (this.zoneView) { this.renderZone(); return; }
     const h = escapeHtml, model = this.model;
     const rooms = model.rooms.filter(r => !r.excluded);
