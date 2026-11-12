@@ -1,4 +1,4 @@
-/* Dyson Cleaning Planner Card v1.3.0 | MIT */
+/* Dyson Cleaning Planner Card v1.4.0 | MIT */
 // English messages are also stable translation keys. Never use translated labels in action payloads.
 const en = {
   "Cleaning selection": "Cleaning selection",

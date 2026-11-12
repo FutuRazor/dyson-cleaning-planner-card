@@ -15,15 +15,17 @@
 </p>
 
 <p align="center">
-  Plan room cleaning, adjust each room's settings, and follow your Dyson's progress in Home Assistant.
+  Plan room or zone cleaning, adjust cleaning settings, and follow your Dyson's progress in Home Assistant.
 </p>
 
-**Version 1.3.0**
+**Version 1.4.0**
 
 ## Requirements
 
-- [Dyson Spot+Scrub integration by UNsync3D](https://github.com/UNsync3D/ha-dyson-spot-scrub), **v1.5.0 or newer**, installed and configured in Home Assistant.
+- [Dyson Spot+Scrub integration by UNsync3D](https://github.com/UNsync3D/ha-dyson-spot-scrub), **v2.1.0 or newer**, installed and configured in Home Assistant.
 - **Home Assistant Marketplace** for the recommended installation method on Home Assistant **2026.11 or newer**. On older versions, use [HACS](https://www.hacs.xyz/). Manual installation is also supported.
+
+For testing before integration v2.1.0 is released, use the matching [zone-cleaning integration branch](https://github.com/FutuRazor/ha-dyson-spot-scrub/tree/test/zone-cleaning). The regular v2.0.2 build does not provide zone cleaning.
 
 ## Screenshots
 
@@ -35,13 +37,18 @@
 <table>
   <tr>
     <td align="center"><img src="docs/images/planner-narrow.png" alt="Narrow Modern planner with settings expanded inside a room" width="300"><br>Narrow layout</td>
-    <td align="center"><img src="docs/images/cleaning-session.png" alt="Active mopping session with room badges, live map and Pause/Home controls" width="400"><br>Cleaning session</td>
+    <td align="center"><img src="docs/images/cleaning-session.png" alt="Active mopping session with live map and Pause/Home controls" width="400"><br>Cleaning session</td>
   </tr>
   <tr>
     <td align="center"><img src="docs/images/station-settings.png" alt="Station switches, preferences and dock action buttons" width="360"><br>Station settings</td>
     <td align="center"><img src="docs/images/consumables.png" alt="Consumable remaining-life bars and cleaning-solution availability" width="360"><br>Consumables</td>
   </tr>
 </table>
+
+<p align="center">
+  <img src="docs/images/zone-cleaning.png" alt="Zone planner with a movable rectangle and resize handle; Start is disabled while the mop roller is being washed" width="600">
+  <br>Zone cleaning — select a rectangle directly on the map
+</p>
 
 [Try the interactive preview](https://futurazor.github.io/dyson-cleaning-planner-card/preview/index.html). It uses simulated data; no robot is connected.
 
@@ -112,7 +119,7 @@ Update through Marketplace (or HACS on older Home Assistant versions), or replac
 
 ## Using the card
 
-### Plan a clean
+### Plan rooms
 
 In **Modern**, tap the circle to select a room; its number shows the selection order. Tap the room name, mode or arrow to open its settings without changing the selection. **Classic** remains available in the editor.
 
@@ -124,6 +131,14 @@ Changes stay in a local draft until you choose:
 - **Start clean** — start the selected rooms with your chosen settings.
 
 The trash icon beside **Local draft** discards unsaved changes. Reloading the card also clears the draft. Selected room IDs are sent in click order; the integration and robot execute the request. The display order configured in the editor is separate from this selection order.
+
+### Clean a zone
+
+Choose **Zone** below the header to clean a specific area instead of whole rooms. A blue rectangle appears on the map: drag it to move it and use the corner handle to resize it. The handle moves inward near the image edges so it stays reachable.
+
+The button beside Reload shows the current cleaning mode. Open it to choose **Vacuum**, **Vacuum and Mop**, **Mop**, or **Vacuum then Mop**, plus the relevant power, water level and repetitions. Settings stay local until **Start clean**. With **Vacuum then Mop**, **Mop repetitions** controls the wiping passes; vacuuming runs once.
+
+Switching between **Rooms** and **Zone** keeps your local plans. Reload fetches a fresh map and preserves the rectangle when the map and its coordinates are unchanged. Map rotation also applies to zone selection. One rectangular zone is supported at a time; zone cleaning has been hardware-tested on the Spot+Scrub AI, while other models still need confirmation.
 
 ### During and after cleaning
 
@@ -194,6 +209,7 @@ These options belong in the individual card's code editor, not in `configuration
 - The card relies on the integration for room data, robot status and supported actions. Room badges may show the request made from this card; they are not confirmed per-room progress.
 - On upgrade, cards without an explicit `theme` use Modern. Select Classic in the editor to retain the previous layout.
 - After changes to the robot's map, use **Refresh rooms** below the room order in the card editor if needed.
+- Zone selection needs a calibrated camera image from the matching integration. If the image cannot be verified, Start stays disabled. Reload the map; if the problem persists, check the integration version. Installing the regular integration instead of the zone-enabled build leaves the required map information missing.
 - If controls are unavailable, check the corresponding device and entities in Home Assistant and confirm that the required integration version is installed.
 
 

@@ -1,8 +1,8 @@
-# Integration contract — card v1.3.0
+# Integration contract — card v1.4.0
 
-This document describes what the **current card actually reads and sends**, based on `src/core.js`, `src/card.js`, `src/editor.js` and `src/map.js`. It is a frontend contract, not a specification of Dyson's MQTT protocol or a guarantee about the integration's internal implementation.
+This document describes what the **current card actually reads and sends**, based on `src/core.js`, `src/card.js`, `src/editor.js`, `src/map.js`, `src/zone.js` and `src/zone-core.js`. It is a frontend contract, not a specification of Dyson's MQTT protocol or a guarantee about the integration's internal implementation.
 
-Both Modern and Classic use this same contract. The documented minimum integration version is **UNsync3D Dyson Spot+Scrub v1.5.0**; optional features require the corresponding entities/actions in the installed version.
+Both Modern and Classic use this same contract. The documented minimum integration version is **UNsync3D Dyson Spot+Scrub v2.1.0**; optional features require the corresponding entities/actions in the installed version.
 
 ## 1. Dependency overview
 
@@ -379,3 +379,29 @@ Cleaning solution displays Ready to use / Refill required; its Enabled/Disabled 
 6. Verify missing optional entities degrade individually. In particular, unavailable registered drying sensors must not resurrect legacy values, and button `unknown` must remain valid.
 7. Check camera proxy images, battery, consumable usage direction, station option updates and dock button availability.
 8. Test concurrent external changes and map changes in the integration. The frontend cannot guarantee transactional updates across the Dyson app, automations or other browsers.
+
+
+## Zone cleaning (v1.4.0)
+
+The planned minimum integration release is v2.1.0. Until it is published with
+zone support, use the matching integration test branch.
+
+- The configured vacuum must expose `map_id` and `ready_to_start: true`.
+- The same-device camera must expose `map_calibration`: version 1, `map_id`,
+  units `m`, positive `image_width`, `image_height`, `pixels_per_metre`,
+  nonnegative `padding`, finite `min_x` and `max_y`, and `image_sha256`.
+- The camera proxy must return the original PNG. The card removes width/height
+  query parameters and verifies the dimensions and SHA-256 before use.
+- `dyson_spot_scrub.clean_zone` receives one `entity_id`, the matching `map_id`,
+  and `rectangle: [x_min, y_min, x_max, y_max]` in robot metres.
+- Settings: `clean_type` is `vacuum`, `vacuumAndMop`, `mop` or `vacuumThenMop`;
+  `cleaning_strategy` is `auto`, `boost`, `quiet` or `quick`; `water_level` is
+  `veryLow`, `low`, `medium` or `high`. The card uses `auto` for Mop and `low`
+  for Vacuum's unused water setting.
+- `mop_passes` is 1 or 2 in every mode; `dry_passes` stays at 1. This mapping
+  follows Spot+Scrub hardware tests. In Vacuum then Mop, repetitions affect
+  only mopping. Other models require separate verification.
+- All zone settings stay local until Start. No room preferences are written,
+  and failed commands are not automatically retried.
+
+See [zone cleaning details](zone-cleaning.md) for geometry and validation.
