@@ -43,12 +43,12 @@ For testing before integration v2.1.0 is released, use the matching [zone-cleani
     <td align="center"><img src="docs/images/station-settings.png" alt="Station switches, preferences and dock action buttons" width="360"><br>Station settings</td>
     <td align="center"><img src="docs/images/consumables.png" alt="Consumable remaining-life bars and cleaning-solution availability" width="360"><br>Consumables</td>
   </tr>
+    <tr>
+    <td align="center"><img src="docs/images/zone-cleaning.png" alt="Zone planner with a movable rectangle and resize handle; Start is disabled while the mop roller is being washed" width="360"><br>Zone Cleaning</td>
+    <td align="center"><img src="docs/images/zone-cleaning-gif.gif" alt="Zone Cleaning with positioning, start and cleaning" width="360"><br>Zone Cleaning Video</td>
+  </tr>
 </table>
 
-<p align="center">
-  <img src="docs/images/zone-cleaning.png" alt="Zone planner with a movable rectangle and resize handle; Start is disabled while the mop roller is being washed" width="600">
-  <br>Zone cleaning — select a rectangle directly on the map
-</p>
 
 [Try the interactive preview](https://futurazor.github.io/dyson-cleaning-planner-card/preview/index.html). It uses simulated data; no robot is connected.
 
