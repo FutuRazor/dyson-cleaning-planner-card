@@ -92,6 +92,14 @@ If the repository is already listed in HACS, you can find and download it direct
 
 If **Resources** is not visible, enable **Advanced mode** in your Home Assistant user profile.
 
+<!-- coderabbit-ai-generated:v1 -->
+
+<!-- coderabbit-ai-generated-section:v1:e6a2e485c56425355703688d10031c1ea7942b520491b2c50d3b2fa2f4253c22 -->
+
+For local development, build with `npm run build`, then set `HA_CONFIG_DIR` to your Home Assistant configuration directory and run `npm run deploy`. Use a mounted configuration share on Linux or a UNC path on Windows. The existing `www/dyson-planner` directory must be available; deployment is skipped if it or `HA_CONFIG_DIR` is unavailable. Copy errors are reported as failures.
+
+<!-- /coderabbit-ai-generated:v1 -->
+
 ### Add the card to your dashboard
 
 Open your dashboard and choose **Edit dashboard → Add card**. Search for **Dyson Cleaning Planner**, select your Dyson vacuum, and save. Rooms and supported controls are detected automatically.
