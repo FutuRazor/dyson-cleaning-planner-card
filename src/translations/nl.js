@@ -1,5 +1,13 @@
 // Dutch UI text. Protocol values and entity names remain unchanged.
 export const nl = {
+  "Voice prompts": "Spraakmeldingen",
+  "Volume": "Volume",
+  "Child lock": "Kinderslot",
+  "Do not disturb": "Niet storen",
+  "Start time": "Starttijd",
+  "End time": "Eindtijd",
+  "This robot setting is unavailable.": "Deze robotinstelling is niet beschikbaar.",
+  "Invalid robot setting.": "Ongeldige robotinstelling.",
   "Mop pad": "Dweilpad",
   "Cleaning selection": "Reinigingsselectie",
   "Rooms": "Kamers",
@@ -15,6 +23,8 @@ export const nl = {
   "Cleaning session preview": "Voorbeeld van reinigingssessie",
   "Info": "Info",
   "Settings": "Instellingen",
+  "Station": "Station",
+  "Robot": "Robot",
   "Station settings": "Stationinstellingen",
   "Consumables": "Verbruiksartikelen",
   "Robot information": "Robotinformatie",

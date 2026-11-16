@@ -302,6 +302,42 @@ export function consumableStatus(hass, registry, entity) {
 }
 
 
+export const ROBOT_FIELDS = [
+  ['voice_prompts', 'Voice prompts', 'switch'],
+  ['volume', 'Volume', 'number', 'voice_prompts'],
+  ['child_lock', 'Child lock', 'switch'],
+  ['do_not_disturb', 'Do not disturb', 'switch'],
+  ['do_not_disturb_start', 'Start time', 'time', 'do_not_disturb'],
+  ['do_not_disturb_end', 'End time', 'time', 'do_not_disturb'],
+];
+export function robotSettings(hass, registry, entity) {
+  const fields = ROBOT_FIELDS.map(([key, label, domain, parent]) => {
+    const matches = deviceEntities(registry, entity, domain, `setting_${key}`).filter(e => !e.disabled_by);
+    const id = matches.length === 1 ? matches[0].entity_id : undefined;
+    const state = hass?.states?.[id], value = state?.state;
+    const valid = domain === 'switch' ? ['on', 'off'].includes(value) : domain === 'number'
+      ? value !== '' && Number.isFinite(Number(value)) && Number(value) >= 0 && Number(value) <= 100
+      : /^([01]\d|2[0-3]):[0-5]\d(:00)?$/.test(value || '');
+    const service = domain === 'switch' ? hass?.services?.switch?.turn_on && hass?.services?.switch?.turn_off : hass?.services?.[domain]?.set_value;
+    return { key, label, domain, parent, entity:id, supported:!!id, value, available:hass?.connected !== false && available(state) && valid && !!service };
+  });
+  return fields.map(field => ({ ...field, enabled:!field.parent || fields.some(p => p.key === field.parent && p.available && p.value === 'on') }));
+}
+export async function changeRobotSetting(hass, registry, entity, key, value) {
+  const field = robotSettings(hass, registry, entity).find(f => f.key === key);
+  if (!field?.available || !field.enabled) throw new UiError('This robot setting is unavailable.');
+  if (field.domain === 'switch') {
+    if (typeof value !== 'boolean') throw new UiError('Invalid robot setting.');
+    return hass.callService('switch', value ? 'turn_on' : 'turn_off', { entity_id:field.entity });
+  }
+  if (field.domain === 'number') {
+    if (typeof value !== 'number' || !Number.isInteger(value) || value < 0 || value > 100 || value % 10) throw new UiError('Invalid robot setting.');
+    return hass.callService('number', 'set_value', { entity_id:field.entity, value });
+  }
+  if (typeof value !== 'string' || !/^([01]\d|2[0-3]):[0-5]\d$/.test(value)) throw new UiError('Invalid robot setting.');
+  return hass.callService('time', 'set_value', { entity_id:field.entity, time:`${value}:00` });
+}
+
 export const STATION_FIELDS = [
   ['hot_water_mopping', 'Hot water mopping', 'switch'],
   ['cleaning_solution', 'Cleaning solution', 'switch'],

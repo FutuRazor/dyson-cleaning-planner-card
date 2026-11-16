@@ -1,5 +1,13 @@
 // English messages are also stable translation keys. Never use translated labels in action payloads.
 export const en = {
+  "Voice prompts": "Voice prompts",
+  "Volume": "Volume",
+  "Child lock": "Child lock",
+  "Do not disturb": "Do not disturb",
+  "Start time": "Start time",
+  "End time": "End time",
+  "This robot setting is unavailable.": "This robot setting is unavailable.",
+  "Invalid robot setting.": "Invalid robot setting.",
   "Mop pad": "Mop pad",
   "Cleaning selection": "Cleaning selection",
   "Rooms": "Rooms",
@@ -15,6 +23,8 @@ export const en = {
   "Cleaning session preview": "Cleaning session preview",
   "Info": "Info",
   "Settings": "Settings",
+  "Station": "Station",
+  "Robot": "Robot",
   "Station settings": "Station settings",
   "Consumables": "Consumables",
   "Robot information": "Robot information",

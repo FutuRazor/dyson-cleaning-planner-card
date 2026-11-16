@@ -1,5 +1,13 @@
 // German display text. Entity names and protocol values are never rewritten.
 export const de = {
+  "Voice prompts": "Sprachausgabe",
+  "Volume": "Lautstärke",
+  "Child lock": "Kindersicherung",
+  "Do not disturb": "Nicht stören",
+  "Start time": "Startzeit",
+  "End time": "Endzeit",
+  "This robot setting is unavailable.": "Diese Robotereinstellung ist nicht verfügbar.",
+  "Invalid robot setting.": "Ungültige Robotereinstellung.",
   "Mop pad": "Wischpad",
   "Cleaning selection": "Reinigungsauswahl",
   "Rooms": "Räume",
@@ -15,6 +23,8 @@ export const de = {
   "Cleaning session preview": "Reinigungsvorschau",
   "Info": "Info",
   "Settings": "Einstellungen",
+  "Station": "Station",
+  "Robot": "Roboter",
   "Station settings": "Stationseinstellungen",
   "Consumables": "Verbrauchsmaterialien",
   "Robot information": "Roboterinformationen",
