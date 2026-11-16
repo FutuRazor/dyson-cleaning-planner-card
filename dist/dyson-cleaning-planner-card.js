@@ -1049,8 +1049,8 @@ function zoneSettingsPayload(mode, strategy, water, passes) {
 // Trial UI minimum, not a confirmed firmware limit. Each side must meet it.
 function zoneMinimumSize(c, rotation = 0) {
   const rotated = rotation === 90 || rotation === 270;
-  return [.45 * c.pixels_per_metre / (rotated ? c.image_height : c.image_width),
-    .45 * c.pixels_per_metre / (rotated ? c.image_width : c.image_height)];
+  return [.55 * c.pixels_per_metre / (rotated ? c.image_height : c.image_width),
+    .55 * c.pixels_per_metre / (rotated ? c.image_width : c.image_height)];
 }
 function zoneHasMinimumSize(rect, c, rotation = 0) {
   if (!rect || !validZoneCalibration(c)) return false;

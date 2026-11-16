@@ -52,14 +52,14 @@ test('zone repetitions use the hardware-verified common counter and keep dry pas
 });
 
 
-test('trial minimum enforces 45 cm on both sides at every rotation and image edge', () => {
+test('trial minimum enforces 55 cm on both sides at every rotation and image edge', () => {
  for (const rotation of [0,90,180,270]) {
   assert.equal(zoneHasMinimumSize([.9,.9,.91,.91],calibration,rotation),false);
   const rect=fitZoneMinimum([.99,.99,1,1],calibration,rotation);
   assert.ok(rect.every(n=>n>=0 && n<=1));
   assert.equal(zoneHasMinimumSize(rect,calibration,rotation),true);
   const [x,y,x2,y2]=zoneRobotRectangle(rect,calibration,rotation);
-  assert.ok(Math.abs(x2-x-.45)<1e-9);
-  assert.ok(Math.abs(y2-y-.45)<1e-9);
+  assert.ok(Math.abs(x2-x-.55)<1e-9);
+  assert.ok(Math.abs(y2-y-.55)<1e-9);
  }
 });
