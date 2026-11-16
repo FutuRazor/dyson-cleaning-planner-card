@@ -197,6 +197,7 @@ These options belong in the individual card's code editor, not in `configuration
 | `room_entities` | Optional mapping from room names to switch entity IDs |
 | `show_camera` | Show the map during cleaning; default: `true` |
 | `camera_entity` | Optional camera entity on the same Dyson device |
+| `header_icon_style` | `integration` (default robot illustration) or `home_assistant` (original icon) |
 | `zone_dimension_unit` | Dimension pill: `auto` (HA units, default), `cm`, `inch`, or `off` |
 | `camera_rotation` | `0`, `90`, `180`, or `270` degrees |
 | `show_status_bar` | Show station indicators and battery; default: `true` |

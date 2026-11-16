@@ -1,5 +1,8 @@
 // Dutch UI text. Protocol values and entity names remain unchanged.
 export const nl = {
+  "Integration": "Integratie",
+  "Invalid header icon style.": "Ongeldige stijl voor het koptekstpictogram.",
+  "Header icon style": "Koptekstpictogram",
   "Invalid zone dimension unit.": "Ongeldige eenheid voor zoneafmetingen.",
   "Off": "Uit",
   "Inches": "Inches",

@@ -1,5 +1,8 @@
 // German display text. Entity names and protocol values are never rewritten.
 export const de = {
+  "Integration": "Integration",
+  "Invalid header icon style.": "Ung\u00fcltiger Stil f\u00fcr das Header-Symbol.",
+  "Header icon style": "Header-Symbol",
   "Invalid zone dimension unit.": "Ungültige Einheit für die Zonenabmessungen.",
   "Off": "Aus",
   "Inches": "Zoll",

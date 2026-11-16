@@ -1,5 +1,8 @@
 // English messages are also stable translation keys. Never use translated labels in action payloads.
 export const en = {
+  "Integration": "Integration",
+  "Invalid header icon style.": "Invalid header icon style.",
+  "Header icon style": "Header icon style",
   "Invalid zone dimension unit.": "Invalid zone dimension unit.",
   "Off": "Off",
   "Inches": "Inches",
