@@ -102,7 +102,7 @@ export async function sendRoomDraft({ hass, model, config, selected = [], draft 
   if (!hass.services?.[DOMAIN]?.[service]) throw new UiError('Update the Dyson integration: {action} is unavailable.', { action: `${DOMAIN}.${service}` });
   const vacuum = hass.states[config.entity];
   if (!available(vacuum)) throw new UiError('The robot is unavailable.');
-  if (start && !['docked', 'idle'].includes(vacuum.state)) throw new UiError('Start is only available when the Dyson is ready (docked or idle).');
+  if (start && !['docked', 'idle'].includes(vacuum.state) && !(vacuum.state === 'error' && vacuum.attributes?.ready_to_start === true)) throw new UiError('Start is only available when the Dyson is ready (docked or idle).');
   if (start && startBlockReason(hass, config.entity)) throw new UiError(startBlockReason(hass, config.entity));
   const byId = new Map();
   for (const room of model.rooms) {
@@ -205,6 +205,13 @@ export function cleaningView(hass, entity, pendingStart = false) {
     returning: ['Robot returning', 'The integration is reporting a return or mapping operation.'],
     error: ['Robot needs attention', 'Check the robot or the Dyson app for details.']
   };
+  // A retained fault does not imply an active job when the integration permits a new start.
+  // Keep pending starts in the session view until fresh robot telemetry arrives.
+  if (state.state === 'error' && state.attributes?.ready_to_start === true) {
+    return pendingStart
+      ? { active: true, title: 'Starting clean', detail: 'Waiting for the robot to report its status.', live: false }
+      : { active: false, live: false };
+  }
   if (states[state.state]) return { active: true, title: states[state.state][0], detail: states[state.state][1], live: true };
   if (pendingStart) return { active: true, title: 'Starting clean', detail: 'Waiting for the robot to report its status.', live: false };
   if (['docked', 'idle'].includes(state.state)) return { active: false, live: false };
