@@ -53,3 +53,41 @@ test('start during drying sends the normal batch action and keeps the drying sta
   assert.equal(f.calls[0].service, 'start_rooms_with_settings');
   assert.equal(activityStatus(f.hass, f.entity).text, 'Drying mop roller');
 });
+
+
+test('a start-ready fault opens the planner without hiding the warning', () => {
+  const f = batchFixture(), vacuum = f.hass.states[f.entity];
+  vacuum.state = 'error';
+  for (const ready of [false, undefined, 'true']) {
+    vacuum.attributes.ready_to_start = ready;
+    assert.equal(cleaningView(f.hass, f.entity).active, true);
+  }
+  vacuum.attributes.ready_to_start = true;
+  assert.equal(cleaningView(f.hass, f.entity).active, false);
+  assert.equal(activityStatus(f.hass, f.entity).text, 'Robot needs attention');
+  assert.equal(cleaningView(f.hass, f.entity, true).title, 'Starting clean');
+  for (const state of ['cleaning', 'paused', 'returning', 'unavailable']) {
+    vacuum.state = state;
+    assert.equal(cleaningView(f.hass, f.entity).active, true);
+  }
+  vacuum.state = 'error';
+  f.hass.connected = false;
+  assert.equal(cleaningView(f.hass, f.entity).title, 'Robot unavailable');
+});
+
+
+test('a fault allows a batch start only with explicit integration readiness', async () => {
+  const f = batchFixture(), vacuum = f.hass.states[f.entity];
+  vacuum.state = 'error';
+  const config = normalizeConfig(f.config), model = discover(f.hass, f.registry, config);
+  const start = () => sendRoomDraft({ hass: f.hass, model, config, selected: [f.ids[0]], draft: {}, start: true });
+  for (const ready of [false, undefined, 'true']) {
+    vacuum.attributes.ready_to_start = ready;
+    await assert.rejects(start(), /ready/);
+  }
+  assert.equal(f.calls.length, 0);
+  vacuum.attributes.ready_to_start = true;
+  await start();
+  assert.equal(f.calls.length, 1);
+  assert.equal(f.calls[0].service, 'start_rooms_with_settings');
+});

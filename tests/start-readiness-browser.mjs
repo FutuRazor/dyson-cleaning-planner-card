@@ -39,7 +39,11 @@ try {
     }, { ready, reason, dock });
     assert.equal(await card.locator('[data-action="start"]').isDisabled(), disabled, `${reason}/${dock}: Start`);
     if (label) assert.ok((await card.locator('.activity-text').innerText()).includes(label));
-    else assert.equal(await card.locator('.activity-status').isVisible(), false);
+    else {
+      const modern = await page.evaluate(() => demo.card.config.theme === 'modern');
+      assert.equal(await card.locator('.activity-status').isVisible(), modern);
+      if (modern) assert.equal(await card.locator('.activity-text').innerText(), 'Docked');
+    }
     assert.equal(await page.evaluate(() => JSON.stringify(demo.card.settingDraft)), draft, 'Draft survives telemetry updates');
     assert.equal(await card.locator('[data-room]').first().isChecked(), true);
     assert.equal(await page.evaluate(() => demo.calls.length), 0, 'Telemetry and editing send no commands');
