@@ -52,6 +52,17 @@ try {
       demo.card.hass={...demo.hass};
       if (zone!==demo.card.shadowRoot.querySelector('dyson-planner-zone')) throw new Error('Zone remounted');
     });
+    await zone.evaluate(el => {
+      const before=JSON.stringify(el.rect), image=el.image.getAttribute('href');
+      const original=el.hass.config;
+      for (const [length,suffix] of [['mi','in'],['km','cm']]) {
+        const hass={...el.hass,config:{...original,unit_system:{...original?.unit_system,length}}};
+        el.setOptions({hass,vacuum:el.vacuum,camera:el.camera,rotation:el.rotation});
+        if (!el.shadowRoot.querySelector('.zone-size text').textContent.endsWith(suffix)) throw new Error('Unit switch did not update label');
+        if (JSON.stringify(el.rect)!==before || el.image.getAttribute('href')!==image) throw new Error('Unit switch reset zone');
+      }
+      el.hass={...el.hass,config:original}; el.draw();
+    });
     // The grip stays centered on its corner, including image edges.
     await zone.evaluate(el => {
       const original = [...el.rect];

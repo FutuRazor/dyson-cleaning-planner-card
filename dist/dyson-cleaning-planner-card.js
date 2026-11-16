@@ -1415,6 +1415,13 @@ function zonePillPosition(rect, width, height, pillWidth, pillHeight, gap=6) {
   return [left,Math.max(0,top)];
 }
 
+// Presentation only: robot geometry and minimum sizes remain metric.
+function zoneDimensionText(widthCm, heightCm, lengthUnit) {
+  const imperial = ['mi', 'ft', 'in', 'yd'].includes(lengthUnit);
+  const divisor = imperial ? 2.54 : 1;
+  return `${Math.round(widthCm/divisor)} \u00d7 ${Math.round(heightCm/divisor)} ${imperial ? 'in' : 'cm'}`;
+}
+
 
 // Owns the frozen image and pointer interaction. HA updates never replace its DOM.
 class DysonPlannerZone extends HTMLElement {
@@ -1693,7 +1700,8 @@ class DysonPlannerZone extends HTMLElement {
     if (c && this.rect) this.rect = fitZoneMinimum(this.rect, c, this.rotation);
     // Safari can scroll a focused SVG back into view when its geometry is
     // rewritten. HA telemetry must not touch the frozen selection's DOM.
-    const geometry = JSON.stringify([c, this.rotation, this.rect, this.svg.getBoundingClientRect().width]);
+    const lengthUnit = this.hass?.config?.unit_system?.length;
+    const geometry = JSON.stringify([c, this.rotation, this.rect, this.svg.getBoundingClientRect().width, lengthUnit]);
     const geometryChanged = geometry !== this._geometry;
     this._geometry = geometry;
     if (geometryChanged) {
@@ -1717,9 +1725,9 @@ class DysonPlannerZone extends HTMLElement {
         }
         this.hint.setAttribute('transform',`translate(${x2*this.width} ${y2*this.height}) scale(${scale})`);
         const label=this.shadowRoot.querySelector('.zone-size'), text=label.querySelector('text'), bg=label.querySelector('rect');
-        const cmWidth=Math.round((x2-x)*this.width/c.pixels_per_metre*100);
-        const cmHeight=Math.round((y2-y)*this.height/c.pixels_per_metre*100);
-        const caption=`${cmWidth} \u00d7 ${cmHeight} cm`;
+        const cmWidth=(x2-x)*this.width/c.pixels_per_metre*100;
+        const cmHeight=(y2-y)*this.height/c.pixels_per_metre*100;
+        const caption=zoneDimensionText(cmWidth,cmHeight,lengthUnit);
         text.textContent=caption; text.style.fontSize=`${12*scale}px`;
         const pillWidth=text.getComputedTextLength()+16*scale,pillHeight=24*scale;
         const [left,top]=zonePillPosition(this.rect,this.width,this.height,pillWidth,pillHeight,6*scale);

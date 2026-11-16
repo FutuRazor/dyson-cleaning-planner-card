@@ -104,3 +104,10 @@ export function zonePillPosition(rect, width, height, pillWidth, pillHeight, gap
   const top=above>=0 ? above : Math.min(height-pillHeight,y2*height+gap);
   return [left,Math.max(0,top)];
 }
+
+// Presentation only: robot geometry and minimum sizes remain metric.
+export function zoneDimensionText(widthCm, heightCm, lengthUnit) {
+  const imperial = ['mi', 'ft', 'in', 'yd'].includes(lengthUnit);
+  const divisor = imperial ? 2.54 : 1;
+  return `${Math.round(widthCm/divisor)} \u00d7 ${Math.round(heightCm/divisor)} ${imperial ? 'in' : 'cm'}`;
+}
