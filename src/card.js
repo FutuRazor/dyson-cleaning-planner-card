@@ -1,11 +1,11 @@
 import { resolveLanguage, translate, uiMessage, UiError } from './localize.js';
-import { STATUS_BAR_ITEMS, DOMAIN, ROOM_FIELDS, available, escapeHtml, normalizeConfig, discover, sendRoomDraft, cleaningView, canControl, controlCleaning, batteryStatus, activityStatus, dryingRemainingTime, dryingRemainingPercent, dockBlocksStart, startBlockReason, consumableStatus, stationSettings, changeStationSetting, stationActions, pressStationAction } from './core.js';
+import { supportsZoneDevice, zoneDeviceOptions, STATUS_BAR_ITEMS, DOMAIN, ROOM_FIELDS, available, escapeHtml, normalizeConfig, discover, sendRoomDraft, cleaningView, canControl, controlCleaning, batteryStatus, activityStatus, dryingRemainingTime, dryingRemainingPercent, dockBlocksStart, startBlockReason, consumableStatus, stationSettings, changeStationSetting, stationActions, pressStationAction } from './core.js';
 
 function stationIndicator(field, refillStatus, language = 'en') {
   const t = (key, params) => translate(language, key, params);
   const { key, label, value } = field;
   const refill = key === 'cleaning_solution' && refillStatus === 'refill_required';
-  if (!field.available && !refill) return '';
+  const unknown = !field.available;
   let icon = '', color = '', short = '', description = value;
   switch (key) {
     case 'hot_water_mopping':
@@ -18,24 +18,24 @@ function stationIndicator(field, refillStatus, language = 'en') {
       color = value === 'on' ? 'active-blue with-plus' : 'inactive-muted';
       break;
     case 'cleaning_solution':
-      if (!refill && value !== 'off' && refillStatus !== 'ok') return '';
+
       icon = refill || value === 'on' ? 'mdi:bottle-tonic-plus' : 'mdi:bottle-tonic';
       color = refill ? 'alarm-red blink' : value === 'on' ? 'active-cyan' : 'inactive-muted';
       if (refill) description = 'Refill required';
       break;
     case 'self_cleaning_frequency':
       short = { 'After each room': '1R', 'Every 15 minutes': '15m', 'Every 30 minutes': '30m', 'Only as needed': 'Auto' }[value];
-      if (!short) return '';
+      if (!short) short = '\u2013';
       icon = short === '1R' ? 'mdi:door-open' : 'mdi:clock-outline';
       break;
     case 'roller_drying_duration': {
-      const hours = /^([345])\s*(?:h|hours)$/i.exec(value);
-      if (!hours) return '';
-      short = hours[1] + 'h';
+      const hours = /^([2345])\s*(?:h|hours)$/i.exec(value);
+      short = hours ? hours[1] + 'h' : '\u2013';
       break;
     }
     default: return '';
   }
+  if (unknown) { color = 'inactive-muted'; description = 'Unavailable'; }
   const text = escapeHtml(t(label) + ': ' + t(description));
   return `<span class="station-indicator ${color}" role="img" aria-label="${text}" title="${text}">${icon ? `<ha-icon icon="${icon}" class="status-icon" aria-hidden="true"></ha-icon>` : ''}${short ? `<span class="status-text-5g">${short}</span>` : ''}</span>`;
 }
@@ -212,11 +212,12 @@ function cardEditorDialog(element, previewOnly = false) {
 }
 
 class DysonRegistryElement extends HTMLElement {
-  constructor() { super(); this.attachShadow({ mode: 'open' }); this.registry = []; this.registryError = ''; }
+  constructor() { super(); this.attachShadow({ mode: 'open' }); this.registry = []; this.devices = []; this.registryError = ''; }
   connectedCallback() {
     this._onRegistryRefresh = event => {
       if (event.detail.source === this || event.detail.connection !== this._hass?.connection) return;
       this.registry = event.detail.rows;
+      this.devices = event.detail.devices ?? this.devices;
       this.registryError = '';
       this._registryLoaded = true;
       this.update?.();
@@ -232,7 +233,7 @@ class DysonRegistryElement extends HTMLElement {
   set hass(value) {
     const changed = this._hass?.connection !== value?.connection;
     this._hass = value;
-    if (changed) { this.registry = []; this._registryLoaded = false; }
+    if (changed) { this.registry = []; this.devices = []; this._registryLoaded = false; }
     if (this.isConnected && !this._registryLoaded && !this._loadingRegistry) this.loadRegistry();
     this.update?.();
   }
@@ -242,12 +243,16 @@ class DysonRegistryElement extends HTMLElement {
     this._loadingRegistry = true;
     const connection = this._hass.connection;
     try {
-      const rows = await this._hass.callWS({ type: 'config/entity_registry/list' });
+      const [rows, devices] = await Promise.all([
+        this._hass.callWS({ type: 'config/entity_registry/list' }),
+        this._hass.callWS({ type: 'config/device_registry/list' }).catch(() => null),
+      ]);
       if (this._hass.connection !== connection) return;
       this.registry = rows;
+      if (devices) this.devices = devices;
       this.registryError = '';
       this._registryLoaded = true;
-      if (notifyPeers) registryRefreshEvents.dispatchEvent(new CustomEvent('refresh', { detail: { source: this, connection, rows } }));
+      if (notifyPeers) registryRefreshEvents.dispatchEvent(new CustomEvent('refresh', { detail: { source: this, connection, rows, devices: this.devices } }));
     } catch {
       this.registryError = 'Could not read the entity registry. Check the connection and user permissions.';
       this._registryLoaded = true;
@@ -383,7 +388,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
   }
   getCardSize() { return this.view.active ? (this.config?.show_camera ? 9 : 5) : 3 + (this.model?.rooms.length ?? 3); }
   getGridOptions() { return { columns: 12, min_columns: 9, rows: 'auto', min_rows: 1 }; }
-  getModel() { return discover(this._hass, this.registry, this.config); }
+  getModel() { return discover(this._hass, this.registry, this.config, this.lastRooms); }
   resetDraft(clearMessage = true) {
     this.selected = this.model.rooms.filter(r => !r.excluded && r.available && this._hass.states[r.entity]?.state === 'on').map(r => r.entity);
     this.settingDraft = {};
@@ -470,6 +475,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       return;
     }
     if (['zones','rooms'].includes(el.dataset.action) && !this.view.active) {
+      if (el.dataset.action === 'zones' && !this.supportsZone) return;
       const zone = this.shadowRoot.querySelector('dyson-planner-zone');
       if (zone?.sending) return;
       if (zone) this.zoneDraft = zone.snapshot();
@@ -575,8 +581,8 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
   updateConsumables() {
     const root = this.shadowRoot;
 
-    const rows = consumableStatus(this._hass, this.registry, this.config.entity);
-    const settings = stationSettings(this._hass, this.registry, this.config.entity);
+    const rows = consumableStatus(this._hass, this.registry, this.config.entity).filter(row => row.supported);
+    const settings = stationSettings(this._hass, this.registry, this.config.entity).filter(field => field.supported);
     const solution = rows.find(row => row.type === 'cleaningSolution');
     this.updateStationSettings(settings, solution?.refillStatus);
     const warning = rows.some(row => row.level === 'low');
@@ -638,7 +644,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
         : `<select ${attrs}>${!field.options.includes(field.value) ? `<option value="">${this.ht("Unavailable")}</option>` : ''}${field.options.map(v => `<option value="${escapeHtml(v)}" ${v === field.value ? 'selected' : ''}>${this.ht(v)}</option>`).join('')}</select>`;
       return `<label class="station-row ${field.domain}"><span class="station-label">${indicators[field.key]}<span>${this.ht(field.label)}${!field.available ? `<small>${this.ht("Unavailable")}</small>` : ''}</span></span>${control}</label>`;
     }).join('');
-    const actions = stationActions(this._hass, this.registry, this.config.entity).map(action => {
+    const actions = stationActions(this._hass, this.registry, this.config.entity).filter(action => action.supported).map(action => {
       const disabled = !!this._previewDialog || !action.available || this.stationBusy || this.busy || this.controlBusy;
       return `<div class="station-row station-action"><span>${this.ht(action.label)}${!action.available ? `<small>${this.ht("Unavailable")}</small>` : ''}</span><ha-button appearance="plain" size="s" data-station-action="${action.key}" aria-label="${this.ht(action.label)}" ${disabled ? 'disabled' : ''}>${this.ht("Press")}</ha-button></div>`;
     }).join('');
@@ -828,7 +834,9 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     }
     this.update();
   }
+  get supportsZone() { return supportsZoneDevice(this.registry, this.devices, this.config.entity); }
   planningTabsHtml() {
+    if (!this.supportsZone) return '';
     return `<nav class="planning-tabs" aria-label="${this.ht('Cleaning selection')}"><button data-action="rooms" aria-pressed="${!this.zoneView}">${this.ht('Rooms')}</button><button data-action="zones" aria-pressed="${!!this.zoneView}">${this.ht('Zone')}</button></nav>`;
   }
   renderZone() {
@@ -842,7 +850,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     const trusted = !!(robotEntry?.device_id && robotEntry.platform === DOMAIN && cameraEntry?.platform === DOMAIN
       && robotEntry.device_id === cameraEntry.device_id);
     this.shadowRoot.querySelector('dyson-planner-zone').setOptions({ hass:this._hass, vacuum:this.config.entity,
-      camera, trusted, draft:this.zoneDraft, theme:this.config.theme, rotation:this.config.camera_rotation, language:this.language, preview:!!this._previewDialog });
+      camera, trusted, supported:this.supportsZone, capabilities:zoneDeviceOptions(this.model.rooms), draft:this.zoneDraft, theme:this.config.theme, rotation:this.config.camera_rotation, language:this.language, preview:!!this._previewDialog });
   }
   render() {
     if (!this.model) return;
@@ -872,10 +880,11 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
         if (omitted && !modern) return '';
         const reserve = html => omitted ? `<div class="mode-spacer" inert aria-hidden="true">${html}</div>` : html;
         const field = room.settings?.[key];
-        if (!field && this.config.unsupported_settings === 'hidden' && !this.config.always_show_all_settings) return '';
+        if (!field) return '';
+        const fieldDisabled = disabled || !field.available;
         const value = valueOf(key), options = field?.options ?? [];
-        if (modern && key !== 'cleaning_mode' && options.length) return reserve(this.modernControl(key, label, room, field, value, disabled, n));
-        return reserve(`<label class="field ${key === 'cleaning_mode' ? 'mode' : ''}">${label}<select data-setting="${key}" data-room-id="${h(room.roomId)}" data-focus="${key}-${n}" aria-label="${label} ${h(room.name)}" ${disabled || !field ? 'disabled' : ''}>${!options.includes(value) ? `<option value="">${this.ht("Unavailable")}</option>` : ''}${options.map(option => `<option value="${h(option)}" ${value === option ? 'selected' : ''}>${this.ht(option)}</option>`).join('')}</select>${!field ? `<span class="badge">${this.ht("Not available")}</span>` : ''}</label>`);
+        if (modern && key !== 'cleaning_mode' && options.length) return reserve(this.modernControl(key, label, room, field, value, fieldDisabled, n));
+        return reserve(`<label class="field ${key === 'cleaning_mode' ? 'mode' : ''}">${label}<select data-setting="${key}" data-room-id="${h(room.roomId)}" data-focus="${key}-${n}" aria-label="${label} ${h(room.name)}" ${fieldDisabled ? 'disabled' : ''}>${!options.includes(value) ? `<option value="">${this.ht("Unavailable")}</option>` : ''}${options.map(option => `<option value="${h(option)}" ${value === option ? 'selected' : ''}>${this.ht(option)}</option>`).join('')}</select>${!field ? `<span class="badge">${this.ht("Not available")}</span>` : ''}</label>`);
       }).join('');
       if (modern) {
         const colors = ['#18c5d9', '#e9b85b', '#b99ae4', '#79b9a5', '#e49baf'];

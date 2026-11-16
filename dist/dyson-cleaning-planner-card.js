@@ -1,6 +1,7 @@
 /* Dyson Cleaning Planner Card v1.4.0 | MIT */
 // English messages are also stable translation keys. Never use translated labels in action payloads.
 const en = {
+  "Mop pad": "Mop pad",
   "Cleaning selection": "Cleaning selection",
   "Rooms": "Rooms",
   "Close": "Close",
@@ -48,6 +49,7 @@ const en = {
   "Every 15 minutes": "Every 15 minutes",
   "Every 30 minutes": "Every 30 minutes",
   "Only as needed": "Only as needed",
+  "2 hours": "2 hours",
   "3 hours": "3 hours",
   "4 hours": "4 hours",
   "5 hours": "5 hours",
@@ -235,6 +237,7 @@ const en = {
 
 // German display text. Entity names and protocol values are never rewritten.
 const de = {
+  "Mop pad": "Wischpad",
   "Cleaning selection": "Reinigungsauswahl",
   "Rooms": "Räume",
   "Close": "Schließen",
@@ -282,6 +285,7 @@ const de = {
   "Every 15 minutes": "Alle 15 Minuten",
   "Every 30 minutes": "Alle 30 Minuten",
   "Only as needed": "Nur bei Bedarf",
+  "2 hours": "2 Stunden",
   "3 hours": "3 Stunden",
   "4 hours": "4 Stunden",
   "5 hours": "5 Stunden",
@@ -469,6 +473,7 @@ const de = {
 
 // Dutch UI text. Protocol values and entity names remain unchanged.
 const nl = {
+  "Mop pad": "Dweilpad",
   "Cleaning selection": "Reinigingsselectie",
   "Rooms": "Kamers",
   "Close": "Sluiten",
@@ -516,6 +521,7 @@ const nl = {
   "Every 15 minutes": "Elke 15 minuten",
   "Every 30 minutes": "Elke 30 minuten",
   "Only as needed": "Alleen indien nodig",
+  "2 hours": "2 uur",
   "3 hours": "3 uur",
   "4 hours": "4 uur",
   "5 hours": "5 uur",
@@ -758,11 +764,11 @@ function normalizeConfig(config) {
   if (config.always_show_all_settings !== undefined && typeof config.always_show_all_settings !== 'boolean') throw new UiError('always_show_all_settings must be true or false.');
   if (config.camera_rotation !== undefined && ![0, 90, 180, 270].includes(config.camera_rotation)) throw new UiError('camera_rotation must be 0, 90, 180 or 270.');
   if (config.camera_entity && (typeof config.camera_entity !== 'string' || !config.camera_entity.startsWith('camera.'))) throw new UiError('Select a camera entity.');
-  return { ...config, language: config.language ?? 'auto', theme: config.theme ?? 'modern', show_battery_percentage: config.show_battery_percentage ?? false, show_status_bar: config.show_status_bar ?? true, hidden_status_items: config.hidden_status_items ?? [], title: config.title ?? '', always_show_all_settings: config.always_show_all_settings ?? false, unsupported_settings: config.unsupported_settings ?? 'disabled', excluded_rooms: config.excluded_rooms ?? [], room_order: config.room_order ?? [], show_camera: config.show_camera ?? true, camera_rotation: config.camera_rotation ?? 0 };
+  return { ...config, language: config.language ?? 'auto', theme: config.theme ?? 'modern', show_battery_percentage: config.show_battery_percentage ?? false, show_status_bar: config.show_status_bar ?? true, hidden_status_items: config.hidden_status_items ?? [], title: config.title ?? '', always_show_all_settings: config.always_show_all_settings ?? false, unsupported_settings: 'hidden', excluded_rooms: config.excluded_rooms ?? [], room_order: config.room_order ?? [], show_camera: config.show_camera ?? true, camera_rotation: config.camera_rotation ?? 0 };
 }
 
 // Entity IDs are user-editable. Match registry identity within ONE integration device.
-function discover(hass, registry, config) {
+function discover(hass, registry, config, previousRooms = []) {
   const issues = [];
   const vacuum = registry.find(e => e.entity_id === config.entity && e.platform === DOMAIN && !e.disabled_by);
   if (!vacuum?.device_id) return { rooms: [], issues: ['The Dyson device was not found in the entity registry.'] };
@@ -788,18 +794,21 @@ function discover(hass, registry, config) {
     const settings = {};
     const roomIds = new Set();
     for (const key of Object.keys(ROOM_FIELDS)) {
-      const candidates = entries.filter(e => e.entity_id.startsWith('select.') && e.unique_id === `${entry.unique_id}_${key}` && available(hass.states[e.entity_id]));
+      const candidates = entries.filter(e => e.entity_id.startsWith('select.') && e.unique_id === `${entry.unique_id}_${key}`);
       if (candidates.length !== 1) continue;
       const entity = candidates[0].entity_id, state = hass.states[entity];
-      const nativeId = state.attributes?.room_id;
-      if (nativeId === undefined || nativeId === null || String(nativeId) === '') continue;
-      const options = state.attributes?.options;
-      if (!Array.isArray(options) || !options.every(o => typeof o === 'string')) continue;
-      roomIds.add(String(nativeId));
-      settings[key] = { entity, value: state.state, options };
+      const previous = previousRooms.find(r => r.entity === entry.entity_id);
+      const prior = previous?.settings?.[key]?.entity === entity ? previous.settings[key] : undefined;
+      const nativeId = state?.attributes?.room_id ?? (!available(state) ? previous?.roomId : undefined);
+      const options = state?.attributes?.options;
+      if (nativeId !== undefined && nativeId !== null && String(nativeId) !== '') roomIds.add(String(nativeId));
+      // Presence in the registry defines support; connectivity defines usability.
+      settings[key] = { entity, value: state?.state,
+        options: Array.isArray(options) ? options.filter(o => typeof o === 'string') : (!available(state) ? prior?.options ?? [] : []),
+        available: hass.connected !== false && available(state) };
     }
     const roomId = roomIds.size === 1 ? [...roomIds][0] : undefined;
-    return [{ name, entity: entry.entity_id, roomId, settings: roomId ? settings : {}, available: available(hass.states[entry.entity_id]), excluded: config.excluded_rooms.includes(entry.entity_id) }];
+    return [{ name, entity: entry.entity_id, roomId, settings, available: available(hass.states[entry.entity_id]), excluded: config.excluded_rooms.includes(entry.entity_id) }];
   });
   const ids = rooms.map(r => r.entity).filter(Boolean);
   if (new Set(ids).size !== ids.length) issues.push('Multiple rooms map to the same switch.');
@@ -1002,25 +1011,27 @@ function fitMap(width, height, boxWidth, rotation) {
 }
 
 const CONSUMABLES = [
-  ['brushBar', 'Brush bar'], ['mopRoller', 'Mop roller'],
+  ['brushBar', 'Brush bar'], ['mopRoller', 'Mop roller'], ['mopPad', 'Mop pad'],
   ['sideBrushes', 'Side brushes'], ['robotFilter', 'Robot filter'],
   ['dockFilter', 'Dock filter'], ['cleaningSolution', 'Cleaning solution']
 ];
 
 function consumableStatus(hass, registry, entity) {
   const vacuum = registry.find(e => e.entity_id === entity && e.platform === DOMAIN && !e.disabled_by);
+  const serial = String(vacuum?.unique_id ?? '').replace(/_vacuum$/, '');
+  const suffixes = { brushBar:'brush_bar_usage', mopRoller:'mop_roller_usage', mopPad:'mop_pad_usage', sideBrushes:'side_brushes_usage', robotFilter:'robot_filter_usage', dockFilter:'dock_filter_usage', cleaningSolution:'cleaning_solution' };
   return CONSUMABLES.map(([type, name]) => {
-    const candidates = vacuum?.device_id ? registry.filter(e => e.platform === DOMAIN && e.device_id === vacuum.device_id && !e.disabled_by && e.entity_id.startsWith('sensor.') && hass?.states?.[e.entity_id]?.attributes?.consumable_type === type) : [];
+    const candidates = vacuum?.device_id ? registry.filter(e => e.platform === DOMAIN && e.device_id === vacuum.device_id && !e.disabled_by && e.entity_id.startsWith('sensor.') && (e.unique_id === `${serial}_consumable_${suffixes[type]}` || hass?.states?.[e.entity_id]?.attributes?.consumable_type === type)) : [];
     const state = candidates.length === 1 ? hass?.states?.[candidates[0].entity_id] : null;
     const live = hass?.connected !== false && available(state);
     if (type === 'cleaningSolution') {
       const value = live && state.attributes?.value_kind === 'refill_status' ? state.state : null;
-      return { type, name, remaining: null, level: 'unknown', refillStatus: value, text: value === 'ok' ? 'Ready to use' : value === 'refill_required' ? 'Refill required' : 'Unavailable' };
+      return { type, name, supported: candidates.length === 1, remaining: null, level: 'unknown', refillStatus: value, text: value === 'ok' ? 'Ready to use' : value === 'refill_required' ? 'Refill required' : 'Unavailable' };
     }
     const raw = state?.state;
     const usage = typeof raw === 'number' || (typeof raw === 'string' && raw.trim() !== '') ? Number(raw) : NaN;
     const remaining = live && state.attributes?.value_kind === 'usage_percent' && Number.isFinite(usage) && usage >= 0 && usage <= 100 ? Math.round((100 - usage) * 10) / 10 : null;
-    return { type, name, remaining, level: remaining === null ? 'unknown' : remaining <= 10 ? 'low' : remaining <= 25 ? 'medium' : 'high', text: remaining === null ? 'Unavailable' : `${remaining}% remaining` };
+    return { type, name, supported: candidates.length === 1, remaining, level: remaining === null ? 'unknown' : remaining <= 10 ? 'low' : remaining <= 25 ? 'medium' : 'high', text: remaining === null ? 'Unavailable' : `${remaining}% remaining` };
   });
 }
 
@@ -1052,7 +1063,7 @@ function stationActions(hass, registry, entity) {
     const id = matches.length === 1 && !matches[0].disabled_by ? matches[0].entity_id : undefined;
     const state = hass?.states?.[id];
     // Button states are timestamps, or unknown before the first press.
-    return { key, label, entity: id, available: hass?.connected !== false && !!state && state.state !== 'unavailable' && !state.attributes?.restored && !!hass?.services?.button?.press };
+    return { key, label, entity: id, supported: !!id, available: hass?.connected !== false && !!state && state.state !== 'unavailable' && !state.attributes?.restored && !!hass?.services?.button?.press };
   });
 }
 
@@ -1072,7 +1083,7 @@ function stationSettings(hass, registry, entity) {
     const options = Array.isArray(state?.attributes?.options) ? state.attributes.options.filter(v => typeof v === 'string') : [];
     const valid = domain === 'switch' ? ['on', 'off'].includes(state?.state) : options.includes(state?.state);
     const service = domain === 'switch' ? hass?.services?.switch?.turn_on && hass?.services?.switch?.turn_off : hass?.services?.select?.select_option;
-    return { key, label, domain, entity: id, value: state?.state, options, available: hass?.connected !== false && available(state) && valid && !!service };
+    return { key, label, domain, entity: id, supported: !!id, value: state?.state, options, available: hass?.connected !== false && available(state) && valid && !!service };
   });
 }
 
@@ -1086,6 +1097,31 @@ async function changeStationSetting(hass, registry, entity, key, value) {
     if (!field.options.includes(value)) throw new UiError('Invalid station option.');
     await hass.callService('select', 'select_option', { entity_id: field.entity, option: value });
   }
+}
+
+// Mirror the integration's current RB05-only zone support. Product 804 covers
+// Spot+Scrub AI and R3. Other models need an integration capability contract first.
+function supportsZoneDevice(registry, devices, entity) {
+  const vacuum = registry.find(e => e.entity_id === entity && e.platform === DOMAIN && !e.disabled_by);
+  const device = devices.find(d => d.id === vacuum?.device_id);
+  return /^(804[A-Z]?|RB05)$/i.test(String(device?.model ?? ''));
+}
+
+// Only expose protocol values both understood by the zone adapter and offered
+// by this device's room selects. This restricts options, not zone-model support.
+const ZONE_CHOICES = {
+  mode: [['Vacuum','vacuum'], ['Vacuum and Mop','vacuumAndMop'], ['Mop','mop'], ['Vacuum then Mop','vacuumThenMop']],
+  strategy: [['Auto','auto'], ['Boost','boost'], ['Quiet','quiet'], ['Quick','quick']],
+  water: [['Very Low','veryLow'], ['Low','low'], ['Medium','medium'], ['High','high']],
+  passes: [['One Pass',1], ['Two Passes',2]],
+};
+function zoneDeviceOptions(rooms) {
+  const keys = { mode:'cleaning_mode', strategy:'cleaning_strategy', water:'water_level', passes:'mop_repetitions' };
+  return Object.fromEntries(Object.entries(keys).map(([key, field]) => {
+    const fields = rooms.map(r => r.settings?.[field]).filter(Boolean);
+    const options = ZONE_CHOICES[key].filter(([label]) => fields.length && fields.every(f => f.options.includes(label)));
+    return [key, { supported: fields.length > 0, available: fields.length > 0 && fields.every(f => f.available), options }];
+  }));
 }
 
 
@@ -1373,7 +1409,7 @@ class DysonPlannerZone extends HTMLElement {
     });
     this.shadowRoot.querySelector('.zone-power').addEventListener('input', event => {
       if (this.sending) return;
-      this.strategy = ['auto','boost','quiet','quick'][Number(event.target.value)]; this.labels();
+      this.strategy = this.capabilities.strategy.options[Number(event.target.value)]?.[1]; this.labels();
     });
     this.shadowRoot.querySelector('#zone-mode').addEventListener('change', event => {
       if (this.sending) return;
@@ -1381,7 +1417,7 @@ class DysonPlannerZone extends HTMLElement {
     });
     this.shadowRoot.querySelector('#zone-water').addEventListener('input', event => {
       if (this.sending) return;
-      this.water=['veryLow','low','medium','high'][Number(event.target.value)]; this.labels();
+      this.water=this.capabilities.water.options[Number(event.target.value)]?.[1]; this.labels();
     });
     this.svg = this.shadowRoot.querySelector('svg');
     this.image = this.shadowRoot.querySelector('image');
@@ -1390,10 +1426,10 @@ class DysonPlannerZone extends HTMLElement {
     this.hint = this.shadowRoot.querySelector('.hint');
     this.shadowRoot.addEventListener('click', event => {
       const power = event.target.closest('[data-power]');
-      if (power && !this.sending) { this.shadowRoot.querySelector('.zone-power').value=power.dataset.power; this.strategy=['auto','boost','quiet','quick'][Number(power.dataset.power)]; this.labels(); return; }
+      if (power && !power.disabled && !this.sending) { this.shadowRoot.querySelector('.zone-power').value=power.dataset.power; this.strategy=this.capabilities.strategy.options[Number(power.dataset.power)]?.[1]; this.labels(); return; }
       const water=event.target.closest('[data-water]'), passes=event.target.closest('[data-passes]');
-      if (water && !this.sending) { this.water=['veryLow','low','medium','high'][Number(water.dataset.water)]; this.labels(); return; }
-      if (passes && !this.sending) { this.passes=Number(passes.dataset.passes); this.labels(); return; }
+      if (water && !water.disabled && !this.sending) { this.water=this.capabilities.water.options[Number(water.dataset.water)]?.[1]; this.labels(); return; }
+      if (passes && !passes.disabled && !this.sending) { this.passes=Number(passes.dataset.passes); this.labels(); return; }
       const action = event.target.closest('button')?.dataset.do;
       if (!action || event.target.closest('button').disabled) return;
       if (action === 'refresh') this.load();
@@ -1442,7 +1478,10 @@ class DysonPlannerZone extends HTMLElement {
     if (this.calibration && String(this.hass.states[this.vacuum]?.attributes?.map_id) !== this.calibration.map_id) {
       this.controller?.abort(); this.clear(); this.note = 'The active map changed. Reload the map and select a new zone.';
     }
-    if (this._labelsLanguage !== this.language) { this.labels(); this._labelsLanguage = this.language; }
+    const capabilitiesKey = JSON.stringify(this.capabilities);
+    if (this._labelsLanguage !== this.language || this._capabilitiesKey !== capabilitiesKey) {
+      this.labels(); this._labelsLanguage = this.language; this._capabilitiesKey = capabilitiesKey;
+    }
     this.draw();
     if (!this.attempted && this.trusted && this.camera) this.load();
   }
@@ -1451,18 +1490,43 @@ class DysonPlannerZone extends HTMLElement {
 
     for (const el of this.shadowRoot.querySelectorAll('[data-i18n]')) el.textContent = this.t(el.dataset.i18n);
     this.shadowRoot.querySelector('[data-do="close-settings"]').setAttribute('aria-label',this.t('Close'));
-    [...this.shadowRoot.querySelectorAll('[data-power]')].forEach((el,i)=>el.setAttribute('aria-pressed',String(i===['auto','boost','quiet','quick'].indexOf(this.strategy))));
-    this.shadowRoot.querySelector('.zone-power').setAttribute('aria-valuetext',this.t(this.strategy[0].toUpperCase()+this.strategy.slice(1)));
-    this.shadowRoot.querySelector('#zone-mode').value=this.mode;
-    this.shadowRoot.querySelector('.power-setting').hidden=this.mode==='mop';
-    this.shadowRoot.querySelector('.water-setting').hidden=this.mode==='vacuum';
-    this.shadowRoot.querySelector('.zone-power').value=['auto','boost','quiet','quick'].indexOf(this.strategy);
-    const waterIndex=['veryLow','low','medium','high'].indexOf(this.water);
-    this.shadowRoot.querySelector('#zone-water').value=waterIndex;
-    this.shadowRoot.querySelector('#zone-water').setAttribute('aria-valuetext',this.t(['Very Low','Low','Medium','High'][waterIndex]));
-    [...this.shadowRoot.querySelectorAll('[data-water]')].forEach((el,i)=>el.setAttribute('aria-pressed',String(i===waterIndex)));
-    [...this.shadowRoot.querySelectorAll('[data-passes]')].forEach(el=>el.setAttribute('aria-pressed',String(Number(el.dataset.passes)===this.passes)));
-    this.shadowRoot.querySelector('.repetitions-label').textContent=this.t(this.mode==='vacuumThenMop'?'Mop repetitions':'Clean repetitions');
+    const caps = this.capabilities;
+    if (!caps) return;
+    for (const key of ['mode','strategy','water','passes']) {
+      const options = caps[key].options;
+      if (options.length && !options.some(([,value]) => value === this[key])) this[key] = options[0][1];
+    }
+    const put = (element, html) => { if (element._optionsHtml !== html) { element.innerHTML=html; element._optionsHtml=html; } };
+    const modeSelect = this.shadowRoot.querySelector('#zone-mode');
+    put(modeSelect, caps.mode.options.map(([label,value]) => `<option value="${value}">${escapeHtml(this.t(label))}</option>`).join('') || `<option>${escapeHtml(this.t('Unavailable'))}</option>`);
+    modeSelect.value=this.mode;
+    modeSelect.disabled=!!this.sending || !caps.mode.available;
+    modeSelect.hidden=!caps.mode.supported;
+    this.shadowRoot.querySelector('[for=zone-mode]').hidden=!caps.mode.supported;
+    for (const [key, selector, attr] of [['strategy','.power-setting','power'],['water','.water-setting','water']]) {
+      const group=this.shadowRoot.querySelector(selector), cap=caps[key], options=cap.options;
+      group.hidden=!cap.supported || (key==='strategy' ? this.mode==='mop' : this.mode==='vacuum');
+      const stops=options.map((_,i)=>options.length>1?i/(options.length-1):0);
+      put(group.querySelector('.slider-ticks'), stops.map(stop=>`<span class="slider-tick" style="--stop:${stop}"></span>`).join(''));
+      put(group.querySelector('.slider-options'), options.map(([label],i)=>`<button type="button" data-${attr}="${i}" style="--stop:${stops[i]}">${escapeHtml(this.t(label))}</button>`).join(''));
+      const index=options.findIndex(([,value])=>value===this[key]), slider=group.querySelector('input');
+      slider.max=Math.max(0,options.length-1); slider.value=Math.max(0,index);
+      slider.disabled=!!this.sending || !cap.available || options.length<2;
+      slider.setAttribute('aria-valuetext',this.t(options[index]?.[0] ?? 'Unavailable'));
+      group.querySelector('.stepped-slider').classList.toggle('disabled',slider.disabled);
+      for (const button of group.querySelectorAll('button')) {
+        button.disabled=!!this.sending || !cap.available;
+        button.setAttribute('aria-pressed',String(Number(button.dataset[attr])===index));
+      }
+    }
+    const label=this.shadowRoot.querySelector('.repetitions-label'), segments=this.shadowRoot.querySelector('.segments');
+    label.hidden=segments.hidden=!caps.passes.supported;
+    label.textContent=this.t(this.mode==='vacuumThenMop'?'Mop repetitions':'Clean repetitions');
+    for (const button of segments.querySelectorAll('[data-passes]')) {
+      button.hidden=!caps.passes.options.some(([,value])=>value===Number(button.dataset.passes));
+      button.disabled=!!this.sending || !caps.passes.available;
+      button.setAttribute('aria-pressed',String(Number(button.dataset.passes)===this.passes));
+    }
     for (const [action, label] of Object.entries({start:'Start clean'})) {
       this.shadowRoot.querySelector(`[data-do="${action}"]`).textContent = this.t(label);
     }
@@ -1589,7 +1653,7 @@ class DysonPlannerZone extends HTMLElement {
         this.area.setAttribute('aria-label',`${this.t('Move zone. Use the arrow keys.')} ${caption}`);
       }
     }
-    const ready = zoneCanStart(this.hass,this.vacuum,this.camera,c,this.trusted,this.preview);
+    const ready = this.settingsReady() && zoneCanStart(this.hass,this.vacuum,this.camera,c,this.trusted,this.preview);
     for (const action of ['settings','refresh','start']) {
       const button = this.shadowRoot.querySelector(`[data-do="${action}"]`);
       const disabled = !!this.sending
@@ -1626,16 +1690,21 @@ class DysonPlannerZone extends HTMLElement {
     else { dx=Math.max(-x,Math.min(1-x2,dx)); dy=Math.max(-y,Math.min(1-y2,dy)); this.rect=[x+dx,y+dy,x2+dx,y2+dy]; }
     this.draw();
   }
+  settingsReady() {
+    if (!this.supported || !this.capabilities) return false;
+    const keys=['mode','passes', ...(this.mode==='mop'?[]:['strategy']), ...(this.mode==='vacuum'?[]:['water'])];
+    return keys.every(key=>this.capabilities[key].available && this.capabilities[key].options.some(([,value])=>value===this[key]));
+  }
   async start() {
-    if (this.sending || !zoneHasMinimumSize(this.rect,this.calibration,this.rotation) || !zoneCanStart(this.hass,this.vacuum,this.camera,this.calibration,this.trusted,this.preview)) return;
+    if (this.sending || !this.settingsReady() || !zoneHasMinimumSize(this.rect,this.calibration,this.rotation) || !zoneCanStart(this.hass,this.vacuum,this.camera,this.calibration,this.trusted,this.preview)) return;
     const data = { entity_id:this.vacuum,map_id:this.calibration.map_id,rectangle:zoneRobotRectangle(this.rect,this.calibration,this.rotation),...zoneSettingsPayload(this.mode,this.strategy,this.water,this.passes) };
-    this.sending = true; this.note = 'Sending zone start …'; this.draw();
+    this.sending = true; this.labels(); this.note = 'Sending zone start …'; this.draw();
     try {
       await this.hass.callService('dyson_spot_scrub','clean_zone',data);
       if (this.isConnected) this.dispatchEvent(new CustomEvent('zone-started',{bubbles:true,composed:true}));
     } catch (error) {
       if (this.isConnected) this.note = error.message || 'Zone start failed. Check the robot before retrying.';
-    } finally { this.sending = false; if (this.isConnected) this.draw(); }
+    } finally { this.sending = false; if (this.isConnected) { this.labels(); this.draw(); } }
   }
 }
 if (!customElements.get('dyson-planner-zone')) customElements.define('dyson-planner-zone', DysonPlannerZone);
@@ -1645,7 +1714,7 @@ function stationIndicator(field, refillStatus, language = 'en') {
   const t = (key, params) => translate(language, key, params);
   const { key, label, value } = field;
   const refill = key === 'cleaning_solution' && refillStatus === 'refill_required';
-  if (!field.available && !refill) return '';
+  const unknown = !field.available;
   let icon = '', color = '', short = '', description = value;
   switch (key) {
     case 'hot_water_mopping':
@@ -1658,24 +1727,24 @@ function stationIndicator(field, refillStatus, language = 'en') {
       color = value === 'on' ? 'active-blue with-plus' : 'inactive-muted';
       break;
     case 'cleaning_solution':
-      if (!refill && value !== 'off' && refillStatus !== 'ok') return '';
+
       icon = refill || value === 'on' ? 'mdi:bottle-tonic-plus' : 'mdi:bottle-tonic';
       color = refill ? 'alarm-red blink' : value === 'on' ? 'active-cyan' : 'inactive-muted';
       if (refill) description = 'Refill required';
       break;
     case 'self_cleaning_frequency':
       short = { 'After each room': '1R', 'Every 15 minutes': '15m', 'Every 30 minutes': '30m', 'Only as needed': 'Auto' }[value];
-      if (!short) return '';
+      if (!short) short = '\u2013';
       icon = short === '1R' ? 'mdi:door-open' : 'mdi:clock-outline';
       break;
     case 'roller_drying_duration': {
-      const hours = /^([345])\s*(?:h|hours)$/i.exec(value);
-      if (!hours) return '';
-      short = hours[1] + 'h';
+      const hours = /^([2345])\s*(?:h|hours)$/i.exec(value);
+      short = hours ? hours[1] + 'h' : '\u2013';
       break;
     }
     default: return '';
   }
+  if (unknown) { color = 'inactive-muted'; description = 'Unavailable'; }
   const text = escapeHtml(t(label) + ': ' + t(description));
   return `<span class="station-indicator ${color}" role="img" aria-label="${text}" title="${text}">${icon ? `<ha-icon icon="${icon}" class="status-icon" aria-hidden="true"></ha-icon>` : ''}${short ? `<span class="status-text-5g">${short}</span>` : ''}</span>`;
 }
@@ -1852,11 +1921,12 @@ function cardEditorDialog(element, previewOnly = false) {
 }
 
 class DysonRegistryElement extends HTMLElement {
-  constructor() { super(); this.attachShadow({ mode: 'open' }); this.registry = []; this.registryError = ''; }
+  constructor() { super(); this.attachShadow({ mode: 'open' }); this.registry = []; this.devices = []; this.registryError = ''; }
   connectedCallback() {
     this._onRegistryRefresh = event => {
       if (event.detail.source === this || event.detail.connection !== this._hass?.connection) return;
       this.registry = event.detail.rows;
+      this.devices = event.detail.devices ?? this.devices;
       this.registryError = '';
       this._registryLoaded = true;
       this.update?.();
@@ -1872,7 +1942,7 @@ class DysonRegistryElement extends HTMLElement {
   set hass(value) {
     const changed = this._hass?.connection !== value?.connection;
     this._hass = value;
-    if (changed) { this.registry = []; this._registryLoaded = false; }
+    if (changed) { this.registry = []; this.devices = []; this._registryLoaded = false; }
     if (this.isConnected && !this._registryLoaded && !this._loadingRegistry) this.loadRegistry();
     this.update?.();
   }
@@ -1882,12 +1952,16 @@ class DysonRegistryElement extends HTMLElement {
     this._loadingRegistry = true;
     const connection = this._hass.connection;
     try {
-      const rows = await this._hass.callWS({ type: 'config/entity_registry/list' });
+      const [rows, devices] = await Promise.all([
+        this._hass.callWS({ type: 'config/entity_registry/list' }),
+        this._hass.callWS({ type: 'config/device_registry/list' }).catch(() => null),
+      ]);
       if (this._hass.connection !== connection) return;
       this.registry = rows;
+      if (devices) this.devices = devices;
       this.registryError = '';
       this._registryLoaded = true;
-      if (notifyPeers) registryRefreshEvents.dispatchEvent(new CustomEvent('refresh', { detail: { source: this, connection, rows } }));
+      if (notifyPeers) registryRefreshEvents.dispatchEvent(new CustomEvent('refresh', { detail: { source: this, connection, rows, devices: this.devices } }));
     } catch {
       this.registryError = 'Could not read the entity registry. Check the connection and user permissions.';
       this._registryLoaded = true;
@@ -2023,7 +2097,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
   }
   getCardSize() { return this.view.active ? (this.config?.show_camera ? 9 : 5) : 3 + (this.model?.rooms.length ?? 3); }
   getGridOptions() { return { columns: 12, min_columns: 9, rows: 'auto', min_rows: 1 }; }
-  getModel() { return discover(this._hass, this.registry, this.config); }
+  getModel() { return discover(this._hass, this.registry, this.config, this.lastRooms); }
   resetDraft(clearMessage = true) {
     this.selected = this.model.rooms.filter(r => !r.excluded && r.available && this._hass.states[r.entity]?.state === 'on').map(r => r.entity);
     this.settingDraft = {};
@@ -2110,6 +2184,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       return;
     }
     if (['zones','rooms'].includes(el.dataset.action) && !this.view.active) {
+      if (el.dataset.action === 'zones' && !this.supportsZone) return;
       const zone = this.shadowRoot.querySelector('dyson-planner-zone');
       if (zone?.sending) return;
       if (zone) this.zoneDraft = zone.snapshot();
@@ -2215,8 +2290,8 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
   updateConsumables() {
     const root = this.shadowRoot;
 
-    const rows = consumableStatus(this._hass, this.registry, this.config.entity);
-    const settings = stationSettings(this._hass, this.registry, this.config.entity);
+    const rows = consumableStatus(this._hass, this.registry, this.config.entity).filter(row => row.supported);
+    const settings = stationSettings(this._hass, this.registry, this.config.entity).filter(field => field.supported);
     const solution = rows.find(row => row.type === 'cleaningSolution');
     this.updateStationSettings(settings, solution?.refillStatus);
     const warning = rows.some(row => row.level === 'low');
@@ -2278,7 +2353,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
         : `<select ${attrs}>${!field.options.includes(field.value) ? `<option value="">${this.ht("Unavailable")}</option>` : ''}${field.options.map(v => `<option value="${escapeHtml(v)}" ${v === field.value ? 'selected' : ''}>${this.ht(v)}</option>`).join('')}</select>`;
       return `<label class="station-row ${field.domain}"><span class="station-label">${indicators[field.key]}<span>${this.ht(field.label)}${!field.available ? `<small>${this.ht("Unavailable")}</small>` : ''}</span></span>${control}</label>`;
     }).join('');
-    const actions = stationActions(this._hass, this.registry, this.config.entity).map(action => {
+    const actions = stationActions(this._hass, this.registry, this.config.entity).filter(action => action.supported).map(action => {
       const disabled = !!this._previewDialog || !action.available || this.stationBusy || this.busy || this.controlBusy;
       return `<div class="station-row station-action"><span>${this.ht(action.label)}${!action.available ? `<small>${this.ht("Unavailable")}</small>` : ''}</span><ha-button appearance="plain" size="s" data-station-action="${action.key}" aria-label="${this.ht(action.label)}" ${disabled ? 'disabled' : ''}>${this.ht("Press")}</ha-button></div>`;
     }).join('');
@@ -2468,7 +2543,9 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     }
     this.update();
   }
+  get supportsZone() { return supportsZoneDevice(this.registry, this.devices, this.config.entity); }
   planningTabsHtml() {
+    if (!this.supportsZone) return '';
     return `<nav class="planning-tabs" aria-label="${this.ht('Cleaning selection')}"><button data-action="rooms" aria-pressed="${!this.zoneView}">${this.ht('Rooms')}</button><button data-action="zones" aria-pressed="${!!this.zoneView}">${this.ht('Zone')}</button></nav>`;
   }
   renderZone() {
@@ -2482,7 +2559,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     const trusted = !!(robotEntry?.device_id && robotEntry.platform === DOMAIN && cameraEntry?.platform === DOMAIN
       && robotEntry.device_id === cameraEntry.device_id);
     this.shadowRoot.querySelector('dyson-planner-zone').setOptions({ hass:this._hass, vacuum:this.config.entity,
-      camera, trusted, draft:this.zoneDraft, theme:this.config.theme, rotation:this.config.camera_rotation, language:this.language, preview:!!this._previewDialog });
+      camera, trusted, supported:this.supportsZone, capabilities:zoneDeviceOptions(this.model.rooms), draft:this.zoneDraft, theme:this.config.theme, rotation:this.config.camera_rotation, language:this.language, preview:!!this._previewDialog });
   }
   render() {
     if (!this.model) return;
@@ -2512,10 +2589,11 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
         if (omitted && !modern) return '';
         const reserve = html => omitted ? `<div class="mode-spacer" inert aria-hidden="true">${html}</div>` : html;
         const field = room.settings?.[key];
-        if (!field && this.config.unsupported_settings === 'hidden' && !this.config.always_show_all_settings) return '';
+        if (!field) return '';
+        const fieldDisabled = disabled || !field.available;
         const value = valueOf(key), options = field?.options ?? [];
-        if (modern && key !== 'cleaning_mode' && options.length) return reserve(this.modernControl(key, label, room, field, value, disabled, n));
-        return reserve(`<label class="field ${key === 'cleaning_mode' ? 'mode' : ''}">${label}<select data-setting="${key}" data-room-id="${h(room.roomId)}" data-focus="${key}-${n}" aria-label="${label} ${h(room.name)}" ${disabled || !field ? 'disabled' : ''}>${!options.includes(value) ? `<option value="">${this.ht("Unavailable")}</option>` : ''}${options.map(option => `<option value="${h(option)}" ${value === option ? 'selected' : ''}>${this.ht(option)}</option>`).join('')}</select>${!field ? `<span class="badge">${this.ht("Not available")}</span>` : ''}</label>`);
+        if (modern && key !== 'cleaning_mode' && options.length) return reserve(this.modernControl(key, label, room, field, value, fieldDisabled, n));
+        return reserve(`<label class="field ${key === 'cleaning_mode' ? 'mode' : ''}">${label}<select data-setting="${key}" data-room-id="${h(room.roomId)}" data-focus="${key}-${n}" aria-label="${label} ${h(room.name)}" ${fieldDisabled ? 'disabled' : ''}>${!options.includes(value) ? `<option value="">${this.ht("Unavailable")}</option>` : ''}${options.map(option => `<option value="${h(option)}" ${value === option ? 'selected' : ''}>${this.ht(option)}</option>`).join('')}</select>${!field ? `<span class="badge">${this.ht("Not available")}</span>` : ''}</label>`);
       }).join('');
       if (modern) {
         const colors = ['#18c5d9', '#e9b85b', '#b99ae4', '#79b9a5', '#e49baf'];
@@ -2626,7 +2704,6 @@ class DysonCleaningPlannerEditor extends DysonRegistryElement {
       <label>${this.ht("Title")}<input type="text" data-key="title" data-focus="title" placeholder="${this.ht('Plan a clean')}" value="${h(config.title ?? '')}"></label>
       <label>${this.ht("Language")}<select data-key="language" data-focus="language"><option value="auto" ${!config.language || config.language === 'auto' ? 'selected' : ''}>${this.ht("Automatic")}</option><option value="en" ${config.language === 'en' ? 'selected' : ''}>English [en]</option><option value="de" ${config.language === 'de' ? 'selected' : ''}>Deutsch [de]</option><option value="nl" ${config.language === 'nl' ? 'selected' : ''}>Nederlands [nl]</option></select></label>
       <label>${this.ht("Theme")}<select data-key="theme" data-focus="theme"><option value="classic" ${config.theme === 'classic' ? 'selected' : ''}>${this.ht("Classic")}</option><option value="modern" ${config.theme !== 'classic' ? 'selected' : ''}>${this.ht("Modern")}</option></select></label>
-      <label>${this.ht("Unsupported settings")}<select data-key="unsupported_settings" data-focus="unsupported"><option value="disabled" ${config.unsupported_settings !== 'hidden' ? 'selected' : ''}>${this.ht("Show disabled")}</option><option value="hidden" ${config.unsupported_settings === 'hidden' ? 'selected' : ''}>${this.ht("Hide")}</option></select></label>
       <div class="entry"><label><input type="checkbox" data-key="always_show_all_settings" data-focus="all-settings" ${config.always_show_all_settings === true ? 'checked' : ''}>${this.ht("Always show all settings")}</label></div>
       <p>${this.ht("Per-room settings are detected automatically. Saving and starting use the Dyson integration batch actions.")}</p>
       <h3>${this.ht("Status bar")}</h3>

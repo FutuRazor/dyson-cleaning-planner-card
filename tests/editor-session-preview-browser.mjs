@@ -37,7 +37,7 @@ try {
     assert.equal(await card.locator('dyson-planner-map').count(), 0);
     await camera.check();
     await editor.locator('[data-key=camera_rotation]').selectOption('90');
-    await editor.locator('[data-key=unsupported_settings]').dispatchEvent('pointerdown');
+    await editor.locator('[data-key=always_show_all_settings]').dispatchEvent('pointerdown');
     await card.locator('.rooms').waitFor();
     for (const target of ['[data-key=always_show_all_settings]', '[data-include]', '[data-order]:enabled']) {
       await editor.locator('[data-key=camera_entity]').dispatchEvent('pointerdown');

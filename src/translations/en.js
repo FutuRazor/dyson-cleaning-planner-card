@@ -1,5 +1,6 @@
 // English messages are also stable translation keys. Never use translated labels in action payloads.
 export const en = {
+  "Mop pad": "Mop pad",
   "Cleaning selection": "Cleaning selection",
   "Rooms": "Rooms",
   "Close": "Close",
@@ -47,6 +48,7 @@ export const en = {
   "Every 15 minutes": "Every 15 minutes",
   "Every 30 minutes": "Every 30 minutes",
   "Only as needed": "Only as needed",
+  "2 hours": "2 hours",
   "3 hours": "3 hours",
   "4 hours": "4 hours",
   "5 hours": "5 hours",

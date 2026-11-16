@@ -202,9 +202,9 @@ try {
   await state('docked');
   await page.locator('#settings').click();
   await page.evaluate(() => { for (const fields of Object.values(demo.fields)) demo.hass.states[fields.water_level].state = 'unavailable'; demo.card.hass = { ...demo.hass }; });
-  await editor.locator('[data-key="unsupported_settings"]').selectOption('hidden');
+  assert.equal(await editor.locator('[data-key="unsupported_settings"]').count(), 0);
   await card.locator('[data-expand]').first().click();
-  assert.equal(await card.locator('.field').filter({ hasText: 'Water level' }).count(), 0);
+  assert.equal(await card.locator('[data-setting=water_level]').isDisabled(), true);
   await editor.locator('[data-include]').first().uncheck();
   assert.equal(await card.locator('.room').count(), 4);
   await page.evaluate(() => {

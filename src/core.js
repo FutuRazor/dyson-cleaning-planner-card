@@ -30,11 +30,11 @@ export function normalizeConfig(config) {
   if (config.always_show_all_settings !== undefined && typeof config.always_show_all_settings !== 'boolean') throw new UiError('always_show_all_settings must be true or false.');
   if (config.camera_rotation !== undefined && ![0, 90, 180, 270].includes(config.camera_rotation)) throw new UiError('camera_rotation must be 0, 90, 180 or 270.');
   if (config.camera_entity && (typeof config.camera_entity !== 'string' || !config.camera_entity.startsWith('camera.'))) throw new UiError('Select a camera entity.');
-  return { ...config, language: config.language ?? 'auto', theme: config.theme ?? 'modern', show_battery_percentage: config.show_battery_percentage ?? false, show_status_bar: config.show_status_bar ?? true, hidden_status_items: config.hidden_status_items ?? [], title: config.title ?? '', always_show_all_settings: config.always_show_all_settings ?? false, unsupported_settings: config.unsupported_settings ?? 'disabled', excluded_rooms: config.excluded_rooms ?? [], room_order: config.room_order ?? [], show_camera: config.show_camera ?? true, camera_rotation: config.camera_rotation ?? 0 };
+  return { ...config, language: config.language ?? 'auto', theme: config.theme ?? 'modern', show_battery_percentage: config.show_battery_percentage ?? false, show_status_bar: config.show_status_bar ?? true, hidden_status_items: config.hidden_status_items ?? [], title: config.title ?? '', always_show_all_settings: config.always_show_all_settings ?? false, unsupported_settings: 'hidden', excluded_rooms: config.excluded_rooms ?? [], room_order: config.room_order ?? [], show_camera: config.show_camera ?? true, camera_rotation: config.camera_rotation ?? 0 };
 }
 
 // Entity IDs are user-editable. Match registry identity within ONE integration device.
-export function discover(hass, registry, config) {
+export function discover(hass, registry, config, previousRooms = []) {
   const issues = [];
   const vacuum = registry.find(e => e.entity_id === config.entity && e.platform === DOMAIN && !e.disabled_by);
   if (!vacuum?.device_id) return { rooms: [], issues: ['The Dyson device was not found in the entity registry.'] };
@@ -60,18 +60,21 @@ export function discover(hass, registry, config) {
     const settings = {};
     const roomIds = new Set();
     for (const key of Object.keys(ROOM_FIELDS)) {
-      const candidates = entries.filter(e => e.entity_id.startsWith('select.') && e.unique_id === `${entry.unique_id}_${key}` && available(hass.states[e.entity_id]));
+      const candidates = entries.filter(e => e.entity_id.startsWith('select.') && e.unique_id === `${entry.unique_id}_${key}`);
       if (candidates.length !== 1) continue;
       const entity = candidates[0].entity_id, state = hass.states[entity];
-      const nativeId = state.attributes?.room_id;
-      if (nativeId === undefined || nativeId === null || String(nativeId) === '') continue;
-      const options = state.attributes?.options;
-      if (!Array.isArray(options) || !options.every(o => typeof o === 'string')) continue;
-      roomIds.add(String(nativeId));
-      settings[key] = { entity, value: state.state, options };
+      const previous = previousRooms.find(r => r.entity === entry.entity_id);
+      const prior = previous?.settings?.[key]?.entity === entity ? previous.settings[key] : undefined;
+      const nativeId = state?.attributes?.room_id ?? (!available(state) ? previous?.roomId : undefined);
+      const options = state?.attributes?.options;
+      if (nativeId !== undefined && nativeId !== null && String(nativeId) !== '') roomIds.add(String(nativeId));
+      // Presence in the registry defines support; connectivity defines usability.
+      settings[key] = { entity, value: state?.state,
+        options: Array.isArray(options) ? options.filter(o => typeof o === 'string') : (!available(state) ? prior?.options ?? [] : []),
+        available: hass.connected !== false && available(state) };
     }
     const roomId = roomIds.size === 1 ? [...roomIds][0] : undefined;
-    return [{ name, entity: entry.entity_id, roomId, settings: roomId ? settings : {}, available: available(hass.states[entry.entity_id]), excluded: config.excluded_rooms.includes(entry.entity_id) }];
+    return [{ name, entity: entry.entity_id, roomId, settings, available: available(hass.states[entry.entity_id]), excluded: config.excluded_rooms.includes(entry.entity_id) }];
   });
   const ids = rooms.map(r => r.entity).filter(Boolean);
   if (new Set(ids).size !== ids.length) issues.push('Multiple rooms map to the same switch.');
@@ -274,25 +277,27 @@ export function fitMap(width, height, boxWidth, rotation) {
 }
 
 export const CONSUMABLES = [
-  ['brushBar', 'Brush bar'], ['mopRoller', 'Mop roller'],
+  ['brushBar', 'Brush bar'], ['mopRoller', 'Mop roller'], ['mopPad', 'Mop pad'],
   ['sideBrushes', 'Side brushes'], ['robotFilter', 'Robot filter'],
   ['dockFilter', 'Dock filter'], ['cleaningSolution', 'Cleaning solution']
 ];
 
 export function consumableStatus(hass, registry, entity) {
   const vacuum = registry.find(e => e.entity_id === entity && e.platform === DOMAIN && !e.disabled_by);
+  const serial = String(vacuum?.unique_id ?? '').replace(/_vacuum$/, '');
+  const suffixes = { brushBar:'brush_bar_usage', mopRoller:'mop_roller_usage', mopPad:'mop_pad_usage', sideBrushes:'side_brushes_usage', robotFilter:'robot_filter_usage', dockFilter:'dock_filter_usage', cleaningSolution:'cleaning_solution' };
   return CONSUMABLES.map(([type, name]) => {
-    const candidates = vacuum?.device_id ? registry.filter(e => e.platform === DOMAIN && e.device_id === vacuum.device_id && !e.disabled_by && e.entity_id.startsWith('sensor.') && hass?.states?.[e.entity_id]?.attributes?.consumable_type === type) : [];
+    const candidates = vacuum?.device_id ? registry.filter(e => e.platform === DOMAIN && e.device_id === vacuum.device_id && !e.disabled_by && e.entity_id.startsWith('sensor.') && (e.unique_id === `${serial}_consumable_${suffixes[type]}` || hass?.states?.[e.entity_id]?.attributes?.consumable_type === type)) : [];
     const state = candidates.length === 1 ? hass?.states?.[candidates[0].entity_id] : null;
     const live = hass?.connected !== false && available(state);
     if (type === 'cleaningSolution') {
       const value = live && state.attributes?.value_kind === 'refill_status' ? state.state : null;
-      return { type, name, remaining: null, level: 'unknown', refillStatus: value, text: value === 'ok' ? 'Ready to use' : value === 'refill_required' ? 'Refill required' : 'Unavailable' };
+      return { type, name, supported: candidates.length === 1, remaining: null, level: 'unknown', refillStatus: value, text: value === 'ok' ? 'Ready to use' : value === 'refill_required' ? 'Refill required' : 'Unavailable' };
     }
     const raw = state?.state;
     const usage = typeof raw === 'number' || (typeof raw === 'string' && raw.trim() !== '') ? Number(raw) : NaN;
     const remaining = live && state.attributes?.value_kind === 'usage_percent' && Number.isFinite(usage) && usage >= 0 && usage <= 100 ? Math.round((100 - usage) * 10) / 10 : null;
-    return { type, name, remaining, level: remaining === null ? 'unknown' : remaining <= 10 ? 'low' : remaining <= 25 ? 'medium' : 'high', text: remaining === null ? 'Unavailable' : `${remaining}% remaining` };
+    return { type, name, supported: candidates.length === 1, remaining, level: remaining === null ? 'unknown' : remaining <= 10 ? 'low' : remaining <= 25 ? 'medium' : 'high', text: remaining === null ? 'Unavailable' : `${remaining}% remaining` };
   });
 }
 
@@ -324,7 +329,7 @@ export function stationActions(hass, registry, entity) {
     const id = matches.length === 1 && !matches[0].disabled_by ? matches[0].entity_id : undefined;
     const state = hass?.states?.[id];
     // Button states are timestamps, or unknown before the first press.
-    return { key, label, entity: id, available: hass?.connected !== false && !!state && state.state !== 'unavailable' && !state.attributes?.restored && !!hass?.services?.button?.press };
+    return { key, label, entity: id, supported: !!id, available: hass?.connected !== false && !!state && state.state !== 'unavailable' && !state.attributes?.restored && !!hass?.services?.button?.press };
   });
 }
 
@@ -344,7 +349,7 @@ export function stationSettings(hass, registry, entity) {
     const options = Array.isArray(state?.attributes?.options) ? state.attributes.options.filter(v => typeof v === 'string') : [];
     const valid = domain === 'switch' ? ['on', 'off'].includes(state?.state) : options.includes(state?.state);
     const service = domain === 'switch' ? hass?.services?.switch?.turn_on && hass?.services?.switch?.turn_off : hass?.services?.select?.select_option;
-    return { key, label, domain, entity: id, value: state?.state, options, available: hass?.connected !== false && available(state) && valid && !!service };
+    return { key, label, domain, entity: id, supported: !!id, value: state?.state, options, available: hass?.connected !== false && available(state) && valid && !!service };
   });
 }
 
@@ -358,4 +363,29 @@ export async function changeStationSetting(hass, registry, entity, key, value) {
     if (!field.options.includes(value)) throw new UiError('Invalid station option.');
     await hass.callService('select', 'select_option', { entity_id: field.entity, option: value });
   }
+}
+
+// Mirror the integration's current RB05-only zone support. Product 804 covers
+// Spot+Scrub AI and R3. Other models need an integration capability contract first.
+export function supportsZoneDevice(registry, devices, entity) {
+  const vacuum = registry.find(e => e.entity_id === entity && e.platform === DOMAIN && !e.disabled_by);
+  const device = devices.find(d => d.id === vacuum?.device_id);
+  return /^(804[A-Z]?|RB05)$/i.test(String(device?.model ?? ''));
+}
+
+// Only expose protocol values both understood by the zone adapter and offered
+// by this device's room selects. This restricts options, not zone-model support.
+export const ZONE_CHOICES = {
+  mode: [['Vacuum','vacuum'], ['Vacuum and Mop','vacuumAndMop'], ['Mop','mop'], ['Vacuum then Mop','vacuumThenMop']],
+  strategy: [['Auto','auto'], ['Boost','boost'], ['Quiet','quiet'], ['Quick','quick']],
+  water: [['Very Low','veryLow'], ['Low','low'], ['Medium','medium'], ['High','high']],
+  passes: [['One Pass',1], ['Two Passes',2]],
+};
+export function zoneDeviceOptions(rooms) {
+  const keys = { mode:'cleaning_mode', strategy:'cleaning_strategy', water:'water_level', passes:'mop_repetitions' };
+  return Object.fromEntries(Object.entries(keys).map(([key, field]) => {
+    const fields = rooms.map(r => r.settings?.[field]).filter(Boolean);
+    const options = ZONE_CHOICES[key].filter(([label]) => fields.length && fields.every(f => f.options.includes(label)));
+    return [key, { supported: fields.length > 0, available: fields.length > 0 && fields.every(f => f.available), options }];
+  }));
 }

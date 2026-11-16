@@ -1,3 +1,4 @@
+import { escapeHtml } from './core.js';
 import { translate } from './localize.js';
 import { zoneMinimumSize, zoneHasMinimumSize, fitZoneMinimum, validZoneCalibration, zoneRobotRectangle, zoneCanStart, zoneSha256, zoneSettingsPayload } from './zone-core.js';
 
@@ -75,7 +76,7 @@ class DysonPlannerZone extends HTMLElement {
     });
     this.shadowRoot.querySelector('.zone-power').addEventListener('input', event => {
       if (this.sending) return;
-      this.strategy = ['auto','boost','quiet','quick'][Number(event.target.value)]; this.labels();
+      this.strategy = this.capabilities.strategy.options[Number(event.target.value)]?.[1]; this.labels();
     });
     this.shadowRoot.querySelector('#zone-mode').addEventListener('change', event => {
       if (this.sending) return;
@@ -83,7 +84,7 @@ class DysonPlannerZone extends HTMLElement {
     });
     this.shadowRoot.querySelector('#zone-water').addEventListener('input', event => {
       if (this.sending) return;
-      this.water=['veryLow','low','medium','high'][Number(event.target.value)]; this.labels();
+      this.water=this.capabilities.water.options[Number(event.target.value)]?.[1]; this.labels();
     });
     this.svg = this.shadowRoot.querySelector('svg');
     this.image = this.shadowRoot.querySelector('image');
@@ -92,10 +93,10 @@ class DysonPlannerZone extends HTMLElement {
     this.hint = this.shadowRoot.querySelector('.hint');
     this.shadowRoot.addEventListener('click', event => {
       const power = event.target.closest('[data-power]');
-      if (power && !this.sending) { this.shadowRoot.querySelector('.zone-power').value=power.dataset.power; this.strategy=['auto','boost','quiet','quick'][Number(power.dataset.power)]; this.labels(); return; }
+      if (power && !power.disabled && !this.sending) { this.shadowRoot.querySelector('.zone-power').value=power.dataset.power; this.strategy=this.capabilities.strategy.options[Number(power.dataset.power)]?.[1]; this.labels(); return; }
       const water=event.target.closest('[data-water]'), passes=event.target.closest('[data-passes]');
-      if (water && !this.sending) { this.water=['veryLow','low','medium','high'][Number(water.dataset.water)]; this.labels(); return; }
-      if (passes && !this.sending) { this.passes=Number(passes.dataset.passes); this.labels(); return; }
+      if (water && !water.disabled && !this.sending) { this.water=this.capabilities.water.options[Number(water.dataset.water)]?.[1]; this.labels(); return; }
+      if (passes && !passes.disabled && !this.sending) { this.passes=Number(passes.dataset.passes); this.labels(); return; }
       const action = event.target.closest('button')?.dataset.do;
       if (!action || event.target.closest('button').disabled) return;
       if (action === 'refresh') this.load();
@@ -144,7 +145,10 @@ class DysonPlannerZone extends HTMLElement {
     if (this.calibration && String(this.hass.states[this.vacuum]?.attributes?.map_id) !== this.calibration.map_id) {
       this.controller?.abort(); this.clear(); this.note = 'The active map changed. Reload the map and select a new zone.';
     }
-    if (this._labelsLanguage !== this.language) { this.labels(); this._labelsLanguage = this.language; }
+    const capabilitiesKey = JSON.stringify(this.capabilities);
+    if (this._labelsLanguage !== this.language || this._capabilitiesKey !== capabilitiesKey) {
+      this.labels(); this._labelsLanguage = this.language; this._capabilitiesKey = capabilitiesKey;
+    }
     this.draw();
     if (!this.attempted && this.trusted && this.camera) this.load();
   }
@@ -153,18 +157,43 @@ class DysonPlannerZone extends HTMLElement {
 
     for (const el of this.shadowRoot.querySelectorAll('[data-i18n]')) el.textContent = this.t(el.dataset.i18n);
     this.shadowRoot.querySelector('[data-do="close-settings"]').setAttribute('aria-label',this.t('Close'));
-    [...this.shadowRoot.querySelectorAll('[data-power]')].forEach((el,i)=>el.setAttribute('aria-pressed',String(i===['auto','boost','quiet','quick'].indexOf(this.strategy))));
-    this.shadowRoot.querySelector('.zone-power').setAttribute('aria-valuetext',this.t(this.strategy[0].toUpperCase()+this.strategy.slice(1)));
-    this.shadowRoot.querySelector('#zone-mode').value=this.mode;
-    this.shadowRoot.querySelector('.power-setting').hidden=this.mode==='mop';
-    this.shadowRoot.querySelector('.water-setting').hidden=this.mode==='vacuum';
-    this.shadowRoot.querySelector('.zone-power').value=['auto','boost','quiet','quick'].indexOf(this.strategy);
-    const waterIndex=['veryLow','low','medium','high'].indexOf(this.water);
-    this.shadowRoot.querySelector('#zone-water').value=waterIndex;
-    this.shadowRoot.querySelector('#zone-water').setAttribute('aria-valuetext',this.t(['Very Low','Low','Medium','High'][waterIndex]));
-    [...this.shadowRoot.querySelectorAll('[data-water]')].forEach((el,i)=>el.setAttribute('aria-pressed',String(i===waterIndex)));
-    [...this.shadowRoot.querySelectorAll('[data-passes]')].forEach(el=>el.setAttribute('aria-pressed',String(Number(el.dataset.passes)===this.passes)));
-    this.shadowRoot.querySelector('.repetitions-label').textContent=this.t(this.mode==='vacuumThenMop'?'Mop repetitions':'Clean repetitions');
+    const caps = this.capabilities;
+    if (!caps) return;
+    for (const key of ['mode','strategy','water','passes']) {
+      const options = caps[key].options;
+      if (options.length && !options.some(([,value]) => value === this[key])) this[key] = options[0][1];
+    }
+    const put = (element, html) => { if (element._optionsHtml !== html) { element.innerHTML=html; element._optionsHtml=html; } };
+    const modeSelect = this.shadowRoot.querySelector('#zone-mode');
+    put(modeSelect, caps.mode.options.map(([label,value]) => `<option value="${value}">${escapeHtml(this.t(label))}</option>`).join('') || `<option>${escapeHtml(this.t('Unavailable'))}</option>`);
+    modeSelect.value=this.mode;
+    modeSelect.disabled=!!this.sending || !caps.mode.available;
+    modeSelect.hidden=!caps.mode.supported;
+    this.shadowRoot.querySelector('[for=zone-mode]').hidden=!caps.mode.supported;
+    for (const [key, selector, attr] of [['strategy','.power-setting','power'],['water','.water-setting','water']]) {
+      const group=this.shadowRoot.querySelector(selector), cap=caps[key], options=cap.options;
+      group.hidden=!cap.supported || (key==='strategy' ? this.mode==='mop' : this.mode==='vacuum');
+      const stops=options.map((_,i)=>options.length>1?i/(options.length-1):0);
+      put(group.querySelector('.slider-ticks'), stops.map(stop=>`<span class="slider-tick" style="--stop:${stop}"></span>`).join(''));
+      put(group.querySelector('.slider-options'), options.map(([label],i)=>`<button type="button" data-${attr}="${i}" style="--stop:${stops[i]}">${escapeHtml(this.t(label))}</button>`).join(''));
+      const index=options.findIndex(([,value])=>value===this[key]), slider=group.querySelector('input');
+      slider.max=Math.max(0,options.length-1); slider.value=Math.max(0,index);
+      slider.disabled=!!this.sending || !cap.available || options.length<2;
+      slider.setAttribute('aria-valuetext',this.t(options[index]?.[0] ?? 'Unavailable'));
+      group.querySelector('.stepped-slider').classList.toggle('disabled',slider.disabled);
+      for (const button of group.querySelectorAll('button')) {
+        button.disabled=!!this.sending || !cap.available;
+        button.setAttribute('aria-pressed',String(Number(button.dataset[attr])===index));
+      }
+    }
+    const label=this.shadowRoot.querySelector('.repetitions-label'), segments=this.shadowRoot.querySelector('.segments');
+    label.hidden=segments.hidden=!caps.passes.supported;
+    label.textContent=this.t(this.mode==='vacuumThenMop'?'Mop repetitions':'Clean repetitions');
+    for (const button of segments.querySelectorAll('[data-passes]')) {
+      button.hidden=!caps.passes.options.some(([,value])=>value===Number(button.dataset.passes));
+      button.disabled=!!this.sending || !caps.passes.available;
+      button.setAttribute('aria-pressed',String(Number(button.dataset.passes)===this.passes));
+    }
     for (const [action, label] of Object.entries({start:'Start clean'})) {
       this.shadowRoot.querySelector(`[data-do="${action}"]`).textContent = this.t(label);
     }
@@ -291,7 +320,7 @@ class DysonPlannerZone extends HTMLElement {
         this.area.setAttribute('aria-label',`${this.t('Move zone. Use the arrow keys.')} ${caption}`);
       }
     }
-    const ready = zoneCanStart(this.hass,this.vacuum,this.camera,c,this.trusted,this.preview);
+    const ready = this.settingsReady() && zoneCanStart(this.hass,this.vacuum,this.camera,c,this.trusted,this.preview);
     for (const action of ['settings','refresh','start']) {
       const button = this.shadowRoot.querySelector(`[data-do="${action}"]`);
       const disabled = !!this.sending
@@ -328,16 +357,21 @@ class DysonPlannerZone extends HTMLElement {
     else { dx=Math.max(-x,Math.min(1-x2,dx)); dy=Math.max(-y,Math.min(1-y2,dy)); this.rect=[x+dx,y+dy,x2+dx,y2+dy]; }
     this.draw();
   }
+  settingsReady() {
+    if (!this.supported || !this.capabilities) return false;
+    const keys=['mode','passes', ...(this.mode==='mop'?[]:['strategy']), ...(this.mode==='vacuum'?[]:['water'])];
+    return keys.every(key=>this.capabilities[key].available && this.capabilities[key].options.some(([,value])=>value===this[key]));
+  }
   async start() {
-    if (this.sending || !zoneHasMinimumSize(this.rect,this.calibration,this.rotation) || !zoneCanStart(this.hass,this.vacuum,this.camera,this.calibration,this.trusted,this.preview)) return;
+    if (this.sending || !this.settingsReady() || !zoneHasMinimumSize(this.rect,this.calibration,this.rotation) || !zoneCanStart(this.hass,this.vacuum,this.camera,this.calibration,this.trusted,this.preview)) return;
     const data = { entity_id:this.vacuum,map_id:this.calibration.map_id,rectangle:zoneRobotRectangle(this.rect,this.calibration,this.rotation),...zoneSettingsPayload(this.mode,this.strategy,this.water,this.passes) };
-    this.sending = true; this.note = 'Sending zone start …'; this.draw();
+    this.sending = true; this.labels(); this.note = 'Sending zone start …'; this.draw();
     try {
       await this.hass.callService('dyson_spot_scrub','clean_zone',data);
       if (this.isConnected) this.dispatchEvent(new CustomEvent('zone-started',{bubbles:true,composed:true}));
     } catch (error) {
       if (this.isConnected) this.note = error.message || 'Zone start failed. Check the robot before retrying.';
-    } finally { this.sending = false; if (this.isConnected) this.draw(); }
+    } finally { this.sending = false; if (this.isConnected) { this.labels(); this.draw(); } }
   }
 }
 if (!customElements.get('dyson-planner-zone')) customElements.define('dyson-planner-zone', DysonPlannerZone);

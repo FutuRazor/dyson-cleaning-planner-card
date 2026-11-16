@@ -1,5 +1,6 @@
 // German display text. Entity names and protocol values are never rewritten.
 export const de = {
+  "Mop pad": "Wischpad",
   "Cleaning selection": "Reinigungsauswahl",
   "Rooms": "Räume",
   "Close": "Schließen",
@@ -47,6 +48,7 @@ export const de = {
   "Every 15 minutes": "Alle 15 Minuten",
   "Every 30 minutes": "Alle 30 Minuten",
   "Only as needed": "Nur bei Bedarf",
+  "2 hours": "2 Stunden",
   "3 hours": "3 Stunden",
   "4 hours": "4 Stunden",
   "5 hours": "5 Stunden",

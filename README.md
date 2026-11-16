@@ -190,8 +190,8 @@ These options belong in the individual card's code editor, not in `configuration
 | `title` | Custom planner title; empty or omitted uses the translated default |
 | `language` | `auto` (default), `en`, `de`, or `nl`; applies to this card and its editor |
 | `theme` | `modern` (default) or `classic` |
-| `always_show_all_settings` | Keep all room settings visible; default: `false` |
-| `unsupported_settings` | `disabled` (default) or `hidden` |
+| `always_show_all_settings` | Keep supported room settings visible regardless of cleaning mode; default: `false` |
+| `unsupported_settings` | Legacy option; unsupported settings are now always hidden |
 | `excluded_rooms` | Room switch entity IDs to hide |
 | `room_order` | Room switch entity IDs in display order |
 | `room_entities` | Optional mapping from room names to switch entity IDs |

@@ -23,7 +23,7 @@ export function fixture() {
   const hass = {
     states, connected: true, connection: {},
     services: { select: { select_option: {} }, switch: { turn_on: {}, turn_off: {} }, button: { press: {} }, vacuum: { pause: {}, start: {}, stop: {}, return_to_base: {} } },
-    callWS: async () => registry,
+    callWS: async ({type}) => type === 'config/device_registry/list' ? [{id:'demo-device',manufacturer:'Dyson',model:'804'}] : registry,
     callService: async (domain, service, data) => {
       calls.push({ domain, service, data });
       if (domain === 'select') states[data.entity_id] = state(data.option, states[data.entity_id].attributes);

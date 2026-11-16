@@ -1,5 +1,6 @@
 // Dutch UI text. Protocol values and entity names remain unchanged.
 export const nl = {
+  "Mop pad": "Dweilpad",
   "Cleaning selection": "Reinigingsselectie",
   "Rooms": "Kamers",
   "Close": "Sluiten",
@@ -47,6 +48,7 @@ export const nl = {
   "Every 15 minutes": "Elke 15 minuten",
   "Every 30 minutes": "Elke 30 minuten",
   "Only as needed": "Alleen indien nodig",
+  "2 hours": "2 uur",
   "3 hours": "3 uur",
   "4 hours": "4 uur",
   "5 hours": "5 uur",
