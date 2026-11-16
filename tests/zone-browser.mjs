@@ -146,7 +146,7 @@ try {
   await page.evaluate(()=>{ demo.hass.states[demo.entity].attributes.ready_to_start=true; demo.card.hass={...demo.hass}; });
   assert.equal(await zone.locator('.intro').count(),0);
   assert.equal(await zone.locator('.toolbar').count(),0);
-  assert.equal(await zone.locator('.message').isHidden(),true);
+  assert.equal(await page.locator('#card .header-notice').isHidden(),true);
   const layout=await zone.evaluate(el=>{
     const a=el.shadowRoot.querySelector('.secondary-actions').getBoundingClientRect(),b=el.shadowRoot.querySelector('.start').getBoundingClientRect(),r=el.shadowRoot.querySelector('.reload').getBoundingClientRect();
     return {left:a.width,right:b.width,reloadHeight:r.height,startHeight:b.height};
@@ -193,7 +193,7 @@ try {
   assert.equal(await zone.evaluate(el=>el.strategy),'boost');
   assert.deepEqual(await zone.evaluate(el=>[el.mode,el.water,el.passes]),['vacuumThenMop','high',2]);
   await zone.locator('[data-do="start"]').click();
-  await page.locator('#card h2').filter({hasText:'Cleaning session'}).waitFor();
+  await page.locator('#card h2').filter({hasText:'Cleaning session'}).waitFor({state:'attached'});
   assert.equal(await page.locator('.planning-tabs').count(),0);
   const calls=await page.evaluate(()=>demo.calls.filter(c=>c.service==='clean_zone'));
   assert.equal(calls[0].data.clean_type,'vacuumThenMop');
@@ -213,7 +213,7 @@ try {
     demo.card.hass={...demo.hass};
   });
   await zone.locator('[data-do="refresh"]').click();
-  await zone.locator('.message').filter({hasText:'Image and calibration do not match'}).waitFor();
+  await page.locator('#card .header-notice').filter({hasText:'Image and calibration do not match'}).waitFor();
   assert.equal(await zone.locator('[data-do="start"]').isDisabled(),true);
   assert.equal(await zone.evaluate(el=>el.rect),null);
   assert.ok(imageRequests.length>0);

@@ -37,7 +37,7 @@ try {
 
     await editor.locator('[data-key=camera_entity]').dispatchEvent('pointerdown');
     await card.locator('dyson-planner-map').waitFor();
-    assert.equal(await card.locator('.session-title').innerText(), 'Cleaning session preview');
+    assert.equal(await card.locator('.session-title').textContent(), 'Cleaning session preview');
     assert.ok(await card.locator('.home').isDisabled());
     await camera.uncheck();
     assert.ok(await card.locator('.session-title').isVisible());
@@ -48,12 +48,12 @@ try {
     await card.locator('.rooms').waitFor();
     for (const target of ['[data-key=always_show_all_settings]', '[data-include]', '[data-order]:enabled']) {
       await editor.locator('[data-key=camera_entity]').dispatchEvent('pointerdown');
-      await card.locator('.session-title').waitFor();
+      await card.locator('.session-title').waitFor({state:'attached'});
       await editor.locator(target).first().click();
       await card.locator('.rooms').waitFor();
     }
     await editor.locator('[data-key=camera_entity]').dispatchEvent('pointerdown');
-    await card.locator('.session-title').waitFor();
+    await card.locator('.session-title').waitFor({state:'attached'});
     assert.ok(await dashboard.locator('.rooms').isVisible());
     await editor.evaluate(el => el.remove());
     await card.locator('.rooms').waitFor();

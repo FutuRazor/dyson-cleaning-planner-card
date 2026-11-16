@@ -8,7 +8,7 @@ class DysonPlannerMap extends HTMLElement {
     this.shadowRoot.innerHTML = `<style>
       :host{display:block;min-width:0}.viewport{position:relative;width:100%;aspect-ratio:4/3;overflow:hidden;background:var(--secondary-background-color,#f5f7f9);isolation:isolate}
       img{position:absolute;left:50%;top:50%;max-width:none;max-height:none;transform-origin:center;visibility:hidden}.placeholder{position:absolute;inset:0;display:grid;place-items:center;padding:16px;text-align:center;color:var(--secondary-text-color,#52616e);font:13px/1.5 Arial,sans-serif}
-      .caption{margin:8px 0 0;padding:0 var(--dp-padding,24px);color:var(--secondary-text-color,#52616e);font:12px/1.5 Arial,sans-serif}.caption:empty{display:none}[hidden]{display:none}
+      .caption{display:none;margin:8px 0 0;padding:0 var(--dp-padding,24px);color:var(--secondary-text-color,#52616e);font:12px/1.5 Arial,sans-serif}.caption:empty{display:none}[hidden]{display:none}
       </style><div class="viewport"><img alt="Live cleaning map"><div class="placeholder">Loading cleaning map …</div></div><p class="caption" role="status" aria-live="polite"></p>`;
     this.img = this.shadowRoot.querySelector('img');
     this.viewport = this.shadowRoot.querySelector('.viewport');
@@ -70,6 +70,8 @@ class DysonPlannerMap extends HTMLElement {
     this.placeholder.hidden = !!this.objectUrl;
     this.placeholder.textContent = message;
     this.caption.textContent = this.objectUrl ? translate(this.language, '{message} Showing the last received image.', { message }) : message;
+    this.headerMessage = this.caption.textContent;
+    this.dispatchEvent(new CustomEvent('planner-notice', { bubbles: true, composed: true }));
   }
   async refresh() {
     if (!this.isConnected || !this.inView || document.hidden || !this.live) return;
@@ -97,7 +99,8 @@ class DysonPlannerMap extends HTMLElement {
       this.imageWidth = image.naturalWidth; this.imageHeight = image.naturalHeight;
       this.img.src = this.objectUrl; this.img.style.visibility = 'visible';
       this.placeholder.hidden = true; this.resize();
-      this.caption.textContent = ''; this.messageKey = null;
+      this.caption.textContent = ''; this.messageKey = null; this.headerMessage = '';
+      this.dispatchEvent(new CustomEvent('planner-notice', { bubbles: true, composed: true }));
       if (previous) URL.revokeObjectURL(previous);
     } catch {
       if (controller === this.abortController) this.showMessage('Map update unavailable.');
