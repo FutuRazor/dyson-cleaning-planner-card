@@ -178,7 +178,7 @@ export const en = {
   "Multiple rooms map to the same switch.": "Multiple rooms map to the same switch.",
   "Select a vacuum entity.": "Select a vacuum entity.",
   "theme must be classic or modern.": "theme must be classic or modern.",
-  "language must be auto, en or de.": "language must be auto, en or de.",
+  "language must be auto, en, de or nl.": "language must be auto, en, de or nl.",
   "unsupported_settings must be disabled or hidden.": "unsupported_settings must be disabled or hidden.",
   "{key} must be a list of entity IDs.": "{key} must be a list of entity IDs.",
   "room_entities must map room names to switch entities.": "room_entities must map room names to switch entities.",

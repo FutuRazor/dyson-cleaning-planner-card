@@ -69,6 +69,15 @@ try {
   await editor.locator('[data-key=language]').selectOption('de');
   assert.equal(await card.locator('h2').textContent(), 'My Dyson', 'custom title unchanged');
   assert.equal(await card.locator('.name').first().textContent(), 'Wohnzimmer');
+  await editor.locator('[data-key=title]').fill('');
+  await editor.locator('[data-key=language]').selectOption('nl');
+  assert.equal(await card.locator('h2').textContent(), 'Reiniging plannen');
+  assert.equal(await editor.locator('[data-key=language] option[value=nl]').textContent(), 'Nederlands [nl]');
+  for (const width of [375, 482, 700]) {
+    await page.evaluate(width => { document.querySelector('main').style.maxWidth = `${width}px`; }, width);
+    await page.waitForTimeout(100);
+    assert.ok(await card.evaluate(el => el.shadowRoot.querySelector('.planner-content').scrollWidth <= el.clientWidth), `${width}: Dutch has no horizontal overflow`);
+  }
   assert.deepEqual(errors, []);
   console.log('Languages verified: automatic/user selection, draft preservation, original service values, station controls, session/map/editor, and narrow/wide layouts.');
 } finally { await browser.close(); server.close(); }

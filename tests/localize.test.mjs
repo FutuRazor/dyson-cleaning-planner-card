@@ -32,3 +32,13 @@ test('own messages translate parameters without changing names or external error
   assert.equal(translate('fr', 'Plan a clean'), 'Plan a clean');
   assert.equal(translate('de', '{selected} of {total} rooms selected', { selected: 2, total: 5 }), '2 von 5 Räumen ausgewählt');
 });
+
+
+test('Dutch supports regional HA locales, overrides and translated parameters', () => {
+  for (const language of ['nl', 'nl-NL', 'nl_BE']) assert.equal(resolveLanguage({}, {locale:{language}}), 'nl');
+  assert.equal(normalizeConfig({entity:'vacuum.robot',language:'nl'}).language,'nl');
+  assert.equal(resolveLanguage({language:'nl'},{language:'en'}),'nl');
+  assert.equal(translate('nl','Plan a clean'),'Reiniging plannen');
+  assert.equal(translate('nl','{selected} of {total} rooms selected',{selected:2,total:5}),'2 van 5 kamers geselecteerd');
+  assert.equal(translate('nl',new Error('Robot firmware: unavailable')),'Robot firmware: unavailable');
+});

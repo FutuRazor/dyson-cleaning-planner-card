@@ -1,12 +1,12 @@
 # Translations
 
-The card and editor support `language: auto`, `en`, and `de`. Automatic uses the current Home Assistant user's locale, with English as the fallback. Languages are resolved per card, so different cards can use different languages.
+The card and editor support `language: auto`, `en`, `de`, and `nl`. Automatic uses the current Home Assistant user's locale, with English as the fallback. Languages are resolved per card, so different cards can use different languages.
 
 ## Adding a language
 
 1. Copy `src/translations/en.js` to a new language file. Keep every message key and translate only its value. Preserve placeholders such as `{name}`, `{selected}`, and `{total}`.
 2. Import the dictionary and register its language code in `src/localize.js`.
-3. Add the code to configuration validation in `src/core.js` and its native language name to the selector in `src/editor.js`. Update the language-validation message in every dictionary.
+3. Add the code to configuration validation in `src/core.js` and its native language name and code (for example `Nederlands [nl]`) to the selector in `src/editor.js`. Update the language-validation message in every dictionary.
 4. Add the translation module before `localize` in `scripts/build.mjs` and document the new configuration value.
 5. Run `npm run check`, then verify the editor, planner, session and Info overlay in both narrow and wide layouts. `tests/languages-browser.mjs` exercises language switching and checks that service payloads remain unchanged (requires Playwright and Edge).
 
