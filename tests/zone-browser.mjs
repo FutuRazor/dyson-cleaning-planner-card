@@ -52,17 +52,15 @@ try {
       demo.card.hass={...demo.hass};
       if (zone!==demo.card.shadowRoot.querySelector('dyson-planner-zone')) throw new Error('Zone remounted');
     });
-    // The resize grip sits corner-to-corner outside the zone, then flips inside
-    // at the image edges. Its visual movement must not affect drag coordinates.
+    // The grip stays centered on its corner, including image edges.
     await zone.evaluate(el => {
       const original = [...el.rect];
       for (const end of [.6, 1]) {
         el.rect = [.2,.2,end,end]; el.draw();
         const box = el.handle.getBBox();
-        const expectedX = end*el.width - (end === 1 ? box.width : 0);
-        const expectedY = end*el.height - (end === 1 ? box.height : 0);
-        if (Math.abs(box.x-expectedX) > .01 || Math.abs(box.y-expectedY) > .01) throw new Error('Grip position');
-        if (box.x < 0 || box.y < 0 || box.x+box.width > el.width+.01 || box.y+box.height > el.height+.01) throw new Error('Grip outside image');
+        if (Math.abs(box.x+box.width/2-end*el.width) > .01 || Math.abs(box.y+box.height/2-end*el.height) > .01) throw new Error('Grip position');
+        const visible=el.handleVisual.getBoundingClientRect();
+        if (Math.abs(visible.width-26)>.1) throw new Error('Grip screen size');
       }
       el.rect = original; el.draw();
     });
@@ -70,7 +68,7 @@ try {
     await page.mouse.move(box.x+box.width/2,box.y+box.height/2); await page.mouse.down();
     await page.mouse.move(box.x+box.width/2+20,box.y+box.height/2+15); await page.mouse.up();
     assert.notDeepEqual(await zone.evaluate(el=>el.rect),[.3,.3,.7,.7]);
-    await zone.locator('.handle').focus(); await page.keyboard.press('ArrowRight');
+    await zone.locator('.handle-hit').focus(); await page.keyboard.press('ArrowRight');
     assert.equal(await zone.locator('[data-do="start"]').isEnabled(),true);
     const beforeReload=await zone.evaluate(el=>[...el.rect]);
     await zone.locator('[data-do="refresh"]').click();
@@ -98,8 +96,8 @@ try {
   await touchEvent({type:'touchEnd',touchPoints:[]});
   assert.notDeepEqual(await zone.evaluate(el=>el.rect),[.3,.3,.7,.7]);
   const beforeResize = await zone.evaluate(el=>[...el.rect]);
-  await zone.locator('.handle').scrollIntoViewIfNeeded();
-  const handleBox = await zone.locator('.handle').boundingBox();
+  await zone.locator('.handle-hit').scrollIntoViewIfNeeded();
+  const handleBox = await zone.locator('.handle-hit').boundingBox();
   const hx=handleBox.x+handleBox.width/2,hy=handleBox.y+handleBox.height/2;
   await touchEvent({type:'touchStart',touchPoints:[{x:hx,y:hy}]});
   await touchEvent({type:'touchMove',touchPoints:[{x:hx+20,y:hy+15}]});
@@ -109,7 +107,7 @@ try {
   await client?.detach();
   // Keep the last edited SVG handle focused, then scroll to Start. Repeated HA
   // updates must neither rewrite the SVG nor bring it back into view on Safari.
-  await zone.locator('.handle').focus();
+  await zone.locator('.handle-hit').focus();
   await zone.locator('[data-do="start"]').scrollIntoViewIfNeeded();
   // Let the browser finish scrollIntoView and touch momentum before measuring telemetry.
   await page.waitForTimeout(400);

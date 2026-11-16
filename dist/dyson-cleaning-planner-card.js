@@ -1400,6 +1400,21 @@ function fitZoneMinimum(rect, c, rotation = 0) {
   return [x,y,x+w,y+h];
 }
 
+// Display-space helpers keep movement separate from resizing.
+function adjustZone(rect, dx, dy, resize, minimum) {
+  const [x,y,x2,y2]=rect, [mw,mh]=minimum;
+  if (resize) return [x,y,Math.min(1,Math.max(x+mw,x2+dx)),Math.min(1,Math.max(y+mh,y2+dy))];
+  const w=x2-x,h=y2-y,nx=Math.max(0,Math.min(1-w,x+dx)),ny=Math.max(0,Math.min(1-h,y+dy));
+  return [nx,ny,nx+w,ny+h];
+}
+function zonePillPosition(rect, width, height, pillWidth, pillHeight, gap=6) {
+  const [x,y,x2,y2]=rect;
+  const left=Math.max(0,Math.min(width-pillWidth,(x+x2)*width/2-pillWidth/2));
+  const above=y*height-pillHeight-gap;
+  const top=above>=0 ? above : Math.min(height-pillHeight,y2*height+gap);
+  return [left,Math.max(0,top)];
+}
+
 
 // Owns the frozen image and pointer interaction. HA updates never replace its DOM.
 class DysonPlannerZone extends HTMLElement {
@@ -1413,10 +1428,10 @@ class DysonPlannerZone extends HTMLElement {
       button{font:inherit;color:inherit;border:1px solid var(--dp-line);border-radius:12px;padding:8px 12px;min-height:44px;background:var(--dp-modern-surface,var(--dp-bg));cursor:pointer}
       button:disabled{opacity:.45;cursor:default}button:focus-visible{outline:2px solid var(--dp-accent);outline-offset:2px}
       .start{background:var(--dp-accent);color:var(--text-primary-color,#fff);flex:1}.back{flex:1}
-      svg{display:block;width:100%;height:auto;background:var(--dp-bg);overflow:hidden}
+      .map-frame{padding:20px;overflow:visible}svg{display:block;width:100%;height:auto;background:var(--dp-bg);overflow:visible}
       .area{fill:color-mix(in srgb,var(--dp-accent) 22%,transparent);stroke:var(--dp-accent);stroke-width:2;vector-effect:non-scaling-stroke;cursor:move;touch-action:none}
-      .handle{fill:var(--dp-accent);stroke:white;stroke-width:2;vector-effect:non-scaling-stroke;cursor:nwse-resize;touch-action:none}
-      [tabindex]:focus{outline:none;stroke:white;stroke-width:3}.hint{fill:white;pointer-events:none;font:22px sans-serif}
+      .handle-hit{fill:transparent;cursor:nwse-resize;touch-action:none}.handle{pointer-events:none;filter:drop-shadow(0 1px 2px #0006);fill:var(--dp-accent);stroke:white;stroke-width:2;vector-effect:non-scaling-stroke;cursor:nwse-resize;touch-action:none}
+      [tabindex]:focus{outline:none;stroke:white;stroke-width:3}.hint{fill:none;pointer-events:none;font:22px sans-serif}
       .settings-overlay{position:absolute;inset:0;z-index:5;background:#0005;padding:12px;display:flex;align-items:flex-start}
       .settings-panel{width:100%;max-height:min(100%,75vh);overflow-y:auto;overscroll-behavior:contain;background:var(--dp-bg);border:1px solid var(--dp-line);border-radius:14px;padding:18px;box-shadow:0 8px 30px #0003}
       .settings-panel header{display:flex;align-items:stretch;gap:8px;margin-bottom:20px}.settings-panel h3{flex:1;margin:0;align-self:center;font-size:16px;font-weight:500}
@@ -1450,7 +1465,7 @@ class DysonPlannerZone extends HTMLElement {
       .zone-settings-open{display:flex;align-items:center;justify-content:space-between;gap:6px;text-align:left}.zone-mode-label{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.zone-settings-open ha-icon{display:flex;align-items:center;justify-content:center;line-height:0;align-self:center;flex:0 0 15px;width:15px;height:15px;--mdc-icon-size:15px}
       [hidden]{display:none!important}
     </style>
-    <svg hidden aria-label="Zone selection"><image/><rect class="area" tabindex="0" role="button"/><g class="zone-size" pointer-events="none"><rect fill="#10252dcc" rx="3"/><text fill="white" dominant-baseline="hanging"></text></g><rect class="handle" tabindex="0" role="button" rx="6"/><text class="hint" text-anchor="middle" dominant-baseline="central">↘</text></svg>
+    <div class="map-frame"><svg hidden aria-label="Zone selection"><image/><rect class="area" tabindex="0" role="button"/><g class="zone-size" pointer-events="none"><rect fill="#10252de6"/><text fill="white" dominant-baseline="central" text-anchor="middle"></text></g><circle class="handle-hit" tabindex="0" role="button"/><circle class="handle"/><path class="hint" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" d="M-5 -5 L5 5 M0 5 H5 V0 M-5 0 V-5 H0"/></svg></div>
     <p class="message" role="status" aria-live="polite"></p><div class="actions"><div class="secondary-actions"><button class="reload" data-do="refresh"><ha-icon icon="mdi:reload" aria-hidden="true"></ha-icon></button><button class="zone-settings-open" data-do="settings" aria-haspopup="dialog"><span class="zone-mode-label"></span><ha-icon icon="mdi:cog" aria-hidden="true"></ha-icon></button></div><button class="start" data-do="start"></button></div>
     <div class="settings-overlay" hidden><section class="settings-panel" role="dialog" aria-modal="true" aria-labelledby="zone-settings-title"><header><h3 id="zone-settings-title" data-i18n="Settings"></h3><button data-do="close-settings" aria-label="Close"><ha-icon icon="mdi:close" aria-hidden="true"></ha-icon></button></header><div class="settings-fields">
       <label for="zone-mode" data-i18n="Cleaning mode"></label><select id="zone-mode"><option value="vacuum" data-i18n="Vacuum"></option><option value="vacuumAndMop" data-i18n="Vacuum and Mop"></option><option value="mop" data-i18n="Mop"></option><option value="vacuumThenMop" data-i18n="Vacuum then Mop"></option></select>
@@ -1488,7 +1503,8 @@ class DysonPlannerZone extends HTMLElement {
     this.svg = this.shadowRoot.querySelector('svg');
     this.image = this.shadowRoot.querySelector('image');
     this.area = this.shadowRoot.querySelector('.area');
-    this.handle = this.shadowRoot.querySelector('.handle');
+    this.handle = this.shadowRoot.querySelector('.handle-hit');
+    this.handleVisual = this.shadowRoot.querySelector('.handle');
     this.hint = this.shadowRoot.querySelector('.hint');
     this.shadowRoot.addEventListener('click', event => {
       if (event.target === this.dialog) { this.closeSettings(); return; }
@@ -1691,32 +1707,25 @@ class DysonPlannerZone extends HTMLElement {
           : this.rotation === 270 ? `translate(0 ${c.image_width}) rotate(270)` : '';
         this.image.setAttribute('transform', transform);
       }
-      for (const el of [this.area,this.handle,this.hint,this.shadowRoot.querySelector('.zone-size')]) el.toggleAttribute('hidden', !this.rect);
+      for (const el of [this.area,this.handle,this.handleVisual,this.hint,this.shadowRoot.querySelector('.zone-size')]) el.toggleAttribute('hidden', !this.rect);
       if (c && this.rect) {
-        const [x,y,x2,y2] = this.rect, size = Math.min(this.width * .14, 36 * this.width / (this.svg.getBoundingClientRect().width || this.width));
+        const [x,y,x2,y2] = this.rect;
+        const scale=this.width/(this.svg.getBoundingClientRect().width || this.width);
         for (const [key,value] of Object.entries({ x:x*this.width,y:y*this.height,width:(x2-x)*this.width,height:(y2-y)*this.height })) this.area.setAttribute(key,value);
-        // Keep the grip outside the selected area when there is room. Flip each
-        // axis inward near the image edge without changing the zone or drag origin.
-        const edgeX = x2*this.width, edgeY = y2*this.height;
-        const strokeMargin = this.width / (this.svg.getBoundingClientRect().width || this.width);
-        const handleX = this.width-edgeX >= size+strokeMargin ? edgeX : edgeX-size;
-        const handleY = this.height-edgeY >= size+strokeMargin ? edgeY : edgeY-size;
-        for (const [key,value] of Object.entries({ x:handleX,y:handleY,width:size,height:size })) this.handle.setAttribute(key,value);
-        this.hint.setAttribute('x',handleX+size/2); this.hint.setAttribute('y',handleY+size/2);
-        this.hint.style.fontSize = `${size*.65}px`;
-        const label = this.shadowRoot.querySelector('.zone-size');
-        const text = label.querySelector('text'), bg = label.querySelector('rect');
-        const cmWidth = Math.round((x2-x)*this.width/c.pixels_per_metre*100);
-        const cmHeight = Math.round((y2-y)*this.height/c.pixels_per_metre*100);
-        const caption = `${cmWidth} × ${cmHeight} cm`;
-        const scale = this.width/(this.svg.getBoundingClientRect().width || this.width);
-        const font = Math.min(12*scale, ((x2-x)*this.width-4*scale)/(caption.length*.62));
-        const pad = Math.min(3*scale,font*.3);
-        label.setAttribute('transform',`translate(${x*this.width+pad} ${y*this.height+pad})`);
-        text.textContent=caption; text.style.fontSize=`${font}px`;
-        text.setAttribute('x',pad); text.setAttribute('y',pad);
-        bg.setAttribute('width',caption.length*font*.62+2*pad);
-        bg.setAttribute('height',font*1.25+2*pad);
+        for (const [el,radius] of [[this.handle,20],[this.handleVisual,13]]) {
+          el.setAttribute('cx',x2*this.width); el.setAttribute('cy',y2*this.height); el.setAttribute('r',radius*scale);
+        }
+        this.hint.setAttribute('transform',`translate(${x2*this.width} ${y2*this.height}) scale(${scale})`);
+        const label=this.shadowRoot.querySelector('.zone-size'), text=label.querySelector('text'), bg=label.querySelector('rect');
+        const cmWidth=Math.round((x2-x)*this.width/c.pixels_per_metre*100);
+        const cmHeight=Math.round((y2-y)*this.height/c.pixels_per_metre*100);
+        const caption=`${cmWidth} \u00d7 ${cmHeight} cm`;
+        text.textContent=caption; text.style.fontSize=`${12*scale}px`;
+        const pillWidth=text.getComputedTextLength()+16*scale,pillHeight=24*scale;
+        const [left,top]=zonePillPosition(this.rect,this.width,this.height,pillWidth,pillHeight,6*scale);
+        label.setAttribute('transform',`translate(${left} ${top})`);
+        text.setAttribute('x',pillWidth/2); text.setAttribute('y',pillHeight/2);
+        bg.setAttribute('width',pillWidth); bg.setAttribute('height',pillHeight); bg.setAttribute('rx',12*scale);
         this.area.setAttribute('aria-label',`${this.t('Move zone. Use the arrow keys.')} ${caption}`);
       }
     }
@@ -1742,7 +1751,7 @@ class DysonPlannerZone extends HTMLElement {
   pointerDown(event) {
     if (!this.rect || this.sending || (event.pointerType === 'mouse' && event.button !== 0)
       || ![this.area,this.handle].includes(event.target)) return;
-    event.preventDefault(); this.drag = { id:event.pointerId,start:this.point(event),rect:[...this.rect],resize:event.target === this.handle };
+    event.preventDefault(); event.stopPropagation(); this.drag = { id:event.pointerId,start:this.point(event),rect:[...this.rect],resize:event.target === this.handle };
     this.svg.setPointerCapture(event.pointerId);
   }
   pointerMove(event) {
@@ -1751,10 +1760,7 @@ class DysonPlannerZone extends HTMLElement {
     this.adjust(this.drag.rect,p[0]-this.drag.start[0],p[1]-this.drag.start[1],this.drag.resize);
   }
   adjust(rect,dx,dy,resize) {
-    const [x,y,x2,y2] = rect;
-    const [mw,mh] = zoneMinimumSize(this.calibration,this.rotation);
-    if (resize) this.rect = [x,y,Math.min(1,Math.max(x+mw,x2+dx)),Math.min(1,Math.max(y+mh,y2+dy))];
-    else { dx=Math.max(-x,Math.min(1-x2,dx)); dy=Math.max(-y,Math.min(1-y2,dy)); this.rect=[x+dx,y+dy,x2+dx,y2+dy]; }
+    this.rect=adjustZone(rect,dx,dy,resize,zoneMinimumSize(this.calibration,this.rotation));
     this.draw();
   }
   settingsReady() {

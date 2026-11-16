@@ -89,3 +89,18 @@ export function fitZoneMinimum(rect, c, rotation = 0) {
   const x=Math.max(0,Math.min(rect[0],1-w)), y=Math.max(0,Math.min(rect[1],1-h));
   return [x,y,x+w,y+h];
 }
+
+// Display-space helpers keep movement separate from resizing.
+export function adjustZone(rect, dx, dy, resize, minimum) {
+  const [x,y,x2,y2]=rect, [mw,mh]=minimum;
+  if (resize) return [x,y,Math.min(1,Math.max(x+mw,x2+dx)),Math.min(1,Math.max(y+mh,y2+dy))];
+  const w=x2-x,h=y2-y,nx=Math.max(0,Math.min(1-w,x+dx)),ny=Math.max(0,Math.min(1-h,y+dy));
+  return [nx,ny,nx+w,ny+h];
+}
+export function zonePillPosition(rect, width, height, pillWidth, pillHeight, gap=6) {
+  const [x,y,x2,y2]=rect;
+  const left=Math.max(0,Math.min(width-pillWidth,(x+x2)*width/2-pillWidth/2));
+  const above=y*height-pillHeight-gap;
+  const top=above>=0 ? above : Math.min(height-pillHeight,y2*height+gap);
+  return [left,Math.max(0,top)];
+}
