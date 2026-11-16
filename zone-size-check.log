@@ -1,0 +1,69 @@
+
+> dyson-cleaning-planner-card@1.4.0 check
+> node --check src/core.js && node --check src/map.js && node --check src/zone-core.js && node --check src/zone.js && node --check src/card.js && node --check src/editor.js && npm test && npm run build
+
+
+> dyson-cleaning-planner-card@1.4.0 test
+> node --test tests/*.test.mjs
+
+✔ live cleaning phase takes precedence over configured mode; missing telemetry stays generic (1.0488ms)
+✔ dock phases appear in the planner, disappear at idle, and cannot hide errors or disconnection (0.2515ms)
+✔ starting during roller washing is rejected before any service call (1.3907ms)
+✔ start during drying sends the normal batch action and keeps the drying status (1.1229ms)
+✔ a start-ready fault opens the planner without hiding the warning (0.1907ms)
+✔ a fault allows a batch start only with explicit integration readiness (0.2985ms)
+✔ save combines changed options from several rooms into one targeted action (4.3274ms)
+✔ start sends room IDs in local order and settings together, independent of global entities (2.188ms)
+✔ discovery uses registry identities despite obfuscated entity IDs and refreshed room names (0.7357ms)
+✔ missing batch service never falls back to select, switch or button calls (1.2645ms)
+✔ batch start rejects empty selections, unavailable selected rooms and active robots (0.659ms)
+✔ invalid drafts and mismatched native IDs are rejected before sending (0.7596ms)
+✔ unavailable edited setting blocks draft but unrelated unavailable setting does not (0.4168ms)
+✔ empty save is a no-op; a rejected service is never retried (0.3884ms)
+✔ concurrent cards cannot submit overlapping batch actions for the same robot (0.399ms)
+✔ consumables use same-device registry identities and reject unknown or ambiguous readings (0.8286ms)
+✔ discovery matches renamed entities, umlauts and only the selected device (2.336ms)
+✔ disabled rooms are excluded even if still on the map; card exclusions remain discoverable (0.3745ms)
+✔ configuration validates and retains unrelated dashboard settings (1.0764ms)
+✔ status view replaces the planner unless the connected robot reports docked or idle (0.4042ms)
+✔ Pause, Home and Resume target the vacuum without changing local entity states (1.7182ms)
+✔ control availability requires entity features, a registered action and live connection (0.2382ms)
+✔ session controls require their exact live state and feature (0.1802ms)
+✔ all-settings override defaults to false and only accepts booleans (0.3131ms)
+✔ camera matches registry identity on the same device and remains optional (0.4508ms)
+✔ camera fills the width and preserves the complete image at every rotation (0.5891ms)
+✔ battery discovery tolerates entity renames and never uses another device or disabled sensors (0.4817ms)
+✔ battery display handles zero, percentages and invalid values without inventing a level (0.4026ms)
+✔ charging bolt requires a confirmed on state and a live connection (0.1596ms)
+✔ remaining drying bar uses valid telemetry and disappears outside drying (1.8867ms)
+✔ drying subtitle uses confirmed seconds, rounding up without inventing missing time (1.4385ms)
+✔ cancel drying requires its service and targets exactly one vacuum without changing state (1.0554ms)
+✔ language follows the user locale with explicit per-card overrides and English fallback (1.0636ms)
+✔ all translations have matching keys and interpolation placeholders (2.254ms)
+✔ own messages translate parameters without changing names or external errors (0.5388ms)
+✔ integration veto rejects start before any service call; legacy fallback remains (2.9059ms)
+✔ dock buttons use renamed identities, accept unpressed buttons and reject unavailable or foreign entities (2.662ms)
+✔ dock action errors propagate once without retries (0.446ms)
+✔ dedicated drying sensor overrides legacy values, without stale fallback for invalid or unavailable readings (0.4512ms)
+✔ station discovery uses registry identity and rejects disabled, foreign and ambiguous entities (1.2147ms)
+✔ station writes target one entity and validate options and availability without retries (2.1975ms)
+✔ zone draft survives non-live statuses and clears on a reported live session (0.6945ms)
+✔ active statuses retain session rendering when the zone editor is closed (0.1607ms)
+✔ rotated image selections map to the same physical rectangle at all four rotations (0.9448ms)
+✔ HTTP hash fallback matches standard SHA-256 across padding boundaries and binary data (8.1548ms)
+✔ zone start requires explicit readiness, a trusted camera, current map and service (0.2474ms)
+✔ zone repetitions use the hardware-verified common counter and keep dry passes at one (0.1564ms)
+✔ trial minimum enforces 45 cm on both sides at every rotation and image edge (0.2241ms)
+ℹ tests 48
+ℹ suites 0
+ℹ pass 48
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 172.7725
+
+> dyson-cleaning-planner-card@1.4.0 build
+> node scripts/build.mjs
+
+Built v1.4.0: dist/dyson-cleaning-planner-card.js (no runtime dependencies)

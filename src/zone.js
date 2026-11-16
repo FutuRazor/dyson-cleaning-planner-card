@@ -1,5 +1,5 @@
 import { translate } from './localize.js';
-import { validZoneCalibration, zoneRobotRectangle, zoneCanStart, zoneSha256, zoneSettingsPayload } from './zone-core.js';
+import { zoneMinimumSize, zoneHasMinimumSize, fitZoneMinimum, validZoneCalibration, zoneRobotRectangle, zoneCanStart, zoneSha256, zoneSettingsPayload } from './zone-core.js';
 
 // Owns the frozen image and pointer interaction. HA updates never replace its DOM.
 class DysonPlannerZone extends HTMLElement {
@@ -50,7 +50,7 @@ class DysonPlannerZone extends HTMLElement {
       .zone-settings-open{display:flex;align-items:center;justify-content:space-between;gap:6px;text-align:left}.zone-mode-label{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.zone-settings-open ha-icon{display:flex;align-items:center;justify-content:center;line-height:0;align-self:center;flex:0 0 15px;width:15px;height:15px;--mdc-icon-size:15px}
       [hidden]{display:none!important}
     </style>
-    <svg hidden aria-label="Zone selection"><image/><rect class="area" tabindex="0" role="button"/><rect class="handle" tabindex="0" role="button" rx="6"/><text class="hint" text-anchor="middle" dominant-baseline="central">↘</text></svg>
+    <svg hidden aria-label="Zone selection"><image/><rect class="area" tabindex="0" role="button"/><g class="zone-size" pointer-events="none"><rect fill="#10252dcc" rx="3"/><text fill="white" dominant-baseline="hanging"></text></g><rect class="handle" tabindex="0" role="button" rx="6"/><text class="hint" text-anchor="middle" dominant-baseline="central">↘</text></svg>
     <p class="message" role="status" aria-live="polite"></p><div class="actions"><div class="secondary-actions"><button class="reload" data-do="refresh"><ha-icon icon="mdi:reload" aria-hidden="true"></ha-icon></button><button class="zone-settings-open" data-do="settings" aria-haspopup="dialog"><span class="zone-mode-label"></span><ha-icon icon="mdi:cog" aria-hidden="true"></ha-icon></button></div><button class="start" data-do="start"></button></div>
     <div class="settings-overlay" hidden><section class="settings-panel" role="dialog" aria-modal="true" aria-labelledby="zone-settings-title"><header><h3 id="zone-settings-title" data-i18n="Settings"></h3><button data-do="close-settings" aria-label="Close"><ha-icon icon="mdi:close" aria-hidden="true"></ha-icon></button></header><div class="settings-fields">
       <label for="zone-mode" data-i18n="Cleaning mode"></label><select id="zone-mode"><option value="vacuum" data-i18n="Vacuum"></option><option value="vacuumAndMop" data-i18n="Vacuum and Mop"></option><option value="mop" data-i18n="Mop"></option><option value="vacuumThenMop" data-i18n="Vacuum then Mop"></option></select>
@@ -227,7 +227,7 @@ class DysonPlannerZone extends HTMLElement {
             this.objectUrl = objectUrl; objectUrl = null; this.image.setAttribute('href', this.objectUrl);
             const sameTransform = previous?.calibration && previous.rect && ['version','map_id','units','image_width','image_height','pixels_per_metre','padding','min_x','max_y']
               .every(key => String(previous.calibration[key]) === String(c[key]));
-            this.rect = sameTransform ? previous.rect : [.3,.3,.7,.7];
+            this.rect = fitZoneMinimum(sameTransform ? previous.rect : [.3,.3,.7,.7], this.calibration, this.rotation);
             this.note = ''; return;
           }
           await new Promise(resolve => setTimeout(resolve, 150));
@@ -245,6 +245,7 @@ class DysonPlannerZone extends HTMLElement {
   draw() {
     if (!this.svg) return;
     const c = this.calibration, rotated = this.rotation === 90 || this.rotation === 270;
+    if (c && this.rect) this.rect = fitZoneMinimum(this.rect, c, this.rotation);
     // Safari can scroll a focused SVG back into view when its geometry is
     // rewritten. HA telemetry must not touch the frozen selection's DOM.
     const geometry = JSON.stringify([c, this.rotation, this.rect, this.svg.getBoundingClientRect().width]);
@@ -261,7 +262,7 @@ class DysonPlannerZone extends HTMLElement {
           : this.rotation === 270 ? `translate(0 ${c.image_width}) rotate(270)` : '';
         this.image.setAttribute('transform', transform);
       }
-      for (const el of [this.area,this.handle,this.hint]) el.toggleAttribute('hidden', !this.rect);
+      for (const el of [this.area,this.handle,this.hint,this.shadowRoot.querySelector('.zone-size')]) el.toggleAttribute('hidden', !this.rect);
       if (c && this.rect) {
         const [x,y,x2,y2] = this.rect, size = Math.min(this.width * .14, 36 * this.width / (this.svg.getBoundingClientRect().width || this.width));
         for (const [key,value] of Object.entries({ x:x*this.width,y:y*this.height,width:(x2-x)*this.width,height:(y2-y)*this.height })) this.area.setAttribute(key,value);
@@ -274,13 +275,27 @@ class DysonPlannerZone extends HTMLElement {
         for (const [key,value] of Object.entries({ x:handleX,y:handleY,width:size,height:size })) this.handle.setAttribute(key,value);
         this.hint.setAttribute('x',handleX+size/2); this.hint.setAttribute('y',handleY+size/2);
         this.hint.style.fontSize = `${size*.65}px`;
+        const label = this.shadowRoot.querySelector('.zone-size');
+        const text = label.querySelector('text'), bg = label.querySelector('rect');
+        const cmWidth = Math.round((x2-x)*this.width/c.pixels_per_metre*100);
+        const cmHeight = Math.round((y2-y)*this.height/c.pixels_per_metre*100);
+        const caption = `${cmWidth} × ${cmHeight} cm`;
+        const scale = this.width/(this.svg.getBoundingClientRect().width || this.width);
+        const font = Math.min(12*scale, ((x2-x)*this.width-4*scale)/(caption.length*.62));
+        const pad = Math.min(3*scale,font*.3);
+        label.setAttribute('transform',`translate(${x*this.width+pad} ${y*this.height+pad})`);
+        text.textContent=caption; text.style.fontSize=`${font}px`;
+        text.setAttribute('x',pad); text.setAttribute('y',pad);
+        bg.setAttribute('width',caption.length*font*.62+2*pad);
+        bg.setAttribute('height',font*1.25+2*pad);
+        this.area.setAttribute('aria-label',`${this.t('Move zone. Use the arrow keys.')} ${caption}`);
       }
     }
     const ready = zoneCanStart(this.hass,this.vacuum,this.camera,c,this.trusted,this.preview);
     for (const action of ['settings','refresh','start']) {
       const button = this.shadowRoot.querySelector(`[data-do="${action}"]`);
       const disabled = !!this.sending
-        || (action === 'start' && (!ready || !this.rect || !!this.controller))
+        || (action === 'start' && (!ready || !zoneHasMinimumSize(this.rect,c,this.rotation) || !!this.controller))
         || (action === 'refresh' && !!this.controller);
       if (button.disabled !== disabled) button.disabled = disabled;
     }
@@ -308,12 +323,13 @@ class DysonPlannerZone extends HTMLElement {
   }
   adjust(rect,dx,dy,resize) {
     const [x,y,x2,y2] = rect;
-    if (resize) this.rect = [x,y,Math.min(1,Math.max(x+.04,x2+dx)),Math.min(1,Math.max(y+.04,y2+dy))];
+    const [mw,mh] = zoneMinimumSize(this.calibration,this.rotation);
+    if (resize) this.rect = [x,y,Math.min(1,Math.max(x+mw,x2+dx)),Math.min(1,Math.max(y+mh,y2+dy))];
     else { dx=Math.max(-x,Math.min(1-x2,dx)); dy=Math.max(-y,Math.min(1-y2,dy)); this.rect=[x+dx,y+dy,x2+dx,y2+dy]; }
     this.draw();
   }
   async start() {
-    if (this.sending || !this.rect || !zoneCanStart(this.hass,this.vacuum,this.camera,this.calibration,this.trusted,this.preview)) return;
+    if (this.sending || !zoneHasMinimumSize(this.rect,this.calibration,this.rotation) || !zoneCanStart(this.hass,this.vacuum,this.camera,this.calibration,this.trusted,this.preview)) return;
     const data = { entity_id:this.vacuum,map_id:this.calibration.map_id,rectangle:zoneRobotRectangle(this.rect,this.calibration,this.rotation),...zoneSettingsPayload(this.mode,this.strategy,this.water,this.passes) };
     this.sending = true; this.note = 'Sending zone start …'; this.draw();
     try {

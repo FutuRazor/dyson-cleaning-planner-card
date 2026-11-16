@@ -70,3 +70,22 @@ export function zoneSettingsPayload(mode, strategy, water, passes) {
     water_level:mode==='vacuum'?'low':water,
     mop_passes:passes, dry_passes:1 };
 }
+
+
+// Trial UI minimum, not a confirmed firmware limit. Each side must meet it.
+export function zoneMinimumSize(c, rotation = 0) {
+  const rotated = rotation === 90 || rotation === 270;
+  return [.45 * c.pixels_per_metre / (rotated ? c.image_height : c.image_width),
+    .45 * c.pixels_per_metre / (rotated ? c.image_width : c.image_height)];
+}
+export function zoneHasMinimumSize(rect, c, rotation = 0) {
+  if (!rect || !validZoneCalibration(c)) return false;
+  const [w,h] = zoneMinimumSize(c, rotation);
+  return rect[2]-rect[0]+1e-10 >= w && rect[3]-rect[1]+1e-10 >= h;
+}
+export function fitZoneMinimum(rect, c, rotation = 0) {
+  const [mw,mh] = zoneMinimumSize(c, rotation);
+  const w=Math.min(1,Math.max(mw,rect[2]-rect[0])), h=Math.min(1,Math.max(mh,rect[3]-rect[1]));
+  const x=Math.max(0,Math.min(rect[0],1-w)), y=Math.max(0,Math.min(rect[1],1-h));
+  return [x,y,x+w,y+h];
+}
