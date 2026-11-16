@@ -1425,6 +1425,7 @@ class DysonPlannerZone extends HTMLElement {
     this.handle = this.shadowRoot.querySelector('.handle');
     this.hint = this.shadowRoot.querySelector('.hint');
     this.shadowRoot.addEventListener('click', event => {
+      if (event.target === this.dialog) { this.closeSettings(); return; }
       const power = event.target.closest('[data-power]');
       if (power && !power.disabled && !this.sending) { this.shadowRoot.querySelector('.zone-power').value=power.dataset.power; this.strategy=this.capabilities.strategy.options[Number(power.dataset.power)]?.[1]; this.labels(); return; }
       const water=event.target.closest('[data-water]'), passes=event.target.closest('[data-passes]');
@@ -2163,6 +2164,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     this.updateDirty(); this.message = ''; this.error = false; this.render();
   }
   onClick(event) {
+    if (event.target.classList?.contains("consumables-overlay")) { this.toggleConsumables(false); return; }
     const el = event.target.closest('button, ha-button');
     if (['dismiss-fault', 'open-fault'].includes(el?.dataset.action)) {
       this._headerFaultDismissed = el.dataset.action === 'dismiss-fault';
