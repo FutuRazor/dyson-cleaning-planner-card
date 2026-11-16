@@ -1,6 +1,11 @@
 /* Dyson Cleaning Planner Card v1.4.0 | MIT */
 // English messages are also stable translation keys. Never use translated labels in action payloads.
 const en = {
+  "Invalid zone dimension unit.": "Invalid zone dimension unit.",
+  "Off": "Off",
+  "Inches": "Inches",
+  "Centimeters": "Centimeters",
+  "Dimension display": "Dimension display",
   "Voice prompts": "Voice prompts",
   "Volume": "Volume",
   "Child lock": "Child lock",
@@ -247,6 +252,11 @@ const en = {
 
 // German display text. Entity names and protocol values are never rewritten.
 const de = {
+  "Invalid zone dimension unit.": "Ungültige Einheit für die Zonenabmessungen.",
+  "Off": "Aus",
+  "Inches": "Zoll",
+  "Centimeters": "Zentimeter",
+  "Dimension display": "Größenanzeige",
   "Voice prompts": "Sprachausgabe",
   "Volume": "Lautstärke",
   "Child lock": "Kindersicherung",
@@ -493,6 +503,11 @@ const de = {
 
 // Dutch UI text. Protocol values and entity names remain unchanged.
 const nl = {
+  "Invalid zone dimension unit.": "Ongeldige eenheid voor zoneafmetingen.",
+  "Off": "Uit",
+  "Inches": "Inches",
+  "Centimeters": "Centimeters",
+  "Dimension display": "Afmetingen weergeven",
   "Voice prompts": "Spraakmeldingen",
   "Volume": "Volume",
   "Child lock": "Kinderslot",
@@ -794,7 +809,8 @@ function normalizeConfig(config) {
   if (config.always_show_all_settings !== undefined && typeof config.always_show_all_settings !== 'boolean') throw new UiError('always_show_all_settings must be true or false.');
   if (config.camera_rotation !== undefined && ![0, 90, 180, 270].includes(config.camera_rotation)) throw new UiError('camera_rotation must be 0, 90, 180 or 270.');
   if (config.camera_entity && (typeof config.camera_entity !== 'string' || !config.camera_entity.startsWith('camera.'))) throw new UiError('Select a camera entity.');
-  return { ...config, language: config.language ?? 'auto', theme: config.theme ?? 'modern', show_battery_percentage: config.show_battery_percentage ?? false, show_status_bar: config.show_status_bar ?? true, hidden_status_items: config.hidden_status_items ?? [], title: config.title ?? '', always_show_all_settings: config.always_show_all_settings ?? false, unsupported_settings: 'hidden', excluded_rooms: config.excluded_rooms ?? [], room_order: config.room_order ?? [], show_camera: config.show_camera ?? true, camera_rotation: config.camera_rotation ?? 0 };
+  if (config.zone_dimension_unit !== undefined && !['off','auto','cm','inch'].includes(config.zone_dimension_unit)) throw new UiError('Invalid zone dimension unit.');
+  return { ...config, zone_dimension_unit: config.zone_dimension_unit ?? 'auto', language: config.language ?? 'auto', theme: config.theme ?? 'modern', show_battery_percentage: config.show_battery_percentage ?? false, show_status_bar: config.show_status_bar ?? true, hidden_status_items: config.hidden_status_items ?? [], title: config.title ?? '', always_show_all_settings: config.always_show_all_settings ?? false, unsupported_settings: 'hidden', excluded_rooms: config.excluded_rooms ?? [], room_order: config.room_order ?? [], show_camera: config.show_camera ?? true, camera_rotation: config.camera_rotation ?? 0 };
 }
 
 // Entity IDs are user-editable. Match registry identity within ONE integration device.
@@ -1700,8 +1716,8 @@ class DysonPlannerZone extends HTMLElement {
     if (c && this.rect) this.rect = fitZoneMinimum(this.rect, c, this.rotation);
     // Safari can scroll a focused SVG back into view when its geometry is
     // rewritten. HA telemetry must not touch the frozen selection's DOM.
-    const lengthUnit = this.hass?.config?.unit_system?.length;
-    const geometry = JSON.stringify([c, this.rotation, this.rect, this.svg.getBoundingClientRect().width, lengthUnit]);
+    const lengthUnit = this.dimensionUnit === 'inch' ? 'in' : this.dimensionUnit === 'cm' ? 'cm' : this.hass?.config?.unit_system?.length;
+    const geometry = JSON.stringify([c, this.rotation, this.rect, this.svg.getBoundingClientRect().width, lengthUnit, this.dimensionUnit]);
     const geometryChanged = geometry !== this._geometry;
     this._geometry = geometry;
     if (geometryChanged) {
@@ -1731,6 +1747,7 @@ class DysonPlannerZone extends HTMLElement {
         text.textContent=caption; text.style.fontSize=`${12*scale}px`;
         const pillWidth=text.getComputedTextLength()+16*scale,pillHeight=24*scale;
         const [left,top]=zonePillPosition(this.rect,this.width,this.height,pillWidth,pillHeight,6*scale);
+        label.toggleAttribute('hidden', this.dimensionUnit === 'off');
         label.setAttribute('transform',`translate(${left} ${top})`);
         text.setAttribute('x',pillWidth/2); text.setAttribute('y',pillHeight/2);
         bg.setAttribute('width',pillWidth); bg.setAttribute('height',pillHeight); bg.setAttribute('rx',12*scale);
@@ -1990,6 +2007,7 @@ const registryRefreshEvents = new EventTarget();
 // Each instance owns its draft. Registry refresh also catches disabled or renamed entities.
 // HA mounts the visual editor and its preview in separate shadow trees in one dialog.
 const sessionPreviewOwners = new WeakMap();
+const zonePreviewOwners = new WeakMap();
 const previewViewChanged = 'dyson-planner-preview-view';
 
 function cardEditorDialog(element, previewOnly = false) {
@@ -2673,11 +2691,12 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     const trusted = !!(robotEntry?.device_id && robotEntry.platform === DOMAIN && cameraEntry?.platform === DOMAIN
       && robotEntry.device_id === cameraEntry.device_id);
     this.shadowRoot.querySelector('dyson-planner-zone').setOptions({ hass:this._hass, vacuum:this.config.entity,
-      camera, trusted, supported:this.supportsZone, capabilities:zoneDeviceOptions(this.model.rooms), draft:this.zoneDraft, theme:this.config.theme, rotation:this.config.camera_rotation, language:this.language, preview:!!this._previewDialog });
+      camera, trusted, dimensionUnit:this.config.zone_dimension_unit, supported:this.supportsZone, capabilities:zoneDeviceOptions(this.model.rooms), draft:this.zoneDraft, theme:this.config.theme, rotation:this.config.camera_rotation, language:this.language, preview:!!this._previewDialog });
   }
   render() {
     if (!this.model) return;
     const view = this.view;
+    if (this._previewDialog && zonePreviewOwners.has(this._previewDialog) && this.supportsZone) { this.renderZone(); return; }
     if (view.active && (!this.zoneView || view.live)) {
       if (view.live) { this.zoneView = false; this.zoneDraft = null; }
       this.renderSession(view); return;
@@ -2734,6 +2753,7 @@ class DysonCleaningPlannerEditor extends DysonRegistryElement {
     const previewInteraction = event => {
       const el = event.target.closest('input, select, button');
       if (!el) return;
+      if (el.dataset.key === 'zone_dimension_unit') { this.setSessionPreview(false, true); return; }
       if (['show_camera', 'camera_entity', 'camera_rotation'].includes(el.dataset.key)) this.setSessionPreview(true);
       else if (['unsupported_settings', 'always_show_all_settings'].includes(el.dataset.key)
         || el.dataset.include || el.dataset.order || el.dataset.action === 'refresh') this.setSessionPreview(false);
@@ -2789,11 +2809,13 @@ class DysonCleaningPlannerEditor extends DysonRegistryElement {
     this._previewDialog = null;
     super.disconnectedCallback();
   }
-  setSessionPreview(active) {
+  setSessionPreview(active, zone = false) {
     const dialog = this._previewDialog;
-    if (!dialog || (sessionPreviewOwners.get(dialog) === this) === active) return;
+    if (!dialog) return;
     if (active) sessionPreviewOwners.set(dialog, this);
     else sessionPreviewOwners.delete(dialog);
+    if (zone) zonePreviewOwners.set(dialog, this);
+    else zonePreviewOwners.delete(dialog);
     dialog.dispatchEvent(new Event(previewViewChanged));
   }
   setConfig(config) { this.config = { ...config }; this.update(); }
@@ -2830,6 +2852,8 @@ class DysonCleaningPlannerEditor extends DysonRegistryElement {
       <p class="notice">${this.ht("Turning this off removes the map and stops image requests from this card.")}</p>
       ${field('camera_entity', this.ht('Map camera'), 'camera')}
       <label>${this.ht("Map rotation")}<select data-key="camera_rotation" data-focus="camera-rotation">${[0, 90, 180, 270].map(deg => `<option value="${deg}" ${(config.camera_rotation ?? 0) === deg ? 'selected' : ''}>${deg}°</option>`).join('')}</select></label>
+      <h3>${this.ht("Zone cleaning")}</h3>
+      <label>${this.ht("Dimension display")}<select data-key="zone_dimension_unit" data-focus="zone-dimension-unit">${[['auto','Automatic'],['cm','Centimeters'],['inch','Inches'],['off','Off']].map(([value,label]) => `<option value="${value}" ${(config.zone_dimension_unit ?? 'auto') === value ? 'selected' : ''}>${this.ht(label)}</option>`).join('')}</select></label>
       <h3>${this.ht("Rooms in this card")}</h3><p>${this.ht("Choose which rooms to show. Arrows change the display order, not the robot cleaning order.")}</p>
       ${this.model.rooms.map((r, i) => `<div class="entry"><label><input type="checkbox" data-focus="include-${i}" data-include="${h(r.entity)}" ${!r.excluded ? 'checked' : ''} ${!r.entity ? 'disabled' : ''}>${h(r.name)}</label><button data-order="${h(r.entity)}" data-direction="-1" ${i === 0 ? 'disabled' : ''} aria-label="${this.ht('Move {name} up', { name: r.name })}">↑</button><button data-order="${h(r.entity)}" data-direction="1" ${i === this.model.rooms.length - 1 ? 'disabled' : ''} aria-label="${this.ht('Move {name} down', { name: r.name })}">↓</button></div>`).join('')}
       <button data-action="refresh" data-focus="refresh-rooms">${this.ht("Refresh rooms")}</button>

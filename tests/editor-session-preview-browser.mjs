@@ -28,6 +28,13 @@ try {
     const card = dialog.locator('dyson-cleaning-planner-card');
     const editor = dialog.locator('dyson-cleaning-planner-card-editor');
     const camera = editor.locator('[data-key=show_camera]');
+    await editor.locator('[data-key=zone_dimension_unit]').selectOption('inch');
+    await card.locator('dyson-planner-zone').waitFor();
+    assert.equal(await card.locator('dyson-planner-zone').evaluate(el=>el.dimensionUnit), 'inch');
+    assert.equal(await dashboard.locator('dyson-planner-zone').count(), 0);
+    await editor.locator('[data-key=always_show_all_settings]').dispatchEvent('pointerdown');
+    await card.locator('.rooms').waitFor();
+
     await editor.locator('[data-key=camera_entity]').dispatchEvent('pointerdown');
     await card.locator('dyson-planner-map').waitFor();
     assert.equal(await card.locator('.session-title').innerText(), 'Cleaning session preview');

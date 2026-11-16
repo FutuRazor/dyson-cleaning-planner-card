@@ -1,5 +1,10 @@
 // English messages are also stable translation keys. Never use translated labels in action payloads.
 export const en = {
+  "Invalid zone dimension unit.": "Invalid zone dimension unit.",
+  "Off": "Off",
+  "Inches": "Inches",
+  "Centimeters": "Centimeters",
+  "Dimension display": "Dimension display",
   "Voice prompts": "Voice prompts",
   "Volume": "Volume",
   "Child lock": "Child lock",

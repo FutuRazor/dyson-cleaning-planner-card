@@ -279,8 +279,8 @@ class DysonPlannerZone extends HTMLElement {
     if (c && this.rect) this.rect = fitZoneMinimum(this.rect, c, this.rotation);
     // Safari can scroll a focused SVG back into view when its geometry is
     // rewritten. HA telemetry must not touch the frozen selection's DOM.
-    const lengthUnit = this.hass?.config?.unit_system?.length;
-    const geometry = JSON.stringify([c, this.rotation, this.rect, this.svg.getBoundingClientRect().width, lengthUnit]);
+    const lengthUnit = this.dimensionUnit === 'inch' ? 'in' : this.dimensionUnit === 'cm' ? 'cm' : this.hass?.config?.unit_system?.length;
+    const geometry = JSON.stringify([c, this.rotation, this.rect, this.svg.getBoundingClientRect().width, lengthUnit, this.dimensionUnit]);
     const geometryChanged = geometry !== this._geometry;
     this._geometry = geometry;
     if (geometryChanged) {
@@ -310,6 +310,7 @@ class DysonPlannerZone extends HTMLElement {
         text.textContent=caption; text.style.fontSize=`${12*scale}px`;
         const pillWidth=text.getComputedTextLength()+16*scale,pillHeight=24*scale;
         const [left,top]=zonePillPosition(this.rect,this.width,this.height,pillWidth,pillHeight,6*scale);
+        label.toggleAttribute('hidden', this.dimensionUnit === 'off');
         label.setAttribute('transform',`translate(${left} ${top})`);
         text.setAttribute('x',pillWidth/2); text.setAttribute('y',pillHeight/2);
         bg.setAttribute('width',pillWidth); bg.setAttribute('height',pillHeight); bg.setAttribute('rx',12*scale);

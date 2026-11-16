@@ -200,6 +200,7 @@ const registryRefreshEvents = new EventTarget();
 // Each instance owns its draft. Registry refresh also catches disabled or renamed entities.
 // HA mounts the visual editor and its preview in separate shadow trees in one dialog.
 const sessionPreviewOwners = new WeakMap();
+const zonePreviewOwners = new WeakMap();
 const previewViewChanged = 'dyson-planner-preview-view';
 
 function cardEditorDialog(element, previewOnly = false) {
@@ -883,11 +884,12 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     const trusted = !!(robotEntry?.device_id && robotEntry.platform === DOMAIN && cameraEntry?.platform === DOMAIN
       && robotEntry.device_id === cameraEntry.device_id);
     this.shadowRoot.querySelector('dyson-planner-zone').setOptions({ hass:this._hass, vacuum:this.config.entity,
-      camera, trusted, supported:this.supportsZone, capabilities:zoneDeviceOptions(this.model.rooms), draft:this.zoneDraft, theme:this.config.theme, rotation:this.config.camera_rotation, language:this.language, preview:!!this._previewDialog });
+      camera, trusted, dimensionUnit:this.config.zone_dimension_unit, supported:this.supportsZone, capabilities:zoneDeviceOptions(this.model.rooms), draft:this.zoneDraft, theme:this.config.theme, rotation:this.config.camera_rotation, language:this.language, preview:!!this._previewDialog });
   }
   render() {
     if (!this.model) return;
     const view = this.view;
+    if (this._previewDialog && zonePreviewOwners.has(this._previewDialog) && this.supportsZone) { this.renderZone(); return; }
     if (view.active && (!this.zoneView || view.live)) {
       if (view.live) { this.zoneView = false; this.zoneDraft = null; }
       this.renderSession(view); return;

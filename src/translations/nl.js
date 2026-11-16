@@ -1,5 +1,10 @@
 // Dutch UI text. Protocol values and entity names remain unchanged.
 export const nl = {
+  "Invalid zone dimension unit.": "Ongeldige eenheid voor zoneafmetingen.",
+  "Off": "Uit",
+  "Inches": "Inches",
+  "Centimeters": "Centimeters",
+  "Dimension display": "Afmetingen weergeven",
   "Voice prompts": "Spraakmeldingen",
   "Volume": "Volume",
   "Child lock": "Kinderslot",

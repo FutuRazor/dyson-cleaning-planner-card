@@ -25,3 +25,11 @@ test('dimension text follows HA length units without rounding before conversion'
  assert.equal(zoneDimensionText(55,55,'mi'),'22 \u00d7 22 in');
  assert.equal(zoneDimensionText(52.1,52.1,'mi'),'21 \u00d7 21 in');
 });
+
+test('zone dimension configuration defaults and validates overrides',async()=>{
+ const {normalizeConfig}=await import('../src/core.js');
+ const config={type:'custom:dyson-cleaning-planner-card',entity:'vacuum.robot'};
+ assert.equal(normalizeConfig(config).zone_dimension_unit,'auto');
+ for(const value of ['off','auto','cm','inch']) assert.equal(normalizeConfig({...config,zone_dimension_unit:value}).zone_dimension_unit,value);
+ assert.throws(()=>normalizeConfig({...config,zone_dimension_unit:'feet'}));
+});

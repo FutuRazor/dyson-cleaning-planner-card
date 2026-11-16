@@ -1,5 +1,10 @@
 // German display text. Entity names and protocol values are never rewritten.
 export const de = {
+  "Invalid zone dimension unit.": "Ungültige Einheit für die Zonenabmessungen.",
+  "Off": "Aus",
+  "Inches": "Zoll",
+  "Centimeters": "Zentimeter",
+  "Dimension display": "Größenanzeige",
   "Voice prompts": "Sprachausgabe",
   "Volume": "Lautstärke",
   "Child lock": "Kindersicherung",
