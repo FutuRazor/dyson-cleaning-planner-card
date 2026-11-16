@@ -71,6 +71,25 @@ header,.station-rows{--hud-red:var(--error-color,#db4437);--hud-blue:var(--blue-
 .activity-status{display:flex;align-items:center;gap:10px;margin:0 var(--dp-padding) 16px;padding:12px;border-radius:10px;background:var(--dp-soft);font-size:14px}.activity-status ha-icon{flex-shrink:0}.activity-copy{flex:1;min-width:0}.activity-remaining,.activity-start-block,.activity-fault{display:block;margin-top:4px;font-size:12px;line-height:1.5;color:var(--dp-muted);font-variant-numeric:tabular-nums}.drying-progress{display:block;width:100%;height:7px;margin-top:8px;border-radius:999px;background:var(--dp-line);overflow:hidden}.drying-progress-fill{display:block;height:100%;width:0;border-radius:inherit;background:var(--dp-accent)}.drying-control{flex-shrink:0}.cancel-drying{display:flex;align-items:center;justify-content:center;padding:8px;min-width:42px}.map-title{padding:0 var(--dp-padding)}
 .map-title{margin-bottom:4px}.map-caption{padding:0 var(--dp-padding);margin:0 0 10px;font-size:12px}.action-message:empty{display:none}.session-actions .pause{background:#ef8c00;color:#171717;border-color:transparent}.session-actions .resume{background:#2e7d32;color:#fff;border-color:transparent}.session-actions .home{background:#c62828;color:#fff;border-color:transparent}
 @media(max-width:400px){:host{--dp-padding:15px}.hint{padding:0 15px 14px}.rooms{padding:0 10px}footer{padding:18px 15px}.session{padding:4px 15px 0}.expand span{display:none}.actions{flex-direction:column}.session-actions{flex-direction:row}select{font-size:16px}.fields{gap:12px}}
+
+/* Normal Modern statuses share one fixed slot; faults retain their existing presentation. */
+:host([data-theme=modern]) header{margin-bottom:0}
+:host([data-theme=modern]) .activity-status:not(.compact-status){margin-top:12px}
+:host([data-theme=modern]) .compact-status{height:44px;margin:0 var(--dp-padding);padding:0;border-radius:0;background:transparent;gap:8px;position:relative;font-size:13px}
+:host([data-theme=modern]) .compact-status .activity-icon{display:flex;align-items:center;justify-content:center;width:18px;height:18px;--mdc-icon-size:18px}
+:host([data-theme=modern]) .compact-status .activity-copy{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:20px}
+:host([data-theme=modern]) .compact-status .activity-remaining{display:inline;margin:0;font-size:12px}
+:host([data-theme=modern]) .compact-status .activity-start-block{display:none}
+:host([data-theme=modern]) .compact-status .drying-progress{position:absolute;left:26px;right:44px;bottom:2px;width:auto;height:3px;margin:0}
+:host([data-theme=modern]) .compact-status .cancel-drying{min-width:36px;min-height:36px;width:36px;height:36px;padding:7px;background:transparent;border-color:transparent}
+:host([data-theme=modern]) .compact-status .cancel-drying ha-icon{width:18px;height:18px;--mdc-icon-size:18px}
+:host([data-theme=modern]) .map-section{margin-top:4px}
+:host([data-theme=modern]) .session-footer{margin:14px var(--dp-padding) 0;padding:12px 0 14px;border-top:1px solid var(--dp-line)}
+:host([data-theme=modern]) .session-actions button{min-height:38px;padding:6px 12px;border-radius:13px;border:1px solid color-mix(in srgb,var(--session-color) 45%,var(--dp-line));background:color-mix(in srgb,var(--session-color) 12%,var(--dp-modern-surface));color:var(--session-color)}
+:host([data-theme=modern]) .session-actions .pause{--session-color:var(--warning-color,#c47700)}
+:host([data-theme=modern]) .session-actions .resume{--session-color:var(--success-color,#2e7d32)}
+:host([data-theme=modern]) .session-actions .home{--session-color:var(--error-color,#c62828)}
+
 /* Cool neutral surfaces keep cyan reserved for active controls. */
 :host([data-theme=modern]){--dp-modern-surface:color-mix(in srgb,#506773 14%,var(--dp-bg));--dp-modern-control:color-mix(in srgb,#8099a5 18%,var(--dp-modern-surface));--dp-modern-control-border:color-mix(in srgb,var(--primary-text-color,#20272d) 24%,var(--dp-modern-control))}
 :host([data-theme=modern]) .mode select,:host([data-theme=modern]) .segments{background:var(--dp-modern-control);border-color:var(--dp-modern-control-border)}
@@ -114,10 +133,10 @@ header,.station-rows{--hud-red:var(--error-color,#db4437);--hud-blue:var(--blue-
 .segments button::after{content:"";position:absolute;inset:-6px 0}
 .segments button[aria-pressed=true]{background:var(--dp-accent);color:var(--text-primary-color,#fff)}
 :host([data-theme=modern]) .actions button{border-radius:13px}
-/* Compact planner framing; session controls retain their existing touch targets. */
+/* Compact Modern planner framing. */
 :host([data-theme=modern]){--dp-padding:20px}
 :host([data-theme=modern]) .station-status-bar{padding-inline:var(--dp-padding)}
-:host([data-theme=modern]) header{border-bottom:1px solid var(--dp-line);margin-bottom:12px}
+:host([data-theme=modern]) header{border-bottom:1px solid var(--dp-line);margin-bottom:0}
 :host([data-theme=modern]) .consumables-info:not(.attention),:host([data-theme=modern]) button[data-action=save]{background:var(--dp-modern-surface)}
 :host([data-theme=modern]) footer:not(.session-footer){margin:14px var(--dp-padding) 0;padding:12px 0 14px;border-top:1px solid var(--dp-line)}
 :host([data-theme=modern]) footer:not(.session-footer) .actions button{min-height:38px;padding-block:6px}
@@ -638,9 +657,18 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     return `<div class="activity-status" role="status" aria-live="polite" hidden><ha-icon class="activity-icon" aria-hidden="true"></ha-icon><div class="activity-copy"><span class="activity-text"></span><span class="activity-fault" hidden></span><span class="activity-start-block" hidden></span><span class="activity-remaining" hidden></span><div class="drying-progress" role="progressbar" aria-label="${this.ht("Drying time remaining")}" aria-valuemin="0" aria-valuemax="100" hidden><span class="drying-progress-fill"></span></div></div><span class="drying-control" hidden><button class="cancel-drying" data-control="cancel_drying" data-focus="cancel-drying" disabled aria-label="${this.ht("Cancel drying")}"><ha-icon icon="mdi:close" aria-hidden="true"></ha-icon></button></span></div>`;
   }
   updateStatus() {
-    const status = activityStatus(this._hass, this.config.entity, (this.busy && !this.saving) || this.pendingStart);
+    let status = activityStatus(this._hass, this.config.entity, (this.busy && !this.saving) || this.pendingStart);
+    const modern = this.config.theme === 'modern';
+    const state = this._hass?.states?.[this.config.entity]?.state;
+    if (modern && !status) {
+      if (state === 'docked') status = { text: 'Docked', icon: 'mdi:home-import-outline' };
+      else if (state === 'idle') status = { text: 'Idle', icon: 'mdi:robot-vacuum' };
+    }
     const row = this.shadowRoot.querySelector('.activity-status');
     row.hidden = !status;
+    const compact = modern && !['error', 'unavailable', 'unknown'].includes(state) && this._hass?.connected !== false;
+    row.classList.toggle('compact-status', compact);
+    row.classList.toggle('has-drying', !!status?.drying);
     row.querySelector('.activity-text').textContent = this.t(status?.text);
     // Display the integration's current explanation without retaining or inferring faults.
     const fault = this._hass?.states?.[this.config.entity]?.attributes?.fault;
@@ -658,7 +686,8 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     const remaining = row.querySelector('.activity-remaining');
     const time = status?.drying ? dryingRemainingTime(this._hass, this.config.entity, this.registry) : null;
     remaining.hidden = !status?.drying;
-    remaining.textContent = time === null ? this.t('Remaining time: unavailable') : this.t('Remaining time: {time} (hh:mm)', { time });
+    remaining.textContent = compact ? ` · ${time ?? this.t('Unavailable')}` : time === null ? this.t('Remaining time: unavailable') : this.t('Remaining time: {time} (hh:mm)', { time });
+    row.querySelector('.activity-copy').title = [this.t(status?.text), status?.drying ? remaining.textContent : '', blockNote.hidden ? '' : blockNote.textContent].filter(Boolean).join(' ');
     const progress = row.querySelector('.drying-progress');
     const percent = status?.drying ? dryingRemainingPercent(this._hass, this.config.entity, this.registry) : null;
     progress.hidden = percent === null;
@@ -679,7 +708,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     const h = escapeHtml;
     // Keep the map element mounted across status and message updates so polling,
     // the last good image and in-flight requests are independent of card renders.
-    this.paint(`<style>${styles}</style><ha-card><div class="planner-content">${this.headerHtml()}${this.statusHtml()}<section class="session"><ul class="requested"></ul></section>${this.config.show_camera ? `<div class="map-section"><div class="map-title">${this.ht("Cleaning map")}</div><p class="map-caption">${this.ht("Refreshes about every 5 seconds")}</p><dyson-planner-map></dyson-planner-map></div>` : ''}<footer class="session-footer"><div class="actions session-actions"><button class="session-toggle" data-control="pause" data-focus="session-toggle"><ha-icon></ha-icon><span></span></button><button class="home" data-control="return_to_base" data-focus="home"><ha-icon icon="mdi:home-import-outline"></ha-icon>${this.ht("Home")}</button></div><p class="notice action-message" role="status" aria-live="polite"></p></footer></div>${this.consumablesHtml()}</ha-card>`, 'session');
+    this.paint(`<style>${styles}</style><ha-card><div class="planner-content">${this.headerHtml()}${this.statusHtml()}<section class="session"><ul class="requested"></ul></section>${this.config.show_camera ? `<div class="map-section">${this.config.theme !== 'modern' ? `<div class="map-title">${this.ht("Cleaning map")}</div><p class="map-caption">${this.ht("Refreshes about every 5 seconds")}</p>` : ''}<dyson-planner-map></dyson-planner-map></div>` : ''}<footer class="session-footer"><div class="actions session-actions"><button class="session-toggle" data-control="pause" data-focus="session-toggle"><ha-icon></ha-icon><span></span></button><button class="home" data-control="return_to_base" data-focus="home"><ha-icon icon="mdi:home-import-outline"></ha-icon>${this.ht("Home")}</button></div><p class="notice action-message" role="status" aria-live="polite"></p></footer></div>${this.consumablesHtml()}</ha-card>`, 'session');
     const root = this.shadowRoot;
     this.updateBattery();
     this.updateConsumables();
