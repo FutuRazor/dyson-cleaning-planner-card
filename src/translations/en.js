@@ -66,6 +66,8 @@ export const en = {
   "Enabled": "Enabled",
   "Disabled": "Disabled",
   "Status unavailable": "Status unavailable",
+  "Show robot error": "Show robot error",
+  "Dismiss error message": "Dismiss error message",
   "Docked": "Docked",
   "Idle": "Idle",
   "Unavailable": "Unavailable",

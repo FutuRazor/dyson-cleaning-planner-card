@@ -72,6 +72,16 @@ header,.station-rows{--hud-red:var(--error-color,#db4437);--hud-blue:var(--blue-
 .map-title{margin-bottom:4px}.map-caption{padding:0 var(--dp-padding);margin:0 0 10px;font-size:12px}.action-message:empty{display:none}.session-actions .pause{background:#ef8c00;color:#171717;border-color:transparent}.session-actions .resume{background:#2e7d32;color:#fff;border-color:transparent}.session-actions .home{background:#c62828;color:#fff;border-color:transparent}
 @media(max-width:400px){:host{--dp-padding:15px}.hint{padding:0 15px 14px}.rooms{padding:0 10px}footer{padding:18px 15px}.session{padding:4px 15px 0}.expand span{display:none}.actions{flex-direction:column}.session-actions{flex-direction:row}select{font-size:16px}.fields{gap:12px}}
 
+
+:host([data-theme=modern]) .header-main{position:relative}
+:host([data-theme=modern]) .robot{position:relative}
+.robot-warning{position:absolute;inset:0;width:100%;height:100%;padding:0;min-height:0;border:0;border-radius:inherit;background:transparent}
+.robot-warning ha-icon{position:absolute;right:-3px;bottom:-3px;width:17px;height:17px;--mdc-icon-size:17px;color:var(--warning-color,#e6ac00);background:var(--dp-bg);border-radius:4px}
+.header-fault{position:absolute;inset:2px var(--dp-padding) 6px;z-index:2;display:flex;align-items:center;gap:10px;padding:5px 10px;border-radius:10px;background:var(--dp-soft);border:1px solid var(--dp-line)}
+.header-fault-copy{flex:1;min-width:0;max-height:100%;overflow-y:auto;overscroll-behavior:contain;font-size:14px;overflow-wrap:anywhere}
+.header-fault-detail{margin-top:2px;font-size:12px;line-height:1.35}
+.header-fault-close{display:flex;align-items:center;justify-content:center;flex:none;min-width:36px;min-height:36px;padding:6px;background:transparent}
+
 /* Normal Modern statuses share one fixed slot; faults retain their existing presentation. */
 :host([data-theme=modern]) header{margin-bottom:0}
 :host([data-theme=modern]) .activity-status:not(.compact-status){margin-top:12px}
@@ -285,6 +295,7 @@ class DysonRegistryElement extends HTMLElement {
 class DysonCleaningPlannerCard extends DysonRegistryElement {
   constructor() {
     super(); this.selected = []; this.settingDraft = {}; this.dirty = false; this.busy = false; this.expanded = new Set(); this.message = '';
+    this._headerFaultKey = ''; this._headerFaultDismissed = false;
     this.controlBusy = false; this.pendingStart = false; this.requestedPlan = null; this.zoneView = false;
 
     this.shadowRoot.addEventListener('zone-started', () => this.zoneStarted());
@@ -439,6 +450,12 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
   }
   onClick(event) {
     const el = event.target.closest('button, ha-button');
+    if (['dismiss-fault', 'open-fault'].includes(el?.dataset.action)) {
+      this._headerFaultDismissed = el.dataset.action === 'dismiss-fault';
+      this.updateStatus();
+      this.shadowRoot.querySelector(this._headerFaultDismissed ? '.robot-warning' : '.header-fault-close')?.focus({ preventScroll: true });
+      return;
+    }
     if (el?.dataset.stationAction) {
       if (!el.disabled && !el.hasAttribute('disabled')) this.setStationSetting(el.dataset.stationAction, undefined, true);
       return;
@@ -636,7 +653,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
   headerHtml() {
     const name = this._hass?.states?.[this.config.entity]?.attributes?.friendly_name;
     const subtitle = typeof name === 'string' && name.trim() ? name : this.config.entity;
-    return `<header><div class="station-status-bar"><div class="station-indicators"></div><div class="battery" role="img"><svg viewBox="0 0 32 20" aria-hidden="true"><rect x="1" y="3" width="26" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="29" y="7" width="3" height="6" rx="1" fill="currentColor"/><rect class="battery-fill" x="4" y="6" width="0" height="8" rx="1" fill="currentColor"/><path class="battery-bolt" d="M17 1 9 11h6l-2 8L23 8h-7Z" fill="var(--dp-bg)" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" hidden/></svg><span class="battery-value" aria-hidden="true" hidden></span></div></div><div class="header-main"><div class="robot"><ha-icon icon="mdi:robot-vacuum"></ha-icon></div><div class="header-title"><h2>${escapeHtml(this.config.title || this.t('Plan a clean'))}</h2><p>${escapeHtml(subtitle)}</p></div><div class="header-buttons"><button class="consumables-info" data-action="consumables" data-focus="consumables-info" aria-label="${this.ht("Consumables")}" aria-haspopup="dialog" aria-expanded="false" title="${this.ht("Consumables")}">${this.ht("Info")}</button></div></div></header>`;
+    return `<header><div class="station-status-bar"><div class="station-indicators"></div><div class="battery" role="img"><svg viewBox="0 0 32 20" aria-hidden="true"><rect x="1" y="3" width="26" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="29" y="7" width="3" height="6" rx="1" fill="currentColor"/><rect class="battery-fill" x="4" y="6" width="0" height="8" rx="1" fill="currentColor"/><path class="battery-bolt" d="M17 1 9 11h6l-2 8L23 8h-7Z" fill="var(--dp-bg)" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" hidden/></svg><span class="battery-value" aria-hidden="true" hidden></span></div></div><div class="header-main"><div class="robot"><ha-icon icon="mdi:robot-vacuum"></ha-icon>${this.config.theme === 'modern' ? `<button class="robot-warning" data-action="open-fault" aria-label="${this.ht('Show robot error')}" hidden><ha-icon icon="mdi:alert" aria-hidden="true"></ha-icon></button>` : ''}</div><div class="header-title"><h2>${escapeHtml(this.config.title || this.t('Plan a clean'))}</h2><p>${escapeHtml(subtitle)}</p></div><div class="header-buttons"><button class="consumables-info" data-action="consumables" data-focus="consumables-info" aria-label="${this.ht("Consumables")}" aria-haspopup="dialog" aria-expanded="false" title="${this.ht("Consumables")}">${this.ht("Info")}</button></div>${this.config.theme === 'modern' ? `<section class="header-fault" aria-label="${this.ht('Robot needs attention')}" hidden><div class="header-fault-copy" tabindex="0" role="status"><strong>${this.ht('Robot needs attention')}</strong><p class="header-fault-detail"></p></div><button class="header-fault-close" data-action="dismiss-fault" aria-label="${this.ht('Dismiss error message')}"><ha-icon icon="mdi:close" aria-hidden="true"></ha-icon></button></section>` : ''}</div></header>`;
   }
   updateBattery() {
     const state = batteryStatus(this._hass, this.model);
@@ -664,9 +681,36 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       if (state === 'docked') status = { text: 'Docked', icon: 'mdi:home-import-outline' };
       else if (state === 'idle') status = { text: 'Idle', icon: 'mdi:robot-vacuum' };
     }
+    if (modern) {
+      const vacuum = this._hass?.states?.[this.config.entity];
+      const activeFault = state === 'error' && this._hass?.connected !== false;
+      const description = typeof vacuum?.attributes?.fault === 'string' ? vacuum.attributes.fault.trim() : '';
+      const key = activeFault ? JSON.stringify([this.config.entity, vacuum?.attributes?.fault_code ?? null, description]) : '';
+      if (key !== this._headerFaultKey) { this._headerFaultKey = key; this._headerFaultDismissed = false; }
+      const overlay = this.shadowRoot.querySelector('.header-fault');
+      const open = !!key && !this._headerFaultDismissed;
+      overlay.hidden = !open;
+      overlay.querySelector('.header-fault-detail').textContent = description || this.t('Check the robot or the Dyson app for details.');
+      const warning = this.shadowRoot.querySelector('.robot-warning');
+      warning.hidden = !key;
+      warning.setAttribute('aria-expanded', String(open));
+      // Leave the measured header layout intact, but prevent keyboard access behind the overlay.
+      for (const selector of ['.robot', '.header-title h2', '.header-title p', '.header-buttons']) {
+        const item = this.shadowRoot.querySelector(selector);
+        item.inert = open;
+        item.style.visibility = open ? 'hidden' : '';
+      }
+      if (activeFault) {
+        // The generic error state does not prove docking or a live cleaning phase.
+        const phases = { WASHING_MOP: ['Cleaning mop roller', 'mdi:waves'], DRYING_MOP: ['Drying mop roller', 'mdi:weather-windy'], COLLECTING_DUST: ['Emptying dust bin', 'mdi:delete-empty-outline'] };
+        const phase = vacuum.attributes?.dock_state;
+        status = phases[phase] ? { text: phases[phase][0], icon: phases[phase][1], drying: phase === 'DRYING_MOP' }
+          : { text: 'Status unavailable', icon: 'mdi:help-circle-outline' };
+      }
+    }
     const row = this.shadowRoot.querySelector('.activity-status');
     row.hidden = !status;
-    const compact = modern && !['error', 'unavailable', 'unknown'].includes(state) && this._hass?.connected !== false;
+    const compact = modern;
     row.classList.toggle('compact-status', compact);
     row.classList.toggle('has-drying', !!status?.drying);
     row.querySelector('.activity-text').textContent = this.t(status?.text);
@@ -675,7 +719,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     const detail = status?.text === 'Robot needs attention' && typeof fault === 'string' ? fault.trim() : '';
     const faultText = row.querySelector('.activity-fault');
     faultText.textContent = detail;
-    faultText.hidden = !detail;
+    faultText.hidden = modern || !detail;
 
     const blockNote = row.querySelector('.activity-start-block');
     const block = startBlockReason(this._hass, this.config.entity);
@@ -713,7 +757,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     this.updateBattery();
     this.updateConsumables();
     this.updateStatus();
-    if (view.simulated) root.querySelector('.activity-status').hidden = true;
+    if (view.simulated && this.config.theme !== 'modern') root.querySelector('.activity-status').hidden = true;
     const title = root.querySelector('.header-title h2');
     title.classList.add('session-title');
     title.textContent = this.t(view.simulated ? 'Cleaning session preview' : 'Cleaning session');

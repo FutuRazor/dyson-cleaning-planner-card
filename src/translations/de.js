@@ -66,6 +66,8 @@ export const de = {
   "Enabled": "Aktiviert",
   "Disabled": "Deaktiviert",
   "Status unavailable": "Status nicht verfügbar",
+  "Show robot error": "Roboterfehler anzeigen",
+  "Dismiss error message": "Fehlermeldung ausblenden",
   "Docked": "An der Station",
   "Idle": "Bereit",
   "Unavailable": "Nicht verfügbar",
