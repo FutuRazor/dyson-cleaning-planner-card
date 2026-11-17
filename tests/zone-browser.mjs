@@ -8,14 +8,14 @@ const { chromium, webkit } = createRequire(import.meta.url)('playwright');
 const server = previewServer();
 await new Promise(resolve => server.listen(0,'127.0.0.1',resolve));
 const useWebkit = process.env.ZONE_BROWSER === 'webkit';
-const browser = useWebkit ? await webkit.launch({headless:true}) : await chromium.launch({headless:true,channel:'msedge'});
+const browser = useWebkit ? await webkit.launch({headless:true}) : await chromium.launch({ headless: true, ...(process.env.BROWSER_CHANNEL ? { channel: process.env.BROWSER_CHANNEL } : {}) });
 try {
   const page = await browser.newPage({viewport:{width:900,height:1100},hasTouch:true});
   const errors = []; page.on('pageerror',e => errors.push(e.message));
   await page.goto(`http://127.0.0.1:${server.address().port}/`);
   await page.locator('#card .room').first().waitFor();
   assert.equal(await page.locator('.header-main [data-action="zones"]').count(),0);
-  assert.equal(await page.locator('.planning-tabs [data-action="rooms"]').getAttribute('aria-pressed'),'true');
+  assert.equal(await page.locator('.planning-tabs [data-action="rooms"]').getAttribute('aria-selected'),'true');
 
   const png = Buffer.from(await page.evaluate(() => {
     const canvas = document.createElement('canvas'); canvas.width=800; canvas.height=400;
@@ -46,23 +46,51 @@ try {
     assert.equal(await zone.locator('[data-do="add"]').count(),0);
     assert.equal(await zone.locator('[data-do="remove"]').count(),0);
     assert.equal(await zone.locator('[data-do="start"]').isEnabled(),true);
+    // Mode changes update readiness synchronously, without telemetry or a resize.
+    await zone.evaluate(el => {
+      const waterAvailable = el.capabilities.water.available;
+      const mode = el.shadowRoot.querySelector('#zone-mode');
+      const start = el.shadowRoot.querySelector('[data-do="start"]');
+      const rect = JSON.stringify(el.rect);
+      const change = value => {
+        mode.value = value;
+        mode.dispatchEvent(new Event('change', { bubbles: true }));
+      };
+      el.capabilities.water.available = false;
+      change('mop');
+      if (!start.disabled) throw new Error('Mop must immediately block without water settings');
+      change('vacuum');
+      if (start.disabled) throw new Error('Vacuum must immediately enable without water settings');
+      if (JSON.stringify(el.rect) !== rect) throw new Error('Settings changed the zone geometry');
+      el.capabilities.water.available = waterAvailable;
+      el.labels(); el.draw();
+    });
     // Telemetry updates preserve both the component and the local rectangle.
     await page.evaluate(() => {
       const zone=demo.card.shadowRoot.querySelector('dyson-planner-zone'); window.originalZone=zone;
       demo.card.hass={...demo.hass};
       if (zone!==demo.card.shadowRoot.querySelector('dyson-planner-zone')) throw new Error('Zone remounted');
     });
-    // The resize grip sits corner-to-corner outside the zone, then flips inside
-    // at the image edges. Its visual movement must not affect drag coordinates.
+    await zone.evaluate(el => {
+      const before=JSON.stringify(el.rect), image=el.image.getAttribute('href');
+      const original=el.hass.config;
+      for (const [length,suffix] of [['mi','in'],['km','cm']]) {
+        const hass={...el.hass,config:{...original,unit_system:{...original?.unit_system,length}}};
+        el.setOptions({hass,vacuum:el.vacuum,camera:el.camera,rotation:el.rotation});
+        if (!el.shadowRoot.querySelector('.zone-size text').textContent.endsWith(suffix)) throw new Error('Unit switch did not update label');
+        if (JSON.stringify(el.rect)!==before || el.image.getAttribute('href')!==image) throw new Error('Unit switch reset zone');
+      }
+      el.hass={...el.hass,config:original}; el.draw();
+    });
+    // The grip stays centered on its corner, including image edges.
     await zone.evaluate(el => {
       const original = [...el.rect];
       for (const end of [.6, 1]) {
         el.rect = [.2,.2,end,end]; el.draw();
         const box = el.handle.getBBox();
-        const expectedX = end*el.width - (end === 1 ? box.width : 0);
-        const expectedY = end*el.height - (end === 1 ? box.height : 0);
-        if (Math.abs(box.x-expectedX) > .01 || Math.abs(box.y-expectedY) > .01) throw new Error('Grip position');
-        if (box.x < 0 || box.y < 0 || box.x+box.width > el.width+.01 || box.y+box.height > el.height+.01) throw new Error('Grip outside image');
+        if (Math.abs(box.x+box.width/2-end*el.width) > .01 || Math.abs(box.y+box.height/2-end*el.height) > .01) throw new Error('Grip position');
+        const visible=el.handleVisual.getBoundingClientRect();
+        if (Math.abs(visible.width-26)>.1) throw new Error('Grip screen size');
       }
       el.rect = original; el.draw();
     });
@@ -70,7 +98,7 @@ try {
     await page.mouse.move(box.x+box.width/2,box.y+box.height/2); await page.mouse.down();
     await page.mouse.move(box.x+box.width/2+20,box.y+box.height/2+15); await page.mouse.up();
     assert.notDeepEqual(await zone.evaluate(el=>el.rect),[.3,.3,.7,.7]);
-    await zone.locator('.handle').focus(); await page.keyboard.press('ArrowRight');
+    await zone.locator('.handle-hit').focus(); await page.keyboard.press('ArrowRight');
     assert.equal(await zone.locator('[data-do="start"]').isEnabled(),true);
     const beforeReload=await zone.evaluate(el=>[...el.rect]);
     await zone.locator('[data-do="refresh"]').click();
@@ -98,8 +126,8 @@ try {
   await touchEvent({type:'touchEnd',touchPoints:[]});
   assert.notDeepEqual(await zone.evaluate(el=>el.rect),[.3,.3,.7,.7]);
   const beforeResize = await zone.evaluate(el=>[...el.rect]);
-  await zone.locator('.handle').scrollIntoViewIfNeeded();
-  const handleBox = await zone.locator('.handle').boundingBox();
+  await zone.locator('.handle-hit').scrollIntoViewIfNeeded();
+  const handleBox = await zone.locator('.handle-hit').boundingBox();
   const hx=handleBox.x+handleBox.width/2,hy=handleBox.y+handleBox.height/2;
   await touchEvent({type:'touchStart',touchPoints:[{x:hx,y:hy}]});
   await touchEvent({type:'touchMove',touchPoints:[{x:hx+20,y:hy+15}]});
@@ -109,7 +137,7 @@ try {
   await client?.detach();
   // Keep the last edited SVG handle focused, then scroll to Start. Repeated HA
   // updates must neither rewrite the SVG nor bring it back into view on Safari.
-  await zone.locator('.handle').focus();
+  await zone.locator('.handle-hit').focus();
   await zone.locator('[data-do="start"]').scrollIntoViewIfNeeded();
   // Let the browser finish scrollIntoView and touch momentum before measuring telemetry.
   await page.waitForTimeout(400);
@@ -137,7 +165,7 @@ try {
   await page.evaluate(()=>{ demo.hass.states[demo.entity].attributes.ready_to_start=true; demo.card.hass={...demo.hass}; });
   assert.equal(await zone.locator('.intro').count(),0);
   assert.equal(await zone.locator('.toolbar').count(),0);
-  assert.equal(await zone.locator('.message').isHidden(),true);
+  assert.equal(await page.locator('#card .header-notice').isHidden(),true);
   const layout=await zone.evaluate(el=>{
     const a=el.shadowRoot.querySelector('.secondary-actions').getBoundingClientRect(),b=el.shadowRoot.querySelector('.start').getBoundingClientRect(),r=el.shadowRoot.querySelector('.reload').getBoundingClientRect();
     return {left:a.width,right:b.width,reloadHeight:r.height,startHeight:b.height};
@@ -184,7 +212,7 @@ try {
   assert.equal(await zone.evaluate(el=>el.strategy),'boost');
   assert.deepEqual(await zone.evaluate(el=>[el.mode,el.water,el.passes]),['vacuumThenMop','high',2]);
   await zone.locator('[data-do="start"]').click();
-  await page.locator('#card h2').filter({hasText:'Cleaning session'}).waitFor();
+  await page.locator('#card h2').filter({hasText:'Cleaning session'}).waitFor({state:'attached'});
   assert.equal(await page.locator('.planning-tabs').count(),0);
   const calls=await page.evaluate(()=>demo.calls.filter(c=>c.service==='clean_zone'));
   assert.equal(calls[0].data.clean_type,'vacuumThenMop');
@@ -204,7 +232,7 @@ try {
     demo.card.hass={...demo.hass};
   });
   await zone.locator('[data-do="refresh"]').click();
-  await zone.locator('.message').filter({hasText:'Image and calibration do not match'}).waitFor();
+  await page.locator('#card .header-notice').filter({hasText:'Image and calibration do not match'}).waitFor();
   assert.equal(await zone.locator('[data-do="start"]').isDisabled(),true);
   assert.equal(await zone.evaluate(el=>el.rect),null);
   assert.ok(imageRequests.length>0);

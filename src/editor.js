@@ -5,6 +5,7 @@ class DysonCleaningPlannerEditor extends DysonRegistryElement {
     const previewInteraction = event => {
       const el = event.target.closest('input, select, button');
       if (!el) return;
+      if (el.dataset.key === 'zone_dimension_unit') { this.setSessionPreview(false, true); return; }
       if (['show_camera', 'camera_entity', 'camera_rotation'].includes(el.dataset.key)) this.setSessionPreview(true);
       else if (['unsupported_settings', 'always_show_all_settings'].includes(el.dataset.key)
         || el.dataset.include || el.dataset.order || el.dataset.action === 'refresh') this.setSessionPreview(false);
@@ -60,11 +61,13 @@ class DysonCleaningPlannerEditor extends DysonRegistryElement {
     this._previewDialog = null;
     super.disconnectedCallback();
   }
-  setSessionPreview(active) {
+  setSessionPreview(active, zone = false) {
     const dialog = this._previewDialog;
-    if (!dialog || (sessionPreviewOwners.get(dialog) === this) === active) return;
+    if (!dialog) return;
     if (active) sessionPreviewOwners.set(dialog, this);
     else sessionPreviewOwners.delete(dialog);
+    if (zone) zonePreviewOwners.set(dialog, this);
+    else zonePreviewOwners.delete(dialog);
     dialog.dispatchEvent(new Event(previewViewChanged));
   }
   setConfig(config) { this.config = { ...config }; this.update(); }
@@ -87,9 +90,9 @@ class DysonCleaningPlannerEditor extends DysonRegistryElement {
     this.paint(`<style>${styles}:host{padding:8px}label{display:grid;gap:8px;margin:0 0 16px;font-size:14px}input[type=text]{padding:12px;border:1px solid var(--dp-line);border-radius:8px;background:var(--dp-bg);color:inherit;width:100%}.entry{display:flex;gap:8px;align-items:center;margin:8px 0}.entry label{display:flex;align-items:center;flex:1;margin:0}.entry button{min-width:42px}h3{font-size:15px;margin-top:24px}.status-options{margin:12px 0 0;padding:8px 0 0 12px;border:0;border-top:1px solid var(--dp-line);min-width:0}.status-options:disabled{opacity:.5}.battery-percentage-option{padding-left:24px}.battery-percentage-option:has(input[disabled]){opacity:.5}</style>
       <label>${this.ht("Dyson device")}<select data-key="entity" data-focus="entity"><option value="">${this.ht("Select a device")}</option>${vacuums.map(e => `<option value="${h(e.entity_id)}" ${config.entity === e.entity_id ? 'selected' : ''}>${h(this._hass.states[e.entity_id]?.attributes?.friendly_name || e.entity_id)}</option>`).join('')}</select></label>
       <label>${this.ht("Title")}<input type="text" data-key="title" data-focus="title" placeholder="${this.ht('Plan a clean')}" value="${h(config.title ?? '')}"></label>
-      <label>${this.ht("Language")}<select data-key="language" data-focus="language"><option value="auto" ${!config.language || config.language === 'auto' ? 'selected' : ''}>${this.ht("Automatic")}</option><option value="en" ${config.language === 'en' ? 'selected' : ''}>English</option><option value="de" ${config.language === 'de' ? 'selected' : ''}>Deutsch</option></select></label>
+      <label>${this.ht("Language")}<select data-key="language" data-focus="language"><option value="auto" ${!config.language || config.language === 'auto' ? 'selected' : ''}>${this.ht("Automatic")}</option><option value="en" ${config.language === 'en' ? 'selected' : ''}>English [en]</option><option value="de" ${config.language === 'de' ? 'selected' : ''}>Deutsch [de]</option><option value="nl" ${config.language === 'nl' ? 'selected' : ''}>Nederlands [nl]</option></select></label>
       <label>${this.ht("Theme")}<select data-key="theme" data-focus="theme"><option value="classic" ${config.theme === 'classic' ? 'selected' : ''}>${this.ht("Classic")}</option><option value="modern" ${config.theme !== 'classic' ? 'selected' : ''}>${this.ht("Modern")}</option></select></label>
-      <label>${this.ht("Unsupported settings")}<select data-key="unsupported_settings" data-focus="unsupported"><option value="disabled" ${config.unsupported_settings !== 'hidden' ? 'selected' : ''}>${this.ht("Show disabled")}</option><option value="hidden" ${config.unsupported_settings === 'hidden' ? 'selected' : ''}>${this.ht("Hide")}</option></select></label>
+      <label>${this.ht("Header icon style")}<select data-key="header_icon_style" data-focus="header-icon-style"><option value="home_assistant" ${config.header_icon_style === 'home_assistant' ? 'selected' : ''}>Home Assistant</option><option value="integration" ${(config.header_icon_style ?? 'integration') === 'integration' ? 'selected' : ''}>${this.ht("Integration")}</option></select></label>
       <div class="entry"><label><input type="checkbox" data-key="always_show_all_settings" data-focus="all-settings" ${config.always_show_all_settings === true ? 'checked' : ''}>${this.ht("Always show all settings")}</label></div>
       <p>${this.ht("Per-room settings are detected automatically. Saving and starting use the Dyson integration batch actions.")}</p>
       <h3>${this.ht("Status bar")}</h3>
@@ -102,6 +105,8 @@ class DysonCleaningPlannerEditor extends DysonRegistryElement {
       <p class="notice">${this.ht("Turning this off removes the map and stops image requests from this card.")}</p>
       ${field('camera_entity', this.ht('Map camera'), 'camera')}
       <label>${this.ht("Map rotation")}<select data-key="camera_rotation" data-focus="camera-rotation">${[0, 90, 180, 270].map(deg => `<option value="${deg}" ${(config.camera_rotation ?? 0) === deg ? 'selected' : ''}>${deg}°</option>`).join('')}</select></label>
+      <h3>${this.ht("Zone cleaning")}</h3>
+      <label>${this.ht("Dimension display")}<select data-key="zone_dimension_unit" data-focus="zone-dimension-unit">${[['auto','Automatic'],['cm','Centimeters'],['inch','Inches'],['off','Off']].map(([value,label]) => `<option value="${value}" ${(config.zone_dimension_unit ?? 'auto') === value ? 'selected' : ''}>${this.ht(label)}</option>`).join('')}</select></label>
       <h3>${this.ht("Rooms in this card")}</h3><p>${this.ht("Choose which rooms to show. Arrows change the display order, not the robot cleaning order.")}</p>
       ${this.model.rooms.map((r, i) => `<div class="entry"><label><input type="checkbox" data-focus="include-${i}" data-include="${h(r.entity)}" ${!r.excluded ? 'checked' : ''} ${!r.entity ? 'disabled' : ''}>${h(r.name)}</label><button data-order="${h(r.entity)}" data-direction="-1" ${i === 0 ? 'disabled' : ''} aria-label="${this.ht('Move {name} up', { name: r.name })}">↑</button><button data-order="${h(r.entity)}" data-direction="1" ${i === this.model.rooms.length - 1 ? 'disabled' : ''} aria-label="${this.ht('Move {name} down', { name: r.name })}">↓</button></div>`).join('')}
       <button data-action="refresh" data-focus="refresh-rooms">${this.ht("Refresh rooms")}</button>

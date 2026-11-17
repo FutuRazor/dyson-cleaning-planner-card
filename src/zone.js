@@ -1,5 +1,6 @@
+import { escapeHtml } from './core.js';
 import { translate } from './localize.js';
-import { zoneMinimumSize, zoneHasMinimumSize, fitZoneMinimum, validZoneCalibration, zoneRobotRectangle, zoneCanStart, zoneSha256, zoneSettingsPayload } from './zone-core.js';
+import { zoneDimensionText, adjustZone, zonePillPosition, zoneMinimumSize, zoneHasMinimumSize, fitZoneMinimum, validZoneCalibration, zoneRobotRectangle, zoneCanStart, zoneSha256, zoneSettingsPayload } from './zone-core.js';
 
 // Owns the frozen image and pointer interaction. HA updates never replace its DOM.
 class DysonPlannerZone extends HTMLElement {
@@ -13,14 +14,14 @@ class DysonPlannerZone extends HTMLElement {
       button{font:inherit;color:inherit;border:1px solid var(--dp-line);border-radius:12px;padding:8px 12px;min-height:44px;background:var(--dp-modern-surface,var(--dp-bg));cursor:pointer}
       button:disabled{opacity:.45;cursor:default}button:focus-visible{outline:2px solid var(--dp-accent);outline-offset:2px}
       .start{background:var(--dp-accent);color:var(--text-primary-color,#fff);flex:1}.back{flex:1}
-      svg{display:block;width:100%;height:auto;background:var(--dp-bg);overflow:hidden}
+      .map-frame{padding:20px;overflow:visible}svg{display:block;width:100%;height:auto;background:var(--dp-bg);overflow:visible}
       .area{fill:color-mix(in srgb,var(--dp-accent) 22%,transparent);stroke:var(--dp-accent);stroke-width:2;vector-effect:non-scaling-stroke;cursor:move;touch-action:none}
-      .handle{fill:var(--dp-accent);stroke:white;stroke-width:2;vector-effect:non-scaling-stroke;cursor:nwse-resize;touch-action:none}
-      [tabindex]:focus{outline:none;stroke:white;stroke-width:3}.hint{fill:white;pointer-events:none;font:22px sans-serif}
+      .handle-hit{fill:transparent;cursor:nwse-resize;touch-action:none}.handle{pointer-events:none;filter:drop-shadow(0 1px 2px #0006);fill:var(--dp-accent);stroke:white;stroke-width:2;vector-effect:non-scaling-stroke;cursor:nwse-resize;touch-action:none}
+      [tabindex]:focus{outline:none;stroke:white;stroke-width:3}.hint{fill:none;pointer-events:none;font:22px sans-serif}
       .settings-overlay{position:absolute;inset:0;z-index:5;background:#0005;padding:12px;display:flex;align-items:flex-start}
       .settings-panel{width:100%;max-height:min(100%,75vh);overflow-y:auto;overscroll-behavior:contain;background:var(--dp-bg);border:1px solid var(--dp-line);border-radius:14px;padding:18px;box-shadow:0 8px 30px #0003}
       .settings-panel header{display:flex;align-items:stretch;gap:8px;margin-bottom:20px}.settings-panel h3{flex:1;margin:0;align-self:center;font-size:16px;font-weight:500}
-      .settings-panel [data-do=close-settings]{display:flex;align-items:center;justify-content:center;flex:0 0 42px;min-width:42px;padding:8px;min-height:42px;border-radius:9px;background:var(--dp-bg)}ha-icon{width:24px;height:24px}
+      .settings-panel [data-do=close-settings]{display:flex;align-items:center;justify-content:center;flex:0 0 42px;min-width:42px;padding:8px;min-height:42px;border-radius:9px;background:var(--dp-bg)}ha-icon{width:24px;height:24px}.settings-panel [data-do=close-settings] ha-icon{width:20px;height:20px;--mdc-icon-size:20px;flex-shrink:0}
       .settings-fields{padding:10px 14px;border:1px solid var(--dp-line);border-radius:14px;background:var(--dp-modern-surface,var(--dp-bg))}
       .settings-panel label{display:block;font-size:13px;color:var(--primary-text-color);margin:12px 0 4px}.settings-panel label:first-child{margin-top:0}
       .settings-panel select{width:100%;font:inherit;font-size:14px;min-height:34px;padding:6px 10px;border:1px solid var(--dp-modern-control-border,var(--dp-line));border-radius:9px;background:var(--dp-modern-control,var(--dp-bg));color:var(--dp-accent)}
@@ -50,8 +51,8 @@ class DysonPlannerZone extends HTMLElement {
       .zone-settings-open{display:flex;align-items:center;justify-content:space-between;gap:6px;text-align:left}.zone-mode-label{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.zone-settings-open ha-icon{display:flex;align-items:center;justify-content:center;line-height:0;align-self:center;flex:0 0 15px;width:15px;height:15px;--mdc-icon-size:15px}
       [hidden]{display:none!important}
     </style>
-    <svg hidden aria-label="Zone selection"><image/><rect class="area" tabindex="0" role="button"/><g class="zone-size" pointer-events="none"><rect fill="#10252dcc" rx="3"/><text fill="white" dominant-baseline="hanging"></text></g><rect class="handle" tabindex="0" role="button" rx="6"/><text class="hint" text-anchor="middle" dominant-baseline="central">↘</text></svg>
-    <p class="message" role="status" aria-live="polite"></p><div class="actions"><div class="secondary-actions"><button class="reload" data-do="refresh"><ha-icon icon="mdi:reload" aria-hidden="true"></ha-icon></button><button class="zone-settings-open" data-do="settings" aria-haspopup="dialog"><span class="zone-mode-label"></span><ha-icon icon="mdi:cog" aria-hidden="true"></ha-icon></button></div><button class="start" data-do="start"></button></div>
+    <div class="map-frame"><svg hidden aria-label="Zone selection"><image/><rect class="area" tabindex="0" role="button"/><g class="zone-size" pointer-events="none"><rect fill="#10252de6"/><text fill="white" dominant-baseline="central" text-anchor="middle"></text></g><circle class="handle-hit" tabindex="0" role="button"/><circle class="handle"/><path class="hint" fill="none" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" d="M-5 -5 L5 5 M0 5 H5 V0 M-5 0 V-5 H0"/></svg></div>
+    <div class="actions"><div class="secondary-actions"><button class="reload" data-do="refresh"><ha-icon icon="mdi:reload" aria-hidden="true"></ha-icon></button><button class="zone-settings-open" data-do="settings" aria-haspopup="dialog"><span class="zone-mode-label"></span><ha-icon icon="mdi:cog" aria-hidden="true"></ha-icon></button></div><button class="start" data-do="start"></button></div>
     <div class="settings-overlay" hidden><section class="settings-panel" role="dialog" aria-modal="true" aria-labelledby="zone-settings-title"><header><h3 id="zone-settings-title" data-i18n="Settings"></h3><button data-do="close-settings" aria-label="Close"><ha-icon icon="mdi:close" aria-hidden="true"></ha-icon></button></header><div class="settings-fields">
       <label for="zone-mode" data-i18n="Cleaning mode"></label><select id="zone-mode"><option value="vacuum" data-i18n="Vacuum"></option><option value="vacuumAndMop" data-i18n="Vacuum and Mop"></option><option value="mop" data-i18n="Mop"></option><option value="vacuumThenMop" data-i18n="Vacuum then Mop"></option></select>
       <div class="power-setting">
@@ -67,35 +68,39 @@ class DysonPlannerZone extends HTMLElement {
     this.dialog.addEventListener('keydown', event => {
       if (event.key === 'Escape') { event.preventDefault(); this.closeSettings(); }
       if (event.key === 'Tab') {
-        const items=[...this.dialog.querySelectorAll('button:not(:disabled),select:not(:disabled),input:not(:disabled)')];
+        const items=[...this.dialog.querySelectorAll('button:not(:disabled),select:not(:disabled),input:not(:disabled)')]
+          .filter(el => el.tabIndex >= 0 && !el.closest('[hidden], [inert]') && el.getClientRects().length
+            && getComputedStyle(el).visibility === 'visible');
         const first=items[0],last=items.at(-1),active=this.shadowRoot.activeElement;
-        if (event.shiftKey && active===first) { event.preventDefault(); last.focus({preventScroll:true}); }
-        else if (!event.shiftKey && active===last) { event.preventDefault(); first.focus({preventScroll:true}); }
+        if (event.shiftKey && active===first) { event.preventDefault(); last?.focus({preventScroll:true}); }
+        else if (!event.shiftKey && active===last) { event.preventDefault(); first?.focus({preventScroll:true}); }
       }
     });
     this.shadowRoot.querySelector('.zone-power').addEventListener('input', event => {
       if (this.sending) return;
-      this.strategy = ['auto','boost','quiet','quick'][Number(event.target.value)]; this.labels();
+      this.strategy = this.capabilities.strategy.options[Number(event.target.value)]?.[1]; this.labels(); this.draw();
     });
     this.shadowRoot.querySelector('#zone-mode').addEventListener('change', event => {
       if (this.sending) return;
-      this.mode=event.target.value; event.target.blur(); this.labels();
+      this.mode=event.target.value; event.target.blur(); this.labels(); this.draw();
     });
     this.shadowRoot.querySelector('#zone-water').addEventListener('input', event => {
       if (this.sending) return;
-      this.water=['veryLow','low','medium','high'][Number(event.target.value)]; this.labels();
+      this.water=this.capabilities.water.options[Number(event.target.value)]?.[1]; this.labels(); this.draw();
     });
     this.svg = this.shadowRoot.querySelector('svg');
     this.image = this.shadowRoot.querySelector('image');
     this.area = this.shadowRoot.querySelector('.area');
-    this.handle = this.shadowRoot.querySelector('.handle');
+    this.handle = this.shadowRoot.querySelector('.handle-hit');
+    this.handleVisual = this.shadowRoot.querySelector('.handle');
     this.hint = this.shadowRoot.querySelector('.hint');
     this.shadowRoot.addEventListener('click', event => {
+      if (event.target === this.dialog) { this.closeSettings(); return; }
       const power = event.target.closest('[data-power]');
-      if (power && !this.sending) { this.shadowRoot.querySelector('.zone-power').value=power.dataset.power; this.strategy=['auto','boost','quiet','quick'][Number(power.dataset.power)]; this.labels(); return; }
+      if (power && !power.disabled && !this.sending) { this.shadowRoot.querySelector('.zone-power').value=power.dataset.power; this.strategy=this.capabilities.strategy.options[Number(power.dataset.power)]?.[1]; this.labels(); this.draw(); return; }
       const water=event.target.closest('[data-water]'), passes=event.target.closest('[data-passes]');
-      if (water && !this.sending) { this.water=['veryLow','low','medium','high'][Number(water.dataset.water)]; this.labels(); return; }
-      if (passes && !this.sending) { this.passes=Number(passes.dataset.passes); this.labels(); return; }
+      if (water && !water.disabled && !this.sending) { this.water=this.capabilities.water.options[Number(water.dataset.water)]?.[1]; this.labels(); this.draw(); return; }
+      if (passes && !passes.disabled && !this.sending) { this.passes=Number(passes.dataset.passes); this.labels(); this.draw(); return; }
       const action = event.target.closest('button')?.dataset.do;
       if (!action || event.target.closest('button').disabled) return;
       if (action === 'refresh') this.load();
@@ -144,7 +149,10 @@ class DysonPlannerZone extends HTMLElement {
     if (this.calibration && String(this.hass.states[this.vacuum]?.attributes?.map_id) !== this.calibration.map_id) {
       this.controller?.abort(); this.clear(); this.note = 'The active map changed. Reload the map and select a new zone.';
     }
-    if (this._labelsLanguage !== this.language) { this.labels(); this._labelsLanguage = this.language; }
+    const capabilitiesKey = JSON.stringify(this.capabilities);
+    if (this._labelsLanguage !== this.language || this._capabilitiesKey !== capabilitiesKey) {
+      this.labels(); this._labelsLanguage = this.language; this._capabilitiesKey = capabilitiesKey;
+    }
     this.draw();
     if (!this.attempted && this.trusted && this.camera) this.load();
   }
@@ -153,18 +161,43 @@ class DysonPlannerZone extends HTMLElement {
 
     for (const el of this.shadowRoot.querySelectorAll('[data-i18n]')) el.textContent = this.t(el.dataset.i18n);
     this.shadowRoot.querySelector('[data-do="close-settings"]').setAttribute('aria-label',this.t('Close'));
-    [...this.shadowRoot.querySelectorAll('[data-power]')].forEach((el,i)=>el.setAttribute('aria-pressed',String(i===['auto','boost','quiet','quick'].indexOf(this.strategy))));
-    this.shadowRoot.querySelector('.zone-power').setAttribute('aria-valuetext',this.t(this.strategy[0].toUpperCase()+this.strategy.slice(1)));
-    this.shadowRoot.querySelector('#zone-mode').value=this.mode;
-    this.shadowRoot.querySelector('.power-setting').hidden=this.mode==='mop';
-    this.shadowRoot.querySelector('.water-setting').hidden=this.mode==='vacuum';
-    this.shadowRoot.querySelector('.zone-power').value=['auto','boost','quiet','quick'].indexOf(this.strategy);
-    const waterIndex=['veryLow','low','medium','high'].indexOf(this.water);
-    this.shadowRoot.querySelector('#zone-water').value=waterIndex;
-    this.shadowRoot.querySelector('#zone-water').setAttribute('aria-valuetext',this.t(['Very Low','Low','Medium','High'][waterIndex]));
-    [...this.shadowRoot.querySelectorAll('[data-water]')].forEach((el,i)=>el.setAttribute('aria-pressed',String(i===waterIndex)));
-    [...this.shadowRoot.querySelectorAll('[data-passes]')].forEach(el=>el.setAttribute('aria-pressed',String(Number(el.dataset.passes)===this.passes)));
-    this.shadowRoot.querySelector('.repetitions-label').textContent=this.t(this.mode==='vacuumThenMop'?'Mop repetitions':'Clean repetitions');
+    const caps = this.capabilities;
+    if (!caps) return;
+    for (const key of ['mode','strategy','water','passes']) {
+      const options = caps[key].options;
+      if (options.length && !options.some(([,value]) => value === this[key])) this[key] = options[0][1];
+    }
+    const put = (element, html) => { if (element._optionsHtml !== html) { element.innerHTML=html; element._optionsHtml=html; } };
+    const modeSelect = this.shadowRoot.querySelector('#zone-mode');
+    put(modeSelect, caps.mode.options.map(([label,value]) => `<option value="${value}">${escapeHtml(this.t(label))}</option>`).join('') || `<option>${escapeHtml(this.t('Unavailable'))}</option>`);
+    modeSelect.value=this.mode;
+    modeSelect.disabled=!!this.sending || !caps.mode.available;
+    modeSelect.hidden=!caps.mode.supported;
+    this.shadowRoot.querySelector('[for=zone-mode]').hidden=!caps.mode.supported;
+    for (const [key, selector, attr] of [['strategy','.power-setting','power'],['water','.water-setting','water']]) {
+      const group=this.shadowRoot.querySelector(selector), cap=caps[key], options=cap.options;
+      group.hidden=!cap.supported || (key==='strategy' ? this.mode==='mop' : this.mode==='vacuum');
+      const stops=options.map((_,i)=>options.length>1?i/(options.length-1):0);
+      put(group.querySelector('.slider-ticks'), stops.map(stop=>`<span class="slider-tick" style="--stop:${stop}"></span>`).join(''));
+      put(group.querySelector('.slider-options'), options.map(([label],i)=>`<button type="button" data-${attr}="${i}" style="--stop:${stops[i]}">${escapeHtml(this.t(label))}</button>`).join(''));
+      const index=options.findIndex(([,value])=>value===this[key]), slider=group.querySelector('input');
+      slider.max=Math.max(0,options.length-1); slider.value=Math.max(0,index);
+      slider.disabled=!!this.sending || !cap.available || options.length<2;
+      slider.setAttribute('aria-valuetext',this.t(options[index]?.[0] ?? 'Unavailable'));
+      group.querySelector('.stepped-slider').classList.toggle('disabled',slider.disabled);
+      for (const button of group.querySelectorAll('button')) {
+        button.disabled=!!this.sending || !cap.available;
+        button.setAttribute('aria-pressed',String(Number(button.dataset[attr])===index));
+      }
+    }
+    const label=this.shadowRoot.querySelector('.repetitions-label'), segments=this.shadowRoot.querySelector('.segments');
+    label.hidden=segments.hidden=!caps.passes.supported;
+    label.textContent=this.t(this.mode==='vacuumThenMop'?'Mop repetitions':'Clean repetitions');
+    for (const button of segments.querySelectorAll('[data-passes]')) {
+      button.hidden=!caps.passes.options.some(([,value])=>value===Number(button.dataset.passes));
+      button.disabled=!!this.sending || !caps.passes.available;
+      button.setAttribute('aria-pressed',String(Number(button.dataset.passes)===this.passes));
+    }
     for (const [action, label] of Object.entries({start:'Start clean'})) {
       this.shadowRoot.querySelector(`[data-do="${action}"]`).textContent = this.t(label);
     }
@@ -248,7 +281,8 @@ class DysonPlannerZone extends HTMLElement {
     if (c && this.rect) this.rect = fitZoneMinimum(this.rect, c, this.rotation);
     // Safari can scroll a focused SVG back into view when its geometry is
     // rewritten. HA telemetry must not touch the frozen selection's DOM.
-    const geometry = JSON.stringify([c, this.rotation, this.rect, this.svg.getBoundingClientRect().width]);
+    const lengthUnit = this.dimensionUnit === 'inch' ? 'in' : this.dimensionUnit === 'cm' ? 'cm' : this.hass?.config?.unit_system?.length;
+    const geometry = JSON.stringify([c, this.rotation, this.rect, this.svg.getBoundingClientRect().width, lengthUnit, this.dimensionUnit]);
     const geometryChanged = geometry !== this._geometry;
     this._geometry = geometry;
     if (geometryChanged) {
@@ -262,36 +296,30 @@ class DysonPlannerZone extends HTMLElement {
           : this.rotation === 270 ? `translate(0 ${c.image_width}) rotate(270)` : '';
         this.image.setAttribute('transform', transform);
       }
-      for (const el of [this.area,this.handle,this.hint,this.shadowRoot.querySelector('.zone-size')]) el.toggleAttribute('hidden', !this.rect);
+      for (const el of [this.area,this.handle,this.handleVisual,this.hint,this.shadowRoot.querySelector('.zone-size')]) el.toggleAttribute('hidden', !this.rect);
       if (c && this.rect) {
-        const [x,y,x2,y2] = this.rect, size = Math.min(this.width * .14, 36 * this.width / (this.svg.getBoundingClientRect().width || this.width));
+        const [x,y,x2,y2] = this.rect;
+        const scale=this.width/(this.svg.getBoundingClientRect().width || this.width);
         for (const [key,value] of Object.entries({ x:x*this.width,y:y*this.height,width:(x2-x)*this.width,height:(y2-y)*this.height })) this.area.setAttribute(key,value);
-        // Keep the grip outside the selected area when there is room. Flip each
-        // axis inward near the image edge without changing the zone or drag origin.
-        const edgeX = x2*this.width, edgeY = y2*this.height;
-        const strokeMargin = this.width / (this.svg.getBoundingClientRect().width || this.width);
-        const handleX = this.width-edgeX >= size+strokeMargin ? edgeX : edgeX-size;
-        const handleY = this.height-edgeY >= size+strokeMargin ? edgeY : edgeY-size;
-        for (const [key,value] of Object.entries({ x:handleX,y:handleY,width:size,height:size })) this.handle.setAttribute(key,value);
-        this.hint.setAttribute('x',handleX+size/2); this.hint.setAttribute('y',handleY+size/2);
-        this.hint.style.fontSize = `${size*.65}px`;
-        const label = this.shadowRoot.querySelector('.zone-size');
-        const text = label.querySelector('text'), bg = label.querySelector('rect');
-        const cmWidth = Math.round((x2-x)*this.width/c.pixels_per_metre*100);
-        const cmHeight = Math.round((y2-y)*this.height/c.pixels_per_metre*100);
-        const caption = `${cmWidth} × ${cmHeight} cm`;
-        const scale = this.width/(this.svg.getBoundingClientRect().width || this.width);
-        const font = Math.min(12*scale, ((x2-x)*this.width-4*scale)/(caption.length*.62));
-        const pad = Math.min(3*scale,font*.3);
-        label.setAttribute('transform',`translate(${x*this.width+pad} ${y*this.height+pad})`);
-        text.textContent=caption; text.style.fontSize=`${font}px`;
-        text.setAttribute('x',pad); text.setAttribute('y',pad);
-        bg.setAttribute('width',caption.length*font*.62+2*pad);
-        bg.setAttribute('height',font*1.25+2*pad);
+        for (const [el,radius] of [[this.handle,20],[this.handleVisual,13]]) {
+          el.setAttribute('cx',x2*this.width); el.setAttribute('cy',y2*this.height); el.setAttribute('r',radius*scale);
+        }
+        this.hint.setAttribute('transform',`translate(${x2*this.width} ${y2*this.height}) scale(${scale})`);
+        const label=this.shadowRoot.querySelector('.zone-size'), text=label.querySelector('text'), bg=label.querySelector('rect');
+        const cmWidth=(x2-x)*this.width/c.pixels_per_metre*100;
+        const cmHeight=(y2-y)*this.height/c.pixels_per_metre*100;
+        const caption=zoneDimensionText(cmWidth,cmHeight,lengthUnit);
+        text.textContent=caption; text.style.fontSize=`${12*scale}px`;
+        const pillWidth=text.getComputedTextLength()+16*scale,pillHeight=24*scale;
+        const [left,top]=zonePillPosition(this.rect,this.width,this.height,pillWidth,pillHeight,6*scale,14*scale);
+        label.toggleAttribute('hidden', this.dimensionUnit === 'off');
+        label.setAttribute('transform',`translate(${left} ${top})`);
+        text.setAttribute('x',pillWidth/2); text.setAttribute('y',pillHeight/2);
+        bg.setAttribute('width',pillWidth); bg.setAttribute('height',pillHeight); bg.setAttribute('rx',12*scale);
         this.area.setAttribute('aria-label',`${this.t('Move zone. Use the arrow keys.')} ${caption}`);
       }
     }
-    const ready = zoneCanStart(this.hass,this.vacuum,this.camera,c,this.trusted,this.preview);
+    const ready = this.settingsReady() && zoneCanStart(this.hass,this.vacuum,this.camera,c,this.trusted,this.preview);
     for (const action of ['settings','refresh','start']) {
       const button = this.shadowRoot.querySelector(`[data-do="${action}"]`);
       const disabled = !!this.sending
@@ -302,9 +330,10 @@ class DysonPlannerZone extends HTMLElement {
     const message = this.t(this.note || (!this.trusted ? 'Camera must belong to the selected robot.'
       : !c ? 'A calibrated map is required. Reload the map.' : !ready ? 'Zone start unavailable: check robot readiness, map and integration action.'
       : ''));
-    const notice = this.shadowRoot.querySelector('.message');
-    notice.hidden = !message;
-    if (notice.textContent !== message) notice.textContent = message;
+    if (this.headerMessage !== message) {
+      this.headerMessage = message;
+      this.dispatchEvent(new CustomEvent('planner-notice', { bubbles: true, composed: true }));
+    }
   }
   point(event) {
     const p = new DOMPoint(event.clientX,event.clientY).matrixTransform(this.svg.getScreenCTM().inverse());
@@ -313,7 +342,7 @@ class DysonPlannerZone extends HTMLElement {
   pointerDown(event) {
     if (!this.rect || this.sending || (event.pointerType === 'mouse' && event.button !== 0)
       || ![this.area,this.handle].includes(event.target)) return;
-    event.preventDefault(); this.drag = { id:event.pointerId,start:this.point(event),rect:[...this.rect],resize:event.target === this.handle };
+    event.preventDefault(); event.stopPropagation(); this.drag = { id:event.pointerId,start:this.point(event),rect:[...this.rect],resize:event.target === this.handle };
     this.svg.setPointerCapture(event.pointerId);
   }
   pointerMove(event) {
@@ -322,22 +351,26 @@ class DysonPlannerZone extends HTMLElement {
     this.adjust(this.drag.rect,p[0]-this.drag.start[0],p[1]-this.drag.start[1],this.drag.resize);
   }
   adjust(rect,dx,dy,resize) {
-    const [x,y,x2,y2] = rect;
-    const [mw,mh] = zoneMinimumSize(this.calibration,this.rotation);
-    if (resize) this.rect = [x,y,Math.min(1,Math.max(x+mw,x2+dx)),Math.min(1,Math.max(y+mh,y2+dy))];
-    else { dx=Math.max(-x,Math.min(1-x2,dx)); dy=Math.max(-y,Math.min(1-y2,dy)); this.rect=[x+dx,y+dy,x2+dx,y2+dy]; }
+    this.rect=adjustZone(rect,dx,dy,resize,zoneMinimumSize(this.calibration,this.rotation));
     this.draw();
   }
+  settingsReady() {
+    if (!this.supported || !this.capabilities) return false;
+    const keys=['mode','passes', ...(this.mode==='mop'?[]:['strategy']), ...(this.mode==='vacuum'?[]:['water'])];
+    return keys.every(key=>this.capabilities[key].available && this.capabilities[key].options.some(([,value])=>value===this[key]));
+  }
   async start() {
-    if (this.sending || !zoneHasMinimumSize(this.rect,this.calibration,this.rotation) || !zoneCanStart(this.hass,this.vacuum,this.camera,this.calibration,this.trusted,this.preview)) return;
+    if (this.sending || !this.settingsReady() || !zoneHasMinimumSize(this.rect,this.calibration,this.rotation) || !zoneCanStart(this.hass,this.vacuum,this.camera,this.calibration,this.trusted,this.preview)) return;
     const data = { entity_id:this.vacuum,map_id:this.calibration.map_id,rectangle:zoneRobotRectangle(this.rect,this.calibration,this.rotation),...zoneSettingsPayload(this.mode,this.strategy,this.water,this.passes) };
-    this.sending = true; this.note = 'Sending zone start …'; this.draw();
+    const dimensions = { widthCm:(this.rect[2]-this.rect[0])*this.width/this.calibration.pixels_per_metre*100,
+      heightCm:(this.rect[3]-this.rect[1])*this.height/this.calibration.pixels_per_metre*100 };
+    this.sending = true; this.labels(); this.note = 'Sending zone start …'; this.draw();
     try {
       await this.hass.callService('dyson_spot_scrub','clean_zone',data);
-      if (this.isConnected) this.dispatchEvent(new CustomEvent('zone-started',{bubbles:true,composed:true}));
+      if (this.isConnected) this.dispatchEvent(new CustomEvent('zone-started',{detail:dimensions,bubbles:true,composed:true}));
     } catch (error) {
       if (this.isConnected) this.note = error.message || 'Zone start failed. Check the robot before retrying.';
-    } finally { this.sending = false; if (this.isConnected) this.draw(); }
+    } finally { this.sending = false; if (this.isConnected) { this.labels(); this.draw(); } }
   }
 }
 if (!customElements.get('dyson-planner-zone')) customElements.define('dyson-planner-zone', DysonPlannerZone);

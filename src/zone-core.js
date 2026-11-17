@@ -89,3 +89,25 @@ export function fitZoneMinimum(rect, c, rotation = 0) {
   const x=Math.max(0,Math.min(rect[0],1-w)), y=Math.max(0,Math.min(rect[1],1-h));
   return [x,y,x+w,y+h];
 }
+
+// Display-space helpers keep movement separate from resizing.
+export function adjustZone(rect, dx, dy, resize, minimum) {
+  const [x,y,x2,y2]=rect, [mw,mh]=minimum;
+  if (resize) return [x,y,Math.min(1,Math.max(x+mw,x2+dx)),Math.min(1,Math.max(y+mh,y2+dy))];
+  const w=x2-x,h=y2-y,nx=Math.max(0,Math.min(1-w,x+dx)),ny=Math.max(0,Math.min(1-h,y+dy));
+  return [nx,ny,nx+w,ny+h];
+}
+export function zonePillPosition(rect, width, height, pillWidth, pillHeight, gap=6, horizontalOverflow=14) {
+  const [x,y,x2]=rect;
+  // Use the map frame's free margin, keeping six screen pixels to the card
+  // edge. The pill stays above the zone using the existing space above the map.
+  const left=Math.max(-horizontalOverflow,Math.min(width+horizontalOverflow-pillWidth,(x+x2)*width/2-pillWidth/2));
+  return [left,y*height-pillHeight-gap];
+}
+
+// Presentation only: robot geometry and minimum sizes remain metric.
+export function zoneDimensionText(widthCm, heightCm, lengthUnit) {
+  const imperial = ['mi', 'ft', 'in', 'yd'].includes(lengthUnit);
+  const divisor = imperial ? 2.54 : 1;
+  return `${Math.round(widthCm/divisor)} \u00d7 ${Math.round(heightCm/divisor)} ${imperial ? 'in' : 'cm'}`;
+}

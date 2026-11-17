@@ -32,3 +32,25 @@ test('own messages translate parameters without changing names or external error
   assert.equal(translate('fr', 'Plan a clean'), 'Plan a clean');
   assert.equal(translate('de', '{selected} of {total} rooms selected', { selected: 2, total: 5 }), '2 von 5 Räumen ausgewählt');
 });
+
+
+test('Dutch supports regional HA locales, overrides and translated parameters', () => {
+  for (const language of ['nl', 'nl-NL', 'nl_BE']) assert.equal(resolveLanguage({}, {locale:{language}}), 'nl');
+  assert.equal(normalizeConfig({entity:'vacuum.robot',language:'nl'}).language,'nl');
+  assert.equal(resolveLanguage({language:'nl'},{language:'en'}),'nl');
+  assert.equal(translate('nl','Plan a clean'),'Reiniging plannen');
+  assert.equal(translate('nl','{selected} of {total} rooms selected',{selected:2,total:5}),'2 van 5 kamers geselecteerd');
+  assert.equal(translate('nl',new Error('Robot firmware: unavailable')),'Robot firmware: unavailable');
+});
+
+test('Dutch accents and punctuation survive translation encoding', () => {
+  assert.equal(translate('nl', 'One pass'), 'E\u00e9n keer');
+  assert.equal(translate('nl', 'One Pass'), 'E\u00e9n keer');
+  assert.equal(translate('nl', 'Select at least one room without duplicates.'), 'Selecteer minstens \u00e9\u00e9n kamer, zonder dubbele selecties.');
+  assert.equal(translate('nl', 'Saving \u2026'), 'Opslaan \u2026');
+  assert.equal(translate('nl', 'Vacuum \u00b7 Auto \u00b7 One pass. Drag the zone or resize its lower-right corner.'), 'Stofzuigen \u00b7 Auto \u00b7 E\u00e9n keer. Versleep de zone of pas het formaat aan via de rechteronderhoek.');
+  for (const [key, value] of Object.entries(LANGUAGES.nl)) {
+    assert.ok(!value.includes('\ufffd'), key);
+    if (key.endsWith('\u2026')) assert.ok(value.endsWith('\u2026'), key);
+  }
+});

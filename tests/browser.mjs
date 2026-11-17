@@ -115,7 +115,7 @@ try {
   ]);
   assert.equal(await page.evaluate(() => demo.hass.states[demo.ids[0]].state), 'off');
   assert.equal(await card.locator('.session-title').innerText(), 'Cleaning session');
-  assert.equal(await card.locator('.action-message').innerText(), '');
+  assert.equal(await page.evaluate(() => demo.card.message), '');
   assert.equal(await page.evaluate(() => demo.map === demo.card.shadowRoot.querySelector('dyson-planner-map')), true);
   await page.evaluate(() => demo.card.start());
   assert.equal(await page.evaluate(() => demo.calls.length), beforeControl + 2);
@@ -195,16 +195,16 @@ try {
   await page.evaluate(() => { demo.original = demo.hass.callService; demo.hass.callService = async () => { throw new Error('Action denied'); }; demo.card.hass = { ...demo.hass }; });
   await card.locator('[data-control="pause"]').click();
   await page.waitForFunction(() => !demo.card.controlBusy);
-  assert.equal(await card.locator('.action-message').innerText(), 'Action denied');
+  assert.equal(await card.locator('.header-notice-copy').innerText(), 'Action denied');
   await page.evaluate(() => { demo.hass.callService = demo.original; demo.hass.states[demo.entity].attributes.supported_features = 0; demo.card.hass = { ...demo.hass }; });
   assert.equal(await card.locator('[data-control="pause"]').isDisabled(), true);
   assert.equal(await card.locator('[data-control="return_to_base"]').isDisabled(), true);
   await state('docked');
   await page.locator('#settings').click();
   await page.evaluate(() => { for (const fields of Object.values(demo.fields)) demo.hass.states[fields.water_level].state = 'unavailable'; demo.card.hass = { ...demo.hass }; });
-  await editor.locator('[data-key="unsupported_settings"]').selectOption('hidden');
+  assert.equal(await editor.locator('[data-key="unsupported_settings"]').count(), 0);
   await card.locator('[data-expand]').first().click();
-  assert.equal(await card.locator('.field').filter({ hasText: 'Water level' }).count(), 0);
+  assert.equal(await card.locator('[data-setting=water_level]').isDisabled(), true);
   await editor.locator('[data-include]').first().uncheck();
   assert.equal(await card.locator('.room').count(), 4);
   await page.evaluate(() => {

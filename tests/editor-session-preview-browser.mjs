@@ -6,7 +6,7 @@ const server = previewServer();
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 let browser;
 try {
-  browser = await chromium.launch({ channel: 'msedge' });
+  browser = await chromium.launch({ headless: true, ...(process.env.BROWSER_CHANNEL ? { channel: process.env.BROWSER_CHANNEL } : {}) });
   const page = await browser.newPage();
   await page.goto(`http://127.0.0.1:${server.address().port}/`);
   const dashboard = page.locator('#card');
@@ -28,25 +28,32 @@ try {
     const card = dialog.locator('dyson-cleaning-planner-card');
     const editor = dialog.locator('dyson-cleaning-planner-card-editor');
     const camera = editor.locator('[data-key=show_camera]');
+    await editor.locator('[data-key=zone_dimension_unit]').selectOption('inch');
+    await card.locator('dyson-planner-zone').waitFor();
+    assert.equal(await card.locator('dyson-planner-zone').evaluate(el=>el.dimensionUnit), 'inch');
+    assert.equal(await dashboard.locator('dyson-planner-zone').count(), 0);
+    await editor.locator('[data-key=always_show_all_settings]').dispatchEvent('pointerdown');
+    await card.locator('.rooms').waitFor();
+
     await editor.locator('[data-key=camera_entity]').dispatchEvent('pointerdown');
     await card.locator('dyson-planner-map').waitFor();
-    assert.equal(await card.locator('.session-title').innerText(), 'Cleaning session preview');
+    assert.equal(await card.locator('.session-title').textContent(), 'Cleaning session preview');
     assert.ok(await card.locator('.home').isDisabled());
     await camera.uncheck();
     assert.ok(await card.locator('.session-title').isVisible());
     assert.equal(await card.locator('dyson-planner-map').count(), 0);
     await camera.check();
     await editor.locator('[data-key=camera_rotation]').selectOption('90');
-    await editor.locator('[data-key=unsupported_settings]').dispatchEvent('pointerdown');
+    await editor.locator('[data-key=always_show_all_settings]').dispatchEvent('pointerdown');
     await card.locator('.rooms').waitFor();
     for (const target of ['[data-key=always_show_all_settings]', '[data-include]', '[data-order]:enabled']) {
       await editor.locator('[data-key=camera_entity]').dispatchEvent('pointerdown');
-      await card.locator('.session-title').waitFor();
+      await card.locator('.session-title').waitFor({state:'attached'});
       await editor.locator(target).first().click();
       await card.locator('.rooms').waitFor();
     }
     await editor.locator('[data-key=camera_entity]').dispatchEvent('pointerdown');
-    await card.locator('.session-title').waitFor();
+    await card.locator('.session-title').waitFor({state:'attached'});
     assert.ok(await dashboard.locator('.rooms').isVisible());
     await editor.evaluate(el => el.remove());
     await card.locator('.rooms').waitFor();

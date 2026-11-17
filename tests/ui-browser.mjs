@@ -54,8 +54,7 @@ try {
     assert.equal((await keys()).length, 4);
   }
   await page.evaluate(() => { demo.hass.states[demo.fields[10].water_level].state = 'unavailable'; demo.card.hass = { ...demo.hass }; });
-  await editor.locator('[data-key="unsupported_settings"]').selectOption('hidden');
-  await room.locator('[data-expand]').click();
+  assert.equal(await editor.locator('[data-key="unsupported_settings"]').count(), 0);
   assert.equal(await room.locator('[data-setting="water_level"]').isDisabled(), true, 'override keeps unavailable options visible');
   assert.equal(await page.evaluate(() => demo.calls.length), 0);
   await page.evaluate(() => { demo.hass.states[demo.entity].state = 'cleaning'; demo.card.hass = { ...demo.hass }; });
