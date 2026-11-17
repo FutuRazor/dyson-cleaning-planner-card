@@ -81,11 +81,15 @@ try {
   assert.ok(await page.locator('#card .header-fault').isVisible());
   await page.locator('#card [data-action="dismiss-fault"]').click();
   assert.ok(await notice.isVisible(), 'The valid draft warning survives fault dismissal');
+  assert.equal(await page.evaluate(() => demo.card.shadowRoot.activeElement?.dataset.action), 'dismiss-notice',
+    'Focus moves to the visible notice close button');
   assert.match(await notice.innerText(), /Settings changed outside/);
   await page.locator('#card [data-action="dismiss-notice"]').click();
   await page.locator('#card [data-action="open-fault"]').click();
   await page.locator('#card [data-action="dismiss-fault"]').click();
   assert.ok(await notice.isHidden(), 'Status-only updates preserve warning dismissal');
+  assert.equal(await page.evaluate(() => demo.card.shadowRoot.activeElement?.dataset.action), 'open-fault',
+    'Without a visible notice, focus returns to the robot warning');
   await page.evaluate(() => {
     demo.hass.states[demo.entity].state = 'cleaning';
     demo.card.hass = { ...demo.hass };

@@ -490,7 +490,10 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     if (['dismiss-fault', 'open-fault'].includes(el?.dataset.action)) {
       this._headerFaultDismissed = el.dataset.action === 'dismiss-fault';
       this.updateStatus();
-      this.shadowRoot.querySelector(this._headerFaultDismissed ? '.robot-warning' : '.header-fault-close')?.focus({ preventScroll: true });
+      const focusTarget = !this._headerFaultDismissed ? '.header-fault .header-fault-close'
+        : this.shadowRoot.querySelector('.header-notice')?.hidden === false
+          ? '[data-action="dismiss-notice"]' : '.robot-warning';
+      this.shadowRoot.querySelector(focusTarget)?.focus({ preventScroll: true });
       return;
     }
     if (el?.dataset.stationAction) {
