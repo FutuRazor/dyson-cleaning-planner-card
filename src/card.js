@@ -356,6 +356,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       this.clearPendingStart(); this.requestedPlan = null; this.sessionObserved = false;
     }
     this.consumablesOpen = false; this.stationMessage = ''; this.stationError = false;
+    this.robotMessage = ''; this._robotMessageContext = {};
     this.zoneView = false; this.zoneDraft = null;
     this.config = normalized;
     this.setAttribute('data-theme', this.config.theme);
@@ -596,7 +597,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
   }
   toggleConsumables(open) {
     this.consumablesOpen = open;
-    if (open) this.infoTab = 'station';
+    if (open) { this.infoTab = 'station'; this.robotMessage = ''; this._robotMessageContext = {}; }
     this.updateConsumables();
     this.shadowRoot.querySelector(open ? '.consumables-close' : '.consumables-info')?.focus();
   }
@@ -634,8 +635,9 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
   async setRobotSetting(key, value) {
     if (this._previewDialog || this.stationBusy || this.busy || this.controlBusy || !this.consumablesOpen) return;
     this.stationBusy = true; this.robotMessage = ''; this.updateConsumables();
+    const context = this._robotMessageContext;
     try { await changeRobotSetting(this._hass, this.registry, this.config.entity, key, value); }
-    catch (error) { this.robotMessage = error; }
+    catch (error) { if (context === this._robotMessageContext) this.robotMessage = error; }
     finally { this.stationBusy = false; this.updateConsumables(); }
   }
   updateRobotSettings() {

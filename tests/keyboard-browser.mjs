@@ -22,6 +22,21 @@ try {
     assert.equal(await tabs.evaluateAll(items => items.find(el => el === el.getRootNode().activeElement)?.dataset.infoTab), expected);
     assert.equal(await page.locator('#tab-' + expected).getAttribute('aria-selected'), 'true');
   }
+  assert.equal(await page.evaluate(async () => {
+    const card = demo.card;
+    await card.setRobotSetting('invalid_test_setting', true);
+    if (!card.robotMessage) throw new Error('Expected an action error');
+    card.toggleConsumables(false);
+    card.toggleConsumables(true);
+    if (card.robotMessage) throw new Error('Reopening kept the action error');
+    card.robotMessage = 'Old device error';
+    const config = { ...card.config };
+    card.setConfig({ ...config, entity: 'vacuum.other_robot' });
+    const cleared = !card.robotMessage;
+    card.setConfig(config);
+    card.toggleConsumables(true);
+    return cleared;
+  }), true, 'Device change clears robot action errors');
   await page.keyboard.press('Escape');
   // Exercise the real zone overlay without making camera or robot requests.
   await page.evaluate(() => {
