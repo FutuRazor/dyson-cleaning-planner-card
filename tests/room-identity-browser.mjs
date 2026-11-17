@@ -35,6 +35,35 @@ try {
   assert.equal(result.blocked, true);
   assert.equal(result.saved, 'save_room_settings');
   assert.equal(result.started, 'start_rooms_with_settings');
+  for (const action of ['start', 'save']) {
+    await page.reload();
+    await page.locator('#card .rooms').waitFor();
+    const pending = await page.evaluate(async action => {
+      const card = demo.card;
+      demo.hass.states[demo.entity].attributes.map_id = 'A';
+      card.hass = { ...demo.hass };
+      card.selected = [demo.ids[0]];
+      card.settingDraft = { 10: { cleaning_mode: 'Mop' } };
+      card.updateDirty();
+      const context = card.draftContext;
+      let accept;
+      let calls = 0;
+      demo.hass.callService = () => { calls++; return new Promise(resolve => { accept = resolve; }); };
+      card.hass = { ...demo.hass };
+      const operation = card[action]();
+      if (!accept) throw new Error('Expected a pending service call');
+      demo.hass.states[demo.entity].attributes.map_id = 'B';
+      card.hass = { ...demo.hass };
+      accept();
+      await operation;
+      const cleaned = !card.message && !card.busy && !card.saving && !card.pendingStart
+        && !card.requestedPlan && !card.sessionObserved;
+      const retained = card.draftContext === context && card.settingDraft[10]?.cleaning_mode === 'Mop';
+      await card[action]();
+      return { cleaned, retained, calls, blocked: card.error };
+    }, action);
+    assert.deepEqual(pending, { cleaned: true, retained: true, calls: 1, blocked: true }, action);
+  }
   console.log('Map context: stale draft blocked, discard/reselect restores save and start.');
 } finally {
   await browser?.close();

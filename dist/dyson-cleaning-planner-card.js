@@ -2374,7 +2374,14 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       }) };
       this.message = 'Sending room settings and start request …'; this.render();
       const plan = await sendRoomDraft({ hass: this._hass, model, config, selected: [...this.selected], draft: this.settingDraft, start: true, context });
-      if (this.config !== config || !this.isConnected || context !== roomContext(this._hass, config.entity)) return;
+      if (this.config !== config || !this.isConnected) return;
+      if (context !== roomContext(this._hass, config.entity)) {
+        // The command may already be accepted; clear only its stale presentation.
+        this.message = '';
+        this.clearPendingStart(); this.clearSessionEnd();
+        this.requestedPlan = null; this.sessionObserved = false;
+        return;
+      }
       this.settingDraft = {};
       this.requestedPlan = plan;
       this.sessionObserved = cleaningView(this._hass, config.entity).live;
@@ -2407,7 +2414,11 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       await sendRoomDraft({ hass: this._hass, model: this.getModel(), config, draft, context });
       const deadline = Date.now() + 6000;
       while (true) {
-        if (this.config !== config || !this.isConnected || context !== roomContext(this._hass, config.entity)) return;
+        if (this.config !== config || !this.isConnected) return;
+        if (context !== roomContext(this._hass, config.entity)) {
+          this.message = '';
+          return;
+        }
         const model = this.getModel();
         if (Object.entries(draft).every(([id, fields]) => Object.entries(fields).every(([key, value]) => model.rooms.find(r => r.roomId === id)?.settings?.[key]?.value === value))) break;
         if (Date.now() >= deadline) throw new UiError('Save was sent, but Home Assistant has not reflected all values yet. The draft was kept; check the robot before retrying.');
