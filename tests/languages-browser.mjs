@@ -4,7 +4,7 @@ import { previewServer } from '../scripts/preview.mjs';
 const { chromium } = createRequire(import.meta.url)('playwright');
 const server = previewServer();
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
-const browser = await chromium.launch({ channel: 'msedge' });
+const browser = await chromium.launch({ headless: true, ...(process.env.BROWSER_CHANNEL ? { channel: process.env.BROWSER_CHANNEL } : {}) });
 try {
   const page = await browser.newPage({ viewport: { width: 1100, height: 1100 } });
   const errors = [];
@@ -34,8 +34,9 @@ try {
   const saved = await page.evaluate(() => demo.calls[0]);
   assert.equal(saved.service, 'save_room_settings');
   assert.deepEqual(saved.data.room_settings['10'], { cleaning_mode: 'Vacuum and Mop', cleaning_strategy: 'Quiet' });
+  await card.locator('[data-action=dismiss-notice]').click();
   await card.locator('[data-action=consumables]').click();
-  assert.equal(await card.locator('#tab-station').textContent(), 'Stationseinstellungen');
+  assert.equal(await card.locator('#tab-station').textContent(), 'Station');
   const drying = card.locator('[data-station=roller_drying_duration]');
   await drying.selectOption({ label: '4 Stunden' });
   await page.waitForFunction(() => demo.calls.some(call => call.service === 'select_option'));

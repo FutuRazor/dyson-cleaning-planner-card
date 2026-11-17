@@ -6,7 +6,7 @@ const server = previewServer();
 await new Promise(r => server.listen(0, '127.0.0.1', r));
 let browser;
 try {
-  browser = await chromium.launch({ headless: true, channel: 'msedge' });
+  browser = await chromium.launch({ headless: true, ...(process.env.BROWSER_CHANNEL ? { channel: process.env.BROWSER_CHANNEL } : {}) });
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
   const errors = []; page.on('pageerror', e => errors.push(e.message));
   await page.goto(`http://127.0.0.1:${server.address().port}/`);

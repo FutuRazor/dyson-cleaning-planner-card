@@ -4,7 +4,7 @@ import { previewServer } from '../scripts/preview.mjs';
 const { chromium } = createRequire(import.meta.url)('playwright');
 const server = previewServer();
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
-const browser = await chromium.launch({ channel: 'msedge' });
+const browser = await chromium.launch({ headless: true, ...(process.env.BROWSER_CHANNEL ? { channel: process.env.BROWSER_CHANNEL } : {}) });
 try {
   const page = await browser.newPage();
   await page.goto(`http://127.0.0.1:${server.address().port}/`);
