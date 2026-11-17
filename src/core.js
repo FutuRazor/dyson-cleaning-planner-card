@@ -302,7 +302,10 @@ export function consumableStatus(hass, registry, entity) {
   const serial = String(vacuum?.unique_id ?? '').replace(/_vacuum$/, '');
   const suffixes = { brushBar:'brush_bar_usage', mopRoller:'mop_roller_usage', mopPad:'mop_pad_usage', sideBrushes:'side_brushes_usage', robotFilter:'robot_filter_usage', dockFilter:'dock_filter_usage', cleaningSolution:'cleaning_solution' };
   return CONSUMABLES.map(([type, name]) => {
-    const candidates = vacuum?.device_id ? registry.filter(e => e.platform === DOMAIN && e.device_id === vacuum.device_id && !e.disabled_by && e.entity_id.startsWith('sensor.') && (e.unique_id === `${serial}_consumable_${suffixes[type]}` || hass?.states?.[e.entity_id]?.attributes?.consumable_type === type)) : [];
+    const sensors = vacuum?.device_id ? registry.filter(e => e.platform === DOMAIN && e.device_id === vacuum.device_id && !e.disabled_by && e.entity_id.startsWith('sensor.')) : [];
+    const exact = sensors.filter(e => e.unique_id === `${serial}_consumable_${suffixes[type]}`);
+    // Identity takes precedence, including when its sensor is temporarily unavailable.
+    const candidates = exact.length ? exact : sensors.filter(e => hass?.states?.[e.entity_id]?.attributes?.consumable_type === type);
     const state = candidates.length === 1 ? hass?.states?.[candidates[0].entity_id] : null;
     const live = hass?.connected !== false && available(state);
     if (type === 'cleaningSolution') {
