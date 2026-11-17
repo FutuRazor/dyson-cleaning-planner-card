@@ -11,6 +11,17 @@
 - Normalize build line endings for reproducible Windows/Linux bundles.
 - Refresh planner/session screenshots, add a zone screenshot, and set the planned minimum integration version to v2.1.0.
 
+- Add Dutch translations and native language names with language codes in the editor.
+- Hide unsupported room/zone settings, station controls and consumables by device capability, while keeping temporarily unavailable controls visible and disabled. Support mop-pad consumables when provided by the integration.
+- Organize Info into Station, Robot and Consumables tabs. Add voice prompts, stepped volume, child lock and Do Not Disturb controls, with dependent controls disabled when their parent setting is off.
+- Highlight the Consumables tab when supplies need attention and allow Info and zone-settings overlays to close when clicking outside them.
+- Add a configurable header robot illustration, enabled by default, with a dock indicator and an active-cleaning beam without changing header dimensions.
+- Keep a permanent compact status area in Modern, including idle/docked states and drying time/progress. Overlay robot faults and temporary notices on the header without resizing the card; allow dismissed robot faults to be reopened from the warning icon.
+- Return to planning for an error state when the integration explicitly reports that a new clean is allowed.
+- Align Modern cleaning-map spacing with zone planning and reserve space for room badges or the requested zone dimensions.
+- Replace the zone resize button with a corner-centered circular handle and larger touch target. Move dimensions into a floating badge and enforce a trial 55 cm minimum on each side.
+- Add automatic cm/inch display and a zone_dimension_unit override. Off hides only the selection badge; session dimensions then follow Home Assistant's units.
+
 Release preparation: confirm the upstream integration v2.1.0 release contains the zone action and calibration before publishing. Other models still need hardware confirmation.
 
 ## v1.3.0

@@ -134,28 +134,33 @@ The trash icon beside **Local draft** discards unsaved changes. Reloading the ca
 
 ### Clean a zone
 
-Choose **Zone** below the header to clean a specific area instead of whole rooms. A blue rectangle appears on the map: drag it to move it and use the corner handle to resize it. The handle moves inward near the image edges so it stays reachable.
+Choose **Zone** below the header to clean a specific area instead of whole rooms. A blue rectangle appears on the map: drag it to move it and use the corner handle to resize it. The circular resize handle stays anchored to the corner and has an enlarged touch target. A floating badge shows the dimensions without covering small zones. The current minimum is **55 × 55 cm** per rectangle; this is a card-side trial limit, not a confirmed robot limit.
 
 The button beside Reload shows the current cleaning mode. Open it to choose **Vacuum**, **Vacuum and Mop**, **Mop**, or **Vacuum then Mop**, plus the relevant power, water level and repetitions. Settings stay local until **Start clean**. With **Vacuum then Mop**, **Mop repetitions** controls the wiping passes; vacuuming runs once.
 
 Switching between **Rooms** and **Zone** keeps your local plans. Reload fetches a fresh map and preserves the rectangle when the map and its coordinates are unchanged. Map rotation also applies to zone selection. One rectangular zone is supported at a time; zone cleaning has been hardware-tested on the Spot+Scrub AI, while other models still need confirmation.
 
+Zone dimensions follow Home Assistant's unit system by default, using **cm** or whole **inches**. In the editor, choose **Automatic**, **cm**, **inch**, or **Off**. Off hides only the selection badge; dimensions shown during a cleaning session still use Home Assistant's units.
+
 ### During and after cleaning
 
-The card switches to a cleaning view with robot status, room badges when known, and an optional live map. Use **Pause**, **Resume**, or **Home** as available.
+The card switches to a cleaning view with robot status, room badges when known, and an optional live map. A zone started from this card shows its dimensions instead of room badges. Use **Pause**, **Resume**, or **Home** as available. In Modern, the map uses the same inset spacing as zone planning, with a reserved area above it for these badges.
 
 Dock activity appears below the header, including dust-bin emptying, roller washing and drying. Drying shows the remaining time and a progress bar when available, with a button to cancel it. New cleaning starts follow the integration's readiness checks; starting during drying is allowed.
 
-### Station settings and consumables
+In Modern, a permanent compact status line sits below the header, including **Docked** when idle at the station. Drying time and its slim progress bar use the reserved status area. Temporary action and map notices overlay the header without increasing the card height and clear when their underlying message clears. Robot errors also appear over the header; dismissing one leaves a warning on the robot icon, which reopens the message. The status line remains visible. A reported error does not lock the card in the cleaning view when the integration explicitly allows a new start.
 
-The **Info** button opens two tabs:
+### Station, robot settings and consumables
 
-- **Station settings:** hot-water options, cleaning solution, extended roller preparation, self-cleaning frequency and drying duration, plus **Empty dust bin**, **Wash mop roller** and **Dry mop roller**.
-- **Consumables:** remaining life for the brush bar, mop roller, side brushes and filters, plus cleaning-solution availability and whether its use is enabled.
+The **Info** button opens three tabs:
 
-Controls depend on the entities and actions provided by your installed integration. Newer actions such as **Dry mop roller** require a version that provides them; unavailable controls cannot be used.
+- **Station:** hot-water options, cleaning solution, extended roller preparation, self-cleaning frequency and drying duration, plus **Empty dust bin**, **Wash mop roller** and **Dry mop roller**.
+- **Robot:** voice prompts, volume in 10% steps, child lock, and Do Not Disturb with start/end times. Volume is disabled while voice prompts are off; DND times are disabled while DND is off.
+- **Consumables:** remaining life for supported parts, including the brush bar, mop roller or pads, side brushes and filters, plus cleaning-solution availability and whether its use is enabled.
 
-**Station settings take effect immediately** and are separate from the room draft. Consumable bars change from the theme accent to orange and red as their remaining life decreases. The Info button highlights red when a consumable needs attention.
+Only settings and consumables supported by the selected device and exposed by the integration are shown. This applies to room and zone settings as well as the Info tabs. Temporary unavailability or a busy robot disables existing controls rather than removing them.
+
+**Station and Robot settings take effect immediately** and are separate from the cleaning drafts. Consumable bars change from the theme accent to orange and red as their remaining life decreases. Both the Info button and Consumables tab highlight red when a consumable needs attention. Click outside the Info or zone-settings overlay to close it.
 
 ## Customization
 
@@ -171,7 +176,9 @@ Additional languages can be added through the [translation guide](docs/translati
 
 Choose **Modern** (default) or **Classic** in the card editor's **Theme** setting. Modern uses numbered selection circles, discrete sliders for Vacuum Power and Water level, and buttons for Clean repetitions. At card widths of 480 px or more, the open room's settings appear beside the room list; narrower cards expand them inline. Both themes use the same local draft and send selected rooms in click order. In the wide layout, changing cleaning modes preserves the settings-panel height. Room tiles become more compact from five displayed rooms onward; exactly five rows align with the settings panel.
 
-Open **Edit dashboard**, then edit the card to change its title, room visibility and display order, optional map and map rotation. You can also choose whether unavailable settings are hidden or disabled, and whether settings irrelevant to the selected cleaning mode remain visible.
+Open **Edit dashboard**, then edit the card to change its title, room visibility and display order, optional map and map rotation. You can also choose whether supported settings irrelevant to the selected cleaning mode remain visible. Unsupported settings are always hidden.
+
+The header subtitle identifies the selected vacuum. **Header icon style** offers the default **Integration** robot illustration or the original **Home Assistant** icon, without changing the header size. The illustration adds a dock below the robot when docked and a green beam during active cleaning.
 
 The **status bar** shows station preferences and battery status. Disable the entire bar or hide individual indicators in the editor. Battery percentage is optional and off by default.
 
@@ -208,7 +215,7 @@ These options belong in the individual card's code editor, not in `configuration
 
 ## Limitations and troubleshooting
 
-- The card relies on the integration for room data, robot status and supported actions. Room badges may show the request made from this card; they are not confirmed per-room progress.
+- The card relies on the integration for room data, robot status and supported actions. Room badges and zone dimensions may show the request made from this card; they are not confirmed cleaning progress and are not retained after reloading the card.
 - On upgrade, cards without an explicit `theme` use Modern. Select Classic in the editor to retain the previous layout.
 - After changes to the robot's map, use **Refresh rooms** below the room order in the card editor if needed.
 - Zone selection needs a calibrated camera image from the matching integration. If the image cannot be verified, Start stays disabled. Reload the map; if the problem persists, check the integration version. Installing the regular integration instead of the zone-enabled build leaves the required map information missing.
