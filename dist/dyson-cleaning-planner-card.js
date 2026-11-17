@@ -823,9 +823,13 @@ function normalizeConfig(config) {
   return { ...config, header_icon_style: config.header_icon_style ?? 'integration', zone_dimension_unit: config.zone_dimension_unit ?? 'auto', language: config.language ?? 'auto', theme: config.theme ?? 'modern', show_battery_percentage: config.show_battery_percentage ?? false, show_status_bar: config.show_status_bar ?? true, hidden_status_items: config.hidden_status_items ?? [], title: config.title ?? '', always_show_all_settings: config.always_show_all_settings ?? false, unsupported_settings: 'hidden', excluded_rooms: config.excluded_rooms ?? [], room_order: config.room_order ?? [], show_camera: config.show_camera ?? true, camera_rotation: config.camera_rotation ?? 0 };
 }
 
+// A missing map ID remains compatible with integrations that do not expose it.
+const roomContext = (hass, entity) => JSON.stringify([entity, hass?.states?.[entity]?.attributes?.map_id == null ? null : String(hass.states[entity].attributes.map_id)]);
+
 // Entity IDs are user-editable. Match registry identity within ONE integration device.
 function discover(hass, registry, config, previousRooms = []) {
   const issues = [];
+  const context = roomContext(hass, config.entity);
   const vacuum = registry.find(e => e.entity_id === config.entity && e.platform === DOMAIN && !e.disabled_by);
   if (!vacuum?.device_id) return { rooms: [], issues: ['The Dyson device was not found in the entity registry.'] };
   const entries = registry.filter(e => e.device_id === vacuum.device_id && e.platform === DOMAIN && !e.disabled_by);
@@ -853,7 +857,7 @@ function discover(hass, registry, config, previousRooms = []) {
       const candidates = entries.filter(e => e.entity_id.startsWith('select.') && e.unique_id === `${entry.unique_id}_${key}`);
       if (candidates.length !== 1) continue;
       const entity = candidates[0].entity_id, state = hass.states[entity];
-      const previous = previousRooms.find(r => r.entity === entry.entity_id);
+      const previous = previousRooms.find(r => r.entity === entry.entity_id && r.context === context);
       const prior = previous?.settings?.[key]?.entity === entity ? previous.settings[key] : undefined;
       const nativeId = state?.attributes?.room_id ?? (!available(state) ? previous?.roomId : undefined);
       const options = state?.attributes?.options;
@@ -864,7 +868,7 @@ function discover(hass, registry, config, previousRooms = []) {
         available: hass.connected !== false && available(state) };
     }
     const roomId = roomIds.size === 1 ? [...roomIds][0] : undefined;
-    return [{ name, entity: entry.entity_id, roomId, settings, available: available(hass.states[entry.entity_id]), excluded: config.excluded_rooms.includes(entry.entity_id) }];
+    return [{ name, entity: entry.entity_id, context, roomId, settings, available: available(hass.states[entry.entity_id]), excluded: config.excluded_rooms.includes(entry.entity_id) }];
   });
   const ids = rooms.map(r => r.entity).filter(Boolean);
   if (new Set(ids).size !== ids.length) issues.push('Multiple rooms map to the same switch.');
@@ -889,7 +893,8 @@ function batteryStatus(hass, model) {
 // Only the integration converts labels to Dyson protocol values. One HA action
 // receives the complete draft; never fan out to select.select_option here.
 const draftRequests = new Set();
-async function sendRoomDraft({ hass, model, config, selected = [], draft = {}, start = false }) {
+async function sendRoomDraft({ hass, model, config, selected = [], draft = {}, start = false, context = roomContext(hass, config.entity) }) {
+  if (context !== roomContext(hass, config.entity)) throw new UiError('A room in your draft is unavailable or ambiguous. Review or discard the draft.');
   const service = start ? 'start_rooms_with_settings' : 'save_room_settings';
   if (hass?.connected === false) throw new UiError('Home Assistant is not connected.');
   if (!hass.services?.[DOMAIN]?.[service]) throw new UiError('Update the Dyson integration: {action} is unavailable.', { action: `${DOMAIN}.${service}` });
@@ -906,7 +911,15 @@ async function sendRoomDraft({ hass, model, config, selected = [], draft = {}, s
   const resolve = id => {
     const rooms = byId.get(id);
     if (rooms?.length !== 1 || !rooms[0].available || rooms[0].excluded) throw new UiError('A room in your draft is unavailable or ambiguous. Review or discard the draft.');
-    return rooms[0];
+    const room = rooms[0];
+    const liveIds = new Set(Object.values(room.settings ?? {}).flatMap(field => {
+      const state = hass.states[field.entity];
+      const nativeId = state?.attributes?.room_id;
+      return available(state) && nativeId != null && String(nativeId) !== '' ? [String(nativeId)] : [];
+    }));
+    if (room.context !== context || liveIds.size !== 1 || !liveIds.has(String(id)))
+      throw new UiError('A selected room has no stable room ID. Refresh rooms and check the integration.');
+    return room;
   };
   const settings = {};
   for (const [id, values] of Object.entries(draft)) {
@@ -2228,6 +2241,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
   getGridOptions() { return { columns: 12, min_columns: 9, rows: 'auto', min_rows: 1 }; }
   getModel() { return discover(this._hass, this.registry, this.config, this.lastRooms); }
   resetDraft(clearMessage = true) {
+    this.draftContext = roomContext(this._hass, this.config.entity);
     this.selected = this.model.rooms.filter(r => !r.excluded && r.available && this._hass.states[r.entity]?.state === 'on').map(r => r.entity);
     this.settingDraft = {};
     this.baseline = this.liveSignature(); this.dirty = false;
@@ -2245,7 +2259,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     const previous = this.model;
     this.model = this.getModel();
     // Preserve a local selection across entity renames using the robot's room ID.
-    if (this.dirty && previous) this.selected = this.selected.map(entity => {
+    if (this.dirty && previous && this.draftContext === roomContext(this._hass, this.config.entity)) this.selected = this.selected.map(entity => {
       const id = previous.rooms.find(r => r.entity === entity)?.roomId;
       const matches = this.model.rooms.filter(r => id && r.roomId === id);
       return matches.length === 1 ? matches[0].entity : entity;
@@ -2344,7 +2358,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     if (this._previewDialog || this.busy || this.view.active || !this.isConnected) return;
     this.clearSessionEnd();
     this.busy = true; this.error = false;
-    const config = this.config;
+    const config = this.config, context = this.draftContext;
     try {
       if (this.registryError) throw new UiError(this.registryError);
       const model = this.getModel();
@@ -2355,8 +2369,8 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
         return { entity_id: entity, room_id: room?.roomId, name: room?.name ?? entity };
       }) };
       this.message = 'Sending room settings and start request …'; this.render();
-      const plan = await sendRoomDraft({ hass: this._hass, model, config, selected: [...this.selected], draft: this.settingDraft, start: true });
-      if (this.config !== config || !this.isConnected) return;
+      const plan = await sendRoomDraft({ hass: this._hass, model, config, selected: [...this.selected], draft: this.settingDraft, start: true, context });
+      if (this.config !== config || !this.isConnected || context !== roomContext(this._hass, config.entity)) return;
       this.settingDraft = {};
       this.requestedPlan = plan;
       this.sessionObserved = cleaningView(this._hass, config.entity).live;
@@ -2382,14 +2396,14 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
   }
   async save() {
     if (this._previewDialog || this.busy || this.view.active || !this.isConnected) return;
-    const config = this.config, draft = structuredClone(this.settingDraft);
+    const config = this.config, context = this.draftContext, draft = structuredClone(this.settingDraft);
     this.busy = true; this.saving = true; this.error = false;
     this.message = 'Saving room settings …'; this.render();
     try {
-      await sendRoomDraft({ hass: this._hass, model: this.getModel(), config, draft });
+      await sendRoomDraft({ hass: this._hass, model: this.getModel(), config, draft, context });
       const deadline = Date.now() + 6000;
       while (true) {
-        if (this.config !== config || !this.isConnected) return;
+        if (this.config !== config || !this.isConnected || context !== roomContext(this._hass, config.entity)) return;
         const model = this.getModel();
         if (Object.entries(draft).every(([id, fields]) => Object.entries(fields).every(([key, value]) => model.rooms.find(r => r.roomId === id)?.settings?.[key]?.value === value))) break;
         if (Date.now() >= deadline) throw new UiError('Save was sent, but Home Assistant has not reflected all values yet. The draft was kept; check the robot before retrying.');
