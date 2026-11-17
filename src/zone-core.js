@@ -97,12 +97,12 @@ export function adjustZone(rect, dx, dy, resize, minimum) {
   const w=x2-x,h=y2-y,nx=Math.max(0,Math.min(1-w,x+dx)),ny=Math.max(0,Math.min(1-h,y+dy));
   return [nx,ny,nx+w,ny+h];
 }
-export function zonePillPosition(rect, width, height, pillWidth, pillHeight, gap=6) {
-  const [x,y,x2,y2]=rect;
-  const left=Math.max(0,Math.min(width-pillWidth,(x+x2)*width/2-pillWidth/2));
-  const above=y*height-pillHeight-gap;
-  const top=above>=0 ? above : Math.min(height-pillHeight,y2*height+gap);
-  return [left,Math.max(0,top)];
+export function zonePillPosition(rect, width, height, pillWidth, pillHeight, gap=6, horizontalOverflow=14) {
+  const [x,y,x2]=rect;
+  // Use the map frame's free margin, keeping six screen pixels to the card
+  // edge. The pill stays above the zone using the existing space above the map.
+  const left=Math.max(-horizontalOverflow,Math.min(width+horizontalOverflow-pillWidth,(x+x2)*width/2-pillWidth/2));
+  return [left,y*height-pillHeight-gap];
 }
 
 // Presentation only: robot geometry and minimum sizes remain metric.

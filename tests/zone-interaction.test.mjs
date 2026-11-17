@@ -12,11 +12,13 @@ test('minimum zones move away from corners without resizing and resize independe
  assert.equal(tiny[0],.2);assert.equal(tiny[1],.3);
  assert.ok(Math.abs(tiny[2]-.255)<1e-10);
 });
-test('dimension pill flips below at top and stays inside horizontal and vertical edges',()=>{
+test('dimension pill stays above the zone and uses the map frame margins',()=>{
  assert.deepEqual(zonePillPosition([.4,.4,.6,.6],400,300,100,24),[150,90]);
- assert.deepEqual(zonePillPosition([0,0,.1,.1],400,300,100,24),[0,36]);
- assert.deepEqual(zonePillPosition([.9,0,1,.1],400,300,100,24),[300,36]);
- assert.deepEqual(zonePillPosition([0,0,1,1],400,300,100,24),[150,276]);
+ assert.deepEqual(zonePillPosition([0,0,.1,.1],400,300,100,24),[-14,-30]);
+ assert.deepEqual(zonePillPosition([.9,0,1,.1],400,300,100,24),[314,-30]);
+ assert.deepEqual(zonePillPosition([0,0,1,1],400,300,100,24),[150,-30]);
+ // SVG coordinates scale with the image; screen margins stay constant.
+ assert.deepEqual(zonePillPosition([0,0,.1,.1],800,600,200,48,12,28),[-28,-60]);
 });
 
 test('dimension text follows HA length units without rounding before conversion',()=>{

@@ -309,7 +309,7 @@ class DysonPlannerZone extends HTMLElement {
         const caption=zoneDimensionText(cmWidth,cmHeight,lengthUnit);
         text.textContent=caption; text.style.fontSize=`${12*scale}px`;
         const pillWidth=text.getComputedTextLength()+16*scale,pillHeight=24*scale;
-        const [left,top]=zonePillPosition(this.rect,this.width,this.height,pillWidth,pillHeight,6*scale);
+        const [left,top]=zonePillPosition(this.rect,this.width,this.height,pillWidth,pillHeight,6*scale,14*scale);
         label.toggleAttribute('hidden', this.dimensionUnit === 'off');
         label.setAttribute('transform',`translate(${left} ${top})`);
         text.setAttribute('x',pillWidth/2); text.setAttribute('y',pillHeight/2);

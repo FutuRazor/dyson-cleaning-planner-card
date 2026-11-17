@@ -1436,12 +1436,12 @@ function adjustZone(rect, dx, dy, resize, minimum) {
   const w=x2-x,h=y2-y,nx=Math.max(0,Math.min(1-w,x+dx)),ny=Math.max(0,Math.min(1-h,y+dy));
   return [nx,ny,nx+w,ny+h];
 }
-function zonePillPosition(rect, width, height, pillWidth, pillHeight, gap=6) {
-  const [x,y,x2,y2]=rect;
-  const left=Math.max(0,Math.min(width-pillWidth,(x+x2)*width/2-pillWidth/2));
-  const above=y*height-pillHeight-gap;
-  const top=above>=0 ? above : Math.min(height-pillHeight,y2*height+gap);
-  return [left,Math.max(0,top)];
+function zonePillPosition(rect, width, height, pillWidth, pillHeight, gap=6, horizontalOverflow=14) {
+  const [x,y,x2]=rect;
+  // Use the map frame's free margin, keeping six screen pixels to the card
+  // edge. The pill stays above the zone using the existing space above the map.
+  const left=Math.max(-horizontalOverflow,Math.min(width+horizontalOverflow-pillWidth,(x+x2)*width/2-pillWidth/2));
+  return [left,y*height-pillHeight-gap];
 }
 
 // Presentation only: robot geometry and minimum sizes remain metric.
@@ -1759,7 +1759,7 @@ class DysonPlannerZone extends HTMLElement {
         const caption=zoneDimensionText(cmWidth,cmHeight,lengthUnit);
         text.textContent=caption; text.style.fontSize=`${12*scale}px`;
         const pillWidth=text.getComputedTextLength()+16*scale,pillHeight=24*scale;
-        const [left,top]=zonePillPosition(this.rect,this.width,this.height,pillWidth,pillHeight,6*scale);
+        const [left,top]=zonePillPosition(this.rect,this.width,this.height,pillWidth,pillHeight,6*scale,14*scale);
         label.toggleAttribute('hidden', this.dimensionUnit === 'off');
         label.setAttribute('transform',`translate(${left} ${top})`);
         text.setAttribute('x',pillWidth/2); text.setAttribute('y',pillHeight/2);
