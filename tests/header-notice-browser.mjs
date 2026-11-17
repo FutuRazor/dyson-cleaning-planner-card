@@ -37,5 +37,40 @@ try {
   assert.ok(await page.locator('#card .header-fault').isVisible());
   assert.ok(await page.locator('#card .header-notice').isHidden());
   assert.ok(await page.locator('#card .activity-status').isVisible());
+  await page.evaluate(() => {
+    demo.hass.states[demo.entity].state = 'docked';
+    demo.card.message = '';
+    demo.savedActions = { ...demo.hass.services.dyson_spot_scrub };
+    delete demo.hass.services.dyson_spot_scrub.save_room_settings;
+    demo.card.hass = { ...demo.hass };
+  });
+  const notice = page.locator('#card .header-notice');
+  assert.ok(await notice.isVisible());
+  await page.locator('#card [data-action="dismiss-notice"]').click();
+  for (let i = 0; i < 3; i++) {
+    await page.evaluate(() => { demo.card.hass = { ...demo.hass }; });
+    assert.ok(await notice.isHidden(), 'Telemetry must not revive the dismissed planner notice');
+  }
+  // A genuinely different notice must still be shown.
+  await page.evaluate(() => {
+    demo.hass.services.dyson_spot_scrub = demo.savedActions;
+    demo.card.selected = [demo.ids[0]];
+    demo.card.dirty = true;
+    demo.card.baseline = 'older room settings';
+    demo.card.hass = { ...demo.hass };
+  });
+  assert.ok(await notice.isVisible());
+  assert.match(await notice.innerText(), /Settings changed outside/);
+  await page.locator('#card [data-action="dismiss-notice"]').click();
+  await page.evaluate(() => { demo.card.hass = { ...demo.hass }; });
+  assert.ok(await notice.isHidden());
+  // Once a notice genuinely clears, its later recurrence is new.
+  await page.evaluate(() => { demo.card.resetDraft(); demo.card.render(); });
+  assert.ok(await notice.isHidden());
+  await page.evaluate(() => {
+    demo.card.dirty = true; demo.card.baseline = 'older room settings';
+    demo.card.render();
+  });
+  assert.ok(await notice.isVisible());
   console.log('Header notices: stable planner/session heights, neutral style, clearing and fault priority passed.');
 } finally { await browser.close(); server.close(); }
