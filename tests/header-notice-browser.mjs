@@ -72,5 +72,31 @@ try {
     demo.card.render();
   });
   assert.ok(await notice.isVisible());
+  // Dismissing a start-ready fault is a status-only update, not a new planner calculation.
+  await page.evaluate(() => {
+    demo.hass.states[demo.entity].state = 'error';
+    demo.hass.states[demo.entity].attributes.ready_to_start = true;
+    demo.card.hass = { ...demo.hass };
+  });
+  assert.ok(await page.locator('#card .header-fault').isVisible());
+  await page.locator('#card [data-action="dismiss-fault"]').click();
+  assert.ok(await notice.isVisible(), 'The valid draft warning survives fault dismissal');
+  assert.match(await notice.innerText(), /Settings changed outside/);
+  await page.locator('#card [data-action="dismiss-notice"]').click();
+  await page.locator('#card [data-action="open-fault"]').click();
+  await page.locator('#card [data-action="dismiss-fault"]').click();
+  assert.ok(await notice.isHidden(), 'Status-only updates preserve warning dismissal');
+  await page.evaluate(() => {
+    demo.hass.states[demo.entity].state = 'cleaning';
+    demo.card.hass = { ...demo.hass };
+  });
+  assert.equal(await page.evaluate(() => demo.card._plannerNotice), '', 'Session explicitly clears planner warnings');
+  await page.evaluate(() => {
+    demo.hass.states[demo.entity].state = 'docked';
+    demo.card.hass = { ...demo.hass };
+  });
+  // Use the normal view switch, leaving any header notice unrelated to navigation intact.
+  await page.locator('#card [data-action="zones"]').click();
+  assert.equal(await page.evaluate(() => demo.card._plannerNotice), '', 'Zone explicitly clears planner warnings');
   console.log('Header notices: stable planner/session heights, neutral style, clearing and fault priority passed.');
 } finally { await browser.close(); server.close(); }

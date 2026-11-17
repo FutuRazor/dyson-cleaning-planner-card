@@ -786,7 +786,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       if (item) { item.inert = open || faultOpen; item.style.visibility = open || faultOpen ? 'hidden' : ''; }
     }
   }
-  updateStatus(plannerNotice = '') {
+  updateStatus(plannerNotice = this._plannerNotice ?? '') {
     this._plannerNotice = plannerNotice;
     let status = activityStatus(this._hass, this.config.entity, (this.busy && !this.saving) || this.pendingStart);
     const modern = this.config.theme === 'modern';
@@ -871,7 +871,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     const root = this.shadowRoot;
     this.updateBattery();
     this.updateConsumables();
-    this.updateStatus();
+    this.updateStatus('');
     if (view.simulated && this.config.theme !== 'modern') root.querySelector('.activity-status').hidden = true;
     const title = root.querySelector('.header-title h2');
     title.classList.add('session-title');
@@ -953,7 +953,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     this.paint(`<style>${styles}</style><ha-card><div class="planner-content">${this.headerHtml()}${this.statusHtml()}${this.planningTabsHtml()}<div id="planning-panel-rooms" role="tabpanel" aria-labelledby="planning-tab-rooms" hidden></div><dyson-planner-zone id="planning-panel-zones" role="tabpanel" aria-labelledby="planning-tab-zones"></dyson-planner-zone></div>${this.consumablesHtml()}</ha-card>`, 'zone');
     const title = this.shadowRoot.querySelector('.header-title h2');
     if (title.textContent !== this.t('Zone cleaning')) title.textContent = this.t('Zone cleaning');
-    this.updateBattery(); this.updateConsumables(); this.updateStatus();
+    this.updateBattery(); this.updateConsumables(); this.updateStatus('');
     const camera = this.model.cameraEntity;
     const robotEntry = this.registry.find(e => e.entity_id === this.config.entity);
     const cameraEntry = this.registry.find(e => e.entity_id === camera);
