@@ -46,6 +46,25 @@ try {
     assert.equal(await zone.locator('[data-do="add"]').count(),0);
     assert.equal(await zone.locator('[data-do="remove"]').count(),0);
     assert.equal(await zone.locator('[data-do="start"]').isEnabled(),true);
+    // Mode changes update readiness synchronously, without telemetry or a resize.
+    await zone.evaluate(el => {
+      const waterAvailable = el.capabilities.water.available;
+      const mode = el.shadowRoot.querySelector('#zone-mode');
+      const start = el.shadowRoot.querySelector('[data-do="start"]');
+      const rect = JSON.stringify(el.rect);
+      const change = value => {
+        mode.value = value;
+        mode.dispatchEvent(new Event('change', { bubbles: true }));
+      };
+      el.capabilities.water.available = false;
+      change('mop');
+      if (!start.disabled) throw new Error('Mop must immediately block without water settings');
+      change('vacuum');
+      if (start.disabled) throw new Error('Vacuum must immediately enable without water settings');
+      if (JSON.stringify(el.rect) !== rect) throw new Error('Settings changed the zone geometry');
+      el.capabilities.water.available = waterAvailable;
+      el.labels(); el.draw();
+    });
     // Telemetry updates preserve both the component and the local rectangle.
     await page.evaluate(() => {
       const zone=demo.card.shadowRoot.querySelector('dyson-planner-zone'); window.originalZone=zone;

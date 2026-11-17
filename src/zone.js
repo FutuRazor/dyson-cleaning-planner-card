@@ -78,15 +78,15 @@ class DysonPlannerZone extends HTMLElement {
     });
     this.shadowRoot.querySelector('.zone-power').addEventListener('input', event => {
       if (this.sending) return;
-      this.strategy = this.capabilities.strategy.options[Number(event.target.value)]?.[1]; this.labels();
+      this.strategy = this.capabilities.strategy.options[Number(event.target.value)]?.[1]; this.labels(); this.draw();
     });
     this.shadowRoot.querySelector('#zone-mode').addEventListener('change', event => {
       if (this.sending) return;
-      this.mode=event.target.value; event.target.blur(); this.labels();
+      this.mode=event.target.value; event.target.blur(); this.labels(); this.draw();
     });
     this.shadowRoot.querySelector('#zone-water').addEventListener('input', event => {
       if (this.sending) return;
-      this.water=this.capabilities.water.options[Number(event.target.value)]?.[1]; this.labels();
+      this.water=this.capabilities.water.options[Number(event.target.value)]?.[1]; this.labels(); this.draw();
     });
     this.svg = this.shadowRoot.querySelector('svg');
     this.image = this.shadowRoot.querySelector('image');
@@ -97,10 +97,10 @@ class DysonPlannerZone extends HTMLElement {
     this.shadowRoot.addEventListener('click', event => {
       if (event.target === this.dialog) { this.closeSettings(); return; }
       const power = event.target.closest('[data-power]');
-      if (power && !power.disabled && !this.sending) { this.shadowRoot.querySelector('.zone-power').value=power.dataset.power; this.strategy=this.capabilities.strategy.options[Number(power.dataset.power)]?.[1]; this.labels(); return; }
+      if (power && !power.disabled && !this.sending) { this.shadowRoot.querySelector('.zone-power').value=power.dataset.power; this.strategy=this.capabilities.strategy.options[Number(power.dataset.power)]?.[1]; this.labels(); this.draw(); return; }
       const water=event.target.closest('[data-water]'), passes=event.target.closest('[data-passes]');
-      if (water && !water.disabled && !this.sending) { this.water=this.capabilities.water.options[Number(water.dataset.water)]?.[1]; this.labels(); return; }
-      if (passes && !passes.disabled && !this.sending) { this.passes=Number(passes.dataset.passes); this.labels(); return; }
+      if (water && !water.disabled && !this.sending) { this.water=this.capabilities.water.options[Number(water.dataset.water)]?.[1]; this.labels(); this.draw(); return; }
+      if (passes && !passes.disabled && !this.sending) { this.passes=Number(passes.dataset.passes); this.labels(); this.draw(); return; }
       const action = event.target.closest('button')?.dataset.do;
       if (!action || event.target.closest('button').disabled) return;
       if (action === 'refresh') this.load();
