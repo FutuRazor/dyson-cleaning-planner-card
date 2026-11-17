@@ -178,7 +178,7 @@ Choose **Modern** (default) or **Classic** in the card editor's **Theme** settin
 
 Open **Edit dashboard**, then edit the card to change its title, room visibility and display order, optional map and map rotation. You can also choose whether supported settings irrelevant to the selected cleaning mode remain visible. Unsupported settings are always hidden.
 
-The header subtitle identifies the selected vacuum. **Header icon style** offers the default **Integration** robot illustration or the original **Home Assistant** icon, without changing the header size. The illustration adds a dock below the robot when docked and a green beam during active cleaning.
+The header subtitle identifies the selected vacuum. **Header icon style** offers the default **Integration** robot illustration or the original **Home Assistant** icon, without changing the header size. The illustration adds a dock below the robot when docked and a green beam during active cleaning. Its bumper follows the camera's `robot_bumper_color` while cleaning, pulses in the Pause button colour when paused, and pulses red for a robot error. Idle states use subdued grey; missing cleaning colours or a disconnected robot use light grey. Reduced-motion preferences disable pulsing.
 
 The **status bar** shows station preferences and battery status. Disable the entire bar or hide individual indicators in the editor. Battery percentage is optional and off by default.
 

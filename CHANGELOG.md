@@ -2,6 +2,8 @@
 
 ## v1.4.0
 
+- Follow the integration camera's bumper colour during cleaning; pulse the bumper in the Pause colour when paused or red on errors, with neutral idle/offline colours and reduced-motion support.
+
 - Add Rooms and Zone planning tabs with independent local drafts.
 - Select one movable, resizable rectangle on a verified camera snapshot, including rotated maps and touch controls.
 - Add zone settings for all four cleaning modes, vacuum power, water level and repetitions. Vacuum then Mop exposes mop repetitions and keeps one vacuum pass.
