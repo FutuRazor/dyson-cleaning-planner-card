@@ -47,6 +47,8 @@ try {
   const notice = page.locator('#card .header-notice');
   assert.ok(await notice.isVisible());
   await page.locator('#card [data-action="dismiss-notice"]').click();
+  assert.equal(await page.evaluate(() => demo.card.shadowRoot.activeElement?.dataset.action), 'consumables',
+    'Without a fault, dismissing a notice focuses Info');
   for (let i = 0; i < 3; i++) {
     await page.evaluate(() => { demo.card.hass = { ...demo.hass }; });
     assert.ok(await notice.isHidden(), 'Telemetry must not revive the dismissed planner notice');
@@ -85,6 +87,8 @@ try {
     'Focus moves to the visible notice close button');
   assert.match(await notice.innerText(), /Settings changed outside/);
   await page.locator('#card [data-action="dismiss-notice"]').click();
+  assert.equal(await page.evaluate(() => demo.card.shadowRoot.activeElement?.dataset.action), 'open-fault',
+    'With a dismissed fault, dismissing a notice focuses the visible warning');
   await page.locator('#card [data-action="open-fault"]').click();
   await page.locator('#card [data-action="dismiss-fault"]').click();
   assert.ok(await notice.isHidden(), 'Status-only updates preserve warning dismissal');

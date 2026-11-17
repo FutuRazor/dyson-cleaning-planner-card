@@ -486,7 +486,15 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
   onClick(event) {
     if (event.target.classList?.contains("consumables-overlay")) { this.toggleConsumables(false); return; }
     const el = event.target.closest('button, ha-button');
-    if (el?.dataset.action === 'dismiss-notice') { this._dismissedNotice = this._noticeText; this.updateHeaderNotice(); return; }
+    if (el?.dataset.action === 'dismiss-notice') {
+      this._dismissedNotice = this._noticeText;
+      this.updateHeaderNotice();
+      const target = ['.robot-warning', '.consumables-info'].map(selector => this.shadowRoot.querySelector(selector))
+        .find(control => control && !control.disabled && !control.closest('[hidden], [inert]')
+          && control.getClientRects().length && getComputedStyle(control).visibility === 'visible');
+      target?.focus({ preventScroll: true });
+      return;
+    }
     if (['dismiss-fault', 'open-fault'].includes(el?.dataset.action)) {
       this._headerFaultDismissed = el.dataset.action === 'dismiss-fault';
       this.updateStatus();
