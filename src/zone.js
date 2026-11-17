@@ -68,10 +68,12 @@ class DysonPlannerZone extends HTMLElement {
     this.dialog.addEventListener('keydown', event => {
       if (event.key === 'Escape') { event.preventDefault(); this.closeSettings(); }
       if (event.key === 'Tab') {
-        const items=[...this.dialog.querySelectorAll('button:not(:disabled),select:not(:disabled),input:not(:disabled)')];
+        const items=[...this.dialog.querySelectorAll('button:not(:disabled),select:not(:disabled),input:not(:disabled)')]
+          .filter(el => el.tabIndex >= 0 && !el.closest('[hidden], [inert]') && el.getClientRects().length
+            && getComputedStyle(el).visibility === 'visible');
         const first=items[0],last=items.at(-1),active=this.shadowRoot.activeElement;
-        if (event.shiftKey && active===first) { event.preventDefault(); last.focus({preventScroll:true}); }
-        else if (!event.shiftKey && active===last) { event.preventDefault(); first.focus({preventScroll:true}); }
+        if (event.shiftKey && active===first) { event.preventDefault(); last?.focus({preventScroll:true}); }
+        else if (!event.shiftKey && active===last) { event.preventDefault(); first?.focus({preventScroll:true}); }
       }
     });
     this.shadowRoot.querySelector('.zone-power').addEventListener('input', event => {

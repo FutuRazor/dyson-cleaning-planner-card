@@ -329,7 +329,10 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       }
       if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key) && event.target.dataset.infoTab) {
         event.preventDefault();
-        this.infoTab = event.key === 'Home' ? 'station' : event.key === 'End' ? 'consumables' : this.infoTab === 'station' ? 'consumables' : 'station';
+        const tabs = ['station', 'robot', 'consumables'];
+        const index = tabs.indexOf(event.target.dataset.infoTab);
+        this.infoTab = event.key === 'Home' ? tabs[0] : event.key === 'End' ? tabs.at(-1)
+          : tabs[(index + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length];
         this.updateConsumables(); this.shadowRoot.querySelector(`[data-info-tab="${this.infoTab}"]`).focus();
       }
     });
