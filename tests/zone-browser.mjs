@@ -15,7 +15,7 @@ try {
   await page.goto(`http://127.0.0.1:${server.address().port}/`);
   await page.locator('#card .room').first().waitFor();
   assert.equal(await page.locator('.header-main [data-action="zones"]').count(),0);
-  assert.equal(await page.locator('.planning-tabs [data-action="rooms"]').getAttribute('aria-pressed'),'true');
+  assert.equal(await page.locator('.planning-tabs [data-action="rooms"]').getAttribute('aria-selected'),'true');
 
   const png = Buffer.from(await page.evaluate(() => {
     const canvas = document.createElement('canvas'); canvas.width=800; canvas.height=400;
