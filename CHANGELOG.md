@@ -11,7 +11,7 @@
 - Keep the resize handle reachable at image edges and preserve scrolling during map selection.
 - Require matching map calibration and robot readiness before sending a single zone-start action.
 - Normalize build line endings for reproducible Windows/Linux bundles.
-- Refresh planner/session screenshots, add a zone screenshot, and set the planned minimum integration version to v2.1.0.
+- Refresh planner/session screenshots, add a zone screenshot, and require Dyson integration v2.1.0 or newer.
 
 - Add Dutch translations and native language names with language codes in the editor.
 - Hide unsupported room/zone settings, station controls and consumables by device capability, while keeping temporarily unavailable controls visible and disabled. Support mop-pad consumables when provided by the integration.
@@ -21,10 +21,16 @@
 - Keep a permanent compact status area in Modern, including idle/docked states and drying time/progress. Overlay robot faults and temporary notices on the header without resizing the card; allow dismissed robot faults to be reopened from the warning icon.
 - Return to planning for an error state when the integration explicitly reports that a new clean is allowed.
 - Align Modern cleaning-map spacing with zone planning and reserve space for room badges or the requested zone dimensions.
-- Replace the zone resize button with a corner-centered circular handle and larger touch target. Move dimensions into a floating badge and enforce a trial 55 cm minimum on each side.
+- Replace the zone resize button with a corner-centered circular handle and larger touch target. Move dimensions into a floating badge and enforce a card-side minimum of 55 cm on each side. Reachability still depends on the robot and obstacles.
 - Add automatic cm/inch display and a zone_dimension_unit override. Off hides only the selection badge; session dimensions then follow Home Assistant's units.
 
-Release preparation: confirm the upstream integration v2.1.0 release contains the zone action and calibration before publishing. Other models still need hardware confirmation.
+- Improve keyboard navigation for planning and Info tabs, exclude hidden overlay controls from the focus order, and restore focus to a visible control after dismissing header messages.
+- Preserve planner warnings and their dismissed state during status updates, and clear stale Robot-tab action errors when reopening the overlay or changing devices.
+- Recheck zone-start availability as readiness changes and protect room starts and drafts against robot or map context changes without retrying accepted commands.
+- Prefer device-specific unique IDs when discovering consumable entities.
+- Update Dutch browser checks and make the browser channel configurable for local validation.
+
+Zone cleaning has been hardware-tested on the Spot+Scrub AI. Other models still need hardware confirmation.
 
 ## v1.3.0
 

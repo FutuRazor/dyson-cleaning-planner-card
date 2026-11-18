@@ -383,8 +383,8 @@ Cleaning solution displays Ready to use / Refill required; its Enabled/Disabled 
 
 ## Zone cleaning (v1.4.0)
 
-The planned minimum integration release is v2.1.0. Until it is published with
-zone support, use the matching integration test branch.
+Zone cleaning requires **UNsync3D Dyson Spot+Scrub integration v2.1.0 or newer**,
+including the `dyson_spot_scrub.clean_zone` action and camera calibration described below.
 
 - The configured vacuum must expose `map_id` and `ready_to_start: true`.
 - The same-device camera must expose `map_calibration`: version 1, `map_id`,

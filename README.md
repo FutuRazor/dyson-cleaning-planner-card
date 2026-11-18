@@ -20,31 +20,36 @@
 
 **Version 1.4.0**
 
+<p align="center">
+  <a href="#installation">Installation</a> &middot;
+  <a href="#using-the-card">Using the card</a> &middot;
+  <a href="#customization">Customization</a> &middot;
+  <a href="#limitations-and-troubleshooting">Troubleshooting</a>
+</p>
+
 ## Requirements
 
 - [Dyson Spot+Scrub integration by UNsync3D](https://github.com/UNsync3D/ha-dyson-spot-scrub), **v2.1.0 or newer**, installed and configured in Home Assistant.
 - **Home Assistant Marketplace** for the recommended installation method on Home Assistant **2026.11 or newer**. On older versions, use [HACS](https://www.hacs.xyz/). Manual installation is also supported.
 
-For testing before integration v2.1.0 is released, use the matching [zone-cleaning integration branch](https://github.com/FutuRazor/ha-dyson-spot-scrub/tree/test/zone-cleaning). The regular v2.0.2 build does not provide zone cleaning.
-
 ## Screenshots
 
 <p align="center">
-  <img src="docs/images/planner-wide.png" alt="Modern planner with room selection beside the cleaning settings" width="720">
+  <img src="docs/images/planner-wide.gif" alt="Modern planner with room selection beside the cleaning settings" width="720">
   <br>Modern planner — wide layout
 </p>
 
 <table>
   <tr>
-    <td align="center"><img src="docs/images/planner-narrow.png" alt="Narrow Modern planner with settings expanded inside a room" width="300"><br>Narrow layout</td>
-    <td align="center"><img src="docs/images/cleaning-session.png" alt="Active mopping session with live map and Pause/Home controls" width="400"><br>Cleaning session</td>
+    <td align="center"><img src="docs/images/cleaning-session.gif" alt="Active mopping session with live map and Pause/Home controls" width="400"><br>Cleaning session</td>
+    <td align="center"><img src="docs/images/consumables.gif" alt="Consumable remaining-life bars and cleaning-solution availability" width="360"><br>Consumables</td>
   </tr>
   <tr>
-    <td align="center"><img src="docs/images/station-settings.png" alt="Station switches, preferences and dock action buttons" width="360"><br>Station settings</td>
-    <td align="center"><img src="docs/images/consumables.png" alt="Consumable remaining-life bars and cleaning-solution availability" width="360"><br>Consumables</td>
+    <td align="center"><img src="docs/images/station-settings.gif" alt="Station switches, preferences and dock action buttons" width="360"><br>Station settings</td>
+    <td align="center"><img src="docs/images/robot-settings.gif" alt="Voice Prompts, Child Lock and DND" width="360"><br>Consumables</td>
   </tr>
     <tr>
-    <td align="center"><img src="docs/images/zone-cleaning.png" alt="Zone planner with a movable rectangle and resize handle; Start is disabled while the mop roller is being washed" width="360"><br>Zone Cleaning</td>
+    <td align="center"><img src="docs/images/zone-cleaning.gif" alt="Zone planner with a movable rectangle and resize handle; Start is disabled while the mop roller is being washed" width="360"><br>Zone Cleaning</td>
     <td align="center"><img src="docs/images/zone-cleaning-gif.gif" alt="Zone Cleaning with positioning, start and cleaning" width="360"><br>Zone Cleaning Video</td>
   </tr>
 </table>
@@ -134,7 +139,7 @@ The trash icon beside **Local draft** discards unsaved changes. Reloading the ca
 
 ### Clean a zone
 
-Choose **Zone** below the header to clean a specific area instead of whole rooms. A blue rectangle appears on the map: drag it to move it and use the corner handle to resize it. The circular resize handle stays anchored to the corner and has an enlarged touch target. A floating badge shows the dimensions without covering small zones. The current minimum is **55 × 55 cm** per rectangle; this is a card-side trial limit, not a confirmed robot limit.
+Choose **Zone** below the header to clean a specific area instead of whole rooms. A blue rectangle appears on the map: drag it to move it and use the corner handle to resize it. The circular resize handle stays anchored to the corner and has an enlarged touch target. A floating badge shows the dimensions without covering small zones. The card limits the selection to a minimum of **55 × 55 cm**. Whether the selected area can be reached and cleaned depends on the robot and any obstacles.
 
 The button beside Reload shows the current cleaning mode. Open it to choose **Vacuum**, **Vacuum and Mop**, **Mop**, or **Vacuum then Mop**, plus the relevant power, water level and repetitions. Settings stay local until **Start clean**. With **Vacuum then Mop**, **Mop repetitions** controls the wiping passes; vacuuming runs once.
 
@@ -144,11 +149,11 @@ Zone dimensions follow Home Assistant's unit system by default, using **cm** or 
 
 ### During and after cleaning
 
-The card switches to a cleaning view with robot status, room badges when known, and an optional live map. A zone started from this card shows its dimensions instead of room badges. Use **Pause**, **Resume**, or **Home** as available. In Modern, the map uses the same inset spacing as zone planning, with a reserved area above it for these badges.
+The card switches to a cleaning view with robot status, an optional live map, and room badges when known. A zone started from this card shows its dimensions instead. Use **Pause**, **Resume**, or **Home** as available.
 
-Dock activity appears below the header, including dust-bin emptying, roller washing and drying. Drying shows the remaining time and a progress bar when available, with a button to cancel it. New cleaning starts follow the integration's readiness checks; starting during drying is allowed.
+Status below the header shows cleaning and dock activity, including dust-bin emptying, mop washing and drying. Drying includes the remaining time, a progress bar and a cancel button when available. In Modern, this area stays in place without changing the card height and shows **Docked** when idle at the station.
 
-In Modern, a permanent compact status line sits below the header, including **Docked** when idle at the station. Drying time and its slim progress bar use the reserved status area. Temporary action and map notices overlay the header without increasing the card height and clear when their underlying message clears. Robot errors also appear over the header; dismissing one leaves a warning on the robot icon, which reopens the message. The status line remains visible. A reported error does not lock the card in the cleaning view when the integration explicitly allows a new start.
+Modern displays temporary notices and robot errors over the header. Dismissed errors remain accessible through the warning on the robot icon. New cleaning starts follow the integration's readiness checks, including during drying or when a reported error no longer blocks a start.
 
 ### Station, robot settings and consumables
 
@@ -174,11 +179,11 @@ Additional languages can be added through the [translation guide](docs/translati
 
 ### Appearance
 
-Choose **Modern** (default) or **Classic** in the card editor's **Theme** setting. Modern uses numbered selection circles, discrete sliders for Vacuum Power and Water level, and buttons for Clean repetitions. At card widths of 480 px or more, the open room's settings appear beside the room list; narrower cards expand them inline. Both themes use the same local draft and send selected rooms in click order. In the wide layout, changing cleaning modes preserves the settings-panel height. Room tiles become more compact from five displayed rooms onward; exactly five rows align with the settings panel.
+Choose **Modern** (default) or **Classic** in the card editor's **Theme** setting. Modern uses numbered room selections, stepped sliders for power and water level, and repetition buttons. On wider cards, settings appear beside the room list; on narrow cards, they expand beneath the room. Both themes use the same local drafts and selection order.
 
 Open **Edit dashboard**, then edit the card to change its title, room visibility and display order, optional map and map rotation. You can also choose whether supported settings irrelevant to the selected cleaning mode remain visible. Unsupported settings are always hidden.
 
-The header subtitle identifies the selected vacuum. **Header icon style** offers the default **Integration** robot illustration or the original **Home Assistant** icon, without changing the header size. The illustration adds a dock below the robot when docked and a green beam during active cleaning. Its bumper follows the camera's `robot_bumper_color` while cleaning, pulses in the Pause button colour when paused, and pulses red for a robot error. Idle states use subdued grey; missing cleaning colours or a disconnected robot use light grey. Reduced-motion preferences disable pulsing.
+The header subtitle identifies the selected vacuum. **Header icon style** offers the default **Integration** robot illustration or the original **Home Assistant** icon. The illustration shows a dock when docked and a green beam during cleaning. Its bumper matches the live map's robot colour while cleaning, pulses in the Pause button colour when paused, and pulses red for an error. Otherwise, it uses neutral grey. Reduced-motion preferences disable pulsing.
 
 The **status bar** shows station preferences and battery status. Disable the entire bar or hide individual indicators in the editor. Battery percentage is optional and off by default.
 
@@ -218,7 +223,7 @@ These options belong in the individual card's code editor, not in `configuration
 - The card relies on the integration for room data, robot status and supported actions. Room badges and zone dimensions may show the request made from this card; they are not confirmed cleaning progress and are not retained after reloading the card.
 - On upgrade, cards without an explicit `theme` use Modern. Select Classic in the editor to retain the previous layout.
 - After changes to the robot's map, use **Refresh rooms** below the room order in the card editor if needed.
-- Zone selection needs a calibrated camera image from the matching integration. If the image cannot be verified, Start stays disabled. Reload the map; if the problem persists, check the integration version. Installing the regular integration instead of the zone-enabled build leaves the required map information missing.
+- Zone selection requires **Dyson integration v2.1.0 or newer** and a calibrated camera image. If the image cannot be verified, Start stays disabled. Reload the map; if the problem persists, confirm the required integration version is installed and the selected camera belongs to the same robot.
 - If controls are unavailable, check the corresponding device and entities in Home Assistant and confirm that the required integration version is installed.
 
 
