@@ -25,8 +25,6 @@
 - [Dyson Spot+Scrub integration by UNsync3D](https://github.com/UNsync3D/ha-dyson-spot-scrub), **v2.1.0 or newer**, installed and configured in Home Assistant.
 - **Home Assistant Marketplace** for the recommended installation method on Home Assistant **2026.11 or newer**. On older versions, use [HACS](https://www.hacs.xyz/). Manual installation is also supported.
 
-For testing before integration v2.1.0 is released, use the matching [zone-cleaning integration branch](https://github.com/FutuRazor/ha-dyson-spot-scrub/tree/test/zone-cleaning). The regular v2.0.2 build does not provide zone cleaning.
-
 ## Screenshots
 
 <p align="center">
