@@ -1,7 +1,11 @@
 import { createRequire } from 'node:module';
+import { mkdir } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 import { previewServer } from '../scripts/preview.mjs';
 const { chromium } = createRequire(import.meta.url)('playwright');
+const screenshotDirectory = new URL('../artifacts/languages/', import.meta.url);
+await mkdir(screenshotDirectory, { recursive: true });
 const server = previewServer();
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const browser = await chromium.launch({ headless: true, ...(process.env.BROWSER_CHANNEL ? { channel: process.env.BROWSER_CHANNEL } : {}) });
@@ -51,7 +55,7 @@ try {
     }, width);
     await page.waitForTimeout(100);
     assert.ok(await card.evaluate(el => el.shadowRoot.querySelector('.planner-content').scrollWidth <= el.clientWidth), `${width}: no horizontal overflow`);
-    await page.screenshot({ path: `languages-${width}.png`, fullPage: true });
+    await page.screenshot({ path: fileURLToPath(new URL(`languages-${width}.png`, screenshotDirectory)), fullPage: true });
   }
   await card.locator('[data-action=start]').click();
   await card.locator('.session').waitFor();
