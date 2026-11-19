@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/images/planner-banner.svg" alt="Dyson Cleaning Planner — a dashboard card for Home Assistant" width="1100">
+  <img src="docs/images/planner-banner.svg?v=1.4.0" alt="Dyson Cleaning Planner — a dashboard card for Home Assistant" width="1100">
 </p>
 
 <p align="center">
