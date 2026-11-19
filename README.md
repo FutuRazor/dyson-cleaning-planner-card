@@ -171,7 +171,7 @@ Only settings and consumables supported by the selected device and exposed by th
 
 ### Language
 
-Choose **Automatic**, **English [en]**, **Deutsch [de]**, or **Nederlands [nl]** in the card editor. Automatic (the default) follows the current Home Assistant user’s language and falls back to English for unsupported languages. The card and its visual editor use the selected language.
+Choose **Automatic**, **English [en]**, **Deutsch [de]**, **Nederlands [nl]**, or **Français [fr]** in the card editor. Automatic (the default) follows the current Home Assistant user’s language and falls back to English for unsupported languages. The card and its visual editor use the selected language.
 
 Room and device names, custom titles, and values sent to the integration stay unchanged. Leave the title empty to use the translated default; an existing explicit title such as `Plan a clean` stays as entered. Unknown integration options and external error messages remain in their original language.
 
@@ -200,7 +200,7 @@ These options belong in the individual card's code editor, not in `configuration
 |---|---|
 | `entity` | Required Dyson vacuum entity |
 | `title` | Custom planner title; empty or omitted uses the translated default |
-| `language` | `auto` (default), `en`, `de`, or `nl`; applies to this card and its editor |
+| `language` | `auto` (default), `en`, `de`, `nl`, or `fr`; applies to this card and its editor |
 | `theme` | `modern` (default) or `classic` |
 | `always_show_all_settings` | Keep supported room settings visible regardless of cleaning mode; default: `false` |
 | `unsupported_settings` | Legacy option; unsupported settings are now always hidden |

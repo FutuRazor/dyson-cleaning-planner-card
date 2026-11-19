@@ -1,6 +1,6 @@
 # Translations
 
-The card and editor support `language: auto`, `en`, `de`, and `nl`. Automatic uses the current Home Assistant user's locale, with English as the fallback. Languages are resolved per card, so different cards can use different languages.
+The card and editor support `language: auto`, `en`, `de`, `nl`, and `fr`. Automatic uses the current Home Assistant user's locale, with English as the fallback. Languages are resolved per card, so different cards can use different languages.
 
 ## Adding a language
 
@@ -22,3 +22,9 @@ English phrases are stable message keys. When adding a UI message, add it to eve
 - A language-only change preserves local room drafts and pending requests.
 
 Translations are bundled into the single distribution file. They require no network requests or additional installation files.
+
+## French terminology
+
+French uses Dyson France terminology for cleaning modes (Aspiration et lavage, Aspiration puis lavage), power modes (Auto, Rapide, Silencieux, Boost), and Ne pas déranger. References: [Spot+Scrub AI product information](https://www.dyson.fr/aspirateurs/robots/spot-scrub-ai/noir) and [Dyson troubleshooting](https://www.dyson.fr/support/journey/troubleshooting/586183-01).
+
+These are terminology references, not a complete export of the MyDyson app's translations. Card-specific text is translated for its UI context, with compact action labels where space is limited. Native-speaker feedback is welcome.

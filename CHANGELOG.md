@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Add French (Français [fr]) for the card and editor, including automatic selection for French Home Assistant locales. Use Dyson France terminology where publicly documented.
+
 ## v1.4.0
 
 - Follow the integration camera's bumper colour during cleaning; pulse the bumper in the Pause colour when paused or red on errors, with neutral idle/offline colours and reduced-motion support.

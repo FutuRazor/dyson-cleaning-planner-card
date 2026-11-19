@@ -1,8 +1,9 @@
 import { en } from './translations/en.js';
 import { de } from './translations/de.js';
 import { nl } from './translations/nl.js';
+import { fr } from './translations/fr.js';
 
-export const LANGUAGES = { en, de, nl };
+export const LANGUAGES = { en, de, nl, fr };
 export function resolveLanguage(config = {}, hass) {
   config ??= {};
   const requested = config.language && config.language !== 'auto' ? config.language : hass?.locale?.language ?? hass?.language ?? 'en';

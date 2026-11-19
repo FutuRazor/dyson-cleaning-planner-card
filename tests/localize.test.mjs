@@ -7,10 +7,10 @@ test('language follows the user locale with explicit per-card overrides and Engl
   assert.equal(resolveLanguage({}, { locale: { language: 'de-DE' } }), 'de');
   assert.equal(resolveLanguage({}, { language: 'de' }), 'de');
   assert.equal(resolveLanguage({ language: 'en' }, { language: 'de' }), 'en');
-  assert.equal(resolveLanguage({ language: 'auto' }, { language: 'fr' }), 'en');
+  assert.equal(resolveLanguage({ language: 'auto' }, { language: 'es' }), 'en');
   assert.equal(resolveLanguage(null), 'en');
   assert.equal(normalizeConfig({ entity: 'vacuum.robot' }).language, 'auto');
-  assert.throws(() => normalizeConfig({ entity: 'vacuum.robot', language: 'fr' }), /language/);
+  assert.throws(() => normalizeConfig({ entity: 'vacuum.robot', language: 'es' }), /language/);
 });
 
 test('all translations have matching keys and interpolation placeholders', () => {
@@ -29,7 +29,7 @@ test('own messages translate parameters without changing names or external error
   assert.equal(translate('de', error), 'Wassermenge ist für Living Room <North> nicht mehr verfügbar.');
   assert.equal(translate('de', new Error('Robot firmware: unavailable')), 'Robot firmware: unavailable');
   assert.equal(translate('de', 'Future mode'), 'Future mode');
-  assert.equal(translate('fr', 'Plan a clean'), 'Plan a clean');
+  assert.equal(translate('es', 'Plan a clean'), 'Plan a clean');
   assert.equal(translate('de', '{selected} of {total} rooms selected', { selected: 2, total: 5 }), '2 von 5 Räumen ausgewählt');
 });
 
@@ -53,4 +53,16 @@ test('Dutch accents and punctuation survive translation encoding', () => {
     assert.ok(!value.includes('\ufffd'), key);
     if (key.endsWith('\u2026')) assert.ok(value.endsWith('\u2026'), key);
   }
+});
+
+test('French supports regional locales, explicit overrides, accents and original data', () => {
+  for (const language of ['fr', 'fr-FR', 'fr_CA', 'fr-BE']) assert.equal(resolveLanguage({}, {locale:{language}}), 'fr');
+  assert.equal(normalizeConfig({entity:'vacuum.robot',language:'fr'}).language, 'fr');
+  assert.equal(resolveLanguage({language:'fr'},{language:'en'}), 'fr');
+  assert.equal(translate('fr','Plan a clean'), 'Planifier un nettoyage');
+  assert.equal(translate('fr','{selected} of {total} rooms selected',{selected:2,total:5}), '2 pièces sélectionnées sur 5');
+  assert.equal(translate('fr','Vacuum then Mop'), 'Aspiration puis lavage');
+  assert.equal(translate('fr','High'), 'Élevé');
+  assert.equal(translate('fr',new Error('Robot firmware: unavailable')), 'Robot firmware: unavailable');
+  for (const value of Object.values(LANGUAGES.fr)) assert.ok(!value.includes('\ufffd'));
 });
