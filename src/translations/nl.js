@@ -249,5 +249,5 @@ export const nl = {
   "Sending zone start …": "Zonestart verzenden …",
   "Zone start failed. Check the robot before retrying.": "Zonestart mislukt. Controleer de robot voordat je het opnieuw probeert.",
   "Mop repetitions": "Aantal dweilbeurten",
-  "language must be auto, en, de or nl.": "language moet auto, en, de of nl zijn."
+  "language must be auto, en, de, nl or fr.": "language moet auto, en, de, nl of fr zijn.",
 };

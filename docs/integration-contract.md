@@ -4,16 +4,32 @@ This document describes what the **current card actually reads and sends**, base
 
 Both Modern and Classic use this same contract. The documented minimum integration version is **UNsync3D Dyson Spot+Scrub v2.1.0**; optional features require the corresponding entities/actions in the installed version.
 
+Reviewed against the repository source on **21 November 2026**, without a release-version change. This describes every integration-facing feature in the current source; it does not certify another integration or replace hardware verification. For a migration assessment, see [hass-dyson compatibility](hass-dyson-compatibility.md).
+
+## Minimum working setup
+
+For room planning and starting a clean, provide:
+
+1. A connected Home Assistant frontend with this card loaded as a JavaScript module, access to the entity registry, live entity states and permission to call the required actions.
+2. One enabled `vacuum.*` registered on platform `dyson_spot_scrub`, with a `device_id`, unique ID `<serial>_vacuum`, an available state and `attributes.rooms`.
+3. For each selectable room, one matching enabled room switch and at least one available per-room select exposing a stable `room_id`. Provide all four selects for complete room settings. All these registry entries belong to the vacuum's device and platform.
+4. `dyson_spot_scrub.start_rooms_with_settings` for Start, and `dyson_spot_scrub.save_room_settings` for saving edited preferences independently. Start can send an empty settings object; Save is not a prerequisite action for Start.
+5. A ready robot and integration-side validation of room identity, settings and start readiness.
+
+Battery, charging, map, station, robot preferences, drying and consumable entities are optional for room cleaning. Rectangle cleaning additionally requires the device registry, supported model, calibrated PNG camera, active map ID, explicit readiness and `clean_zone`. A generic HA vacuum with standard actions alone cannot provide the room planner.
+
+For `N` rooms, the complete room interface consists of **1 vacuum + N switches + 4N selects**. Full optional controls add 2 battery/charging entities, 1 camera, 1 drying sensor, 6 station preference entities, 3 station buttons, 6 robot preference entities and up to 7 consumable sensors. Expose only consumables and controls actually supported by the device.
+
 ## 1. Dependency overview
 
-Language selection (`auto`, `en`, `de`) is display-only and adds no integration requirement. Automatic follows the current Home Assistant user's language, falling back to English. Known option labels and card-owned status messages are translated; entity IDs, room/device names, raw option values, action names and payloads are unchanged. Unknown options and external error messages remain in their original language. See [Translations](translations.md).
+Language selection (`auto`, `en`, `de`, `nl`, `fr`) is display-only and adds no integration requirement. Automatic follows the current Home Assistant user's language, falling back to English. Known option labels and card-owned status messages are translated; entity IDs, room/device names, raw option values, action names and payloads are unchanged. Unknown options and external error messages remain in their original language. See [Translations](translations.md).
 
 | Feature | Required input | If absent or invalid |
 |---|---|---|
 | Device discovery | Configured `vacuum.*`, entity registry entry, Dyson platform and device association | No usable room discovery |
 | Room list | Vacuum `rooms` attribute plus matching room switches | Missing/ambiguous rooms cannot be selected reliably |
 | Native room identity | Matching room selects with consistent `room_id` attributes | Room cannot be started or saved |
-| Room options | Four per-room selects with live `options` | Missing fields are disabled or hidden according to card configuration |
+| Room options | Four per-room selects with live `options` | Missing fields hidden; registered unavailable fields disabled |
 | Save settings | `dyson_spot_scrub.save_room_settings` | Saving unavailable; no legacy fallback |
 | Start clean | `dyson_spot_scrub.start_rooms_with_settings` plus ready vacuum and valid selected rooms | Start unavailable/rejected |
 | Start veto / reason | Vacuum `ready_to_start`, `start_block_reason` | Legacy state/dock checks remain; no reliable mapping/finishing veto from these attributes |
@@ -23,13 +39,17 @@ Language selection (`auto`, `en`, `de`) is display-only and adds no integration 
 | Live map | Camera entity with HA camera-proxy image URL | Map placeholder; planning still works |
 | Drying remaining time | Dedicated drying sensor, or legacy vacuum attributes if no sensor is registered | Remaining time unavailable; invalid totals hide the bar |
 | Cancel drying | `dyson_spot_scrub.cancel_drying` | Cancel disabled |
-| Station settings | Four switches, two selects, standard switch/select actions | Unavailable controls disabled |
-| Station actions | Three button entities plus `button.press` | Unavailable buttons disabled |
-| Consumables | Six sensors identified by attributes | Individual values show Unavailable |
+| Station settings | Four switches, two selects, standard switch/select actions | Missing controls hidden; unavailable controls disabled |
+| Station actions | Three button entities plus `button.press` | Missing buttons hidden; unavailable buttons disabled |
+| Robot preferences | Three switches, one number and two time entities | Missing controls hidden; unavailable controls disabled |
+| Consumables | Up to seven sensors identified by registry identity, then attributes | Missing controls hidden; supported invalid values show Unavailable |
+| Rectangle cleaning | Supported device model, calibrated camera, map ID, explicit readiness, room-option capabilities and `clean_zone` | Zone tab absent or Start disabled |
 
 ## 2. Entity registry and identity
 
 The card requests `config/entity_registry/list` through the HA WebSocket connection and reads live values from `hass.states`. Actions are discovered through `hass.services` and invoked through `hass.callService`.
+
+It also requests `config/device_registry/list`. Device entries need `id` and `model` for zone-model detection. Failure to read the device registry does not prevent ordinary room discovery. Registry reads are refreshed approximately every 30 seconds while the card is connected. Registry metadata alone is insufficient: entity values and attributes must also exist in `hass.states`.
 
 Entity registry entries must expose:
 
@@ -118,7 +138,7 @@ attributes:
 
 - `options` must be an array of strings. Values are sent **exactly as supplied**, with case and spaces intact.
 - `room_id` comes from the **select attributes**, not the switch. It must be non-null and non-empty when converted to a string. Numeric IDs and string IDs are accepted; outgoing IDs are strings.
-- All usable selects for a room must agree on one ID. Conflicting IDs invalidate that room's settings. At least one usable select is needed to discover an ID; all four are needed for the full settings UI.
+- Discovery collects IDs from registered selects, including attributes on unavailable selects; conflicting IDs invalidate the room. Previously known IDs/options may be retained temporarily for unavailable selects in the same robot/map context. Before sending, at least one available select must confirm the one current ID. All four selects are needed for the full settings UI.
 - Duplicate room IDs are rejected for affected selected/edited rooms.
 - Missing/unavailable selects are not usable fields. Unrelated unavailable room switches do not block a valid job.
 - The UI labels do not change the wire keys: **Vacuum Power still sends `cleaning_strategy`; Clean repetitions still sends `mop_repetitions`.**
@@ -188,7 +208,7 @@ On a successful Start call the settings draft is cleared and the request is reta
 | `cleaning` | Session view; Pause may be available |
 | `paused` | Session view; Resume may be available |
 | `returning` | Session view, Returning / mapping; new Start rejected |
-| `error` | Session view, Robot needs attention; new Start rejected |
+| `error` | Session view and new Start rejected, except literal `ready_to_start: true` permits the planner and a new room Start |
 | `unknown`, `unavailable`, missing/restored entity or disconnected HA | Unavailable view; actions disabled |
 | Any other state | Waiting-for-status view; new Start rejected |
 
@@ -199,6 +219,8 @@ A local pending start or editor-only preview can temporarily override the view. 
 | Attribute | Type / recognized values | Purpose |
 |---|---|---|
 | `rooms` | Array of room-name strings | Discovery |
+| `map_id` | Converted to string for room context; positive decimal ID for zone calibration | Separates drafts between active maps and validates rectangle commands |
+| `friendly_name` | String | Robot subtitle |
 | `supported_features` | Numeric bitmask | Session action availability |
 | `ready_to_start` | Boolean; only literal `false` is an explicit veto | Block new Start |
 | `start_block_reason` | String from table below | Explain veto |
@@ -223,9 +245,9 @@ Recognized `start_block_reason` values:
 | `cleaning_job_active` | A cleaning job is still active |
 | `waiting_for_ready_state` | Waiting for the robot to be ready |
 
-Other reasons with `ready_to_start: false` show a generic not-ready message. String `"false"` is **not** a boolean veto. A reason alone does not veto Start. Literal `true` does not override state or dock restrictions.
+Other reasons with `ready_to_start: false` show a generic not-ready message. String `"false"` is **not** a boolean veto. A reason alone does not veto Start. Literal `true` allows a new room job from `error` (a retained fault), but does not override washing/dust-collection restrictions or permit starts from other non-ready states.
 
-New Start requires connected HA, an available vacuum in `docked`/`idle`, valid selected rooms and the custom Start action. Roller washing and dust collection block Start even without the optional readiness attributes. Drying alone does not block Start, but `ready_to_start: false` still does.
+New room Start requires connected HA, an available vacuum in `docked`/`idle` (or `error` with literal `ready_to_start: true`), valid selected rooms and the custom Start action. Roller washing and dust collection block Start even without the optional readiness attributes. Drying alone does not block Start, but `ready_to_start: false` still does.
 
 **The integration must enforce readiness again when executing the action.** UI checks cannot protect calls from other clients or changes between rendering and execution.
 
@@ -254,7 +276,7 @@ Resume must continue the paused job; new room jobs use the custom Start action i
 
 Battery uses a dedicated sensor, not the vacuum's battery attribute. Low is below 20%, medium below 50%, otherwise high. Missing charging data does not imply charging.
 
-`camera_entity` may explicitly select another camera on the same Dyson device/platform. The image path must start with `/api/camera_proxy/`; the card uses the HA-provided URL and token. Responses must have an `image/*` content type and decode as an image. No raw map JSON, furniture, geometry or room-area attributes are read.
+`camera_entity` may explicitly select another camera on the same Dyson device/platform. The image path must start with `/api/camera_proxy/`; the card uses the HA-provided URL and token. Responses must have an `image/*` content type and decode as an image. The session map reads no raw map JSON, furniture, geometry or room-area attributes; rectangle selection separately reads `map_calibration` as specified below.
 
 The camera is refreshed about every **5 seconds**, only when the session/preview is live and the map is visible. Fetch timeout is **10 seconds**. On failure, a last valid image may remain with an explanatory caption. Rotation (0/90/180/270°) is local rendering, not an integration action. Tokens must not be copied into card configuration or documentation.
 
@@ -337,12 +359,23 @@ The integration supplies operational availability and must enforce dock-command 
 
 ## 10. Consumable sensors
 
-These are discovered by **attributes**, not fixed entity names or unique-ID suffixes. Each must be a single enabled `sensor.*` on the same Dyson device/platform.
+Each must be an enabled `sensor.*` on the same Dyson device/platform. Exact unique IDs take precedence over attribute matching, including when the exact sensor is unavailable. Only when no enabled exact match exists does discovery fall back to `attributes.consumable_type`. Multiple candidates are ambiguous. The required `value_kind` is checked in either case; exact identity does not require `consumable_type`.
+
+| `consumable_type` | Preferred unique ID |
+|---|---|
+| `brushBar` | `<serial>_consumable_brush_bar_usage` |
+| `mopRoller` | `<serial>_consumable_mop_roller_usage` |
+| `mopPad` | `<serial>_consumable_mop_pad_usage` |
+| `sideBrushes` | `<serial>_consumable_side_brushes_usage` |
+| `robotFilter` | `<serial>_consumable_robot_filter_usage` |
+| `dockFilter` | `<serial>_consumable_dock_filter_usage` |
+| `cleaningSolution` | `<serial>_consumable_cleaning_solution` |
 
 | Label | `consumable_type` | `value_kind` | State |
 |---|---|---|---|
 | Brush bar | `brushBar` | `usage_percent` | Used percentage, 0–100 |
 | Mop roller | `mopRoller` | `usage_percent` | Used percentage, 0–100 |
+| Mop pad | `mopPad` | `usage_percent` | Used percentage, 0–100 |
 | Side brushes | `sideBrushes` | `usage_percent` | Used percentage, 0–100 |
 | Robot filter | `robotFilter` | `usage_percent` | Used percentage, 0–100 |
 | Dock filter | `dockFilter` | `usage_percent` | Used percentage, 0–100 |
@@ -356,7 +389,7 @@ attributes:
   unit_of_measurement: "%"
 ```
 
-Usage is **consumed life**, not remaining life. The card displays `100 - usage`, rounded to one decimal place. Remaining life at or below 25% is a warning; at or below 10% it is low/red. Missing, invalid or ambiguous data shows Unavailable.
+Usage is **consumed life**, not remaining life. The card displays `100 - usage`, rounded to one decimal place. Remaining life at or below 25% is a warning; at or below 10% it is low/red. A single discovered sensor defines support; invalid/unavailable values show Unavailable. Missing or ambiguous sensors are not supported and their controls are hidden.
 
 Cleaning solution displays Ready to use / Refill required; its Enabled/Disabled subtitle comes separately from the station switch. Refill required and low-life consumables highlight Info. `ioniserCartridge` is not consumed by this card.
 
@@ -410,3 +443,95 @@ See [zone cleaning details](zone-cleaning.md) for geometry and validation.
 ### Device-specific controls
 
 Registered, enabled entities on the selected device define supported controls. Missing controls are hidden; unknown/unavailable states disable existing controls without removing them. Room and station select options come from the entity attributes. Consumables support both `mopRoller` and `mopPad`; UV/ioniser consumables are not assumed. The subtitle uses the vacuum entity's `friendly_name`. Zone UI is currently restricted to device registry model `804`/`804A`/`RB05`, matching the integration's RB05-only support; R1/R2 and unknown models do not get the Zone tab. Device-registry access is needed to identify this support. Zone options are restricted to known protocol values also offered by the device's room selects; this does not claim zone support for other models.
+
+The exact model matcher is case-insensitive `^(804[A-Z]?|RB05)$`: it also accepts other single-letter suffixes after `804`. It does not infer support from a friendly model name containing those characters.
+
+## 13. Robot preferences
+
+All entries use the same platform/device association as the vacuum. Writes are immediate, independent of room Save/Start, and do not enter the room draft.
+
+| Key | Domain | Unique ID | Live state / write |
+|---|---|---|---|
+| `voice_prompts` | `switch` | `<serial>_setting_voice_prompts` | `on`/`off`; switch action |
+| `volume` | `number` | `<serial>_setting_volume` | Numeric 0–100; writes integer 0–100 in steps of 10 |
+| `child_lock` | `switch` | `<serial>_setting_child_lock` | `on`/`off`; switch action |
+| `do_not_disturb` | `switch` | `<serial>_setting_do_not_disturb` | `on`/`off`; switch action |
+| `do_not_disturb_start` | `time` | `<serial>_setting_do_not_disturb_start` | `HH:mm` or `HH:mm:00` |
+| `do_not_disturb_end` | `time` | `<serial>_setting_do_not_disturb_end` | `HH:mm` or `HH:mm:00` |
+
+Volume requires an available voice-prompts switch set to `on`. DND times require an available DND switch set to `on`. Times use 24-hour hours 00–23 and minutes 00–59; the card sends `time: "HH:mm:00"` to `time.set_value`. Volume sends `value: 60`, for example, to `number.set_value`. Switches send `entity_id` to `switch.turn_on`/`switch.turn_off`; both switch actions must be registered for a switch control to be available. The card does not read number `min`, `max`, `step` attributes, timezone metadata or DND scheduling semantics; the integration must accept and interpret the documented values.
+
+## 14. Complete outbound action index
+
+The card calls only the following actions. All `entity_id` fields are in the service-data object, not a separate target object. Service registration is checked by name; the card does not negotiate the service schema.
+
+| Action | Service data | Used for |
+|---|---|---|
+| `dyson_spot_scrub.save_room_settings` | `entity_id`, `room_settings` | Changed room preferences without starting |
+| `dyson_spot_scrub.start_rooms_with_settings` | `entity_id`, `room_ids`, `room_settings` | One room-job request |
+| `dyson_spot_scrub.clean_zone` | `entity_id`, `map_id`, `rectangle`, `clean_type`, `cleaning_strategy`, `water_level`, `mop_passes`, `dry_passes` | One rectangle-job request |
+| `dyson_spot_scrub.cancel_drying` | `entity_id` | Cancel active mop drying |
+| `vacuum.pause` | `entity_id` | Pause active job |
+| `vacuum.start` | `entity_id` | Resume paused job |
+| `vacuum.return_to_base` | `entity_id` | Home |
+| `switch.turn_on` / `switch.turn_off` | `entity_id` | Station/robot preferences only |
+| `select.select_option` | `entity_id`, `option` (exact string) | Station preferences only |
+| `number.set_value` | `entity_id`, `value` (number) | Robot volume |
+| `time.set_value` | `entity_id`, `time` (string) | Robot DND times |
+| `button.press` | `entity_id` | Empty bin / wash mop / dry mop |
+
+No response data is parsed from these actions. Rejections must reject the service call so the card can display the error. A resolved call is not proof of physical execution. State changes must be published through HA. The integration must enforce device support, availability and command interlocks for every caller. The card does not roll back already-applied backend changes if a later step fails, and has no cross-client transaction or command acknowledgement protocol.
+
+## 15. Exact rectangle calibration and validation
+
+Example camera attribute structure (the hash below is a placeholder and must be replaced with the SHA-256 of the actual returned PNG bytes):
+
+```yaml
+map_calibration:
+  version: 1
+  map_id: "123"
+  units: m
+  image_width: 1000
+  image_height: 800
+  pixels_per_metre: 100
+  padding: 20
+  min_x: -4.0
+  max_y: 6.0
+  image_sha256: "<64 lowercase hexadecimal characters>"
+```
+
+`version` must be numeric `1`. Dimensions and scale must be positive finite numbers; padding must be nonnegative and finite; origins must be finite numbers. Numeric strings are not accepted for these fields. The map ID must stringify to positive decimal digits (`/^\d+$/` and numeric value > 0). The image hash must match `/^[a-f0-9]{64}$/`. Both vacuum `map_id` and the camera's current calibration map ID must match the frozen calibration map ID.
+
+For an unrotated original image pixel `(px, py)`, robot coordinates are:
+
+```text
+x = min_x + (px - padding) / pixels_per_metre
+y = max_y - (py - padding) / pixels_per_metre
+```
+
+The card reverses display rotation before transforming all four rectangle corners, then sends their minima/maxima. The rectangle must remain inside normalized image coordinates 0–1 and have positive width/height. The UI enforces at least **0.55 m per side**, a trial UI limit, not a confirmed firmware constraint. No obstacle/reachability validation occurs.
+
+Zone images require successful HTTP responses, PNG signature bytes, at most **20 MiB**, matching decoded dimensions and matching SHA-256. Unlike the session map, zone loading checks PNG bytes rather than requiring a PNG content-type header. Width/height URL parameters are removed. There is a 12-second load deadline, up to three image fetch attempts, and up to eight 150-ms calibration polls per image, to allow calibration to be published after an image request. These are read retries; cleaning actions are never automatically retried.
+
+The Zone tab requires a supported device-registry model. Start also requires a trusted same-platform/same-device camera, connected HA, non-preview mode, a verified image, available vacuum/camera states, and literal `ready_to_start: true`. Room readiness's fallback to `docked`/`idle` does not apply here. The zone readiness helper relies on that boolean rather than independently applying room-state/dock interlocks, so the integration must report it accurately and revalidate it at execution.
+
+Zone option capabilities use the intersection of known labels across the discovered room selects for each field (including discovered excluded rooms). A field is available only if all its discovered selects are available. Known choices and protocol values are in `ZONE_CHOICES` in `src/core.js`; the mapping is the one listed above. Missing/unknown option sets cannot be treated as evidence for unsupported protocol values. Without a capability contract, the card does not infer rectangle support from room-cleaning support.
+
+## 16. Frontend-only configuration and source audit
+
+Only `entity`, `camera_entity` and `room_entities` choose integration entities. `room_entities` overrides room-switch lookup only; it cannot change platform, device, select identity or action names. `excluded_rooms` and `room_order` contain room-switch entity IDs. No YAML setting chooses an integration domain or remaps services/options.
+
+Although `unsupported_settings` accepts legacy values `disabled` and `hidden` during validation, normalization currently forces `hidden`; it cannot enable controls for missing entities.
+
+Title, theme, language, header illustration, status visibility, percentage visibility, hidden status items, setting visibility, camera visibility/rotation and dimension units affect presentation only. `zone_dimension_unit: auto` uses `hass.config.unit_system.length`; `cm`/`inch` affect labels, while outbound geometry always uses metres. No additional integration entity is needed for localization or display units. Hiding the session camera does not remove the zone camera requirement. Room/zone drafts, click order and request badges are frontend memory and are lost on reload.
+
+| Source | Contract responsibility |
+|---|---|
+| `src/core.js` | Platform, discovery, IDs, settings, readiness, features, action data, optional entity validation and zone options/model gate |
+| `src/card.js` | Registry reads, room draft lifecycle, Save confirmation, pending-start timeout, UI capability gating |
+| `src/editor.js` | Configuration UI, discovery and preview behavior |
+| `src/map.js` | Session camera proxy fetch and refresh |
+| `src/zone-core.js` | Calibration validation, geometry, readiness and zone settings payload |
+| `src/zone.js` | Verified PNG loading, selection, capabilities and `clean_zone` dispatch |
+
+For backend acceptance, exercise every supported row of the action index and entity tables, including renamed entity IDs, missing/disabled/duplicate entries, conflicting IDs, unavailable controls, map changes, live option changes, backend rejections and asynchronous state publication. Run the repository's `npm run check` for frontend regression coverage. Live HA and robot tests are still required to establish compatibility; passing frontend fixtures alone cannot establish it.

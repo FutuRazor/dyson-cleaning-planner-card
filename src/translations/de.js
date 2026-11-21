@@ -198,7 +198,7 @@ export const de = {
   "Multiple rooms map to the same switch.": "Mehrere Räume sind demselben Schalter zugeordnet.",
   "Select a vacuum entity.": "Bitte eine Staubsauger-Entität auswählen.",
   "theme must be classic or modern.": "theme muss classic oder modern sein.",
-  "language must be auto, en, de or nl.": "language muss auto, en, de oder nl sein.",
+  "language must be auto, en, de, nl or fr.": "language muss auto, en, de, nl oder fr sein.",
   "unsupported_settings must be disabled or hidden.": "unsupported_settings muss disabled oder hidden sein.",
   "{key} must be a list of entity IDs.": "{key} muss eine Liste von Entitäts-IDs sein.",
   "room_entities must map room names to switch entities.": "room_entities muss Raumnamen Schalter-Entitäten zuordnen.",

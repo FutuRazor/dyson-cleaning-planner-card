@@ -1,7 +1,11 @@
 import { createRequire } from 'node:module';
+import { mkdir } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 import { previewServer } from '../scripts/preview.mjs';
 const { chromium } = createRequire(import.meta.url)('playwright');
+const screenshotDirectory = new URL('../artifacts/languages/', import.meta.url);
+await mkdir(screenshotDirectory, { recursive: true });
 const server = previewServer();
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const browser = await chromium.launch({ headless: true, ...(process.env.BROWSER_CHANNEL ? { channel: process.env.BROWSER_CHANNEL } : {}) });
@@ -51,7 +55,7 @@ try {
     }, width);
     await page.waitForTimeout(100);
     assert.ok(await card.evaluate(el => el.shadowRoot.querySelector('.planner-content').scrollWidth <= el.clientWidth), `${width}: no horizontal overflow`);
-    await page.screenshot({ path: `languages-${width}.png`, fullPage: true });
+    await page.screenshot({ path: fileURLToPath(new URL(`languages-${width}.png`, screenshotDirectory)), fullPage: true });
   }
   await card.locator('[data-action=start]').click();
   await card.locator('.session').waitFor();
@@ -78,6 +82,21 @@ try {
     await page.evaluate(width => { document.querySelector('main').style.maxWidth = `${width}px`; }, width);
     await page.waitForTimeout(100);
     assert.ok(await card.evaluate(el => el.shadowRoot.querySelector('.planner-content').scrollWidth <= el.clientWidth), `${width}: Dutch has no horizontal overflow`);
+  }
+  await editor.locator('[data-key=language]').selectOption('fr');
+  assert.equal(await card.locator('h2').textContent(), 'Planifier un nettoyage');
+  assert.equal(await editor.locator('[data-key=language] option[value=fr]').textContent(), 'Français [fr]');
+  await card.locator('[data-expand]').first().click();
+  const frenchMode = card.locator('.fields:visible [data-setting=cleaning_mode]');
+  await frenchMode.selectOption({label:'Aspiration puis lavage'});
+  assert.equal(await frenchMode.inputValue(), 'Vacuum then Mop');
+  await card.locator('[data-action=consumables]').click();
+  assert.equal(await card.locator('#tab-consumables').textContent(), 'Consommables');
+  await card.locator('[data-action=close-consumables]').click();
+  for (const width of [375, 482, 700]) {
+    await page.evaluate(width => { document.querySelector('main').style.maxWidth = `${width}px`; }, width);
+    await page.waitForTimeout(100);
+    assert.ok(await card.evaluate(el => el.shadowRoot.querySelector('.planner-content').scrollWidth <= el.clientWidth), `${width}: French has no horizontal overflow`);
   }
   assert.deepEqual(errors, []);
   console.log('Languages verified: automatic/user selection, draft preservation, original service values, station controls, session/map/editor, and narrow/wide layouts.');
