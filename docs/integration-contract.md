@@ -1,6 +1,6 @@
 # Integration contract — card v1.4.0
 
-This document describes what the **current card actually reads and sends**, based on `src/core.js`, `src/card.js`, `src/editor.js`, `src/map.js`, `src/zone.js` and `src/zone-core.js`. It is a frontend contract, not a specification of Dyson's MQTT protocol or a guarantee about the integration's internal implementation.
+This document describes what the **current card actually reads and sends**, based on the Spot+Scrub adapter and its card/editor/map/zone consumers. The adapter experiment preserves this contract; see [adapter architecture](integration-adapter.md). It is a frontend contract, not a specification of Dyson's MQTT protocol or a guarantee about the integration's internal implementation.
 
 Both Modern and Classic use this same contract. The documented minimum integration version is **UNsync3D Dyson Spot+Scrub v2.1.0**; optional features require the corresponding entities/actions in the installed version.
 
@@ -227,6 +227,7 @@ A local pending start or editor-only preview can temporarily override the view. 
 | `dock_state` | `WASHING_MOP`, `DRYING_MOP`, `COLLECTING_DUST`; `IDLE` for no dock activity | Station status and interlocks |
 | `full_clean_action` | `VACUUMING`, `MOPPING`, `VACUUMING_AND_MOPPING` | Live cleaning activity label while state is `cleaning` |
 | `fault` | Non-empty string | Plain-text subtitle when Robot needs attention is shown |
+| `fault_code` | Value included in the current fault identity | Resets dismissal when the reported fault changes |
 | `drying_remaining_seconds` | Nonnegative finite number | Legacy drying sample, seconds |
 | `drying_total_seconds` | Positive finite number | Legacy drying total, seconds |
 
@@ -275,6 +276,8 @@ Resume must continue the paused job; new room jobs use the custom Start action i
 | `camera.*` | `<serial>_floor_map` | Available state, `attributes.entity_picture` |
 
 Battery uses a dedicated sensor, not the vacuum's battery attribute. Low is below 20%, medium below 50%, otherwise high. Missing charging data does not imply charging.
+
+The camera's optional `robot_bumper_color` attribute may provide a six-digit hexadecimal color (`#RRGGBB`) for the robot illustration during cleaning. Unavailable camera data or invalid colors use the existing neutral fallback.
 
 `camera_entity` may explicitly select another camera on the same Dyson device/platform. The image path must start with `/api/camera_proxy/`; the card uses the HA-provided URL and token. Responses must have an `image/*` content type and decode as an image. The session map reads no raw map JSON, furniture, geometry or room-area attributes; rectangle selection separately reads `map_calibration` as specified below.
 
@@ -515,7 +518,7 @@ Zone images require successful HTTP responses, PNG signature bytes, at most **20
 
 The Zone tab requires a supported device-registry model. Start also requires a trusted same-platform/same-device camera, connected HA, non-preview mode, a verified image, available vacuum/camera states, and literal `ready_to_start: true`. Room readiness's fallback to `docked`/`idle` does not apply here. The zone readiness helper relies on that boolean rather than independently applying room-state/dock interlocks, so the integration must report it accurately and revalidate it at execution.
 
-Zone option capabilities use the intersection of known labels across the discovered room selects for each field (including discovered excluded rooms). A field is available only if all its discovered selects are available. Known choices and protocol values are in `ZONE_CHOICES` in `src/core.js`; the mapping is the one listed above. Missing/unknown option sets cannot be treated as evidence for unsupported protocol values. Without a capability contract, the card does not infer rectangle support from room-cleaning support.
+Zone option capabilities use the intersection of known labels across the discovered room selects for each field (including discovered excluded rooms). A field is available only if all its discovered selects are available. Known choices and protocol values are in `ZONE_CHOICES` in `src/adapters/spot-scrub.js`; the mapping is the one listed above. Missing/unknown option sets cannot be treated as evidence for unsupported protocol values. Without a capability contract, the card does not infer rectangle support from room-cleaning support.
 
 ## 16. Frontend-only configuration and source audit
 
@@ -527,11 +530,14 @@ Title, theme, language, header illustration, status visibility, percentage visib
 
 | Source | Contract responsibility |
 |---|---|
-| `src/core.js` | Platform, discovery, IDs, settings, readiness, features, action data, optional entity validation and zone options/model gate |
+| `src/adapters/spot-scrub.js` | Platform, discovery, IDs, settings, readiness, features, action data, optional entity validation and zone options/model gate |
+| `src/integration.js` | Supplies the existing Spot+Scrub adapter only |
+| `src/shared.js` | Configuration validation and generic display helpers |
 | `src/card.js` | Registry reads, room draft lifecycle, Save confirmation, pending-start timeout, UI capability gating |
 | `src/editor.js` | Configuration UI, discovery and preview behavior |
 | `src/map.js` | Session camera proxy fetch and refresh |
-| `src/zone-core.js` | Calibration validation, geometry, readiness and zone settings payload |
+| `src/zone-geometry.js` | Calibration validation, image hashing and geometry |
+| `src/core.js`, `src/zone-core.js` | Compatibility exports delegating to the shared helpers and adapter |
 | `src/zone.js` | Verified PNG loading, selection, capabilities and `clean_zone` dispatch |
 
 For backend acceptance, exercise every supported row of the action index and entity tables, including renamed entity IDs, missing/disabled/duplicate entries, conflicting IDs, unavailable controls, map changes, live option changes, backend rejections and asynchronous state publication. Run the repository's `npm run check` for frontend regression coverage. Live HA and robot tests are still required to establish compatibility; passing frontend fixtures alone cannot establish it.

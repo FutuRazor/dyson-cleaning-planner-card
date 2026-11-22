@@ -2,6 +2,7 @@
 import { createRequire } from 'node:module';
 import { createHash } from 'node:crypto';
 import { mkdir } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
 import assert from 'node:assert/strict';
 import { previewServer } from '../scripts/preview.mjs';
 const { chromium, webkit } = createRequire(import.meta.url)('playwright');
@@ -159,7 +160,7 @@ try {
   assert.equal(scrollCheck.after,scrollCheck.before,'telemetry must preserve page scroll');
   assert.ok(scrollCheck.sameRect);
   await mkdir(new URL('../artifacts/',import.meta.url),{recursive:true});
-  await page.locator('#card').screenshot({path:new URL('../artifacts/zone-mobile.png',import.meta.url).pathname.replace(/^\/(.:)/,'$1')});
+  await page.locator('#card').screenshot({path:fileURLToPath(new URL('../artifacts/zone-mobile.png',import.meta.url))});
   await page.evaluate(()=>{ demo.hass.states[demo.entity].attributes.ready_to_start=false; demo.card.hass={...demo.hass}; });
   assert.equal(await zone.locator('[data-do="start"]').isDisabled(),true);
   await page.evaluate(()=>{ demo.hass.states[demo.entity].attributes.ready_to_start=true; demo.card.hass={...demo.hass}; });

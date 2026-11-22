@@ -1,5 +1,15 @@
 # Testing v1.4.0
 
+## Integration adapter experiment
+
+This branch supports only the existing Spot+Scrub integration through an internal adapter; it does not add hass-dyson or an integration selector. See [adapter boundaries and live acceptance](docs/integration-adapter.md).
+
+- `npm run check` includes adapter isolation, shared in-flight locking, normalized telemetry, exact zone dispatch and a standalone generated-bundle smoke check, in addition to existing regression tests.
+- Run `node tests/batch-browser.mjs`, `node tests/zone-browser.mjs`, `node tests/robot-bumper-browser.mjs`, `node tests/start-readiness-browser.mjs`, `node tests/room-identity-browser.mjs` and `node tests/editor-session-preview-browser.mjs` with Playwright and an installed browser (`BROWSER_CHANNEL=msedge` on Windows where applicable).
+- Live HA/robot acceptance remains required before beginning another integration adapter. Keep the release version at 1.4.0 during this experiment.
+
+Validation on 21 November 2026: all 69 unit tests, the generated-bundle smoke check and the six browser scripts listed above passed in Edge. `tests/ui-browser.mjs` still fails at line 32 because its select-only field expectation does not match the current Modern controls; the identical failure was reproduced with the unchanged HEAD bundle in an isolated preview. It is not an adapter regression. The zone browser screenshot path now uses `fileURLToPath` so workspace paths containing spaces work on Windows.
+
 ## v1.4.0 release acceptance
 
 - Run `npm run check` and `node tests/zone-browser.mjs`; verify the compiled bundle is reproducible.

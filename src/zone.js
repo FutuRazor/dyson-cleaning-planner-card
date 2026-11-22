@@ -1,9 +1,11 @@
+import { getIntegrationAdapter } from './integration.js';
 import { escapeHtml } from './core.js';
 import { translate } from './localize.js';
-import { zoneDimensionText, adjustZone, zonePillPosition, zoneMinimumSize, zoneHasMinimumSize, fitZoneMinimum, validZoneCalibration, zoneRobotRectangle, zoneCanStart, zoneSha256, zoneSettingsPayload } from './zone-core.js';
+import { zoneDimensionText, adjustZone, zonePillPosition, zoneMinimumSize, zoneHasMinimumSize, fitZoneMinimum, validZoneCalibration, zoneSha256 } from './zone-geometry.js';
 
 // Owns the frozen image and pointer interaction. HA updates never replace its DOM.
 class DysonPlannerZone extends HTMLElement {
+  get adapter() { return this.integrationAdapter ?? getIntegrationAdapter(); }
   constructor() {
     super(); this.attachShadow({ mode: 'open' }); this.language = 'en'; this.strategy = 'auto'; this.mode = 'vacuum'; this.water = 'low'; this.passes = 1;
     this.shadowRoot.innerHTML = `<style>
@@ -136,7 +138,9 @@ class DysonPlannerZone extends HTMLElement {
   setOptions(options) {
     const changed = this.vacuum !== options.vacuum || this.camera !== options.camera || this.rotation !== options.rotation
       || this.hass?.connection !== options.hass.connection;
-    Object.assign(this, options);
+    const { adapter, ...viewOptions } = options;
+    this.integrationAdapter = adapter;
+    Object.assign(this, viewOptions);
     if (changed) {
       this.controller?.abort(); this.attempted = false; this.clear();
       const saved=options.draft;
@@ -146,7 +150,7 @@ class DysonPlannerZone extends HTMLElement {
       this.shadowRoot.querySelector('.zone-power').value=['auto','boost','quiet','quick'].indexOf(this.strategy);
       this._labelsLanguage=null;
     }
-    if (this.calibration && String(this.hass.states[this.vacuum]?.attributes?.map_id) !== this.calibration.map_id) {
+    if (this.calibration && String(this.adapter.mapId(this.hass, this.vacuum)) !== this.calibration.map_id) {
       this.controller?.abort(); this.clear(); this.note = 'The active map changed. Reload the map and select a new zone.';
     }
     const capabilitiesKey = JSON.stringify(this.capabilities);
@@ -231,7 +235,7 @@ class DysonPlannerZone extends HTMLElement {
       // A camera GET may publish its calibration after the image response arrives.
       // Retry reads only; a cleaning command is never retried automatically.
       for (let attempt = 0; attempt < 3; attempt++) {
-        const picture = this.hass.states[this.camera]?.attributes?.entity_picture;
+        const picture = this.adapter.mapPicture(this.hass, this.camera);
         if (typeof picture !== 'string' || !picture.startsWith('/api/camera_proxy/')) throw new Error('Camera image unavailable.');
         const url = new URL(this.hass.hassUrl ? this.hass.hassUrl(picture) : picture, location.href);
         // Never request a resized proxy image: calibration hashes original bytes.
@@ -249,9 +253,9 @@ class DysonPlannerZone extends HTMLElement {
           : zoneSha256(bytes);
         for (let poll = 0; poll < 8; poll++) {
           if (controller.signal.aborted || this.controller !== controller || !this.isConnected) return;
-          const c = this.hass.states[this.camera]?.attributes?.map_calibration;
+          const c = this.adapter.mapCalibration(this.hass, this.camera);
           if (validZoneCalibration(c) && c.image_sha256 === hash
-              && String(this.hass.states[this.vacuum]?.attributes?.map_id) === String(c.map_id)) {
+              && String(this.adapter.mapId(this.hass, this.vacuum)) === String(c.map_id)) {
             objectUrl = URL.createObjectURL(new Blob([bytes], { type: 'image/png' }));
             const img = new Image(); img.src = objectUrl; await img.decode();
             if (controller.signal.aborted || this.controller !== controller || !this.isConnected) return;
@@ -319,7 +323,7 @@ class DysonPlannerZone extends HTMLElement {
         this.area.setAttribute('aria-label',`${this.t('Move zone. Use the arrow keys.')} ${caption}`);
       }
     }
-    const ready = this.settingsReady() && zoneCanStart(this.hass,this.vacuum,this.camera,c,this.trusted,this.preview);
+    const ready = this.settingsReady() && this.adapter.zoneReady(this.hass,this.vacuum,this.camera,c,this.trusted,this.preview);
     for (const action of ['settings','refresh','start']) {
       const button = this.shadowRoot.querySelector(`[data-do="${action}"]`);
       const disabled = !!this.sending
@@ -360,13 +364,12 @@ class DysonPlannerZone extends HTMLElement {
     return keys.every(key=>this.capabilities[key].available && this.capabilities[key].options.some(([,value])=>value===this[key]));
   }
   async start() {
-    if (this.sending || !this.settingsReady() || !zoneHasMinimumSize(this.rect,this.calibration,this.rotation) || !zoneCanStart(this.hass,this.vacuum,this.camera,this.calibration,this.trusted,this.preview)) return;
-    const data = { entity_id:this.vacuum,map_id:this.calibration.map_id,rectangle:zoneRobotRectangle(this.rect,this.calibration,this.rotation),...zoneSettingsPayload(this.mode,this.strategy,this.water,this.passes) };
+    if (this.sending || !this.settingsReady() || !zoneHasMinimumSize(this.rect,this.calibration,this.rotation) || !this.adapter.zoneReady(this.hass,this.vacuum,this.camera,this.calibration,this.trusted,this.preview)) return;
     const dimensions = { widthCm:(this.rect[2]-this.rect[0])*this.width/this.calibration.pixels_per_metre*100,
       heightCm:(this.rect[3]-this.rect[1])*this.height/this.calibration.pixels_per_metre*100 };
     this.sending = true; this.labels(); this.note = 'Sending zone start …'; this.draw();
     try {
-      await this.hass.callService('dyson_spot_scrub','clean_zone',data);
+      await this.adapter.startZone(this.hass, { vacuum:this.vacuum, camera:this.camera, calibration:this.calibration, trusted:this.trusted, preview:this.preview, rect:this.rect, rotation:this.rotation, mode:this.mode, strategy:this.strategy, water:this.water, passes:this.passes });
       if (this.isConnected) this.dispatchEvent(new CustomEvent('zone-started',{detail:dimensions,bubbles:true,composed:true}));
     } catch (error) {
       if (this.isConnected) this.note = error.message || 'Zone start failed. Check the robot before retrying.';

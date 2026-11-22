@@ -1,3 +1,4 @@
+import { getIntegrationAdapter } from './integration.js';
 import { translate } from './localize.js';
 import { available, fitMap } from './core.js';
 
@@ -33,7 +34,8 @@ class DysonPlannerMap extends HTMLElement {
     if (this.objectUrl) URL.revokeObjectURL(this.objectUrl);
     this.objectUrl = undefined; this.img.removeAttribute('src'); this.img.style.visibility = 'hidden';
   }
-  setOptions(hass, entity, rotation, live, language = 'en') {
+  setOptions(hass, entity, rotation, live, language = 'en', adapter = getIntegrationAdapter()) {
+    this.adapter = adapter;
     this.language = language;
     this.img.alt = translate(language, 'Live cleaning map');
     if (this.messageKey) this.showMessage(this.messageKey);
@@ -75,7 +77,7 @@ class DysonPlannerMap extends HTMLElement {
   }
   async refresh() {
     if (!this.isConnected || !this.inView || document.hidden || !this.live) return;
-    const picture = this.hass.states[this.entity]?.attributes?.entity_picture;
+    const picture = this.adapter.mapPicture(this.hass, this.entity);
     this.lastAttempt = Date.now();
     // Use the HA-provided proxy path/token; never save or log tokens in config.
     if (typeof picture !== 'string' || !picture.startsWith('/api/camera_proxy/')) {
