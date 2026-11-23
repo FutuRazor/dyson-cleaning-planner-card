@@ -36,7 +36,7 @@ try {
  assert.equal(await page.locator('#card .compact-status').count(),1);
  const top=(await page.locator('#card .planning-tabs').boundingBox()).y;
  assert.equal(await page.locator('#card .header-fault').isVisible(),true);
- await page.locator('#card .header-fault-close').click();
+ await page.locator('#card [data-action="dismiss-fault"]').click();
  assert.equal(await page.locator('#card .header-fault').isVisible(),false);
  assert.equal(await page.locator('#card .robot-warning').isVisible(),true);
  await page.evaluate(()=>{demo.card.hass={...demo.hass};});
@@ -45,7 +45,7 @@ try {
  assert.equal(await page.locator('#card .header-fault').isVisible(),true);
  await page.setViewportSize({width:390,height:1100});
  await page.locator('#card').screenshot({path:'artifacts/modern-fault-overlay.png'});
- await page.locator('#card .header-fault-close').click();
+ await page.locator('#card [data-action="dismiss-fault"]').click();
  await page.evaluate(()=>{demo.hass.states[demo.entity].attributes.fault='Different error';demo.card.hass={...demo.hass};});
  assert.equal(await page.locator('#card .header-fault').isVisible(),true);
  await page.evaluate(()=>{demo.hass.states[demo.entity].attributes.dock_state='DRYING_MOP';demo.card.hass={...demo.hass};});

@@ -1,5 +1,12 @@
 // French UI translations. Dyson terminology is referenced in docs/translations.md.
 export const fr = {
+  "Map entity must use the {domain} domain for this integration.": "L’entité du plan doit utiliser le domaine {domain} pour cette intégration.",
+  "Map image": "Image du plan",
+  "hass-dyson (experimental)": "hass-dyson (expérimental)",
+  "Invalid integration selection.": "Sélection d’intégration non valide.",
+  "The room map is unavailable or ambiguous. Refresh rooms and check the integration.": "Le plan des pièces est indisponible ou ambigu. Actualisez les pièces et vérifiez l’intégration.",
+  "Settings were saved, but cleaning did not start. Review the robot status before retrying. {error}": "Les réglages ont été enregistrés, mais le nettoyage n’a pas démarré. Vérifiez l’état du robot avant de réessayer. {error}",
+  "Room order is controlled by hass-dyson. Changed settings are saved before cleaning starts.": "hass-dyson détermine l’ordre des pièces. Les réglages modifiés sont enregistrés avant le démarrage.",
   "Integration": "Intégration",
   "Invalid header icon style.": "Style d’icône d’en-tête non valide.",
   "Header icon style": "Style d’icône d’en-tête",

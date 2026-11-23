@@ -1,5 +1,12 @@
 // German display text. Entity names and protocol values are never rewritten.
 export const de = {
+  "Map entity must use the {domain} domain for this integration.": "Die Kartenentität muss für diese Integration die Domain {domain} verwenden.",
+  "Map image": "Kartenbild",
+  "hass-dyson (experimental)": "hass-dyson (experimentell)",
+  "Invalid integration selection.": "Ungültige Integrationsauswahl.",
+  "The room map is unavailable or ambiguous. Refresh rooms and check the integration.": "Die Raumkarte ist nicht verfügbar oder nicht eindeutig. Räume aktualisieren und Integration prüfen.",
+  "Settings were saved, but cleaning did not start. Review the robot status before retrying. {error}": "Einstellungen gespeichert, Reinigung aber nicht gestartet. Vor erneutem Versuch Roboterstatus prüfen. {error}",
+  "Room order is controlled by hass-dyson. Changed settings are saved before cleaning starts.": "hass-dyson bestimmt die Raumreihenfolge. Geänderte Einstellungen werden vor dem Reinigungsstart gespeichert.",
   "Integration": "Integration",
   "Invalid header icon style.": "Ung\u00fcltiger Stil f\u00fcr das Header-Symbol.",
   "Header icon style": "Header-Symbol",

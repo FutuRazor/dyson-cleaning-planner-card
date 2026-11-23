@@ -1,5 +1,12 @@
 // English messages are also stable translation keys. Never use translated labels in action payloads.
 export const en = {
+  "Map entity must use the {domain} domain for this integration.": "Map entity must use the {domain} domain for this integration.",
+  "Map image": "Map image",
+  "hass-dyson (experimental)": "hass-dyson (experimental)",
+  "Invalid integration selection.": "Invalid integration selection.",
+  "The room map is unavailable or ambiguous. Refresh rooms and check the integration.": "The room map is unavailable or ambiguous. Refresh rooms and check the integration.",
+  "Settings were saved, but cleaning did not start. Review the robot status before retrying. {error}": "Settings were saved, but cleaning did not start. Review the robot status before retrying. {error}",
+  "Room order is controlled by hass-dyson. Changed settings are saved before cleaning starts.": "Room order is controlled by hass-dyson. Changed settings are saved before cleaning starts.",
   "Integration": "Integration",
   "Invalid header icon style.": "Invalid header icon style.",
   "Header icon style": "Header icon style",

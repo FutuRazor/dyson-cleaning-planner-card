@@ -1,6 +1,13 @@
-/* Dyson Cleaning Planner Card v1.4.0 | MIT */
+/* Dyson Cleaning Planner Card v1.5.0 | MIT */
 // English messages are also stable translation keys. Never use translated labels in action payloads.
 const en = {
+  "Map entity must use the {domain} domain for this integration.": "Map entity must use the {domain} domain for this integration.",
+  "Map image": "Map image",
+  "hass-dyson (experimental)": "hass-dyson (experimental)",
+  "Invalid integration selection.": "Invalid integration selection.",
+  "The room map is unavailable or ambiguous. Refresh rooms and check the integration.": "The room map is unavailable or ambiguous. Refresh rooms and check the integration.",
+  "Settings were saved, but cleaning did not start. Review the robot status before retrying. {error}": "Settings were saved, but cleaning did not start. Review the robot status before retrying. {error}",
+  "Room order is controlled by hass-dyson. Changed settings are saved before cleaning starts.": "Room order is controlled by hass-dyson. Changed settings are saved before cleaning starts.",
   "Integration": "Integration",
   "Invalid header icon style.": "Invalid header icon style.",
   "Header icon style": "Header icon style",
@@ -255,6 +262,13 @@ const en = {
 
 // German display text. Entity names and protocol values are never rewritten.
 const de = {
+  "Map entity must use the {domain} domain for this integration.": "Die Kartenentität muss für diese Integration die Domain {domain} verwenden.",
+  "Map image": "Kartenbild",
+  "hass-dyson (experimental)": "hass-dyson (experimentell)",
+  "Invalid integration selection.": "Ungültige Integrationsauswahl.",
+  "The room map is unavailable or ambiguous. Refresh rooms and check the integration.": "Die Raumkarte ist nicht verfügbar oder nicht eindeutig. Räume aktualisieren und Integration prüfen.",
+  "Settings were saved, but cleaning did not start. Review the robot status before retrying. {error}": "Einstellungen gespeichert, Reinigung aber nicht gestartet. Vor erneutem Versuch Roboterstatus prüfen. {error}",
+  "Room order is controlled by hass-dyson. Changed settings are saved before cleaning starts.": "hass-dyson bestimmt die Raumreihenfolge. Geänderte Einstellungen werden vor dem Reinigungsstart gespeichert.",
   "Integration": "Integration",
   "Invalid header icon style.": "Ung\u00fcltiger Stil f\u00fcr das Header-Symbol.",
   "Header icon style": "Header-Symbol",
@@ -509,6 +523,13 @@ const de = {
 
 // Dutch UI text. Protocol values and entity names remain unchanged.
 const nl = {
+  "Map entity must use the {domain} domain for this integration.": "De kaartentiteit moet voor deze integratie het domein {domain} gebruiken.",
+  "Map image": "Kaartafbeelding",
+  "hass-dyson (experimental)": "hass-dyson (experimenteel)",
+  "Invalid integration selection.": "Ongeldige integratiekeuze.",
+  "The room map is unavailable or ambiguous. Refresh rooms and check the integration.": "De kamerkaart is niet beschikbaar of niet eenduidig. Vernieuw de kamers en controleer de integratie.",
+  "Settings were saved, but cleaning did not start. Review the robot status before retrying. {error}": "Instellingen opgeslagen, maar de reiniging is niet gestart. Controleer de robotstatus voordat u het opnieuw probeert. {error}",
+  "Room order is controlled by hass-dyson. Changed settings are saved before cleaning starts.": "hass-dyson bepaalt de kamervolgorde. Gewijzigde instellingen worden vóór het reinigen opgeslagen.",
   "Integration": "Integratie",
   "Invalid header icon style.": "Ongeldige stijl voor het koptekstpictogram.",
   "Header icon style": "Koptekstpictogram",
@@ -763,6 +784,13 @@ const nl = {
 
 // French UI translations. Dyson terminology is referenced in docs/translations.md.
 const fr = {
+  "Map entity must use the {domain} domain for this integration.": "L’entité du plan doit utiliser le domaine {domain} pour cette intégration.",
+  "Map image": "Image du plan",
+  "hass-dyson (experimental)": "hass-dyson (expérimental)",
+  "Invalid integration selection.": "Sélection d’intégration non valide.",
+  "The room map is unavailable or ambiguous. Refresh rooms and check the integration.": "Le plan des pièces est indisponible ou ambigu. Actualisez les pièces et vérifiez l’intégration.",
+  "Settings were saved, but cleaning did not start. Review the robot status before retrying. {error}": "Les réglages ont été enregistrés, mais le nettoyage n’a pas démarré. Vérifiez l’état du robot avant de réessayer. {error}",
+  "Room order is controlled by hass-dyson. Changed settings are saved before cleaning starts.": "hass-dyson détermine l’ordre des pièces. Les réglages modifiés sont enregistrés avant le démarrage.",
   "Integration": "Intégration",
   "Invalid header icon style.": "Style d’icône d’en-tête non valide.",
   "Header icon style": "Style d’icône d’en-tête",
@@ -1041,7 +1069,6 @@ function translate(language, key, params = {}) {
 }
 
 
-const DOMAIN = 'dyson_spot_scrub';
 const ROOM_FIELDS = { cleaning_mode: 'Cleaning mode', cleaning_strategy: 'Vacuum Power', water_level: 'Water level', mop_repetitions: 'Clean repetitions' };
 const available = state => !!state && !['unavailable', 'unknown'].includes(state.state) && !state.attributes?.restored;
 const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -1058,6 +1085,7 @@ const STATUS_BAR_ITEMS = [
 
 function normalizeConfig(config) {
   if (!config || typeof config.entity !== 'string' || !config.entity.startsWith('vacuum.')) throw new UiError('Select a vacuum entity.');
+  if (config.integration !== undefined && !['auto', 'dyson_spot_scrub', 'hass_dyson'].includes(config.integration)) throw new UiError('Invalid integration selection.');
   if (config.language !== undefined && !['auto', 'en', 'de', 'nl', 'fr'].includes(config.language)) throw new UiError('language must be auto, en, de, nl or fr.');
   if (config.theme !== undefined && !['classic', 'modern'].includes(config.theme)) throw new UiError('theme must be classic or modern.');
   if (config.unsupported_settings && !['disabled', 'hidden'].includes(config.unsupported_settings)) throw new UiError('unsupported_settings must be disabled or hidden.');
@@ -1071,12 +1099,119 @@ function normalizeConfig(config) {
   if (config.show_camera !== undefined && typeof config.show_camera !== 'boolean') throw new UiError('show_camera must be true or false.');
   if (config.always_show_all_settings !== undefined && typeof config.always_show_all_settings !== 'boolean') throw new UiError('always_show_all_settings must be true or false.');
   if (config.camera_rotation !== undefined && ![0, 90, 180, 270].includes(config.camera_rotation)) throw new UiError('camera_rotation must be 0, 90, 180 or 270.');
-  if (config.camera_entity && (typeof config.camera_entity !== 'string' || !config.camera_entity.startsWith('camera.'))) throw new UiError('Select a camera entity.');
+  if (config.camera_entity && (typeof config.camera_entity !== 'string' || !/^(camera|image)\./.test(config.camera_entity))) throw new UiError('Select a camera entity.');
+  const mapDomain = { dyson_spot_scrub:'camera', hass_dyson:'image' }[config.integration];
+  if (config.camera_entity && mapDomain && !config.camera_entity.startsWith(`${mapDomain}.`)) throw new UiError('Map entity must use the {domain} domain for this integration.', { domain:mapDomain });
   if (config.zone_dimension_unit !== undefined && !['off','auto','cm','inch'].includes(config.zone_dimension_unit)) throw new UiError('Invalid zone dimension unit.');
   if (config.header_icon_style !== undefined && !['home_assistant','integration'].includes(config.header_icon_style)) throw new UiError('Invalid header icon style.');
   return { ...config, header_icon_style: config.header_icon_style ?? 'integration', zone_dimension_unit: config.zone_dimension_unit ?? 'auto', language: config.language ?? 'auto', theme: config.theme ?? 'modern', show_battery_percentage: config.show_battery_percentage ?? false, show_status_bar: config.show_status_bar ?? true, hidden_status_items: config.hidden_status_items ?? [], title: config.title ?? '', always_show_all_settings: config.always_show_all_settings ?? false, unsupported_settings: 'hidden', excluded_rooms: config.excluded_rooms ?? [], room_order: config.room_order ?? [], show_camera: config.show_camera ?? true, camera_rotation: config.camera_rotation ?? 0 };
 }
 
+function fitMap(width, height, boxWidth, rotation) {
+  if (![width, height, boxWidth].every(n => Number.isFinite(n) && n > 0)) return { width: 0, height: 0, frameHeight: 0 };
+  const sideways = rotation === 90 || rotation === 270;
+  const scale = boxWidth / (sideways ? height : width);
+  return { width: width * scale, height: height * scale, frameHeight: (sideways ? width : height) * scale };
+}
+
+
+// Geometry is expressed in the displayed, rotated image's normalised coordinates.
+function validZoneCalibration(c) {
+  return c?.version === 1 && c.units === 'm' && /^\d+$/.test(String(c.map_id)) && Number(c.map_id) > 0
+    && ['image_width', 'image_height', 'pixels_per_metre'].every(k => Number.isFinite(c[k]) && c[k] > 0)
+    && ['padding', 'min_x', 'max_y'].every(k => Number.isFinite(c[k])) && c.padding >= 0
+    && /^[a-f0-9]{64}$/.test(c.image_sha256);
+}
+
+function zoneRobotRectangle(rect, calibration, rotation = 0) {
+  if (!validZoneCalibration(calibration) || ![0, 90, 180, 270].includes(rotation)
+      || !Array.isArray(rect) || rect.length !== 4 || rect.some(v => !Number.isFinite(v) || v < 0 || v > 1)
+      || rect[0] >= rect[2] || rect[1] >= rect[3]) throw new Error('Invalid zone geometry');
+  const points = [[rect[0], rect[1]], [rect[2], rect[1]], [rect[2], rect[3]], [rect[0], rect[3]]].map(([u, v]) => {
+    const [x, y] = rotation === 90 ? [v, 1-u] : rotation === 180 ? [1-u, 1-v] : rotation === 270 ? [1-v, u] : [u, v];
+    return [calibration.min_x + (x * calibration.image_width - calibration.padding) / calibration.pixels_per_metre,
+      calibration.max_y - (y * calibration.image_height - calibration.padding) / calibration.pixels_per_metre];
+  });
+  return [Math.min(...points.map(p => p[0])), Math.min(...points.map(p => p[1])),
+    Math.max(...points.map(p => p[0])), Math.max(...points.map(p => p[1]))];
+}
+
+// SHA-256 fallback for HA served over plain HTTP, where crypto.subtle is absent.
+// The hash binds a camera snapshot to its calibration; it is not authentication.
+function zoneSha256(bytes) {
+  const rotr = (x, n) => (x >>> n) | (x << (32 - n));
+  const primes = [];
+  for (let n = 2; primes.length < 64; n++) if (!primes.some(p => n % p === 0)) primes.push(n);
+  const h = primes.slice(0, 8).map(p => (Math.sqrt(p) % 1 * 2 ** 32) >>> 0);
+  const k = primes.map(p => (Math.cbrt(p) % 1 * 2 ** 32) >>> 0);
+  const padded = new Uint8Array(Math.ceil((bytes.length + 9) / 64) * 64);
+  padded.set(bytes); padded[bytes.length] = 128;
+  const data = new DataView(padded.buffer), bits = bytes.length * 8;
+  data.setUint32(padded.length - 8, Math.floor(bits / 2 ** 32)); data.setUint32(padded.length - 4, bits >>> 0);
+  const w = new Uint32Array(64);
+  for (let offset = 0; offset < padded.length; offset += 64) {
+    for (let i = 0; i < 16; i++) w[i] = data.getUint32(offset + i * 4);
+    for (let i = 16; i < 64; i++) {
+      const a = w[i-15], b = w[i-2];
+      w[i] = w[i-16] + (rotr(a,7)^rotr(a,18)^(a>>>3)) + w[i-7] + (rotr(b,17)^rotr(b,19)^(b>>>10));
+    }
+    let [a,b,c,d,e,f,g,j] = h;
+    for (let i = 0; i < 64; i++) {
+      const t1 = (j + (rotr(e,6)^rotr(e,11)^rotr(e,25)) + ((e&f)^(~e&g)) + k[i] + w[i]) | 0;
+      const t2 = ((rotr(a,2)^rotr(a,13)^rotr(a,22)) + ((a&b)^(a&c)^(b&c))) | 0;
+      j=g; g=f; f=e; e=(d+t1)|0; d=c; c=b; b=a; a=(t1+t2)|0;
+    }
+    [a,b,c,d,e,f,g,j].forEach((v,i) => { h[i]=(h[i]+v)>>>0; });
+  }
+  return h.map(v => v.toString(16).padStart(8,'0')).join('');
+}
+
+
+// Trial UI minimum, not a confirmed firmware limit. Each side must meet it.
+function zoneMinimumSize(c, rotation = 0) {
+  const rotated = rotation === 90 || rotation === 270;
+  return [.55 * c.pixels_per_metre / (rotated ? c.image_height : c.image_width),
+    .55 * c.pixels_per_metre / (rotated ? c.image_width : c.image_height)];
+}
+function zoneHasMinimumSize(rect, c, rotation = 0) {
+  if (!rect || !validZoneCalibration(c)) return false;
+  const [w,h] = zoneMinimumSize(c, rotation);
+  return rect[2]-rect[0]+1e-10 >= w && rect[3]-rect[1]+1e-10 >= h;
+}
+function fitZoneMinimum(rect, c, rotation = 0) {
+  const [mw,mh] = zoneMinimumSize(c, rotation);
+  const w=Math.min(1,Math.max(mw,rect[2]-rect[0])), h=Math.min(1,Math.max(mh,rect[3]-rect[1]));
+  const x=Math.max(0,Math.min(rect[0],1-w)), y=Math.max(0,Math.min(rect[1],1-h));
+  return [x,y,x+w,y+h];
+}
+
+// Display-space helpers keep movement separate from resizing.
+function adjustZone(rect, dx, dy, resize, minimum) {
+  const [x,y,x2,y2]=rect, [mw,mh]=minimum;
+  if (resize) return [x,y,Math.min(1,Math.max(x+mw,x2+dx)),Math.min(1,Math.max(y+mh,y2+dy))];
+  const w=x2-x,h=y2-y,nx=Math.max(0,Math.min(1-w,x+dx)),ny=Math.max(0,Math.min(1-h,y+dy));
+  return [nx,ny,nx+w,ny+h];
+}
+function zonePillPosition(rect, width, height, pillWidth, pillHeight, gap=6, horizontalOverflow=14) {
+  const [x,y,x2]=rect;
+  // Use the map frame's free margin, keeping six screen pixels to the card
+  // edge. The pill stays above the zone using the existing space above the map.
+  const left=Math.max(-horizontalOverflow,Math.min(width+horizontalOverflow-pillWidth,(x+x2)*width/2-pillWidth/2));
+  return [left,y*height-pillHeight-gap];
+}
+
+// Presentation only: robot geometry and minimum sizes remain metric.
+function zoneDimensionText(widthCm, heightCm, lengthUnit) {
+  const imperial = ['mi', 'ft', 'in', 'yd'].includes(lengthUnit);
+  const divisor = imperial ? 2.54 : 1;
+  return `${Math.round(widthCm/divisor)} \u00d7 ${Math.round(heightCm/divisor)} ${imperial ? 'in' : 'cm'}`;
+}
+
+
+// Keep backend identities, telemetry and action policy inside this adapter.
+// The local scope also isolates implementation names in the dependency-free bundle.
+const spotScrubAdapter = (() => {
+const DOMAIN = 'dyson_spot_scrub';
 // A missing map ID remains compatible with integrations that do not expose it.
 const roomContext = (hass, entity) => JSON.stringify([entity, hass?.states?.[entity]?.attributes?.map_id == null ? null : String(hass.states[entity].attributes.map_id)]);
 
@@ -1326,13 +1461,6 @@ async function controlCleaning(hass, entity, action) {
   await hass.callService(action === 'cancel_drying' ? DOMAIN : 'vacuum', action, { entity_id: entity });
 }
 
-function fitMap(width, height, boxWidth, rotation) {
-  if (![width, height, boxWidth].every(n => Number.isFinite(n) && n > 0)) return { width: 0, height: 0, frameHeight: 0 };
-  const sideways = rotation === 90 || rotation === 270;
-  const scale = boxWidth / (sideways ? height : width);
-  return { width: width * scale, height: height * scale, frameHeight: (sideways ? width : height) * scale };
-}
-
 const CONSUMABLES = [
   ['brushBar', 'Brush bar'], ['mopRoller', 'Mop roller'], ['mopPad', 'Mop pad'],
   ['sideBrushes', 'Side brushes'], ['robotFilter', 'Robot filter'],
@@ -1486,6 +1614,421 @@ function zoneDeviceOptions(rooms) {
   }));
 }
 
+function vacuumEntries(registry) {
+  return registry.filter(e => e.platform === DOMAIN && !e.disabled_by && e.entity_id.startsWith('vacuum.'));
+}
+function cameraEntries(registry, entity) {
+  const device = registry.find(e => e.entity_id === entity)?.device_id;
+  return registry.filter(e => e.platform === DOMAIN && !e.disabled_by && e.device_id === device && e.entity_id.startsWith('camera.'));
+}
+function defaultEntity(hass) {
+  const entry = Object.values(hass.entities ?? {}).find(e => e.platform === DOMAIN && e.entity_id.startsWith('vacuum.'));
+  return entry?.entity_id ?? Object.keys(hass.states).find(id => id.startsWith('vacuum.') && Array.isArray(hass.states[id].attributes.rooms)) ?? '';
+}
+function roomSelectionState(hass, entity) { return hass.states[entity]?.state; }
+function hasRoomList(hass, entity) { return Array.isArray(hass.states[entity]?.attributes?.rooms); }
+function roomActionAvailable(hass, start) { return !!hass?.services?.[DOMAIN]?.[start ? 'start_rooms_with_settings' : 'save_room_settings']; }
+function mapId(hass, entity) { return hass?.states?.[entity]?.attributes?.map_id; }
+function mapPicture(hass, entity) { return hass?.states?.[entity]?.attributes?.entity_picture; }
+function mapCalibration(hass, entity) { return hass?.states?.[entity]?.attributes?.map_calibration; }
+function trustedCamera(registry, entity, camera) {
+  const robotEntry = registry.find(e => e.entity_id === entity);
+  const cameraEntry = registry.find(e => e.entity_id === camera);
+  return !!(robotEntry?.device_id && robotEntry.platform === DOMAIN && cameraEntry?.platform === DOMAIN && robotEntry.device_id === cameraEntry.device_id);
+}
+function robotTelemetry(hass, entity, camera) {
+  const vacuum = hass?.states?.[entity], image = hass?.states?.[camera];
+  const attrs = vacuum?.attributes ?? {};
+  return { state: vacuum?.state, available: available(vacuum), name: attrs.friendly_name,
+    dockState: attrs.dock_state, fault: attrs.fault, faultCode: attrs.fault_code,
+    cleaning: hass?.connected !== false && vacuum?.state === 'cleaning' && !Object.hasOwn(DOCK_PHASES, attrs.dock_state),
+    bumperColor: available(image) ? image.attributes?.robot_bumper_color : undefined };
+}
+function dockActivity(hass, entity) {
+  const phase = hass?.states?.[entity]?.attributes?.dock_state;
+  return DOCK_PHASES[phase] ? { text: DOCK_PHASES[phase][0], icon: DOCK_PHASES[phase][1], drying: phase === 'DRYING_MOP' } : null;
+}
+// Spot+Scrub zone tests confirm mopPasses controls repetitions even for vacuum.
+// In vacuumThenMop it repeats only mopping; dryPasses stays at one.
+function zoneSettingsPayload(mode, strategy, water, passes) {
+  if (!['vacuum','vacuumAndMop','mop','vacuumThenMop'].includes(mode)
+      || !['auto','boost','quiet','quick'].includes(strategy)
+      || !['veryLow','low','medium','high'].includes(water)
+      || ![1,2].includes(passes)) throw new Error('Invalid zone settings');
+  return { clean_type:mode, cleaning_strategy:mode==='mop'?'auto':strategy,
+    water_level:mode==='vacuum'?'low':water,
+    mop_passes:passes, dry_passes:1 };
+}
+
+
+function zoneReady(hass, vacuum, camera, calibration, trusted, preview) {
+  const state = hass?.states?.[vacuum], cameraState = hass?.states?.[camera];
+  return !!(!preview && trusted && hass?.connected !== false && hass?.services?.[DOMAIN]?.clean_zone
+    && state && !['unknown', 'unavailable'].includes(state.state) && state.attributes?.ready_to_start === true
+    && cameraState && !['unknown', 'unavailable'].includes(cameraState.state) && validZoneCalibration(calibration)
+    && String(mapId(hass, vacuum)) === String(calibration.map_id)
+    && String(mapCalibration(hass, camera)?.map_id) === String(calibration.map_id));
+}
+function startZone(hass, { vacuum, camera, calibration, trusted, preview, rect, rotation, mode, strategy, water, passes }) {
+  if (!zoneReady(hass, vacuum, camera, calibration, trusted, preview)) throw new UiError('This action is not available for the current robot state.');
+  const data = { entity_id: vacuum, map_id: calibration.map_id,
+    rectangle: zoneRobotRectangle(rect, calibration, rotation), ...zoneSettingsPayload(mode, strategy, water, passes) };
+  return hass.callService(DOMAIN, 'clean_zone', data);
+}
+
+return Object.freeze({ id: DOMAIN, roomContext, discover, batteryStatus, sendRoomDraft, dockBusy, dockBlocksStart, startBlockReason, activityStatus, cleaningView, dryingRemainingTime, dryingRemainingPercent, canControl, controlCleaning, CONSUMABLES, consumableStatus, ROBOT_FIELDS, robotSettings, changeRobotSetting, STATION_FIELDS, STATION_ACTIONS, stationActions, pressStationAction, stationSettings, changeStationSetting, supportsZoneDevice, ZONE_CHOICES, zoneDeviceOptions, vacuumEntries, cameraEntries, defaultEntity, roomSelectionState, hasRoomList, roomActionAvailable, mapId, mapPicture, mapCalibration, trustedCamera, robotTelemetry, dockActivity, zoneReady, startZone, zoneSettingsPayload,
+  mapPictureAllowed:picture => typeof picture === 'string' && picture.startsWith('/api/camera_proxy/'),
+});
+})();
+
+
+// Experimental RB05 room adapter. No protocol commands or fabricated HA entities.
+const hassDysonAdapter = (() => {
+const DOMAIN = 'hass_dyson';
+const fields = {
+  cleaning_mode: ['cleaning_mode', 'cleaning mode', { vacuum_only:'Vacuum', vacuum_and_mop:'Vacuum and Mop', mop_only:'Mop', vacuum_then_mop:'Vacuum then Mop' }],
+  cleaning_strategy: ['vacuum_power', 'vacuum power', { auto:'Auto', boost:'Boost', quiet:'Quiet', quick:'Quick' }],
+  water_level: ['hydration', 'hydration', { very_low:'Very Low', low:'Low', medium:'Medium', high:'High' }],
+  mop_repetitions: ['wash_repetitions', 'wash repetitions', { '1x':'One Pass', '2x':'Two Passes' }],
+};
+const pending = new Set();
+function vacuumEntries(registry) { return registry.filter(e => e.platform === DOMAIN && !e.disabled_by && e.entity_id.startsWith('vacuum.')); }
+function deviceEntries(registry, entity) {
+  const vacuum = vacuumEntries(registry).find(e => e.entity_id === entity);
+  if (!vacuum?.device_id) return { entries:[], serial:'', deviceId:null };
+  return { entries:registry.filter(e => e.platform === DOMAIN && e.device_id === vacuum.device_id), serial:String(vacuum.unique_id ?? '').replace(/_vacuum$/, ''), deviceId:vacuum.device_id };
+}
+function pick(entries, serial, domain, suffix) {
+  const matches = entries.filter(e => !e.disabled_by && e.entity_id.startsWith(`${domain}.`) && e.unique_id === `${serial}_${suffix}`);
+  return matches.length === 1 ? matches[0].entity_id : undefined;
+}
+function roomEntries(registry, entity) {
+  const { entries, serial, deviceId } = deviceEntries(registry, entity), rooms = new Map();
+  for (const e of entries) {
+    if (e.disabled_by || !e.entity_id.startsWith('select.')) continue;
+    for (const [key, [nativeKey]] of Object.entries(fields)) {
+      const prefix = `${serial}_room_`, suffix = `_${nativeKey}`;
+      if (!e.unique_id?.startsWith(prefix) || !e.unique_id.endsWith(suffix)) continue;
+      const id = e.unique_id.slice(prefix.length, -suffix.length);
+      if (!/^\d+$/.test(id)) continue;
+      if (!rooms.has(id)) rooms.set(id, {});
+      (rooms.get(id)[key] ??= []).push(e);
+    }
+  }
+  return { entries, serial, deviceId, rooms };
+}
+function roomMap(registry, entity) {
+  const { entries, serial, rooms } = roomEntries(registry, entity), maps = new Map();
+  // Registry IDs are map-qualified upstream; never infer a map from display names.
+  for (const e of entries) {
+    const prefix = `${serial}_clean_zone_`;
+    if (!e.entity_id.startsWith('button.') || !e.unique_id?.startsWith(prefix)) continue;
+    const value = e.unique_id.slice(prefix.length), split = value.lastIndexOf('_');
+    if (split < 1 || !/^\d+$/.test(value.slice(split + 1))) continue;
+    const map = value.slice(0, split), id = value.slice(split + 1);
+    if (!maps.has(map)) maps.set(map, new Set());
+    maps.get(map).add(id);
+  }
+  const candidates = [...maps].filter(([, ids]) => rooms.size && [...rooms.keys()].every(id => ids.has(id)));
+  // Upstream room selects do not expose their map. Until there is a verified
+  // active-map contract, multiple stored maps cannot safely be joined to them.
+  return maps.size === 1 && candidates.length === 1 ? candidates[0][0] : null;
+}
+function roomContext(hass, entity, registry = []) {
+  // Include registry map topology and current-map preference membership. A change
+  // during a two-step Start must not inherit the old draft's identity.
+  const { entries, serial } = deviceEntries(registry, entity);
+  const global = pick(entries, serial, 'select', 'cleaning_mode');
+  const ids = Object.keys(hass?.states?.[global]?.attributes?.room_settings ?? {}).sort();
+  return JSON.stringify([DOMAIN, entity, roomMap(registry, entity), ids]);
+}
+function cameraEntries(registry, entity) {
+  return deviceEntries(registry, entity).entries.filter(e => !e.disabled_by && e.entity_id.startsWith('image.'));
+}
+function discover(hass, registry, config, previousRooms = []) {
+  const { entries, serial, deviceId, rooms:groups } = roomEntries(registry, config.entity);
+  const context = roomContext(hass, config.entity, registry), map = roomMap(registry, config.entity);
+  const issues = [];
+  if (!deviceId) issues.push('The Dyson device was not found in the entity registry.');
+  if (!groups.size) issues.push('The Dyson room list is not currently available.');
+  const rooms = [...groups].map(([id, group]) => {
+    const settings = {}, ids = new Set(); let name;
+    for (const [key, candidates] of Object.entries(group)) {
+      if (candidates.length !== 1) continue;
+      const entry = candidates[0], state = hass.states[entry.entity_id], [, label, values] = fields[key];
+      const liveId = state?.attributes?.room_id;
+      if (liveId != null) ids.add(String(liveId));
+      const prior = previousRooms.find(r => r.roomId === id && r.context === context)?.settings?.[key];
+      const options = Array.isArray(state?.attributes?.options) ? state.attributes.options.filter(v => Object.hasOwn(values, v)).map(v => values[v]) : !available(state) ? prior?.options ?? [] : [];
+      settings[key] = { entity:entry.entity_id, value:values[state?.state], options, available:hass.connected !== false && available(state) && String(liveId) === id };
+      const original = entry.original_name;
+      if (!name && typeof original === 'string' && original.endsWith(` ${label}`)) name = original.slice(0, -(label.length + 1));
+    }
+    // An actual select ID acts as the card's stable room key; no room switches
+    // exist in this integration. All writes still use native room IDs.
+    const modeEntries = entries.filter(e => e.entity_id.startsWith('select.') && e.unique_id === `${serial}_room_${id}_cleaning_mode`);
+    const entity = settings.cleaning_mode?.entity ?? (modeEntries.length === 1 ? modeEntries[0].entity_id : Object.values(settings)[0]?.entity) ?? '';
+    const valid = ids.size === 1 && ids.has(id);
+    return { name:name || `Room ${id}`, entity, roomId:valid ? id : undefined, context, mapId:map, settings,
+      available:valid && !!entity && Object.values(settings).some(f => f.available), excluded:config.excluded_rooms?.includes(entity) ?? false };
+  });
+  const rank = id => { const i = config.room_order?.indexOf(id) ?? -1; return i < 0 ? Number.MAX_SAFE_INTEGER : i; };
+  rooms.sort((a,b) => rank(a.entity) - rank(b.entity));
+  const images = cameraEntries(registry, config.entity);
+  const cameraEntity = config.camera_entity ? images.find(e => e.entity_id === config.camera_entity)?.entity_id
+    : ['clean_coverage','floor_plan','dust_map'].map(s => pick(entries, serial, 'image', s)).find(Boolean);
+  return { rooms, issues, cameraEntity, startBlockReason:groups.size && !map ? 'The room map is unavailable or ambiguous. Refresh rooms and check the integration.' : null,
+    batteryEntity:pick(entries, serial, 'sensor', 'robot_battery'),
+    chargingEntity:pick(entries, serial, 'binary_sensor', 'robot_battery_charging'), deviceId, mapId:map };
+}
+function dockState(hass, entity, registry = []) {
+  const { entries, serial } = deviceEntries(registry, entity);
+  const sensor = hass?.states?.[pick(entries, serial, 'sensor', 'robot_dock_state')];
+  return available(sensor) ? sensor.state : null;
+}
+function dockActivity(hass, entity, registry = []) {
+  if (hass?.connected === false || !available(hass?.states?.[entity])) return null;
+  const phase = dockState(hass, entity, registry);
+  const labels = { WASHING_MOP:['Cleaning mop roller','mdi:waves'], COLLECTING_DUST:['Emptying dust bin','mdi:delete-empty-outline'], DRYING_MOP:['Drying mop roller','mdi:weather-windy'] };
+  if (!Object.hasOwn(labels, phase)) return null;
+  return { text:labels[phase][0], icon:labels[phase][1], drying:phase === 'DRYING_MOP', remaining:phase === 'DRYING_MOP' || phase === 'WASHING_MOP' };
+}
+function dryingRemainingTime(hass, entity, registry = [], now = Date.now()) {
+  if (!dockActivity(hass, entity, registry)?.remaining) return null;
+  const { entries, serial } = deviceEntries(registry, entity);
+  const timer = hass?.states?.[pick(entries, serial, 'sensor', 'robot_dock_timer_end')];
+  const value = typeof timer?.state === 'string' ? timer.state.trim() : '';
+  // Require an explicit timezone; never interpret a naive time in the browser's zone.
+  if (!available(timer) || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(value)) return null;
+  const end = Date.parse(value);
+  if (!Number.isFinite(end) || !Number.isFinite(now)) return null;
+  const minutes = Math.ceil(Math.max(0, end - now) / 60000);
+  return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
+}
+function startBlockReason(hass, entity, registry = []) {
+  const state = hass?.states?.[entity];
+  if (hass?.connected === false || !available(state)) return 'Robot disconnected';
+  if (state.attributes?.ready_to_start === false) return 'The integration is not ready to start a new clean';
+  const dock = dockState(hass, entity, registry);
+  if (dock === 'WASHING_MOP') return 'Cleaning mop roller';
+  if (dock === 'COLLECTING_DUST') return 'Emptying dust bin';
+  // A new room job may be started while the dock is drying. The integration
+  // owns the transition; do not send an unverified cancel-drying command.
+  if (!['IDLE','DRYING_MOP'].includes(dock)) return 'Waiting for the robot to be ready';
+  const raw = state.attributes?.raw_state;
+  if (!['INACTIVE_CHARGED','INACTIVE_CHARGING','FULL_CLEAN_FINISHED'].includes(raw)) return 'Waiting for the robot to be ready';
+  return ['docked','idle','returning'].includes(state.state) ? null : 'Waiting for the robot to be ready';
+}
+function cleaningView(hass, entity, pendingStart = false, registry = []) {
+  // FULL_CLEAN_FINISHED is mapped to returning upstream, but is explicitly a
+  // writable/finished state. Other returning states remain active sessions.
+  const state = hass?.states?.[entity];
+  if (available(state) && hass?.connected !== false && (state.attributes?.raw_state === 'FULL_CLEAN_FINISHED' || !startBlockReason(hass, entity, registry))) return pendingStart
+    ? { active:true, title:'Starting clean', detail:'Waiting for the robot to report its status.', live:false }
+    : { active:false, live:false };
+  if (available(state) && hass?.connected !== false && state.attributes?.raw_state === 'FULL_CLEAN_CHARGING') return { active:true, title:'Cleaning session active', detail:'', live:true };
+  return spotScrubAdapter.cleaningView(hass, entity, pendingStart);
+}
+async function sendRoomDraft({ hass, model, config, selected = [], draft = {}, start = false, registry = [], context = roomContext(hass, config.entity, registry), getCurrent }) {
+  const fail = () => { throw new UiError('A room in your draft is unavailable or ambiguous. Review or discard the draft.'); };
+  const current = () => {
+    if (getCurrent) {
+      const now = getCurrent();
+      if (!now || now.active === false || now.config !== config) fail();
+      hass = now.hass; registry = now.registry;
+    }
+    if (context !== roomContext(hass, config.entity, registry)) fail();
+    if (hass?.connected === false || !available(hass.states[config.entity])) throw new UiError('The robot is unavailable.');
+    const latest = discover(hass, registry, config);
+    if (!latest.deviceId || latest.deviceId !== model.deviceId) fail();
+    return latest;
+  };
+  const live = current();
+  const resolve = id => {
+    const matches = live.rooms.filter(r => r.roomId === id);
+    if (matches.length !== 1 || !matches[0].available || matches[0].excluded) fail();
+    return matches[0];
+  };
+  const settings = {}, native = {};
+  for (const [id, values] of Object.entries(draft)) {
+    const room = resolve(id);
+    for (const [key, value] of Object.entries(values)) {
+      const field = room.settings[key], mapping = fields[key];
+      if (!field?.available || !field.options.includes(value) || !mapping) fail();
+      if (field.value === value) continue;
+      const option = Object.keys(mapping[2]).find(v => mapping[2][v] === value);
+      if (option === undefined) fail();
+      (settings[id] ??= {})[key] = value;
+      (native[id] ??= {})[mapping[0]] = key === 'mop_repetitions' ? Number(option.slice(0,-1)) : option;
+    }
+  }
+  const rooms = start ? selected.map(entity => {
+    const room = live.rooms.find(r => r.entity === entity);
+    if (!room?.roomId) fail();
+    return resolve(room.roomId);
+  }) : [];
+  if (start && (!rooms.length || new Set(rooms.map(r => r.roomId)).size !== rooms.length)) throw new UiError('Select at least one room without duplicates.');
+  if (start && !live.mapId) throw new UiError('The room map is unavailable or ambiguous. Refresh rooms and check the integration.');
+  if (start && startBlockReason(hass, config.entity, registry)) throw new UiError(startBlockReason(hass, config.entity, registry));
+  const hasSettings = Object.keys(native).length > 0;
+  const requireAction = service => { if (!hass.services?.[DOMAIN]?.[service]) throw new UiError('Update the Dyson integration: {action} is unavailable.', { action:`${DOMAIN}.${service}` }); };
+  if (start) requireAction('start_zone_clean');
+  if (hasSettings) requireAction('set_room_cleaning_modes');
+  const lockKey = live.deviceId;
+  if (pending.has(lockKey)) throw new UiError('An action for this Dyson is already running in this browser.');
+  if (!start && !hasSettings) return { rooms:[], settings, sent:false };
+  pending.add(lockKey);
+  let saved = false;
+  try {
+    if (hasSettings) {
+      await hass.callService(DOMAIN, 'set_room_cleaning_modes', { device_id:live.deviceId, room_modes:native });
+      saved = true;
+    }
+    if (start) {
+      // Backend Save performs robot readback. HA select publication may lag, so
+      // do not turn that into an arbitrary frontend delay or a duplicate write.
+      const fresh = current();
+      if (fresh.mapId !== live.mapId || rooms.some(r => !fresh.rooms.some(n => n.roomId === r.roomId && n.entity === r.entity && n.available && !n.excluded))) fail();
+      const blocked = startBlockReason(hass, config.entity, registry);
+      if (blocked) throw new UiError(blocked);
+      requireAction('start_zone_clean');
+      await hass.callService(DOMAIN, 'start_zone_clean', { device_id:live.deviceId, zones:rooms.map(r => r.roomId), map:live.mapId });
+    }
+  } catch (error) {
+    if (start && saved) throw new UiError('Settings were saved, but cleaning did not start. Review the robot status before retrying. {error}', { error });
+    throw error;
+  } finally { pending.delete(lockKey); }
+  return { rooms:rooms.map(r => ({ entity_id:r.entity, room_id:r.roomId, name:r.name })), settings, sent:true };
+}
+function canControl(hass, entity, action, registry = []) {
+  if (!vacuumEntries(registry).some(entry => entry.entity_id === entity)) return false;
+  if (action === 'cancel_drying') return false;
+  if (['WASHING_MOP','COLLECTING_DUST','DRYING_MOP'].includes(dockState(hass, entity, registry))) return false;
+  return spotScrubAdapter.canControl(hass, entity, action);
+}
+async function controlCleaning(hass, entity, action, registry = []) {
+  if (!canControl(hass, entity, action, registry)) throw new UiError('This action is not available for the current robot state.');
+  await hass.callService('vacuum', action, { entity_id:entity });
+}
+function consumableStatus(hass, registry, entity) {
+  const { entries, serial } = deviceEntries(registry, entity);
+  return spotScrubAdapter.CONSUMABLES.map(([type, name]) => {
+    const refill = type === 'cleaningSolution';
+    const id = pick(entries, serial, refill ? 'binary_sensor' : 'sensor', refill ? 'cleaning_solution' : `${type}_life`);
+    const state = hass?.states?.[id], live = hass?.connected !== false && available(state);
+    if (refill) {
+      const refillStatus = live ? state.state === 'on' ? 'refill_required' : state.state === 'off' ? 'ok' : null : null;
+      return { type, name, supported:!!id, remaining:null, level:'unknown', refillStatus, text:refillStatus === 'ok' ? 'Ready to use' : refillStatus === 'refill_required' ? 'Refill required' : 'Unavailable' };
+    }
+    const raw = state?.state, value = typeof raw === 'string' && raw.trim() !== '' ? Number(raw) : NaN;
+    const remaining = live && Number.isFinite(value) && value >= 0 && value <= 100 ? Math.round(value * 10) / 10 : null;
+    return { type, name, supported:!!id, remaining, level:remaining === null ? 'unknown' : remaining <= 10 ? 'low' : remaining <= 25 ? 'medium' : 'high', text:remaining === null ? 'Unavailable' : `${remaining}% remaining` };
+  });
+}
+function robotTelemetry(hass, entity, camera, registry = []) {
+  const state = hass?.states?.[entity];
+  return { state:state?.state, available:available(state), name:state?.attributes?.friendly_name,
+    cleaning:hass?.connected !== false && state?.state === 'cleaning' && dockState(hass, entity, registry) === 'IDLE', fault:undefined, faultCode:undefined, dockState:dockState(hass, entity, registry), bumperColor:undefined };
+}
+const unsupported = () => { throw new UiError('This action is not available for the current robot state.'); };
+return Object.freeze({ id:DOMAIN, infoTabs:['consumables'], mapEntityLabel:'Map image',
+  usesDockTimer:true, supportsDryingCancellation:false,
+  planningHint:'Room order is controlled by hass-dyson. Changed settings are saved before cleaning starts.',
+  vacuumEntries, cameraEntries, roomContext, discover, sendRoomDraft,
+  defaultEntity:hass => vacuumEntries(Object.values(hass.entities ?? {}))[0]?.entity_id ?? '',
+  roomSelectionState:() => 'off', hasRoomList:() => true,
+  roomActionAvailable:(hass, start) => !!hass?.services?.[DOMAIN]?.[start ? 'start_zone_clean' : 'set_room_cleaning_modes'],
+  startBlockReason, cleaningView, robotTelemetry, canControl, controlCleaning, consumableStatus,
+  batteryStatus:spotScrubAdapter.batteryStatus,
+  activityStatus:(hass, entity, pendingStart, registry = []) => {
+    if (hass?.connected === false || !available(hass?.states?.[entity])) return { text:'Robot unavailable', icon:'mdi:alert-circle-outline', drying:false };
+    const activity = dockActivity(hass, entity, registry);
+    if (activity) return activity;
+    const view = cleaningView(hass, entity, pendingStart, registry);
+    return view.active ? { text:({cleaning:'Cleaning', paused:'Paused', returning:'Returning / mapping', error:'Robot needs attention'})[hass?.states?.[entity]?.state] ?? view.title, icon:'mdi:robot-vacuum', drying:false } : null;
+  },
+  dockBusy:(hass, entity, registry) => !!dockActivity(hass, entity, registry),
+  dockBlocksStart:(hass, entity, registry) => ['WASHING_MOP','COLLECTING_DUST'].includes(dockState(hass, entity, registry)) && !!dockActivity(hass, entity, registry), dockActivity,
+  dryingRemainingTime, dryingRemainingPercent:() => null,
+  stationSettings:() => [], stationActions:() => [], robotSettings:() => [],
+  changeStationSetting:unsupported, pressStationAction:unsupported, changeRobotSetting:unsupported,
+  supportsZoneDevice:() => false, zoneReady:() => false, startZone:unsupported,
+  zoneDeviceOptions:() => spotScrubAdapter.zoneDeviceOptions([]),
+  trustedCamera:(registry, entity, image) => cameraEntries(registry, entity).some(e => e.entity_id === image),
+  mapId:() => undefined, mapCalibration:() => undefined,
+  mapPicture:(hass, entity) => hass?.states?.[entity]?.attributes?.entity_picture,
+  mapPictureAllowed:picture => typeof picture === 'string' && picture.startsWith('/api/image_proxy/'),
+});
+})();
+
+
+const integrationAdapters = [spotScrubAdapter, hassDysonAdapter];
+
+function getIntegrationAdapter(config = {}, registry = [], hass) {
+  const explicit = integrationAdapters.find(a => a.id === config?.integration);
+  if (explicit) return explicit;
+  // The configured robot wins over priority, even when its live state is offline.
+  const entry = registry.find(e => e.entity_id === config?.entity)
+    ?? Object.values(hass?.entities ?? {}).find(e => e.entity_id === config?.entity);
+  return integrationAdapters.find(a => a.id === entry?.platform) ?? spotScrubAdapter;
+}
+
+function integrationVacuumEntries(config = {}, registry = []) {
+  const adapters = config.integration && config.integration !== 'auto'
+    ? integrationAdapters.filter(a => a.id === config.integration) : integrationAdapters;
+  return adapters.flatMap(a => a.vacuumEntries(registry));
+}
+
+function defaultIntegrationEntity(hass, config = {}, registry, registryLoaded = true) {
+  const metadata = Object.values(hass?.entities ?? {});
+  const choose = entries => entries.find(entry => entry.entity_id === config.entity)?.entity_id ?? entries[0]?.entity_id;
+  const match = choose(integrationVacuumEntries(config, registry ?? metadata));
+  if (match) return match;
+  if (!registryLoaded) return choose(integrationVacuumEntries(config, metadata)) ?? '';
+  // Explicit completed registries, including empty ones, are authoritative.
+  // Only stub generation without a registry retains the legacy state fallback.
+  return registry === undefined && (!config.integration || config.integration === 'auto' || config.integration === spotScrubAdapter.id)
+    ? spotScrubAdapter.defaultEntity(hass) : '';
+}
+
+
+
+// Compatibility exports for existing consumers and regression tests.
+// Card/editor/zone use the adapter directly; only Spot+Scrub is supported here.
+const DOMAIN = spotScrubAdapter.id;
+const roomContext = (...args) => spotScrubAdapter.roomContext(...args);
+const discover = (...args) => spotScrubAdapter.discover(...args);
+const batteryStatus = (...args) => spotScrubAdapter.batteryStatus(...args);
+const sendRoomDraft = (...args) => spotScrubAdapter.sendRoomDraft(...args);
+const dockBusy = (...args) => spotScrubAdapter.dockBusy(...args);
+const dockBlocksStart = (...args) => spotScrubAdapter.dockBlocksStart(...args);
+const startBlockReason = (...args) => spotScrubAdapter.startBlockReason(...args);
+const activityStatus = (...args) => spotScrubAdapter.activityStatus(...args);
+const cleaningView = (...args) => spotScrubAdapter.cleaningView(...args);
+const dryingRemainingTime = (...args) => spotScrubAdapter.dryingRemainingTime(...args);
+const dryingRemainingPercent = (...args) => spotScrubAdapter.dryingRemainingPercent(...args);
+const canControl = (...args) => spotScrubAdapter.canControl(...args);
+const controlCleaning = (...args) => spotScrubAdapter.controlCleaning(...args);
+const CONSUMABLES = spotScrubAdapter.CONSUMABLES;
+const consumableStatus = (...args) => spotScrubAdapter.consumableStatus(...args);
+const ROBOT_FIELDS = spotScrubAdapter.ROBOT_FIELDS;
+const robotSettings = (...args) => spotScrubAdapter.robotSettings(...args);
+const changeRobotSetting = (...args) => spotScrubAdapter.changeRobotSetting(...args);
+const STATION_FIELDS = spotScrubAdapter.STATION_FIELDS;
+const STATION_ACTIONS = spotScrubAdapter.STATION_ACTIONS;
+const stationActions = (...args) => spotScrubAdapter.stationActions(...args);
+const pressStationAction = (...args) => spotScrubAdapter.pressStationAction(...args);
+const stationSettings = (...args) => spotScrubAdapter.stationSettings(...args);
+const changeStationSetting = (...args) => spotScrubAdapter.changeStationSetting(...args);
+const supportsZoneDevice = (...args) => spotScrubAdapter.supportsZoneDevice(...args);
+const ZONE_CHOICES = spotScrubAdapter.ZONE_CHOICES;
+const zoneDeviceOptions = (...args) => spotScrubAdapter.zoneDeviceOptions(...args);
+
+
+// Compatibility facade; backend policy lives in the Spot+Scrub adapter.
+const zoneCanStart = (...args) => spotScrubAdapter.zoneReady(...args);
+const zoneSettingsPayload = (...args) => spotScrubAdapter.zoneSettingsPayload(...args);
+
 
 // Owns image refresh independently from card rendering. No direct Dyson calls.
 class DysonPlannerMap extends HTMLElement {
@@ -1519,11 +2062,13 @@ class DysonPlannerMap extends HTMLElement {
     if (this.objectUrl) URL.revokeObjectURL(this.objectUrl);
     this.objectUrl = undefined; this.img.removeAttribute('src'); this.img.style.visibility = 'hidden';
   }
-  setOptions(hass, entity, rotation, live, language = 'en') {
+  setOptions(hass, entity, rotation, live, language = 'en', adapter = getIntegrationAdapter()) {
+    const adapterChanged = this.adapter && this.adapter !== adapter;
+    this.adapter = adapter;
     this.language = language;
     this.img.alt = translate(language, 'Live cleaning map');
     if (this.messageKey) this.showMessage(this.messageKey);
-    if (this.entity !== entity || this.hass?.connection !== hass.connection) {
+    if (adapterChanged || this.entity !== entity || this.hass?.connection !== hass.connection) {
       this.cancel();
       if (this.objectUrl) URL.revokeObjectURL(this.objectUrl);
       this.objectUrl = undefined; this.img.removeAttribute('src'); this.img.style.visibility = 'hidden';
@@ -1561,10 +2106,10 @@ class DysonPlannerMap extends HTMLElement {
   }
   async refresh() {
     if (!this.isConnected || !this.inView || document.hidden || !this.live) return;
-    const picture = this.hass.states[this.entity]?.attributes?.entity_picture;
+    const picture = this.adapter.mapPicture(this.hass, this.entity);
     this.lastAttempt = Date.now();
     // Use the HA-provided proxy path/token; never save or log tokens in config.
-    if (typeof picture !== 'string' || !picture.startsWith('/api/camera_proxy/')) {
+    if (!this.adapter.mapPictureAllowed(picture)) {
       this.showMessage('The camera image is not available yet.'); this.schedule(); return;
     }
     const url = new URL(this.hass.hassUrl ? this.hass.hassUrl(picture) : picture, location.href);
@@ -1607,123 +2152,10 @@ class DysonPlannerMap extends HTMLElement {
 }
 if (!customElements.get('dyson-planner-map')) customElements.define('dyson-planner-map', DysonPlannerMap);
 
-// Geometry is expressed in the displayed, rotated image's normalised coordinates.
-function validZoneCalibration(c) {
-  return c?.version === 1 && c.units === 'm' && /^\d+$/.test(String(c.map_id)) && Number(c.map_id) > 0
-    && ['image_width', 'image_height', 'pixels_per_metre'].every(k => Number.isFinite(c[k]) && c[k] > 0)
-    && ['padding', 'min_x', 'max_y'].every(k => Number.isFinite(c[k])) && c.padding >= 0
-    && /^[a-f0-9]{64}$/.test(c.image_sha256);
-}
-
-function zoneRobotRectangle(rect, calibration, rotation = 0) {
-  if (!validZoneCalibration(calibration) || ![0, 90, 180, 270].includes(rotation)
-      || !Array.isArray(rect) || rect.length !== 4 || rect.some(v => !Number.isFinite(v) || v < 0 || v > 1)
-      || rect[0] >= rect[2] || rect[1] >= rect[3]) throw new Error('Invalid zone geometry');
-  const points = [[rect[0], rect[1]], [rect[2], rect[1]], [rect[2], rect[3]], [rect[0], rect[3]]].map(([u, v]) => {
-    const [x, y] = rotation === 90 ? [v, 1-u] : rotation === 180 ? [1-u, 1-v] : rotation === 270 ? [1-v, u] : [u, v];
-    return [calibration.min_x + (x * calibration.image_width - calibration.padding) / calibration.pixels_per_metre,
-      calibration.max_y - (y * calibration.image_height - calibration.padding) / calibration.pixels_per_metre];
-  });
-  return [Math.min(...points.map(p => p[0])), Math.min(...points.map(p => p[1])),
-    Math.max(...points.map(p => p[0])), Math.max(...points.map(p => p[1]))];
-}
-
-function zoneCanStart(hass, vacuum, camera, calibration, trusted, preview) {
-  const state = hass?.states?.[vacuum], cameraState = hass?.states?.[camera];
-  return !!(!preview && trusted && hass?.connected !== false && hass?.services?.dyson_spot_scrub?.clean_zone
-    && state && !['unknown', 'unavailable'].includes(state.state) && state.attributes?.ready_to_start === true
-    && cameraState && !['unknown', 'unavailable'].includes(cameraState.state) && validZoneCalibration(calibration)
-    && String(state.attributes.map_id) === String(calibration.map_id)
-    && String(cameraState.attributes?.map_calibration?.map_id) === String(calibration.map_id));
-}
-
-// SHA-256 fallback for HA served over plain HTTP, where crypto.subtle is absent.
-// The hash binds a camera snapshot to its calibration; it is not authentication.
-function zoneSha256(bytes) {
-  const rotr = (x, n) => (x >>> n) | (x << (32 - n));
-  const primes = [];
-  for (let n = 2; primes.length < 64; n++) if (!primes.some(p => n % p === 0)) primes.push(n);
-  const h = primes.slice(0, 8).map(p => (Math.sqrt(p) % 1 * 2 ** 32) >>> 0);
-  const k = primes.map(p => (Math.cbrt(p) % 1 * 2 ** 32) >>> 0);
-  const padded = new Uint8Array(Math.ceil((bytes.length + 9) / 64) * 64);
-  padded.set(bytes); padded[bytes.length] = 128;
-  const data = new DataView(padded.buffer), bits = bytes.length * 8;
-  data.setUint32(padded.length - 8, Math.floor(bits / 2 ** 32)); data.setUint32(padded.length - 4, bits >>> 0);
-  const w = new Uint32Array(64);
-  for (let offset = 0; offset < padded.length; offset += 64) {
-    for (let i = 0; i < 16; i++) w[i] = data.getUint32(offset + i * 4);
-    for (let i = 16; i < 64; i++) {
-      const a = w[i-15], b = w[i-2];
-      w[i] = w[i-16] + (rotr(a,7)^rotr(a,18)^(a>>>3)) + w[i-7] + (rotr(b,17)^rotr(b,19)^(b>>>10));
-    }
-    let [a,b,c,d,e,f,g,j] = h;
-    for (let i = 0; i < 64; i++) {
-      const t1 = (j + (rotr(e,6)^rotr(e,11)^rotr(e,25)) + ((e&f)^(~e&g)) + k[i] + w[i]) | 0;
-      const t2 = ((rotr(a,2)^rotr(a,13)^rotr(a,22)) + ((a&b)^(a&c)^(b&c))) | 0;
-      j=g; g=f; f=e; e=(d+t1)|0; d=c; c=b; b=a; a=(t1+t2)|0;
-    }
-    [a,b,c,d,e,f,g,j].forEach((v,i) => { h[i]=(h[i]+v)>>>0; });
-  }
-  return h.map(v => v.toString(16).padStart(8,'0')).join('');
-}
-
-
-// Spot+Scrub zone tests confirm mopPasses controls repetitions even for vacuum.
-// In vacuumThenMop it repeats only mopping; dryPasses stays at one.
-function zoneSettingsPayload(mode, strategy, water, passes) {
-  if (!['vacuum','vacuumAndMop','mop','vacuumThenMop'].includes(mode)
-      || !['auto','boost','quiet','quick'].includes(strategy)
-      || !['veryLow','low','medium','high'].includes(water)
-      || ![1,2].includes(passes)) throw new Error('Invalid zone settings');
-  return { clean_type:mode, cleaning_strategy:mode==='mop'?'auto':strategy,
-    water_level:mode==='vacuum'?'low':water,
-    mop_passes:passes, dry_passes:1 };
-}
-
-
-// Trial UI minimum, not a confirmed firmware limit. Each side must meet it.
-function zoneMinimumSize(c, rotation = 0) {
-  const rotated = rotation === 90 || rotation === 270;
-  return [.55 * c.pixels_per_metre / (rotated ? c.image_height : c.image_width),
-    .55 * c.pixels_per_metre / (rotated ? c.image_width : c.image_height)];
-}
-function zoneHasMinimumSize(rect, c, rotation = 0) {
-  if (!rect || !validZoneCalibration(c)) return false;
-  const [w,h] = zoneMinimumSize(c, rotation);
-  return rect[2]-rect[0]+1e-10 >= w && rect[3]-rect[1]+1e-10 >= h;
-}
-function fitZoneMinimum(rect, c, rotation = 0) {
-  const [mw,mh] = zoneMinimumSize(c, rotation);
-  const w=Math.min(1,Math.max(mw,rect[2]-rect[0])), h=Math.min(1,Math.max(mh,rect[3]-rect[1]));
-  const x=Math.max(0,Math.min(rect[0],1-w)), y=Math.max(0,Math.min(rect[1],1-h));
-  return [x,y,x+w,y+h];
-}
-
-// Display-space helpers keep movement separate from resizing.
-function adjustZone(rect, dx, dy, resize, minimum) {
-  const [x,y,x2,y2]=rect, [mw,mh]=minimum;
-  if (resize) return [x,y,Math.min(1,Math.max(x+mw,x2+dx)),Math.min(1,Math.max(y+mh,y2+dy))];
-  const w=x2-x,h=y2-y,nx=Math.max(0,Math.min(1-w,x+dx)),ny=Math.max(0,Math.min(1-h,y+dy));
-  return [nx,ny,nx+w,ny+h];
-}
-function zonePillPosition(rect, width, height, pillWidth, pillHeight, gap=6, horizontalOverflow=14) {
-  const [x,y,x2]=rect;
-  // Use the map frame's free margin, keeping six screen pixels to the card
-  // edge. The pill stays above the zone using the existing space above the map.
-  const left=Math.max(-horizontalOverflow,Math.min(width+horizontalOverflow-pillWidth,(x+x2)*width/2-pillWidth/2));
-  return [left,y*height-pillHeight-gap];
-}
-
-// Presentation only: robot geometry and minimum sizes remain metric.
-function zoneDimensionText(widthCm, heightCm, lengthUnit) {
-  const imperial = ['mi', 'ft', 'in', 'yd'].includes(lengthUnit);
-  const divisor = imperial ? 2.54 : 1;
-  return `${Math.round(widthCm/divisor)} \u00d7 ${Math.round(heightCm/divisor)} ${imperial ? 'in' : 'cm'}`;
-}
-
 
 // Owns the frozen image and pointer interaction. HA updates never replace its DOM.
 class DysonPlannerZone extends HTMLElement {
+  get adapter() { return this.integrationAdapter ?? getIntegrationAdapter(); }
   constructor() {
     super(); this.attachShadow({ mode: 'open' }); this.language = 'en'; this.strategy = 'auto'; this.mode = 'vacuum'; this.water = 'low'; this.passes = 1;
     this.shadowRoot.innerHTML = `<style>
@@ -1856,7 +2288,9 @@ class DysonPlannerZone extends HTMLElement {
   setOptions(options) {
     const changed = this.vacuum !== options.vacuum || this.camera !== options.camera || this.rotation !== options.rotation
       || this.hass?.connection !== options.hass.connection;
-    Object.assign(this, options);
+    const { adapter, ...viewOptions } = options;
+    this.integrationAdapter = adapter;
+    Object.assign(this, viewOptions);
     if (changed) {
       this.controller?.abort(); this.attempted = false; this.clear();
       const saved=options.draft;
@@ -1866,7 +2300,7 @@ class DysonPlannerZone extends HTMLElement {
       this.shadowRoot.querySelector('.zone-power').value=['auto','boost','quiet','quick'].indexOf(this.strategy);
       this._labelsLanguage=null;
     }
-    if (this.calibration && String(this.hass.states[this.vacuum]?.attributes?.map_id) !== this.calibration.map_id) {
+    if (this.calibration && String(this.adapter.mapId(this.hass, this.vacuum)) !== this.calibration.map_id) {
       this.controller?.abort(); this.clear(); this.note = 'The active map changed. Reload the map and select a new zone.';
     }
     const capabilitiesKey = JSON.stringify(this.capabilities);
@@ -1951,7 +2385,7 @@ class DysonPlannerZone extends HTMLElement {
       // A camera GET may publish its calibration after the image response arrives.
       // Retry reads only; a cleaning command is never retried automatically.
       for (let attempt = 0; attempt < 3; attempt++) {
-        const picture = this.hass.states[this.camera]?.attributes?.entity_picture;
+        const picture = this.adapter.mapPicture(this.hass, this.camera);
         if (typeof picture !== 'string' || !picture.startsWith('/api/camera_proxy/')) throw new Error('Camera image unavailable.');
         const url = new URL(this.hass.hassUrl ? this.hass.hassUrl(picture) : picture, location.href);
         // Never request a resized proxy image: calibration hashes original bytes.
@@ -1969,9 +2403,9 @@ class DysonPlannerZone extends HTMLElement {
           : zoneSha256(bytes);
         for (let poll = 0; poll < 8; poll++) {
           if (controller.signal.aborted || this.controller !== controller || !this.isConnected) return;
-          const c = this.hass.states[this.camera]?.attributes?.map_calibration;
+          const c = this.adapter.mapCalibration(this.hass, this.camera);
           if (validZoneCalibration(c) && c.image_sha256 === hash
-              && String(this.hass.states[this.vacuum]?.attributes?.map_id) === String(c.map_id)) {
+              && String(this.adapter.mapId(this.hass, this.vacuum)) === String(c.map_id)) {
             objectUrl = URL.createObjectURL(new Blob([bytes], { type: 'image/png' }));
             const img = new Image(); img.src = objectUrl; await img.decode();
             if (controller.signal.aborted || this.controller !== controller || !this.isConnected) return;
@@ -2039,7 +2473,7 @@ class DysonPlannerZone extends HTMLElement {
         this.area.setAttribute('aria-label',`${this.t('Move zone. Use the arrow keys.')} ${caption}`);
       }
     }
-    const ready = this.settingsReady() && zoneCanStart(this.hass,this.vacuum,this.camera,c,this.trusted,this.preview);
+    const ready = this.settingsReady() && this.adapter.zoneReady(this.hass,this.vacuum,this.camera,c,this.trusted,this.preview);
     for (const action of ['settings','refresh','start']) {
       const button = this.shadowRoot.querySelector(`[data-do="${action}"]`);
       const disabled = !!this.sending
@@ -2080,13 +2514,12 @@ class DysonPlannerZone extends HTMLElement {
     return keys.every(key=>this.capabilities[key].available && this.capabilities[key].options.some(([,value])=>value===this[key]));
   }
   async start() {
-    if (this.sending || !this.settingsReady() || !zoneHasMinimumSize(this.rect,this.calibration,this.rotation) || !zoneCanStart(this.hass,this.vacuum,this.camera,this.calibration,this.trusted,this.preview)) return;
-    const data = { entity_id:this.vacuum,map_id:this.calibration.map_id,rectangle:zoneRobotRectangle(this.rect,this.calibration,this.rotation),...zoneSettingsPayload(this.mode,this.strategy,this.water,this.passes) };
+    if (this.sending || !this.settingsReady() || !zoneHasMinimumSize(this.rect,this.calibration,this.rotation) || !this.adapter.zoneReady(this.hass,this.vacuum,this.camera,this.calibration,this.trusted,this.preview)) return;
     const dimensions = { widthCm:(this.rect[2]-this.rect[0])*this.width/this.calibration.pixels_per_metre*100,
       heightCm:(this.rect[3]-this.rect[1])*this.height/this.calibration.pixels_per_metre*100 };
     this.sending = true; this.labels(); this.note = 'Sending zone start …'; this.draw();
     try {
-      await this.hass.callService('dyson_spot_scrub','clean_zone',data);
+      await this.adapter.startZone(this.hass, { vacuum:this.vacuum, camera:this.camera, calibration:this.calibration, trusted:this.trusted, preview:this.preview, rect:this.rect, rotation:this.rotation, mode:this.mode, strategy:this.strategy, water:this.water, passes:this.passes });
       if (this.isConnected) this.dispatchEvent(new CustomEvent('zone-started',{detail:dimensions,bubbles:true,composed:true}));
     } catch (error) {
       if (this.isConnected) this.note = error.message || 'Zone start failed. Check the robot before retrying.';
@@ -2190,6 +2623,7 @@ header,.station-rows{--hud-red:var(--error-color,#db4437);--hud-blue:var(--blue-
 :host([data-theme=modern]) .compact-status .activity-copy{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:20px}
 :host([data-theme=modern]) .compact-status .activity-remaining{display:inline;margin:0;font-size:12px}
 :host([data-theme=modern]) .compact-status .activity-start-block{display:none}
+:host([data-theme=modern]) .compact-status.has-drying .activity-start-block:not([hidden]){display:block}
 :host([data-theme=modern]) .compact-status .drying-progress{position:absolute;left:26px;right:44px;bottom:2px;width:auto;height:3px;margin:0}
 :host([data-theme=modern]) .compact-status .cancel-drying{min-width:36px;min-height:36px;width:36px;height:36px;padding:7px;background:transparent;border-color:transparent}
 :host([data-theme=modern]) .compact-status .cancel-drying ha-icon{width:18px;height:18px;--mdc-icon-size:18px}
@@ -2331,6 +2765,7 @@ class DysonRegistryElement extends HTMLElement {
     this._registryTimer = setInterval(() => this.loadRegistry(), 30000);
   }
   disconnectedCallback() { clearInterval(this._registryTimer); registryRefreshEvents.removeEventListener('refresh', this._onRegistryRefresh); }
+  get adapter() { return getIntegrationAdapter(this.config, this.registry, this._hass); }
   get language() { return resolveLanguage(this.config, this._hass); }
   t(key, params) { return translate(this.language, key, params); }
   ht(key, params) { return escapeHtml(this.t(key, params)); }
@@ -2432,7 +2867,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       }
       if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key) && event.target.dataset.infoTab) {
         event.preventDefault();
-        const tabs = ['station', 'robot', 'consumables'];
+        const tabs = this.adapter.infoTabs ?? ['station', 'robot', 'consumables'];
         const index = tabs.indexOf(event.target.dataset.infoTab);
         this.infoTab = event.key === 'Home' ? tabs[0] : event.key === 'End' ? tabs.at(-1)
           : tabs[(index + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length];
@@ -2442,8 +2877,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
   }
   static getConfigElement() { return document.createElement('dyson-cleaning-planner-card-editor'); }
   static getStubConfig(hass) {
-    const entry = Object.values(hass.entities ?? {}).find(e => e.platform === DOMAIN && e.entity_id.startsWith('vacuum.'));
-    return { type: 'custom:dyson-cleaning-planner-card', entity: entry?.entity_id ?? Object.keys(hass.states).find(id => id.startsWith('vacuum.') && Array.isArray(hass.states[id].attributes.rooms)) ?? '' };
+    return { type: 'custom:dyson-cleaning-planner-card', entity: defaultIntegrationEntity(hass) };
   }
   setConfig(config) {
     let normalized;
@@ -2454,7 +2888,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       // Keep the configuration identity used by in-flight save/start requests.
       this.config.language = normalized.language; this.update(); return;
     }
-    if (this.config?.entity !== config.entity) {
+    if (this.config?.entity !== config.entity || (this.config?.integration ?? 'auto') !== (config.integration ?? 'auto')) {
       this.clearSessionEnd();
       this.clearPendingStart(); this.requestedPlan = null; this.sessionObserved = false;
     }
@@ -2476,11 +2910,18 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     this._modernObserver ??= new ResizeObserver(() => this.positionModernPointer());
     this._modernObserver.observe(this);
     this.update();
+    clearInterval(this._dockTimer);
+    this._dockTimer = setInterval(() => {
+      if (this.isConnected && !document.hidden && this.adapter.usesDockTimer && this.model
+          && this.shadowRoot.querySelector('.activity-remaining:not([hidden])')) this.updateStatus();
+    }, 1000);
   }
   disconnectedCallback() {
+    this._detachRevision = (this._detachRevision ?? 0) + 1;
     this._previewDialog?.removeEventListener(previewViewChanged, this._previewChanged);
     this._previewDialog = null;
     this._modernObserver?.disconnect();
+    clearInterval(this._dockTimer);
     super.disconnectedCallback(); this.clearPendingStart(); this.clearSessionEnd();
   }
   clearPendingStart() { clearTimeout(this._startTimer); this.pendingStart = false; }
@@ -2498,7 +2939,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     }, 5000);
   }
   get view() {
-    const view = cleaningView(this._hass, this.config?.entity, (this.busy && !this.saving) || this.pendingStart);
+    const view = this.adapter.cleaningView(this._hass, this.config?.entity, (this.busy && !this.saving) || this.pendingStart, this.registry);
     if (!view.active && this._previewDialog && sessionPreviewOwners.has(this._previewDialog)) {
       return { active: true, live: true, simulated: true };
     }
@@ -2506,19 +2947,19 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
   }
   getCardSize() { return this.view.active ? (this.config?.show_camera ? 9 : 5) : 3 + (this.model?.rooms.length ?? 3); }
   getGridOptions() { return { columns: 12, min_columns: 9, rows: 'auto', min_rows: 1 }; }
-  getModel() { return discover(this._hass, this.registry, this.config, this.lastRooms); }
+  getModel() { return this.adapter.discover(this._hass, this.registry, this.config, this.lastRooms); }
   resetDraft(clearMessage = true) {
-    this.draftContext = roomContext(this._hass, this.config.entity);
-    this.selected = this.model.rooms.filter(r => !r.excluded && r.available && this._hass.states[r.entity]?.state === 'on').map(r => r.entity);
+    this.draftContext = this.adapter.roomContext(this._hass, this.config.entity, this.registry);
+    this.selected = this.model.rooms.filter(r => !r.excluded && r.available && this.adapter.roomSelectionState(this._hass, r.entity) === 'on').map(r => r.entity);
     this.settingDraft = {};
     this.baseline = this.liveSignature(); this.dirty = false;
     if (clearMessage) { this.message = ''; this.error = false; }
   }
   liveSignature() {
-    return JSON.stringify(this.model.rooms.map(r => [r.roomId, r.entity, this._hass.states[r.entity]?.state, Object.entries(r.settings ?? {}).map(([key, field]) => [key, field.entity, field.value])]));
+    return JSON.stringify(this.model.rooms.map(r => [r.roomId, r.entity, this.adapter.roomSelectionState(this._hass, r.entity), Object.entries(r.settings ?? {}).map(([key, field]) => [key, field.entity, field.value])]));
   }
   updateDirty() {
-    const live = this.model.rooms.filter(r => !r.excluded && r.available && this._hass.states[r.entity]?.state === 'on').map(r => r.entity);
+    const live = this.model.rooms.filter(r => !r.excluded && r.available && this.adapter.roomSelectionState(this._hass, r.entity) === 'on').map(r => r.entity);
     this.dirty = Object.keys(this.settingDraft).length > 0 || JSON.stringify(this.selected) !== JSON.stringify(live);
   }
   update() {
@@ -2526,12 +2967,12 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     const previous = this.model;
     this.model = this.getModel();
     // Preserve a local selection across entity renames using the robot's room ID.
-    if (this.dirty && previous && this.draftContext === roomContext(this._hass, this.config.entity)) this.selected = this.selected.map(entity => {
+    if (this.dirty && previous && this.draftContext === this.adapter.roomContext(this._hass, this.config.entity, this.registry)) this.selected = this.selected.map(entity => {
       const id = previous.rooms.find(r => r.entity === entity)?.roomId;
       const matches = this.model.rooms.filter(r => id && r.roomId === id);
       return matches.length === 1 ? matches[0].entity : entity;
     });
-    const reported = cleaningView(this._hass, this.config.entity);
+    const reported = this.adapter.cleaningView(this._hass, this.config.entity, false, this.registry);
     if (reported.active || this.busy || this.pendingStart) this.clearSessionEnd();
     if (reported.live) {
       this.clearPendingStart(); this.sessionObserved = true;
@@ -2540,7 +2981,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       this.message = ''; this.error = false;
     }
     if (this.model.rooms.length) this.lastRooms = this.model.rooms;
-    else if (!Array.isArray(this._hass.states[this.config.entity]?.attributes?.rooms)) this.model.rooms = (this.lastRooms ?? []).map(r => ({ ...r, available: false }));
+    else if (!this.adapter.hasRoomList(this._hass, this.config.entity)) this.model.rooms = (this.lastRooms ?? []).map(r => ({ ...r, available: false }));
     if ((!this.initialized || !this.dirty) && !this.view.active && !this.busy && this.model.rooms.length) {
       this.resetDraft(false); this.initialized = true;
     }
@@ -2637,6 +3078,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     this.clearSessionEnd();
     this.busy = true; this.error = false;
     const config = this.config, context = this.draftContext;
+    const detachRevision = this._detachRevision ?? 0;
     try {
       if (this.registryError) throw new UiError(this.registryError);
       const model = this.getModel();
@@ -2647,9 +3089,11 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
         return { entity_id: entity, room_id: room?.roomId, name: room?.name ?? entity };
       }) };
       this.message = 'Sending room settings and start request …'; this.render();
-      const plan = await sendRoomDraft({ hass: this._hass, model, config, selected: [...this.selected], draft: this.settingDraft, start: true, context });
+      const plan = await this.adapter.sendRoomDraft({ hass: this._hass, model, config, selected: [...this.selected], draft: this.settingDraft, start: true, context, registry:this.registry,
+        getCurrent:() => ({ hass:this._hass, registry:this.registry, config:this.config,
+          active:this.isConnected && !this._previewDialog && (this._detachRevision ?? 0) === detachRevision }) });
       if (this.config !== config || !this.isConnected) return;
-      if (context !== roomContext(this._hass, config.entity)) {
+      if (context !== this.adapter.roomContext(this._hass, config.entity, this.registry)) {
         // The command may already be accepted; clear only its stale presentation.
         this.message = '';
         this.clearPendingStart(); this.clearSessionEnd();
@@ -2658,12 +3102,12 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       }
       this.settingDraft = {};
       this.requestedPlan = plan;
-      this.sessionObserved = cleaningView(this._hass, config.entity).live;
+      this.sessionObserved = this.adapter.cleaningView(this._hass, config.entity, false, this.registry).live;
       if (!this.sessionObserved) {
         this.pendingStart = true;
         this._startTimer = setTimeout(() => {
           this.pendingStart = false;
-          if (!cleaningView(this._hass, config.entity).active) {
+          if (!this.adapter.cleaningView(this._hass, config.entity, false, this.registry).active) {
             this.requestedPlan = null; this.error = true;
             this.message = 'The start was sent, but the robot has not reported an active session. Check its status before trying again.';
           }
@@ -2674,7 +3118,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       this.dirty = true;
       this.baseline = this.liveSignature();
     } catch (error) {
-      if (!cleaningView(this._hass, config.entity).active) this.requestedPlan = null;
+      if (!this.adapter.cleaningView(this._hass, config.entity, false, this.registry).active) this.requestedPlan = null;
       this.error = true;
       if (this.config === config) this.message = uiMessage('{error} No automatic retry will be made.', { error });
     } finally { this.busy = false; this.render(); }
@@ -2685,11 +3129,11 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     this.busy = true; this.saving = true; this.error = false;
     this.message = 'Saving room settings …'; this.render();
     try {
-      await sendRoomDraft({ hass: this._hass, model: this.getModel(), config, draft, context });
+      await this.adapter.sendRoomDraft({ hass: this._hass, model: this.getModel(), config, draft, context, registry:this.registry });
       const deadline = Date.now() + 6000;
       while (true) {
         if (this.config !== config || !this.isConnected) return;
-        if (context !== roomContext(this._hass, config.entity)) {
+        if (context !== this.adapter.roomContext(this._hass, config.entity, this.registry)) {
           this.message = '';
           return;
         }
@@ -2705,12 +3149,16 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       if (this.config === config) { this.error = true; this.message = error; }
     } finally { this.busy = false; this.saving = false; this.render(); }
   }
+  canControl(action) {
+    return this.adapter.vacuumEntries(this.registry ?? []).some(entry => entry.entity_id === this.config.entity)
+      && this.adapter.canControl(this._hass, this.config.entity, action, this.registry);
+  }
   async control(action) {
-    if (this._previewDialog || this.busy || this.controlBusy || !this.isConnected) return;
+    if (this._previewDialog || this.busy || this.controlBusy || !this.isConnected || !this.canControl(action)) return;
     const entity = this.config.entity;
     this.controlBusy = true; this.message = ''; this.error = false; this.render();
     try {
-      await controlCleaning(this._hass, entity, action);
+      await this.adapter.controlCleaning(this._hass, entity, action, this.registry);
       if (this.config.entity !== entity) return;
       this.message = '';
     } catch (error) {
@@ -2722,15 +3170,15 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
   }
   toggleConsumables(open) {
     this.consumablesOpen = open;
-    if (open) { this.infoTab = 'station'; this.robotMessage = ''; this._robotMessageContext = {}; }
+    if (open) { this.infoTab = this.adapter.infoTabs?.[0] ?? 'station'; this.robotMessage = ''; this._robotMessageContext = {}; }
     this.updateConsumables();
     this.shadowRoot.querySelector(open ? '.consumables-close' : '.consumables-info')?.focus();
   }
   updateConsumables() {
     const root = this.shadowRoot;
 
-    const rows = consumableStatus(this._hass, this.registry, this.config.entity).filter(row => row.supported);
-    const settings = stationSettings(this._hass, this.registry, this.config.entity).filter(field => field.supported);
+    const rows = this.adapter.consumableStatus(this._hass, this.registry, this.config.entity).filter(row => row.supported);
+    const settings = this.adapter.stationSettings(this._hass, this.registry, this.config.entity).filter(field => field.supported);
     const solution = rows.find(row => row.type === 'cleaningSolution');
     this.updateStationSettings(settings, solution?.refillStatus);
     this.updateRobotSettings();
@@ -2761,12 +3209,12 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     if (this._previewDialog || this.stationBusy || this.busy || this.controlBusy || !this.consumablesOpen) return;
     this.stationBusy = true; this.robotMessage = ''; this.updateConsumables();
     const context = this._robotMessageContext;
-    try { await changeRobotSetting(this._hass, this.registry, this.config.entity, key, value); }
+    try { await this.adapter.changeRobotSetting(this._hass, this.registry, this.config.entity, key, value); }
     catch (error) { if (context === this._robotMessageContext) this.robotMessage = error; }
     finally { this.stationBusy = false; this.updateConsumables(); }
   }
   updateRobotSettings() {
-    const fields = robotSettings(this._hass, this.registry, this.config.entity);
+    const fields = this.adapter.robotSettings(this._hass, this.registry, this.config.entity);
     const html = [['voice_prompts','volume'], ['child_lock'], ['do_not_disturb','do_not_disturb_start','do_not_disturb_end']].map(keys => {
       const rows = fields.filter(f => keys.includes(f.key) && f.supported).map(f => {
         const disabled = this._previewDialog || this.stationBusy || this.busy || this.controlBusy || !f.available || !f.enabled;
@@ -2789,17 +3237,20 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     this.stationBusy = true; this.stationMessage = ''; this.stationError = false;
     this.updateConsumables();
     try {
-      if (action) await pressStationAction(this._hass, this.registry, entity, key);
-      else await changeStationSetting(this._hass, this.registry, entity, key, value);
+      if (action) await this.adapter.pressStationAction(this._hass, this.registry, entity, key);
+      else await this.adapter.changeStationSetting(this._hass, this.registry, entity, key, value);
     } catch (error) {
       if (this.config.entity === entity) { this.stationMessage = error; this.stationError = true; }
     } finally { this.stationBusy = false; this.updateConsumables(); }
   }
   updateStationSettings(settings, refillStatus) {
     const root = this.shadowRoot;
-    const tab = this.infoTab || 'station';
+    const allowedTabs = this.adapter.infoTabs ?? ['station', 'robot', 'consumables'];
+    const tab = allowedTabs.includes(this.infoTab) ? this.infoTab : allowedTabs[0];
+    this.infoTab = tab;
     for (const name of ['station', 'robot', 'consumables']) {
       const button = root.querySelector(`[data-info-tab="${name}"]`);
+      button.hidden = !allowedTabs.includes(name);
       button.setAttribute('aria-selected', String(tab === name));
       button.tabIndex = tab === name ? 0 : -1;
       root.querySelector(`#panel-${name}`).hidden = tab !== name;
@@ -2820,7 +3271,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
         : `<select ${attrs}>${!field.options.includes(field.value) ? `<option value="">${this.ht("Unavailable")}</option>` : ''}${field.options.map(v => `<option value="${escapeHtml(v)}" ${v === field.value ? 'selected' : ''}>${this.ht(v)}</option>`).join('')}</select>`;
       return `<label class="station-row ${field.domain}"><span class="station-label">${indicators[field.key]}<span>${this.ht(field.label)}${!field.available ? `<small>${this.ht("Unavailable")}</small>` : ''}</span></span>${control}</label>`;
     }).join('');
-    const actions = stationActions(this._hass, this.registry, this.config.entity).filter(action => action.supported).map(action => {
+    const actions = this.adapter.stationActions(this._hass, this.registry, this.config.entity).filter(action => action.supported).map(action => {
       const disabled = !!this._previewDialog || !action.available || this.stationBusy || this.busy || this.controlBusy;
       return `<div class="station-row station-action"><span>${this.ht(action.label)}${!action.available ? `<small>${this.ht("Unavailable")}</small>` : ''}</span><ha-button appearance="plain" size="s" data-station-action="${action.key}" aria-label="${this.ht(action.label)}" ${disabled ? 'disabled' : ''}>${this.ht("Press")}</ha-button></div>`;
     }).join('');
@@ -2833,20 +3284,18 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     message.classList.toggle('error', !!this.stationError);
   }
   headerHtml() {
-    const name = this._hass?.states?.[this.config.entity]?.attributes?.friendly_name;
+    const name = this.adapter.robotTelemetry(this._hass, this.config.entity, undefined, this.registry).name;
     const subtitle = typeof name === 'string' && name.trim() ? name : this.config.entity;
     return `<header><div class="station-status-bar"><div class="station-indicators"></div><div class="battery" role="img"><svg viewBox="0 0 32 20" aria-hidden="true"><rect x="1" y="3" width="26" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="29" y="7" width="3" height="6" rx="1" fill="currentColor"/><rect class="battery-fill" x="4" y="6" width="0" height="8" rx="1" fill="currentColor"/><path class="battery-bolt" d="M17 1 9 11h6l-2 8L23 8h-7Z" fill="var(--dp-bg)" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" hidden/></svg><span class="battery-value" aria-hidden="true" hidden></span></div></div><div class="header-main"><div class="robot ${this.config.header_icon_style === 'integration' ? 'robot-integration' : ''}">${this.config.header_icon_style === 'integration' ? `<svg class="robot-illustration" viewBox="0 0 50 50" aria-hidden="true"><defs><radialGradient id="robot-beam-gradient" gradientUnits="userSpaceOnUse" cx="25" cy="25" r="46"><stop offset=".40" stop-color="#39ff14" stop-opacity=".75"/><stop offset=".62" stop-color="#65ff39" stop-opacity=".42"/><stop offset=".85" stop-color="#65ff39" stop-opacity=".12"/><stop offset="1" stop-color="#65ff39" stop-opacity="0"/></radialGradient><filter id="robot-beam-soft" x="-35%" y="-20%" width="170%" height="150%"><feGaussianBlur stdDeviation="1.2"/></filter></defs><path class="robot-beam" d="M25 25 L2 -15 Q25 -27 48 -15 Z" fill="url(#robot-beam-gradient)" filter="url(#robot-beam-soft)" hidden/><circle cx="25" cy="26" r="22" fill="#000" opacity=".18"/><circle cx="25" cy="25" r="21" fill="#3a3a40" stroke="#e7e9ed" stroke-width="1.5"/><circle cx="25" cy="25" r="18" fill="#45454e"/><path class="robot-bumper" d="M6.8 14.5 A21 21 0 0 1 43.2 14.5" fill="none" stroke="#64646d" stroke-width="4"/><circle cx="25" cy="17" r="6" fill="#c8c8cd"/><circle cx="25" cy="17" r="2.6" fill="#39ff14"/><rect class="robot-dock" x="9" y="44" width="32" height="7" rx="2.5" fill="#3a3a40" stroke="#c8c8cd" stroke-width="1.2" hidden/></svg>` : '<ha-icon icon="mdi:robot-vacuum"></ha-icon>'}${this.config.theme === 'modern' ? `<button class="robot-warning" data-action="open-fault" aria-label="${this.ht('Show robot error')}" hidden><ha-icon icon="mdi:alert" aria-hidden="true"></ha-icon></button>` : ''}</div><div class="header-title"><h2>${escapeHtml(this.config.title || this.t('Plan a clean'))}</h2><p>${escapeHtml(subtitle)}</p></div><div class="header-buttons"><button class="consumables-info" data-action="consumables" data-focus="consumables-info" aria-label="${this.ht("Consumables")}" aria-haspopup="dialog" aria-expanded="false" title="${this.ht("Consumables")}">${this.ht("Info")}</button></div>${this.config.theme === 'modern' ? `<section class="header-fault" aria-label="${this.ht('Robot needs attention')}" hidden><div class="header-fault-copy" tabindex="0" role="status"><strong>${this.ht('Robot needs attention')}</strong><p class="header-fault-detail"></p></div><button class="header-fault-close" data-action="dismiss-fault" aria-label="${this.ht('Dismiss error message')}"><ha-icon icon="mdi:close" aria-hidden="true"></ha-icon></button></section>` : ''}<section class="header-notice" hidden><div class="header-notice-copy" role="status" aria-live="polite"></div><button class="header-fault-close" data-action="dismiss-notice" aria-label="${this.ht('Close')}"><ha-icon icon="mdi:close" aria-hidden="true"></ha-icon></button></section></div></header>`;
   }
   updateBattery() {
-    const vacuum = this._hass?.states?.[this.config.entity];
-    const cleaning = this._hass?.connected !== false && vacuum?.state === 'cleaning'
-      && !['WASHING_MOP', 'DRYING_MOP', 'COLLECTING_DUST'].includes(vacuum.attributes?.dock_state);
+    const vacuum = this.adapter.robotTelemetry(this._hass, this.config.entity, this.model.cameraEntity, this.registry);
+    const cleaning = vacuum.cleaning;
     const bumper = this.shadowRoot.querySelector('.robot-bumper');
     if (bumper) {
-      const connected = this._hass?.connected !== false && available(vacuum);
-      const camera = this._hass?.states?.[this.model.cameraEntity];
-      const color = camera?.attributes?.robot_bumper_color;
-      const validColor = available(camera) && typeof color === 'string' && /^#[0-9a-f]{6}$/i.test(color);
+      const connected = this._hass?.connected !== false && vacuum.available;
+      const color = vacuum.bumperColor;
+      const validColor = typeof color === 'string' && /^#[0-9a-f]{6}$/i.test(color);
       // HA's error state already excludes informational robot fault codes.
       const phase = !connected ? 'unavailable' : vacuum.state === 'error' ? 'fault'
         : vacuum.state === 'paused' ? 'paused' : cleaning ? 'cleaning' : 'idle';
@@ -2857,7 +3306,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     }
     this.shadowRoot.querySelector('.robot-beam')?.toggleAttribute('hidden', !cleaning);
     this.shadowRoot.querySelector('.robot-dock')?.toggleAttribute('hidden', this._hass?.states?.[this.config.entity]?.state !== 'docked');
-    const state = batteryStatus(this._hass, this.model);
+    const state = this.adapter.batteryStatus(this._hass, this.model);
     const element = this.shadowRoot.querySelector('.battery');
     element.dataset.level = state.level;
     const battery = state.percent === null ? this.t('Battery level unavailable') : this.t('Battery: {percent}%', { percent: state.percent });
@@ -2893,7 +3342,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
   }
   updateStatus(plannerNotice = this._plannerNotice ?? '') {
     this._plannerNotice = plannerNotice;
-    let status = activityStatus(this._hass, this.config.entity, (this.busy && !this.saving) || this.pendingStart);
+    let status = this.adapter.activityStatus(this._hass, this.config.entity, (this.busy && !this.saving) || this.pendingStart, this.registry);
     const modern = this.config.theme === 'modern';
     const state = this._hass?.states?.[this.config.entity]?.state;
     if (modern && !status) {
@@ -2901,10 +3350,10 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       else if (state === 'idle') status = { text: 'Idle', icon: 'mdi:robot-vacuum' };
     }
     if (modern) {
-      const vacuum = this._hass?.states?.[this.config.entity];
+      const vacuum = this.adapter.robotTelemetry(this._hass, this.config.entity, this.model.cameraEntity, this.registry);
       const activeFault = state === 'error' && this._hass?.connected !== false;
-      const description = typeof vacuum?.attributes?.fault === 'string' ? vacuum.attributes.fault.trim() : '';
-      const key = activeFault ? JSON.stringify([this.config.entity, vacuum?.attributes?.fault_code ?? null, description]) : '';
+      const description = typeof vacuum.fault === 'string' ? vacuum.fault.trim() : '';
+      const key = activeFault ? JSON.stringify([this.config.entity, vacuum.faultCode ?? null, description]) : '';
       if (key !== this._headerFaultKey) { this._headerFaultKey = key; this._headerFaultDismissed = false; }
       const overlay = this.shadowRoot.querySelector('.header-fault');
       const open = !!key && !this._headerFaultDismissed;
@@ -2921,10 +3370,8 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       }
       if (activeFault) {
         // The generic error state does not prove docking or a live cleaning phase.
-        const phases = { WASHING_MOP: ['Cleaning mop roller', 'mdi:waves'], DRYING_MOP: ['Drying mop roller', 'mdi:weather-windy'], COLLECTING_DUST: ['Emptying dust bin', 'mdi:delete-empty-outline'] };
-        const phase = vacuum.attributes?.dock_state;
-        status = phases[phase] ? { text: phases[phase][0], icon: phases[phase][1], drying: phase === 'DRYING_MOP' }
-          : { text: 'Status unavailable', icon: 'mdi:help-circle-outline' };
+        status = this.adapter.dockActivity(this._hass, this.config.entity, this.registry)
+          ?? { text: 'Status unavailable', icon: 'mdi:help-circle-outline' };
       }
     }
     const row = this.shadowRoot.querySelector('.activity-status');
@@ -2934,25 +3381,27 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     row.classList.toggle('has-drying', !!status?.drying);
     row.querySelector('.activity-text').textContent = this.t(status?.text);
     // Display the integration's current explanation without retaining or inferring faults.
-    const fault = this._hass?.states?.[this.config.entity]?.attributes?.fault;
+    const fault = this.adapter.robotTelemetry(this._hass, this.config.entity, undefined, this.registry).fault;
     const detail = status?.text === 'Robot needs attention' && typeof fault === 'string' ? fault.trim() : '';
     const faultText = row.querySelector('.activity-fault');
     faultText.textContent = detail;
     faultText.hidden = modern || !detail;
 
     const blockNote = row.querySelector('.activity-start-block');
-    const block = startBlockReason(this._hass, this.config.entity);
-    blockNote.hidden = this.view.active || !block || block === status?.text || dockBlocksStart(this._hass, this.config.entity);
+    const block = this.adapter.startBlockReason(this._hass, this.config.entity, this.registry);
+    blockNote.hidden = this.view.active || !block || block === status?.text || this.adapter.dockBlocksStart(this._hass, this.config.entity, this.registry);
     blockNote.textContent = this.t(block);
     row.querySelector('.activity-icon').setAttribute('icon', status?.icon ?? 'mdi:robot-vacuum');
-    row.querySelector('.drying-control').hidden = !status?.drying;
+    row.querySelector('.drying-control').hidden = !status?.drying || this.adapter.supportsDryingCancellation === false;
     const remaining = row.querySelector('.activity-remaining');
-    const time = status?.drying ? dryingRemainingTime(this._hass, this.config.entity, this.registry) : null;
-    remaining.hidden = !status?.drying;
+    const wantsRemaining = status?.remaining ?? status?.drying;
+    const time = wantsRemaining ? this.adapter.dryingRemainingTime(this._hass, this.config.entity, this.registry) : null;
+    const showRemaining = wantsRemaining && (status?.drying || time !== null);
+    remaining.hidden = !showRemaining;
     remaining.textContent = compact ? ` · ${time ?? this.t('Unavailable')}` : time === null ? this.t('Remaining time: unavailable') : this.t('Remaining time: {time} (hh:mm)', { time });
-    row.querySelector('.activity-copy').title = [this.t(status?.text), status?.drying ? remaining.textContent : '', blockNote.hidden ? '' : blockNote.textContent].filter(Boolean).join(' ');
+    row.querySelector('.activity-copy').title = [this.t(status?.text), showRemaining ? remaining.textContent : '', blockNote.hidden ? '' : blockNote.textContent].filter(Boolean).join(' ');
     const progress = row.querySelector('.drying-progress');
-    const percent = status?.drying ? dryingRemainingPercent(this._hass, this.config.entity, this.registry) : null;
+    const percent = status?.drying ? this.adapter.dryingRemainingPercent(this._hass, this.config.entity, this.registry) : null;
     progress.hidden = percent === null;
     if (percent !== null) {
       progress.setAttribute('aria-valuenow', String(Math.round(percent)));
@@ -2963,7 +3412,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       progress.removeAttribute('aria-valuetext');
     }
     const cancel = row.querySelector('.cancel-drying');
-    const supported = canControl(this._hass, this.config.entity, 'cancel_drying');
+    const supported = this.canControl('cancel_drying');
     cancel.disabled = !!this._previewDialog || this.busy || this.controlBusy || !supported;
     this.updateHeaderNotice();
     cancel.title = this.t(supported ? 'Cancel drying' : 'Drying cancellation requires a connected robot and the integration cancel_drying action.');
@@ -2995,11 +3444,11 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     toggle.querySelector('span').textContent = this.t(paused ? 'Resume' : 'Pause');
     toggle.querySelector('ha-icon').setAttribute('icon', paused ? 'mdi:play' : 'mdi:pause');
     for (const button of root.querySelectorAll('[data-control]')) {
-      const supported = canControl(this._hass, this.config.entity, button.dataset.control);
+      const supported = this.canControl(button.dataset.control);
       button.disabled = !!this._previewDialog || this.busy || this.controlBusy || !supported;
       button.title = supported ? '' : this.t('This action is not available in the current robot state.');
     }
-    root.querySelector('dyson-planner-map')?.setOptions(this._hass, this.model.cameraEntity, this.config.camera_rotation, view.live, this.language);
+    root.querySelector('dyson-planner-map')?.setOptions(this._hass, this.model.cameraEntity, this.config.camera_rotation, view.live, this.language, this.adapter);
   }
   positionModernPointer() {
     if (this.config?.theme !== 'modern') return;
@@ -3036,11 +3485,11 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     const valid = dimensions && ['widthCm','heightCm'].every(key => Number.isFinite(dimensions[key]) && dimensions[key] > 0);
     this.zoneView = false; this.zoneDraft = null; this.requestedPlan = valid ? { zone: { ...dimensions } } : null; this.message = ''; this.error = false;
     this.clearPendingStart();
-    if (!cleaningView(this._hass, this.config.entity).live) {
+    if (!this.adapter.cleaningView(this._hass, this.config.entity, false, this.registry).live) {
       this.pendingStart = true;
       this._startTimer = setTimeout(() => {
         this.pendingStart = false;
-        if (!cleaningView(this._hass, this.config.entity).live) {
+        if (!this.adapter.cleaningView(this._hass, this.config.entity, false, this.registry).live) {
           this.error = true;
           this.message = 'The start was sent, but the robot has not reported an active session. Check its status before trying again.';
         }
@@ -3049,7 +3498,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     }
     this.update();
   }
-  get supportsZone() { return supportsZoneDevice(this.registry, this.devices, this.config.entity); }
+  get supportsZone() { return this.adapter.supportsZoneDevice(this.registry, this.devices, this.config.entity); }
   planningTabsHtml() {
     if (!this.supportsZone) return '';
     return `<nav class="planning-tabs" role="tablist" aria-label="${this.ht('Cleaning selection')}"><button id="planning-tab-rooms" role="tab" data-action="rooms" aria-selected="${!this.zoneView}" aria-controls="planning-panel-rooms" tabindex="${this.zoneView ? -1 : 0}">${this.ht('Rooms')}</button><button id="planning-tab-zones" role="tab" data-action="zones" aria-selected="${!!this.zoneView}" aria-controls="planning-panel-zones" tabindex="${this.zoneView ? 0 : -1}">${this.ht('Zone')}</button></nav>`;
@@ -3060,12 +3509,9 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     if (title.textContent !== this.t('Zone cleaning')) title.textContent = this.t('Zone cleaning');
     this.updateBattery(); this.updateConsumables(); this.updateStatus('');
     const camera = this.model.cameraEntity;
-    const robotEntry = this.registry.find(e => e.entity_id === this.config.entity);
-    const cameraEntry = this.registry.find(e => e.entity_id === camera);
-    const trusted = !!(robotEntry?.device_id && robotEntry.platform === DOMAIN && cameraEntry?.platform === DOMAIN
-      && robotEntry.device_id === cameraEntry.device_id);
+    const trusted = this.adapter.trustedCamera(this.registry, this.config.entity, camera);
     this.shadowRoot.querySelector('dyson-planner-zone').setOptions({ hass:this._hass, vacuum:this.config.entity,
-      camera, trusted, dimensionUnit:this.config.zone_dimension_unit, supported:this.supportsZone, capabilities:zoneDeviceOptions(this.model.rooms), draft:this.zoneDraft, theme:this.config.theme, rotation:this.config.camera_rotation, language:this.language, preview:!!this._previewDialog });
+      adapter:this.adapter, camera, trusted, dimensionUnit:this.config.zone_dimension_unit, supported:this.supportsZone, capabilities:this.adapter.zoneDeviceOptions(this.model.rooms), draft:this.zoneDraft, theme:this.config.theme, rotation:this.config.camera_rotation, language:this.language, preview:!!this._previewDialog });
   }
   render() {
     if (!this.model) return;
@@ -3079,8 +3525,8 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     const h = escapeHtml, model = this.model;
     const rooms = model.rooms.filter(r => !r.excluded);
     const external = this.dirty && !this.busy && this.baseline !== this.liveSignature();
-    const canSave = !!this._hass.services?.[DOMAIN]?.save_room_settings;
-    const canStart = !!this._hass.services?.[DOMAIN]?.start_rooms_with_settings;
+    const canSave = this.adapter.roomActionAvailable(this._hass, false);
+    const canStart = this.adapter.roomActionAvailable(this._hass, true);
     const hasChanges = Object.keys(this.settingDraft).length > 0;
     const modern = this.config.theme === 'modern';
     const roomHtml = rooms.map((room, n) => {
@@ -3108,10 +3554,10 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       }
       return `<section class="room ${selected ? 'selected' : ''}"><div class="room-head"><label class="pick"><input type="checkbox" data-focus="room-${n}" data-room="${h(room.entity)}" ${selected ? 'checked' : ''} ${disabled ? 'disabled' : ''}><span><span class="name">${h(room.name)} ${selected ? `<span class="status">(${order})</span>` : ''}</span><span class="summary">${!room.available ? this.ht(room.error || 'Unavailable') : this.ht(valueOf('cleaning_mode') ?? 'Room settings unavailable')}</span></span></label><button class="expand" data-focus="expand-${n}" data-expand="${h(room.entity || room.name)}" aria-expanded="${open}" aria-controls="fields-${n}" aria-label="${this.ht('Settings for {name}', { name: room.name })}"><span>${this.ht("Settings")}</span> ${open ? '⌃' : '⌄'}</button></div><div class="fields" id="fields-${n}" ${open ? '' : 'hidden'}>${fields}${!room.roomId ? `<p class="badge mode">${this.ht("Room ID unavailable. Check the updated integration and refresh rooms.")}</p>` : ''}</div></section>`;
     }).join('');
-    this.paint(`<style>${styles}</style><ha-card><div class="planner-content">${this.headerHtml()}${this.statusHtml()}${this.planningTabsHtml()}${this.supportsZone ? '<div id="planning-panel-zones" role="tabpanel" aria-labelledby="planning-tab-zones" hidden></div>' : ''}<div ${this.supportsZone ? 'id="planning-panel-rooms" role="tabpanel" aria-labelledby="planning-tab-rooms"' : ''} class="rooms ${modern ? 'modern-rooms' : ''}" style="--room-count:${rooms.length}">${roomHtml}</div>${!rooms.length ? `<p class="empty">${this.ht("No enabled rooms found. Check the card configuration and room discovery.")}</p>` : ''}<footer><div class="summary-line"><span>${this.ht('{selected} of {total} rooms selected', { selected: this.selected.length, total: rooms.length })}</span><span class="status ${this.dirty ? 'draft-status' : ''}">${this.dirty ? `<button class="discard-draft" data-focus="reset" data-action="reset" ${this.busy ? 'disabled' : ''} title="${this.ht("Discard draft")}" aria-label="${this.ht("Discard draft")}"><ha-icon icon="mdi:trash-can-outline" aria-hidden="true"></ha-icon></button>${this.ht('Local draft')}` : this.ht('From Home Assistant')}</span></div><div class="actions"><button data-action="save" data-focus="save" ${this._previewDialog || !hasChanges || this.busy || !canSave ? 'disabled' : ''}>${this.ht(this.saving ? 'Saving …' : 'Save settings')}</button><button class="start" data-focus="start" data-action="start" ${this._previewDialog || this.selected.length === 0 || this.busy || startBlockReason(this._hass, this.config.entity) ? 'disabled' : ''}>${this.ht("Start clean")}</button></div></footer></div>${this.consumablesHtml()}</ha-card>`, 'planner');
+    this.paint(`<style>${styles}</style><ha-card><div class="planner-content">${this.headerHtml()}${this.statusHtml()}${this.planningTabsHtml()}${this.supportsZone ? '<div id="planning-panel-zones" role="tabpanel" aria-labelledby="planning-tab-zones" hidden></div>' : ''}<div ${this.supportsZone ? 'id="planning-panel-rooms" role="tabpanel" aria-labelledby="planning-tab-rooms"' : ''} class="rooms ${modern ? 'modern-rooms' : ''}" style="--room-count:${rooms.length}">${roomHtml}</div>${!rooms.length ? `<p class="empty">${this.ht("No enabled rooms found. Check the card configuration and room discovery.")}</p>` : ''}<footer>${this.adapter.planningHint ? `<p class="integration-hint notice">${this.ht(this.adapter.planningHint)}</p>` : ''}<div class="summary-line"><span>${this.ht('{selected} of {total} rooms selected', { selected: this.selected.length, total: rooms.length })}</span><span class="status ${this.dirty ? 'draft-status' : ''}">${this.dirty ? `<button class="discard-draft" data-focus="reset" data-action="reset" ${this.busy ? 'disabled' : ''} title="${this.ht("Discard draft")}" aria-label="${this.ht("Discard draft")}"><ha-icon icon="mdi:trash-can-outline" aria-hidden="true"></ha-icon></button>${this.ht('Local draft')}` : this.ht('From Home Assistant')}</span></div><div class="actions"><button data-action="save" data-focus="save" ${this._previewDialog || !hasChanges || this.busy || !canSave ? 'disabled' : ''}>${this.ht(this.saving ? 'Saving …' : 'Save settings')}</button><button class="start" data-focus="start" data-action="start" ${this._previewDialog || this.selected.length === 0 || this.busy || (model.startBlockReason || this.adapter.startBlockReason(this._hass, this.config.entity, this.registry)) ? 'disabled' : ''}>${this.ht("Start clean")}</button></div></footer></div>${this.consumablesHtml()}</ha-card>`, 'planner');
     this.updateBattery();
     this.updateConsumables();
-    const plannerNotice = !canSave || !canStart ? this.t('The updated Dyson integration actions are not available. Reload the integration and refresh this dashboard.')
+    const plannerNotice = model.startBlockReason ? this.t(model.startBlockReason) : !canSave || !canStart ? this.t('The updated Dyson integration actions are not available. Reload the integration and refresh this dashboard.')
       : external ? this.t('Settings changed outside this card. Your edited values remain in the local draft.') : '';
     this.updateStatus(plannerNotice);
     this.positionModernPointer();
@@ -3124,6 +3570,11 @@ if (!window.customCards.some(card => card.type === 'dyson-cleaning-planner-card'
 
 // Bundled after card.js; uses the same registry connection and identity matching.
 class DysonCleaningPlannerEditor extends DysonRegistryElement {
+  get selectableRegistry() {
+    if (this._registryLoaded) return this.registry;
+    const known = new Set(this.registry.map(entry => entry.entity_id));
+    return [...this.registry, ...Object.values(this._hass?.entities ?? {}).filter(entry => !known.has(entry.entity_id))];
+  }
   constructor() {
     super();
     const previewInteraction = event => {
@@ -3149,7 +3600,10 @@ class DysonCleaningPlannerEditor extends DysonRegistryElement {
       const next = { ...this.config };
       if (el.dataset.key) {
         next[el.dataset.key] = el.type === 'checkbox' ? el.checked : el.dataset.key === 'camera_rotation' ? Number(el.value) : el.value;
-        if (el.dataset.key === 'entity') {
+        if (el.dataset.key === 'integration' && !integrationVacuumEntries(next, this.selectableRegistry).some(e => e.entity_id === next.entity)) {
+          next.entity = defaultIntegrationEntity(this._hass, next, this.registry, !!this._registryLoaded);
+        }
+        if (el.dataset.key === 'entity' || el.dataset.key === 'integration') {
           delete next.mode_entity; delete next.start_entity; delete next.room_entities; delete next.camera_entity;
           next.excluded_rooms = []; next.room_order = [];
         }
@@ -3203,16 +3657,16 @@ class DysonCleaningPlannerEditor extends DysonRegistryElement {
   update() {
     if (!this.config || !this._hass) return;
     const h = escapeHtml;
-    const vacuums = this.registry.filter(e => e.platform === DOMAIN && !e.disabled_by && e.entity_id.startsWith('vacuum.'));
+    const vacuums = integrationVacuumEntries(this.config, this.selectableRegistry);
     const config = { ...this.config, excluded_rooms: this.config.excluded_rooms ?? [], room_order: this.config.room_order ?? [] };
-    this.model = config.entity ? discover(this._hass, this.registry, config) : { rooms: [], issues: [] };
-    const device = this.registry.find(e => e.entity_id === config.entity)?.device_id;
-    const field = (key, label, domain) => {
-      const entries = this.registry.filter(e => e.platform === DOMAIN && !e.disabled_by && e.device_id === device && e.entity_id.startsWith(`${domain}.`));
+    this.model = config.entity ? this.adapter.discover(this._hass, this.registry, config) : { rooms: [], issues: [] };
+    const field = (key, label) => {
+      const entries = this.adapter.cameraEntries(this.registry, config.entity);
       return `<label>${label}<select data-focus="${key}" data-key="${key}"><option value="">${this.ht("Auto-detect")}</option>${entries.map(e => `<option value="${h(e.entity_id)}" ${config[key] === e.entity_id ? 'selected' : ''}>${h(e.name || e.original_name || e.entity_id)}</option>`).join('')}</select></label>`;
     };
     this.paint(`<style>${styles}:host{padding:8px}label{display:grid;gap:8px;margin:0 0 16px;font-size:14px}input[type=text]{padding:12px;border:1px solid var(--dp-line);border-radius:8px;background:var(--dp-bg);color:inherit;width:100%}.entry{display:flex;gap:8px;align-items:center;margin:8px 0}.entry label{display:flex;align-items:center;flex:1;margin:0}.entry button{min-width:42px}h3{font-size:15px;margin-top:24px}.status-options{margin:12px 0 0;padding:8px 0 0 12px;border:0;border-top:1px solid var(--dp-line);min-width:0}.status-options:disabled{opacity:.5}.battery-percentage-option{padding-left:24px}.battery-percentage-option:has(input[disabled]){opacity:.5}</style>
-      <label>${this.ht("Dyson device")}<select data-key="entity" data-focus="entity"><option value="">${this.ht("Select a device")}</option>${vacuums.map(e => `<option value="${h(e.entity_id)}" ${config.entity === e.entity_id ? 'selected' : ''}>${h(this._hass.states[e.entity_id]?.attributes?.friendly_name || e.entity_id)}</option>`).join('')}</select></label>
+      <label>${this.ht('Integration')}<select data-key="integration" data-focus="integration">${[['auto',this.t('Automatic')],['dyson_spot_scrub','Dyson Spot+Scrub'],['hass_dyson',this.t('hass-dyson (experimental)')]].map(([id,label]) => `<option value="${id}" ${(config.integration ?? 'auto') === id ? 'selected' : ''}>${h(label)}</option>`).join('')}</select></label>
+      <label>${this.ht("Dyson device")}<select data-key="entity" data-focus="entity"><option value="">${this.ht("Select a device")}</option>${vacuums.map(e => `<option value="${h(e.entity_id)}" ${config.entity === e.entity_id ? 'selected' : ''}>${h(this._hass.states[e.entity_id]?.attributes?.friendly_name || e.entity_id)} · ${e.platform === 'hass_dyson' ? 'hass-dyson' : 'Spot+Scrub'}</option>`).join('')}</select></label>
       <label>${this.ht("Title")}<input type="text" data-key="title" data-focus="title" placeholder="${this.ht('Plan a clean')}" value="${h(config.title ?? '')}"></label>
       <label>${this.ht("Language")}<select data-key="language" data-focus="language"><option value="auto" ${!config.language || config.language === 'auto' ? 'selected' : ''}>${this.ht("Automatic")}</option><option value="en" ${config.language === 'en' ? 'selected' : ''}>English [en]</option><option value="de" ${config.language === 'de' ? 'selected' : ''}>Deutsch [de]</option><option value="nl" ${config.language === 'nl' ? 'selected' : ''}>Nederlands [nl]</option><option value="fr" ${config.language === 'fr' ? 'selected' : ''}>Français [fr]</option></select></label>
       <label>${this.ht("Theme")}<select data-key="theme" data-focus="theme"><option value="classic" ${config.theme === 'classic' ? 'selected' : ''}>${this.ht("Classic")}</option><option value="modern" ${config.theme !== 'classic' ? 'selected' : ''}>${this.ht("Modern")}</option></select></label>
@@ -3227,7 +3681,7 @@ class DysonCleaningPlannerEditor extends DysonRegistryElement {
       </fieldset>
       <h3>${this.ht("Cleaning map")}</h3><div class="entry"><label><input type="checkbox" data-key="show_camera" data-focus="show-camera" ${config.show_camera !== false ? 'checked' : ''}>${this.ht("Show camera during a cleaning session")}</label></div>
       <p class="notice">${this.ht("Turning this off removes the map and stops image requests from this card.")}</p>
-      ${field('camera_entity', this.ht('Map camera'), 'camera')}
+      ${field('camera_entity', this.ht(this.adapter.mapEntityLabel ?? 'Map camera'), 'camera')}
       <label>${this.ht("Map rotation")}<select data-key="camera_rotation" data-focus="camera-rotation">${[0, 90, 180, 270].map(deg => `<option value="${deg}" ${(config.camera_rotation ?? 0) === deg ? 'selected' : ''}>${deg}°</option>`).join('')}</select></label>
       <h3>${this.ht("Zone cleaning")}</h3>
       <label>${this.ht("Dimension display")}<select data-key="zone_dimension_unit" data-focus="zone-dimension-unit">${[['auto','Automatic'],['cm','Centimeters'],['inch','Inches'],['off','Off']].map(([value,label]) => `<option value="${value}" ${(config.zone_dimension_unit ?? 'auto') === value ? 'selected' : ''}>${this.ht(label)}</option>`).join('')}</select></label>

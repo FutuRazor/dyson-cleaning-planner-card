@@ -1,5 +1,12 @@
 // Dutch UI text. Protocol values and entity names remain unchanged.
 export const nl = {
+  "Map entity must use the {domain} domain for this integration.": "De kaartentiteit moet voor deze integratie het domein {domain} gebruiken.",
+  "Map image": "Kaartafbeelding",
+  "hass-dyson (experimental)": "hass-dyson (experimenteel)",
+  "Invalid integration selection.": "Ongeldige integratiekeuze.",
+  "The room map is unavailable or ambiguous. Refresh rooms and check the integration.": "De kamerkaart is niet beschikbaar of niet eenduidig. Vernieuw de kamers en controleer de integratie.",
+  "Settings were saved, but cleaning did not start. Review the robot status before retrying. {error}": "Instellingen opgeslagen, maar de reiniging is niet gestart. Controleer de robotstatus voordat u het opnieuw probeert. {error}",
+  "Room order is controlled by hass-dyson. Changed settings are saved before cleaning starts.": "hass-dyson bepaalt de kamervolgorde. Gewijzigde instellingen worden vóór het reinigen opgeslagen.",
   "Integration": "Integratie",
   "Invalid header icon style.": "Ongeldige stijl voor het koptekstpictogram.",
   "Header icon style": "Koptekstpictogram",
