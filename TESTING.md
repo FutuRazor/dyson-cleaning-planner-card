@@ -2,11 +2,20 @@
 
 ## Integration adapter experiment
 
-This branch supports only the existing Spot+Scrub integration through an internal adapter; it does not add hass-dyson or an integration selector. See [adapter boundaries and live acceptance](docs/integration-adapter.md).
+This branch retains the tested Spot+Scrub adapter and now adds an experimental hass-dyson adapter with automatic/explicit integration selection. See [adapter boundaries and live acceptance](docs/integration-adapter.md) and [hass-dyson setup and limitations](docs/hass-dyson.md).
+
+- Run `node tests/hass-dyson-browser.mjs` with Playwright to verify the new adapter's editor selection, both themes, Save/Start, combined two-panel image, consumables and standard session controls against simulated HA.
+- `tests/hass-dyson.test.mjs` covers native identities/options, translated payloads, map ambiguity, readiness, partial failures, shared locking and replacement HA snapshots between Save and Start.
+
+Validation on 23 November 2026: `npm run check` passed all 82 unit tests, rebuilt v1.4.0 and passed the standalone-bundle check. The new hass-dyson browser flow passed in Edge, together with Spot+Scrub batch, editor-session-preview and zone browser regressions. All new adapter commands were sent only to simulated HA; real hass-dyson/robot acceptance remains pending.
+
+Subsequent maintainer live tests confirmed hass-dyson Save/readback, room start, Pause/Resume/Home and separate vacuum/mop coverage in the combined image. The dock-state interlock correction passes **84 unit tests**, build/smoke checks and the hass-dyson browser flow. New cases cover washing/collection/drying, unavailable/disabled/ambiguous dock sensors and washing beginning between Save and Start. Live recheck: select a room during roller washing, confirm Start is disabled with the dock activity shown, then verify it becomes available when the sensor returns to `IDLE`.
+
+Dock display/timer follow-up: **87 unit tests** pass. The hass-dyson browser flow now also checks washing/drying in both themes while the vacuum reports `error`, local countdown refresh without an HA update, no invented percentage/cancellation control, and removal of the countdown at `IDLE`. Timestamp tests cover explicit offsets, zero remaining time, invalid/disabled/duplicate/foreign sensors and renamed entity IDs. The original Spot+Scrub sample-based drying behavior remains unchanged.
 
 - `npm run check` includes adapter isolation, shared in-flight locking, normalized telemetry, exact zone dispatch and a standalone generated-bundle smoke check, in addition to existing regression tests.
 - Run `node tests/batch-browser.mjs`, `node tests/zone-browser.mjs`, `node tests/robot-bumper-browser.mjs`, `node tests/start-readiness-browser.mjs`, `node tests/room-identity-browser.mjs` and `node tests/editor-session-preview-browser.mjs` with Playwright and an installed browser (`BROWSER_CHANNEL=msedge` on Windows where applicable).
-- Live HA/robot acceptance remains required before beginning another integration adapter. Keep the release version at 1.4.0 during this experiment.
+- Maintainer Spot+Scrub live checks passed; the separate integration fix for zone Pause/Resume was also confirmed. The new hass-dyson adapter still requires its own live HA/robot acceptance. Keep release version 1.4.0 during this experiment.
 
 Validation on 21 November 2026: all 69 unit tests, the generated-bundle smoke check and the six browser scripts listed above passed in Edge. `tests/ui-browser.mjs` still fails at line 32 because its select-only field expectation does not match the current Modern controls; the identical failure was reproduced with the unchanged HEAD bundle in an isolated preview. It is not an adapter regression. The zone browser screenshot path now uses `fileURLToPath` so workspace paths containing spaces work on Windows.
 

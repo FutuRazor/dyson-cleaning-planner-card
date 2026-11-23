@@ -1,11 +1,12 @@
 # Integration adapter experiment
 
-This branch isolates the existing `dyson_spot_scrub` integration behind an internal adapter. It adds no new integration, configuration choice or release version. Existing YAML, entity discovery, option values, readiness rules and action payloads remain the compatibility baseline.
+This branch isolates integration behavior behind internal adapters. The existing `dyson_spot_scrub` adapter passed the initial offline and maintainer live checks. The next phase adds an [experimental hass-dyson adapter](hass-dyson.md) and integration selection, without changing release version 1.4.0. Existing Spot+Scrub YAML and action payloads remain the compatibility baseline.
 
 ## Boundaries
 
-- `src/integration.js` supplies the adapter. Phase one always returns the one Spot+Scrub adapter. It never switches robots or backends when entities become unavailable.
+- `src/integration.js` supplies the configured adapter. Automatic initial selection prefers Spot+Scrub; an explicit robot selects its own backend. It never switches robots because an entity becomes unavailable.
 - `src/adapters/spot-scrub.js` owns platform/unique-ID matching, room identity and draft validation, telemetry, backend capability checks, preference writes, session actions, zone readiness and action payloads.
+- `src/adapters/hass-dyson.js` implements native-ID room selects, normalized options, separate save/start actions, optional images/consumables and standard session controls. It does not borrow Spot+Scrub custom actions or station entities.
 - `src/shared.js` contains configuration validation, display labels and generic helpers.
 - `src/zone-geometry.js` contains image calibration validation, hashing and geometry/display helpers, without integration domains or service calls.
 - Card and editor use `this.adapter`. Zone and session-map components receive that same adapter. The adapter is a stateless singleton apart from the existing per-vacuum in-flight room-action lock; each card retains its own model, drafts, registry, request badges and timers.
@@ -47,4 +48,4 @@ Before starting a second adapter, verify the experimental bundle in live Home As
 5. Zone rotation, image verification, settings, map changes, Start and room/zone draft retention work on desktop and mobile.
 6. Reloading, renamed entities, unavailable entities and backend failures preserve the previous handling.
 
-Only after this acceptance should a `hass_dyson` adapter and visible integration selector be added. The agreed future selection policy is Automatic with Spot+Scrub priority when choosing an initial backend, plus explicit selection in the visual editor. An explicitly configured robot must remain authoritative. That policy is recorded here but is not implemented in this phase.
+The maintainer reported successful initial Spot+Scrub live testing. The pre-existing zone Pause/Resume problem was corrected in the integration and both actions were subsequently confirmed live. The next phase implements the selection policy above and the experimental hass-dyson scope described in its guide; it now needs its own live acceptance.

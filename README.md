@@ -30,6 +30,8 @@
 ## Requirements
 
 - [Dyson Spot+Scrub integration by UNsync3D](https://github.com/UNsync3D/ha-dyson-spot-scrub), **v2.1.0 or newer**, installed and configured in Home Assistant.
+
+This experimental branch also provides a [hass-dyson adapter for Spot+Scrub](docs/hass-dyson.md): rooms/settings, room starts, session controls, battery, consumables and the combined vacuum/mop coverage image. Select **Integration → hass-dyson (experimental)** in the editor. Automatic initial discovery prefers the existing Spot+Scrub integration; an explicitly selected robot remains authoritative. Rectangle cleaning and station/robot preferences remain exclusive to the existing adapter. Live acceptance of the new adapter is still required.
 - **Home Assistant Marketplace** for the recommended installation method on Home Assistant **2026.11 or newer**. On older versions, use [HACS](https://www.hacs.xyz/). Manual installation is also supported.
 
 For integration developers, the [complete integration contract](docs/integration-contract.md) documents required and optional entities, registry identities, attributes, action payloads and validation. 
@@ -201,16 +203,17 @@ These options belong in the individual card's code editor, not in `configuration
 | Option | Description |
 |---|---|
 | `entity` | Required Dyson vacuum entity |
+| `integration` | `auto` (default), `dyson_spot_scrub`, or experimental `hass_dyson` |
 | `title` | Custom planner title; empty or omitted uses the translated default |
 | `language` | `auto` (default), `en`, `de`, `nl`, or `fr`; applies to this card and its editor |
 | `theme` | `modern` (default) or `classic` |
 | `always_show_all_settings` | Keep supported room settings visible regardless of cleaning mode; default: `false` |
 | `unsupported_settings` | Legacy option; unsupported settings are now always hidden |
-| `excluded_rooms` | Room switch entity IDs to hide |
-| `room_order` | Room switch entity IDs in display order |
+| `excluded_rooms` | Room entity IDs to hide: switches for Spot+Scrub, room selects for hass-dyson |
+| `room_order` | Those room entity IDs in display order |
 | `room_entities` | Optional mapping from room names to switch entity IDs |
 | `show_camera` | Show the map during cleaning; default: `true` |
-| `camera_entity` | Optional camera entity on the same Dyson device |
+| `camera_entity` | Optional same-device camera (Spot+Scrub) or image entity (hass-dyson) |
 | `header_icon_style` | `integration` (default robot illustration) or `home_assistant` (original icon) |
 | `zone_dimension_unit` | Dimension pill: `auto` (HA units, default), `cm`, `inch`, or `off` |
 | `camera_rotation` | `0`, `90`, `180`, or `270` degrees |

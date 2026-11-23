@@ -1,5 +1,7 @@
 # Integration contract — card v1.4.0
 
+This contract describes the **Spot+Scrub adapter**. The experimental `hass_dyson` adapter has a separate [entity/action contract and setup guide](hass-dyson.md). `integration: auto` selects the configured vacuum's registry platform; initial discovery prefers Spot+Scrub. Explicit adapter choices are available in the visual editor.
+
 This document describes what the **current card actually reads and sends**, based on the Spot+Scrub adapter and its card/editor/map/zone consumers. The adapter experiment preserves this contract; see [adapter architecture](integration-adapter.md). It is a frontend contract, not a specification of Dyson's MQTT protocol or a guarantee about the integration's internal implementation.
 
 Both Modern and Classic use this same contract. The documented minimum integration version is **UNsync3D Dyson Spot+Scrub v2.1.0**; optional features require the corresponding entities/actions in the installed version.

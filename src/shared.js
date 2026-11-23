@@ -15,6 +15,7 @@ export const STATUS_BAR_ITEMS = [
 
 export function normalizeConfig(config) {
   if (!config || typeof config.entity !== 'string' || !config.entity.startsWith('vacuum.')) throw new UiError('Select a vacuum entity.');
+  if (config.integration !== undefined && !['auto', 'dyson_spot_scrub', 'hass_dyson'].includes(config.integration)) throw new UiError('Invalid integration selection.');
   if (config.language !== undefined && !['auto', 'en', 'de', 'nl', 'fr'].includes(config.language)) throw new UiError('language must be auto, en, de, nl or fr.');
   if (config.theme !== undefined && !['classic', 'modern'].includes(config.theme)) throw new UiError('theme must be classic or modern.');
   if (config.unsupported_settings && !['disabled', 'hidden'].includes(config.unsupported_settings)) throw new UiError('unsupported_settings must be disabled or hidden.');
@@ -28,7 +29,7 @@ export function normalizeConfig(config) {
   if (config.show_camera !== undefined && typeof config.show_camera !== 'boolean') throw new UiError('show_camera must be true or false.');
   if (config.always_show_all_settings !== undefined && typeof config.always_show_all_settings !== 'boolean') throw new UiError('always_show_all_settings must be true or false.');
   if (config.camera_rotation !== undefined && ![0, 90, 180, 270].includes(config.camera_rotation)) throw new UiError('camera_rotation must be 0, 90, 180 or 270.');
-  if (config.camera_entity && (typeof config.camera_entity !== 'string' || !config.camera_entity.startsWith('camera.'))) throw new UiError('Select a camera entity.');
+  if (config.camera_entity && (typeof config.camera_entity !== 'string' || !/^(camera|image)\./.test(config.camera_entity))) throw new UiError('Select a camera entity.');
   if (config.zone_dimension_unit !== undefined && !['off','auto','cm','inch'].includes(config.zone_dimension_unit)) throw new UiError('Invalid zone dimension unit.');
   if (config.header_icon_style !== undefined && !['home_assistant','integration'].includes(config.header_icon_style)) throw new UiError('Invalid header icon style.');
   return { ...config, header_icon_style: config.header_icon_style ?? 'integration', zone_dimension_unit: config.zone_dimension_unit ?? 'auto', language: config.language ?? 'auto', theme: config.theme ?? 'modern', show_battery_percentage: config.show_battery_percentage ?? false, show_status_bar: config.show_status_bar ?? true, hidden_status_items: config.hidden_status_items ?? [], title: config.title ?? '', always_show_all_settings: config.always_show_all_settings ?? false, unsupported_settings: 'hidden', excluded_rooms: config.excluded_rooms ?? [], room_order: config.room_order ?? [], show_camera: config.show_camera ?? true, camera_rotation: config.camera_rotation ?? 0 };

@@ -35,11 +35,12 @@ class DysonPlannerMap extends HTMLElement {
     this.objectUrl = undefined; this.img.removeAttribute('src'); this.img.style.visibility = 'hidden';
   }
   setOptions(hass, entity, rotation, live, language = 'en', adapter = getIntegrationAdapter()) {
+    const adapterChanged = this.adapter && this.adapter !== adapter;
     this.adapter = adapter;
     this.language = language;
     this.img.alt = translate(language, 'Live cleaning map');
     if (this.messageKey) this.showMessage(this.messageKey);
-    if (this.entity !== entity || this.hass?.connection !== hass.connection) {
+    if (adapterChanged || this.entity !== entity || this.hass?.connection !== hass.connection) {
       this.cancel();
       if (this.objectUrl) URL.revokeObjectURL(this.objectUrl);
       this.objectUrl = undefined; this.img.removeAttribute('src'); this.img.style.visibility = 'hidden';
@@ -80,7 +81,7 @@ class DysonPlannerMap extends HTMLElement {
     const picture = this.adapter.mapPicture(this.hass, this.entity);
     this.lastAttempt = Date.now();
     // Use the HA-provided proxy path/token; never save or log tokens in config.
-    if (typeof picture !== 'string' || !picture.startsWith('/api/camera_proxy/')) {
+    if (!this.adapter.mapPictureAllowed(picture)) {
       this.showMessage('The camera image is not available yet.'); this.schedule(); return;
     }
     const url = new URL(this.hass.hassUrl ? this.hass.hassUrl(picture) : picture, location.href);

@@ -1,7 +1,7 @@
 import { zoneDimensionText } from './zone-geometry.js';
 import { resolveLanguage, translate, uiMessage, UiError } from './localize.js';
 import { STATUS_BAR_ITEMS, ROOM_FIELDS, available, escapeHtml, normalizeConfig } from './core.js';
-import { getIntegrationAdapter } from './integration.js';
+import { getIntegrationAdapter, integrationVacuumEntries, defaultIntegrationEntity } from './integration.js';
 
 function stationIndicator(field, refillStatus, language = 'en') {
   const t = (key, params) => translate(language, key, params);
@@ -238,7 +238,7 @@ class DysonRegistryElement extends HTMLElement {
     this._registryTimer = setInterval(() => this.loadRegistry(), 30000);
   }
   disconnectedCallback() { clearInterval(this._registryTimer); registryRefreshEvents.removeEventListener('refresh', this._onRegistryRefresh); }
-  get adapter() { return getIntegrationAdapter(); }
+  get adapter() { return getIntegrationAdapter(this.config, this.registry, this._hass); }
   get language() { return resolveLanguage(this.config, this._hass); }
   t(key, params) { return translate(this.language, key, params); }
   ht(key, params) { return escapeHtml(this.t(key, params)); }
@@ -340,7 +340,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       }
       if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key) && event.target.dataset.infoTab) {
         event.preventDefault();
-        const tabs = ['station', 'robot', 'consumables'];
+        const tabs = this.adapter.infoTabs ?? ['station', 'robot', 'consumables'];
         const index = tabs.indexOf(event.target.dataset.infoTab);
         this.infoTab = event.key === 'Home' ? tabs[0] : event.key === 'End' ? tabs.at(-1)
           : tabs[(index + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length];
@@ -350,7 +350,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
   }
   static getConfigElement() { return document.createElement('dyson-cleaning-planner-card-editor'); }
   static getStubConfig(hass) {
-    return { type: 'custom:dyson-cleaning-planner-card', entity: getIntegrationAdapter().defaultEntity(hass) };
+    return { type: 'custom:dyson-cleaning-planner-card', entity: defaultIntegrationEntity(hass) };
   }
   setConfig(config) {
     let normalized;
@@ -361,7 +361,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       // Keep the configuration identity used by in-flight save/start requests.
       this.config.language = normalized.language; this.update(); return;
     }
-    if (this.config?.entity !== config.entity) {
+    if (this.config?.entity !== config.entity || (this.config?.integration ?? 'auto') !== (config.integration ?? 'auto')) {
       this.clearSessionEnd();
       this.clearPendingStart(); this.requestedPlan = null; this.sessionObserved = false;
     }
@@ -383,11 +383,17 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     this._modernObserver ??= new ResizeObserver(() => this.positionModernPointer());
     this._modernObserver.observe(this);
     this.update();
+    clearInterval(this._dockTimer);
+    this._dockTimer = setInterval(() => {
+      if (this.isConnected && !document.hidden && this.adapter.usesDockTimer && this.model
+          && this.shadowRoot.querySelector('.activity-remaining:not([hidden])')) this.updateStatus();
+    }, 1000);
   }
   disconnectedCallback() {
     this._previewDialog?.removeEventListener(previewViewChanged, this._previewChanged);
     this._previewDialog = null;
     this._modernObserver?.disconnect();
+    clearInterval(this._dockTimer);
     super.disconnectedCallback(); this.clearPendingStart(); this.clearSessionEnd();
   }
   clearPendingStart() { clearTimeout(this._startTimer); this.pendingStart = false; }
@@ -405,7 +411,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     }, 5000);
   }
   get view() {
-    const view = this.adapter.cleaningView(this._hass, this.config?.entity, (this.busy && !this.saving) || this.pendingStart);
+    const view = this.adapter.cleaningView(this._hass, this.config?.entity, (this.busy && !this.saving) || this.pendingStart, this.registry);
     if (!view.active && this._previewDialog && sessionPreviewOwners.has(this._previewDialog)) {
       return { active: true, live: true, simulated: true };
     }
@@ -415,7 +421,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
   getGridOptions() { return { columns: 12, min_columns: 9, rows: 'auto', min_rows: 1 }; }
   getModel() { return this.adapter.discover(this._hass, this.registry, this.config, this.lastRooms); }
   resetDraft(clearMessage = true) {
-    this.draftContext = this.adapter.roomContext(this._hass, this.config.entity);
+    this.draftContext = this.adapter.roomContext(this._hass, this.config.entity, this.registry);
     this.selected = this.model.rooms.filter(r => !r.excluded && r.available && this.adapter.roomSelectionState(this._hass, r.entity) === 'on').map(r => r.entity);
     this.settingDraft = {};
     this.baseline = this.liveSignature(); this.dirty = false;
@@ -433,12 +439,12 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     const previous = this.model;
     this.model = this.getModel();
     // Preserve a local selection across entity renames using the robot's room ID.
-    if (this.dirty && previous && this.draftContext === this.adapter.roomContext(this._hass, this.config.entity)) this.selected = this.selected.map(entity => {
+    if (this.dirty && previous && this.draftContext === this.adapter.roomContext(this._hass, this.config.entity, this.registry)) this.selected = this.selected.map(entity => {
       const id = previous.rooms.find(r => r.entity === entity)?.roomId;
       const matches = this.model.rooms.filter(r => id && r.roomId === id);
       return matches.length === 1 ? matches[0].entity : entity;
     });
-    const reported = this.adapter.cleaningView(this._hass, this.config.entity);
+    const reported = this.adapter.cleaningView(this._hass, this.config.entity, false, this.registry);
     if (reported.active || this.busy || this.pendingStart) this.clearSessionEnd();
     if (reported.live) {
       this.clearPendingStart(); this.sessionObserved = true;
@@ -554,9 +560,10 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
         return { entity_id: entity, room_id: room?.roomId, name: room?.name ?? entity };
       }) };
       this.message = 'Sending room settings and start request …'; this.render();
-      const plan = await this.adapter.sendRoomDraft({ hass: this._hass, model, config, selected: [...this.selected], draft: this.settingDraft, start: true, context });
+      const plan = await this.adapter.sendRoomDraft({ hass: this._hass, model, config, selected: [...this.selected], draft: this.settingDraft, start: true, context, registry:this.registry,
+        getCurrent:() => ({ hass:this._hass, registry:this.registry, config:this.config, active:this.isConnected && !this._previewDialog }) });
       if (this.config !== config || !this.isConnected) return;
-      if (context !== this.adapter.roomContext(this._hass, config.entity)) {
+      if (context !== this.adapter.roomContext(this._hass, config.entity, this.registry)) {
         // The command may already be accepted; clear only its stale presentation.
         this.message = '';
         this.clearPendingStart(); this.clearSessionEnd();
@@ -565,12 +572,12 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       }
       this.settingDraft = {};
       this.requestedPlan = plan;
-      this.sessionObserved = this.adapter.cleaningView(this._hass, config.entity).live;
+      this.sessionObserved = this.adapter.cleaningView(this._hass, config.entity, false, this.registry).live;
       if (!this.sessionObserved) {
         this.pendingStart = true;
         this._startTimer = setTimeout(() => {
           this.pendingStart = false;
-          if (!this.adapter.cleaningView(this._hass, config.entity).active) {
+          if (!this.adapter.cleaningView(this._hass, config.entity, false, this.registry).active) {
             this.requestedPlan = null; this.error = true;
             this.message = 'The start was sent, but the robot has not reported an active session. Check its status before trying again.';
           }
@@ -581,7 +588,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       this.dirty = true;
       this.baseline = this.liveSignature();
     } catch (error) {
-      if (!this.adapter.cleaningView(this._hass, config.entity).active) this.requestedPlan = null;
+      if (!this.adapter.cleaningView(this._hass, config.entity, false, this.registry).active) this.requestedPlan = null;
       this.error = true;
       if (this.config === config) this.message = uiMessage('{error} No automatic retry will be made.', { error });
     } finally { this.busy = false; this.render(); }
@@ -592,11 +599,11 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     this.busy = true; this.saving = true; this.error = false;
     this.message = 'Saving room settings …'; this.render();
     try {
-      await this.adapter.sendRoomDraft({ hass: this._hass, model: this.getModel(), config, draft, context });
+      await this.adapter.sendRoomDraft({ hass: this._hass, model: this.getModel(), config, draft, context, registry:this.registry });
       const deadline = Date.now() + 6000;
       while (true) {
         if (this.config !== config || !this.isConnected) return;
-        if (context !== this.adapter.roomContext(this._hass, config.entity)) {
+        if (context !== this.adapter.roomContext(this._hass, config.entity, this.registry)) {
           this.message = '';
           return;
         }
@@ -617,7 +624,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     const entity = this.config.entity;
     this.controlBusy = true; this.message = ''; this.error = false; this.render();
     try {
-      await this.adapter.controlCleaning(this._hass, entity, action);
+      await this.adapter.controlCleaning(this._hass, entity, action, this.registry);
       if (this.config.entity !== entity) return;
       this.message = '';
     } catch (error) {
@@ -629,7 +636,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
   }
   toggleConsumables(open) {
     this.consumablesOpen = open;
-    if (open) { this.infoTab = 'station'; this.robotMessage = ''; this._robotMessageContext = {}; }
+    if (open) { this.infoTab = this.adapter.infoTabs?.[0] ?? 'station'; this.robotMessage = ''; this._robotMessageContext = {}; }
     this.updateConsumables();
     this.shadowRoot.querySelector(open ? '.consumables-close' : '.consumables-info')?.focus();
   }
@@ -704,9 +711,12 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
   }
   updateStationSettings(settings, refillStatus) {
     const root = this.shadowRoot;
-    const tab = this.infoTab || 'station';
+    const allowedTabs = this.adapter.infoTabs ?? ['station', 'robot', 'consumables'];
+    const tab = allowedTabs.includes(this.infoTab) ? this.infoTab : allowedTabs[0];
+    this.infoTab = tab;
     for (const name of ['station', 'robot', 'consumables']) {
       const button = root.querySelector(`[data-info-tab="${name}"]`);
+      button.hidden = !allowedTabs.includes(name);
       button.setAttribute('aria-selected', String(tab === name));
       button.tabIndex = tab === name ? 0 : -1;
       root.querySelector(`#panel-${name}`).hidden = tab !== name;
@@ -740,12 +750,12 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     message.classList.toggle('error', !!this.stationError);
   }
   headerHtml() {
-    const name = this.adapter.robotTelemetry(this._hass, this.config.entity).name;
+    const name = this.adapter.robotTelemetry(this._hass, this.config.entity, undefined, this.registry).name;
     const subtitle = typeof name === 'string' && name.trim() ? name : this.config.entity;
     return `<header><div class="station-status-bar"><div class="station-indicators"></div><div class="battery" role="img"><svg viewBox="0 0 32 20" aria-hidden="true"><rect x="1" y="3" width="26" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="29" y="7" width="3" height="6" rx="1" fill="currentColor"/><rect class="battery-fill" x="4" y="6" width="0" height="8" rx="1" fill="currentColor"/><path class="battery-bolt" d="M17 1 9 11h6l-2 8L23 8h-7Z" fill="var(--dp-bg)" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" hidden/></svg><span class="battery-value" aria-hidden="true" hidden></span></div></div><div class="header-main"><div class="robot ${this.config.header_icon_style === 'integration' ? 'robot-integration' : ''}">${this.config.header_icon_style === 'integration' ? `<svg class="robot-illustration" viewBox="0 0 50 50" aria-hidden="true"><defs><radialGradient id="robot-beam-gradient" gradientUnits="userSpaceOnUse" cx="25" cy="25" r="46"><stop offset=".40" stop-color="#39ff14" stop-opacity=".75"/><stop offset=".62" stop-color="#65ff39" stop-opacity=".42"/><stop offset=".85" stop-color="#65ff39" stop-opacity=".12"/><stop offset="1" stop-color="#65ff39" stop-opacity="0"/></radialGradient><filter id="robot-beam-soft" x="-35%" y="-20%" width="170%" height="150%"><feGaussianBlur stdDeviation="1.2"/></filter></defs><path class="robot-beam" d="M25 25 L2 -15 Q25 -27 48 -15 Z" fill="url(#robot-beam-gradient)" filter="url(#robot-beam-soft)" hidden/><circle cx="25" cy="26" r="22" fill="#000" opacity=".18"/><circle cx="25" cy="25" r="21" fill="#3a3a40" stroke="#e7e9ed" stroke-width="1.5"/><circle cx="25" cy="25" r="18" fill="#45454e"/><path class="robot-bumper" d="M6.8 14.5 A21 21 0 0 1 43.2 14.5" fill="none" stroke="#64646d" stroke-width="4"/><circle cx="25" cy="17" r="6" fill="#c8c8cd"/><circle cx="25" cy="17" r="2.6" fill="#39ff14"/><rect class="robot-dock" x="9" y="44" width="32" height="7" rx="2.5" fill="#3a3a40" stroke="#c8c8cd" stroke-width="1.2" hidden/></svg>` : '<ha-icon icon="mdi:robot-vacuum"></ha-icon>'}${this.config.theme === 'modern' ? `<button class="robot-warning" data-action="open-fault" aria-label="${this.ht('Show robot error')}" hidden><ha-icon icon="mdi:alert" aria-hidden="true"></ha-icon></button>` : ''}</div><div class="header-title"><h2>${escapeHtml(this.config.title || this.t('Plan a clean'))}</h2><p>${escapeHtml(subtitle)}</p></div><div class="header-buttons"><button class="consumables-info" data-action="consumables" data-focus="consumables-info" aria-label="${this.ht("Consumables")}" aria-haspopup="dialog" aria-expanded="false" title="${this.ht("Consumables")}">${this.ht("Info")}</button></div>${this.config.theme === 'modern' ? `<section class="header-fault" aria-label="${this.ht('Robot needs attention')}" hidden><div class="header-fault-copy" tabindex="0" role="status"><strong>${this.ht('Robot needs attention')}</strong><p class="header-fault-detail"></p></div><button class="header-fault-close" data-action="dismiss-fault" aria-label="${this.ht('Dismiss error message')}"><ha-icon icon="mdi:close" aria-hidden="true"></ha-icon></button></section>` : ''}<section class="header-notice" hidden><div class="header-notice-copy" role="status" aria-live="polite"></div><button class="header-fault-close" data-action="dismiss-notice" aria-label="${this.ht('Close')}"><ha-icon icon="mdi:close" aria-hidden="true"></ha-icon></button></section></div></header>`;
   }
   updateBattery() {
-    const vacuum = this.adapter.robotTelemetry(this._hass, this.config.entity, this.model.cameraEntity);
+    const vacuum = this.adapter.robotTelemetry(this._hass, this.config.entity, this.model.cameraEntity, this.registry);
     const cleaning = vacuum.cleaning;
     const bumper = this.shadowRoot.querySelector('.robot-bumper');
     if (bumper) {
@@ -798,7 +808,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
   }
   updateStatus(plannerNotice = this._plannerNotice ?? '') {
     this._plannerNotice = plannerNotice;
-    let status = this.adapter.activityStatus(this._hass, this.config.entity, (this.busy && !this.saving) || this.pendingStart);
+    let status = this.adapter.activityStatus(this._hass, this.config.entity, (this.busy && !this.saving) || this.pendingStart, this.registry);
     const modern = this.config.theme === 'modern';
     const state = this._hass?.states?.[this.config.entity]?.state;
     if (modern && !status) {
@@ -806,7 +816,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       else if (state === 'idle') status = { text: 'Idle', icon: 'mdi:robot-vacuum' };
     }
     if (modern) {
-      const vacuum = this.adapter.robotTelemetry(this._hass, this.config.entity, this.model.cameraEntity);
+      const vacuum = this.adapter.robotTelemetry(this._hass, this.config.entity, this.model.cameraEntity, this.registry);
       const activeFault = state === 'error' && this._hass?.connected !== false;
       const description = typeof vacuum.fault === 'string' ? vacuum.fault.trim() : '';
       const key = activeFault ? JSON.stringify([this.config.entity, vacuum.faultCode ?? null, description]) : '';
@@ -826,7 +836,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       }
       if (activeFault) {
         // The generic error state does not prove docking or a live cleaning phase.
-        status = this.adapter.dockActivity(this._hass, this.config.entity)
+        status = this.adapter.dockActivity(this._hass, this.config.entity, this.registry)
           ?? { text: 'Status unavailable', icon: 'mdi:help-circle-outline' };
       }
     }
@@ -837,23 +847,24 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     row.classList.toggle('has-drying', !!status?.drying);
     row.querySelector('.activity-text').textContent = this.t(status?.text);
     // Display the integration's current explanation without retaining or inferring faults.
-    const fault = this.adapter.robotTelemetry(this._hass, this.config.entity).fault;
+    const fault = this.adapter.robotTelemetry(this._hass, this.config.entity, undefined, this.registry).fault;
     const detail = status?.text === 'Robot needs attention' && typeof fault === 'string' ? fault.trim() : '';
     const faultText = row.querySelector('.activity-fault');
     faultText.textContent = detail;
     faultText.hidden = modern || !detail;
 
     const blockNote = row.querySelector('.activity-start-block');
-    const block = this.adapter.startBlockReason(this._hass, this.config.entity);
-    blockNote.hidden = this.view.active || !block || block === status?.text || this.adapter.dockBlocksStart(this._hass, this.config.entity);
+    const block = this.adapter.startBlockReason(this._hass, this.config.entity, this.registry);
+    blockNote.hidden = this.view.active || !block || block === status?.text || this.adapter.dockBlocksStart(this._hass, this.config.entity, this.registry);
     blockNote.textContent = this.t(block);
     row.querySelector('.activity-icon').setAttribute('icon', status?.icon ?? 'mdi:robot-vacuum');
-    row.querySelector('.drying-control').hidden = !status?.drying;
+    row.querySelector('.drying-control').hidden = !status?.drying || this.adapter.supportsDryingCancellation === false;
     const remaining = row.querySelector('.activity-remaining');
-    const time = status?.drying ? this.adapter.dryingRemainingTime(this._hass, this.config.entity, this.registry) : null;
-    remaining.hidden = !status?.drying;
+    const showRemaining = status?.remaining ?? status?.drying;
+    const time = showRemaining ? this.adapter.dryingRemainingTime(this._hass, this.config.entity, this.registry) : null;
+    remaining.hidden = !showRemaining;
     remaining.textContent = compact ? ` · ${time ?? this.t('Unavailable')}` : time === null ? this.t('Remaining time: unavailable') : this.t('Remaining time: {time} (hh:mm)', { time });
-    row.querySelector('.activity-copy').title = [this.t(status?.text), status?.drying ? remaining.textContent : '', blockNote.hidden ? '' : blockNote.textContent].filter(Boolean).join(' ');
+    row.querySelector('.activity-copy').title = [this.t(status?.text), showRemaining ? remaining.textContent : '', blockNote.hidden ? '' : blockNote.textContent].filter(Boolean).join(' ');
     const progress = row.querySelector('.drying-progress');
     const percent = status?.drying ? this.adapter.dryingRemainingPercent(this._hass, this.config.entity, this.registry) : null;
     progress.hidden = percent === null;
@@ -866,7 +877,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       progress.removeAttribute('aria-valuetext');
     }
     const cancel = row.querySelector('.cancel-drying');
-    const supported = this.adapter.canControl(this._hass, this.config.entity, 'cancel_drying');
+    const supported = this.adapter.canControl(this._hass, this.config.entity, 'cancel_drying', this.registry);
     cancel.disabled = !!this._previewDialog || this.busy || this.controlBusy || !supported;
     this.updateHeaderNotice();
     cancel.title = this.t(supported ? 'Cancel drying' : 'Drying cancellation requires a connected robot and the integration cancel_drying action.');
@@ -898,7 +909,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     toggle.querySelector('span').textContent = this.t(paused ? 'Resume' : 'Pause');
     toggle.querySelector('ha-icon').setAttribute('icon', paused ? 'mdi:play' : 'mdi:pause');
     for (const button of root.querySelectorAll('[data-control]')) {
-      const supported = this.adapter.canControl(this._hass, this.config.entity, button.dataset.control);
+      const supported = this.adapter.canControl(this._hass, this.config.entity, button.dataset.control, this.registry);
       button.disabled = !!this._previewDialog || this.busy || this.controlBusy || !supported;
       button.title = supported ? '' : this.t('This action is not available in the current robot state.');
     }
@@ -939,11 +950,11 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     const valid = dimensions && ['widthCm','heightCm'].every(key => Number.isFinite(dimensions[key]) && dimensions[key] > 0);
     this.zoneView = false; this.zoneDraft = null; this.requestedPlan = valid ? { zone: { ...dimensions } } : null; this.message = ''; this.error = false;
     this.clearPendingStart();
-    if (!this.adapter.cleaningView(this._hass, this.config.entity).live) {
+    if (!this.adapter.cleaningView(this._hass, this.config.entity, false, this.registry).live) {
       this.pendingStart = true;
       this._startTimer = setTimeout(() => {
         this.pendingStart = false;
-        if (!this.adapter.cleaningView(this._hass, this.config.entity).live) {
+        if (!this.adapter.cleaningView(this._hass, this.config.entity, false, this.registry).live) {
           this.error = true;
           this.message = 'The start was sent, but the robot has not reported an active session. Check its status before trying again.';
         }
@@ -1008,10 +1019,10 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       }
       return `<section class="room ${selected ? 'selected' : ''}"><div class="room-head"><label class="pick"><input type="checkbox" data-focus="room-${n}" data-room="${h(room.entity)}" ${selected ? 'checked' : ''} ${disabled ? 'disabled' : ''}><span><span class="name">${h(room.name)} ${selected ? `<span class="status">(${order})</span>` : ''}</span><span class="summary">${!room.available ? this.ht(room.error || 'Unavailable') : this.ht(valueOf('cleaning_mode') ?? 'Room settings unavailable')}</span></span></label><button class="expand" data-focus="expand-${n}" data-expand="${h(room.entity || room.name)}" aria-expanded="${open}" aria-controls="fields-${n}" aria-label="${this.ht('Settings for {name}', { name: room.name })}"><span>${this.ht("Settings")}</span> ${open ? '⌃' : '⌄'}</button></div><div class="fields" id="fields-${n}" ${open ? '' : 'hidden'}>${fields}${!room.roomId ? `<p class="badge mode">${this.ht("Room ID unavailable. Check the updated integration and refresh rooms.")}</p>` : ''}</div></section>`;
     }).join('');
-    this.paint(`<style>${styles}</style><ha-card><div class="planner-content">${this.headerHtml()}${this.statusHtml()}${this.planningTabsHtml()}${this.supportsZone ? '<div id="planning-panel-zones" role="tabpanel" aria-labelledby="planning-tab-zones" hidden></div>' : ''}<div ${this.supportsZone ? 'id="planning-panel-rooms" role="tabpanel" aria-labelledby="planning-tab-rooms"' : ''} class="rooms ${modern ? 'modern-rooms' : ''}" style="--room-count:${rooms.length}">${roomHtml}</div>${!rooms.length ? `<p class="empty">${this.ht("No enabled rooms found. Check the card configuration and room discovery.")}</p>` : ''}<footer><div class="summary-line"><span>${this.ht('{selected} of {total} rooms selected', { selected: this.selected.length, total: rooms.length })}</span><span class="status ${this.dirty ? 'draft-status' : ''}">${this.dirty ? `<button class="discard-draft" data-focus="reset" data-action="reset" ${this.busy ? 'disabled' : ''} title="${this.ht("Discard draft")}" aria-label="${this.ht("Discard draft")}"><ha-icon icon="mdi:trash-can-outline" aria-hidden="true"></ha-icon></button>${this.ht('Local draft')}` : this.ht('From Home Assistant')}</span></div><div class="actions"><button data-action="save" data-focus="save" ${this._previewDialog || !hasChanges || this.busy || !canSave ? 'disabled' : ''}>${this.ht(this.saving ? 'Saving …' : 'Save settings')}</button><button class="start" data-focus="start" data-action="start" ${this._previewDialog || this.selected.length === 0 || this.busy || this.adapter.startBlockReason(this._hass, this.config.entity) ? 'disabled' : ''}>${this.ht("Start clean")}</button></div></footer></div>${this.consumablesHtml()}</ha-card>`, 'planner');
+    this.paint(`<style>${styles}</style><ha-card><div class="planner-content">${this.headerHtml()}${this.statusHtml()}${this.planningTabsHtml()}${this.supportsZone ? '<div id="planning-panel-zones" role="tabpanel" aria-labelledby="planning-tab-zones" hidden></div>' : ''}<div ${this.supportsZone ? 'id="planning-panel-rooms" role="tabpanel" aria-labelledby="planning-tab-rooms"' : ''} class="rooms ${modern ? 'modern-rooms' : ''}" style="--room-count:${rooms.length}">${roomHtml}</div>${!rooms.length ? `<p class="empty">${this.ht("No enabled rooms found. Check the card configuration and room discovery.")}</p>` : ''}<footer>${this.adapter.planningHint ? `<p class="integration-hint notice">${this.ht(this.adapter.planningHint)}</p>` : ''}<div class="summary-line"><span>${this.ht('{selected} of {total} rooms selected', { selected: this.selected.length, total: rooms.length })}</span><span class="status ${this.dirty ? 'draft-status' : ''}">${this.dirty ? `<button class="discard-draft" data-focus="reset" data-action="reset" ${this.busy ? 'disabled' : ''} title="${this.ht("Discard draft")}" aria-label="${this.ht("Discard draft")}"><ha-icon icon="mdi:trash-can-outline" aria-hidden="true"></ha-icon></button>${this.ht('Local draft')}` : this.ht('From Home Assistant')}</span></div><div class="actions"><button data-action="save" data-focus="save" ${this._previewDialog || !hasChanges || this.busy || !canSave ? 'disabled' : ''}>${this.ht(this.saving ? 'Saving …' : 'Save settings')}</button><button class="start" data-focus="start" data-action="start" ${this._previewDialog || this.selected.length === 0 || this.busy || (model.startBlockReason || this.adapter.startBlockReason(this._hass, this.config.entity, this.registry)) ? 'disabled' : ''}>${this.ht("Start clean")}</button></div></footer></div>${this.consumablesHtml()}</ha-card>`, 'planner');
     this.updateBattery();
     this.updateConsumables();
-    const plannerNotice = !canSave || !canStart ? this.t('The updated Dyson integration actions are not available. Reload the integration and refresh this dashboard.')
+    const plannerNotice = model.startBlockReason ? this.t(model.startBlockReason) : !canSave || !canStart ? this.t('The updated Dyson integration actions are not available. Reload the integration and refresh this dashboard.')
       : external ? this.t('Settings changed outside this card. Your edited values remain in the local draft.') : '';
     this.updateStatus(plannerNotice);
     this.positionModernPointer();

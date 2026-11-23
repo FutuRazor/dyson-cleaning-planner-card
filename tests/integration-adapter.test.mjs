@@ -5,7 +5,7 @@ import { spotScrubAdapter } from '../src/adapters/spot-scrub.js';
 import { sendRoomDraft } from '../src/core.js';
 import { batchFixture } from './fixture.mjs';
 
-test('phase one lists only Spot+Scrub entities and never discovers another platform', () => {
+test('Spot+Scrub adapter lists only its own entities and never discovers another platform', () => {
   const f = batchFixture(), adapter = getIntegrationAdapter();
   assert.equal(adapter, spotScrubAdapter);
   const foreign = f.registry.map(e => ({ ...e, entity_id: e.entity_id + '_other', platform: 'hass_dyson' }));

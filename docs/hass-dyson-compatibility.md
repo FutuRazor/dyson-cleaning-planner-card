@@ -1,10 +1,12 @@
 # Compatibility assessment: cmgrayb/hass-dyson
 
+**Current branch status, 23 November 2026:** the [experimental hass-dyson adapter](hass-dyson.md) now implements the first room/settings/session/image scope. The comparison below records the original 21 November assessment of the Spot+Scrub contract; it is background for the implemented translations, not a claim that the new adapter is absent. Live acceptance of hass-dyson is still pending.
+
 Reviewed **21 November 2026** against the public `main` branch of [cmgrayb/hass-dyson](https://github.com/cmgrayb/hass-dyson). This is a source-based assessment and implementation proposal, not an implemented hass-dyson adapter or a hardware-tested compatibility claim. Upstream may change. The exact current card contract is in [integration-contract.md](integration-contract.md).
 
 ## Result
 
-The current card is **not directly compatible**. It hardcodes registry platform and custom actions to `dyson_spot_scrub`; upstream uses `hass_dyson`. Renaming entity IDs or setting `room_entities` cannot bridge that difference. There is useful overlap for Spot+Scrub room settings, but discovery, telemetry, option translation and action orchestration need an adapter.
+The original Spot+Scrub contract is **not directly compatible**. Its adapter uses registry platform and custom actions `dyson_spot_scrub`; upstream uses `hass_dyson`. Renaming entity IDs or setting `room_entities` cannot bridge that difference. The new experimental adapter supplies separate discovery, telemetry, option translation and action orchestration for the implemented scope.
 
 ## Observed differences
 
