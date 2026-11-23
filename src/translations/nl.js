@@ -1,5 +1,6 @@
 // Dutch UI text. Protocol values and entity names remain unchanged.
 export const nl = {
+  "Map entity must use the {domain} domain for this integration.": "De kaartentiteit moet voor deze integratie het domein {domain} gebruiken.",
   "Map image": "Kaartafbeelding",
   "hass-dyson (experimental)": "hass-dyson (experimenteel)",
   "Invalid integration selection.": "Ongeldige integratiekeuze.",

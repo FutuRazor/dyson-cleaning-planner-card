@@ -18,7 +18,14 @@ export function integrationVacuumEntries(config = {}, registry = []) {
   return adapters.flatMap(a => a.vacuumEntries(registry));
 }
 
-export function defaultIntegrationEntity(hass, config = {}, registry = Object.values(hass?.entities ?? {})) {
-  return integrationVacuumEntries(config, registry)[0]?.entity_id
-    ?? (!config.integration || config.integration === 'auto' || config.integration === spotScrubAdapter.id ? spotScrubAdapter.defaultEntity(hass) : '');
+export function defaultIntegrationEntity(hass, config = {}, registry, registryLoaded = true) {
+  const metadata = Object.values(hass?.entities ?? {});
+  const choose = entries => entries.find(entry => entry.entity_id === config.entity)?.entity_id ?? entries[0]?.entity_id;
+  const match = choose(integrationVacuumEntries(config, registry ?? metadata));
+  if (match) return match;
+  if (!registryLoaded) return choose(integrationVacuumEntries(config, metadata)) ?? '';
+  // Explicit completed registries, including empty ones, are authoritative.
+  // Only stub generation without a registry retains the legacy state fallback.
+  return registry === undefined && (!config.integration || config.integration === 'auto' || config.integration === spotScrubAdapter.id)
+    ? spotScrubAdapter.defaultEntity(hass) : '';
 }

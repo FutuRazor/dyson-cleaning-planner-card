@@ -10,6 +10,7 @@
 - Block room starts during roller washing and dust collection while allowing a ready robot to start during drying. Revalidate current HA state between hass-dyson's separate Save and Start actions and report partial failures without automatic retries.
 - Document the experimental adapter's single-map requirement, integration-controlled room order and unsupported station/robot settings, rectangular zones and drying cancellation.
 - Extend adapter, dock, countdown and standalone-bundle regression coverage. Simplify Marketplace and HACS installation to direct catalog search.
+- Harden hass-dyson starts against finished-job telemetry, device aliases and transient card removal; validate session-control ownership and explicit map domains. Preserve editor selections while the registry loads and show independent readiness warnings during drying.
 
 - Add French (Français [fr]) for the card and editor, including automatic selection for French Home Assistant locales. Use Dyson France terminology where publicly documented.
 

@@ -4,13 +4,16 @@
 
 This is a stable release without a beta suffix. Only the hass-dyson adapter remains labeled experimental.
 
-- Run `npm run check`: 89 unit tests, syntax checks, generated bundle and standalone-bundle smoke check.
+- Run `npm run check`: 95 unit tests, syntax checks, generated bundle and standalone-bundle smoke checks for both adapters.
+- Run `node tests/review-regressions-browser.mjs` to check finished-session handling, readiness warnings during drying, editor registry loading, transient detach during Save and session-control integration isolation. The preview icon stub supports reconnection so the detach check also rejects browser errors.
 - Run `node tests/hass-dyson-browser.mjs`, `node tests/batch-browser.mjs` and `node tests/zone-browser.mjs` with Playwright and an installed browser to cover both adapters.
 - Maintainer live checks confirmed hass-dyson Save/readback, room starts, Pause/Resume/Home, battery percentage, vacuum/mop coverage, dock status, drying remaining time, washing start interlock and starting during drying.
 - Preserve existing Spot+Scrub configuration, action payloads and zone support. Keep unsupported hass-dyson controls hidden and reject ambiguous multi-map room starts.
 - Verify the package, lockfile, README, integration contract and generated bundle identify v1.5.0. The UI intentionally has no version badge; do not reintroduce one for this release.
 
 ## Integration adapters
+
+PR review validation on 23 November 2026: all 95 unit tests, syntax checks and both adapter bundle smoke checks passed. Edge browser checks passed for the review regressions, hass-dyson, Spot+Scrub batch drafts, zones and editor session previews. These runs used simulated Home Assistant entities and did not send commands to a real robot.
 
 The card retains the tested Spot+Scrub adapter and adds an experimental hass-dyson adapter with automatic/explicit integration selection. See [adapter boundaries and live acceptance](docs/integration-adapter.md) and [hass-dyson setup and limitations](docs/hass-dyson.md). The validation notes below record the staged implementation under v1.4.0; current release acceptance is recorded above.
 

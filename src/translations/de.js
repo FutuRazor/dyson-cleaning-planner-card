@@ -1,5 +1,6 @@
 // German display text. Entity names and protocol values are never rewritten.
 export const de = {
+  "Map entity must use the {domain} domain for this integration.": "Die Kartenentität muss für diese Integration die Domain {domain} verwenden.",
   "Map image": "Kartenbild",
   "hass-dyson (experimental)": "hass-dyson (experimentell)",
   "Invalid integration selection.": "Ungültige Integrationsauswahl.",

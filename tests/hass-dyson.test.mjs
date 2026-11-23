@@ -98,12 +98,91 @@ test('ambiguous multi-map IDs block Start and raw mapping/mid-job charging state
 });
 
 test('room action lock spans both save/start steps and is released on rejection', async () => {
-  const f=hassDysonFixture(), r=request(f);let release;
+  const f=hassDysonFixture(), r=request(f), draft={'12':{cleaning_mode:'Mop'}};
+  let releaseSave, rejectStart, markStart;
+  const reachedStart=new Promise(resolve=>{markStart=resolve;});
+  f.hass.callService=async(domain,service)=>{
+    f.calls.push(service);
+    if(service==='set_room_cleaning_modes')await new Promise(resolve=>{releaseSave=resolve;});
+    if(service==='start_zone_clean') {
+      markStart();
+      await new Promise((resolve,reject)=>{rejectStart=reject;});
+    }
+  };
+  const first=adapter.sendRoomDraft({...r,draft,start:true,selected:[f.fields['12'].cleaning_mode]});
+  const rejected=assert.rejects(first,/Settings were saved.*Start refused/);
+  await assert.rejects(adapter.sendRoomDraft({...r,draft}),/already running/);
+  releaseSave();await reachedStart;
+  await assert.rejects(adapter.sendRoomDraft({...r,draft}),/already running/);
+  rejectStart(new Error('Start refused'));await rejected;
+  f.hass.callService=async(domain,service)=>{f.calls.push(service);};
+  await adapter.sendRoomDraft({...r,draft});
+  assert.deepEqual(f.calls,['set_room_cleaning_modes','start_zone_clean','set_room_cleaning_modes']);
+});
+
+test('renamed vacuum entities for the same device share the room action lock', async () => {
+  const f=hassDysonFixture(), draft={'12':{cleaning_mode:'Mop'}};let release;
   f.hass.callService=()=>new Promise(resolve=>{release=resolve;});
-  const first=adapter.sendRoomDraft({...r,draft:{'12':{cleaning_mode:'Mop'}}});
-  await assert.rejects(adapter.sendRoomDraft({...r,draft:{'12':{cleaning_mode:'Mop'}}}),/already running/);
-  release();await first;
-  assert.equal((await adapter.sendRoomDraft({...r,draft:{}})).sent,false);
+  const first=adapter.sendRoomDraft({...request(f),draft});
+  try {
+    const renamed=hassDysonFixture(), old=renamed.entity;
+    renamed.entity='vacuum.new_hass_name';renamed.config.entity=renamed.entity;
+    renamed.hass.states[renamed.entity]=renamed.hass.states[old];delete renamed.hass.states[old];
+    renamed.registry.find(e=>e.entity_id===old).entity_id=renamed.entity;
+    await assert.rejects(adapter.sendRoomDraft({...request(renamed),draft}),/already running/);
+    assert.equal(renamed.calls.length,0);
+  } finally {release();await first;}
+});
+
+test('finished-job telemetry stays non-live across dock interlocks without clearing a pending start', () => {
+  const f=hassDysonFixture();f.hass.states[f.entity]={state:'returning',attributes:{raw_state:'FULL_CLEAN_FINISHED'}};
+  for(const phase of ['IDLE','WASHING_MOP','COLLECTING_DUST','DRYING_MOP','unknown']) {
+    f.hass.states[f.dock].state=phase;
+    assert.equal(adapter.cleaningView(f.hass,f.entity,false,f.registry).active,false,phase);
+    const pending=adapter.cleaningView(f.hass,f.entity,true,f.registry);
+    assert.equal(pending.live,false,phase);assert.equal(pending.title,'Starting clean',phase);
+    if(['WASHING_MOP','COLLECTING_DUST','unknown'].includes(phase))assert.ok(adapter.startBlockReason(f.hass,f.entity,f.registry));
+  }
+  f.hass.states[f.entity].attributes.raw_state='FULL_CLEAN_NEEDS_CHARGE';
+  assert.equal(adapter.cleaningView(f.hass,f.entity,false,f.registry).live,true);
+});
+
+test('drying does not hide an independent readiness veto or become a start blocker', () => {
+  const f=hassDysonFixture();f.hass.states[f.dock].state='DRYING_MOP';f.hass.states[f.entity].attributes.ready_to_start=false;
+  assert.ok(adapter.startBlockReason(f.hass,f.entity,f.registry));
+  assert.equal(adapter.dockBusy(f.hass,f.entity,f.registry),true);
+  assert.equal(adapter.dockBlocksStart(f.hass,f.entity,f.registry),false);
+  for(const phase of ['WASHING_MOP','COLLECTING_DUST']) {
+    f.hass.states[f.dock].state=phase;assert.equal(adapter.dockBlocksStart(f.hass,f.entity,f.registry),true);
+  }
+});
+
+test('explicit integration selection uses metadata while loading but respects a completed empty registry', () => {
+  const f=hassDysonFixture();
+  assert.equal(defaultIntegrationEntity(f.hass,f.config,[],false),f.entity);
+  assert.equal(defaultIntegrationEntity(f.hass,f.config,[],true),'');
+  assert.equal(defaultIntegrationEntity(f.hass,f.config,f.registry,true),f.entity);
+  assert.equal(defaultIntegrationEntity(f.hass,{integration:'auto'},[],false),f.entity);
+  assert.equal(defaultIntegrationEntity(f.hass,{integration:'auto'},[],true),'');
+  assert.equal(defaultIntegrationEntity(f.hass,{integration:'dyson_spot_scrub'},[],false),'');
+});
+
+test('map domain validation matches explicit adapters and accepts either in Automatic', () => {
+  for(const [integration,valid,invalid] of [['dyson_spot_scrub','camera.map','image.map'],['hass_dyson','image.map','camera.map']]) {
+    assert.equal(normalizeConfig({entity:'vacuum.robot',integration,camera_entity:valid}).camera_entity,valid);
+    assert.throws(()=>normalizeConfig({entity:'vacuum.robot',integration,camera_entity:invalid}),/Map entity must use/);
+  }
+  for(const camera_entity of ['camera.map','image.map'])assert.equal(normalizeConfig({entity:'vacuum.robot',integration:'auto',camera_entity}).camera_entity,camera_entity);
+});
+
+test('hass-dyson session controls reject foreign or disabled registry entries', async () => {
+  const f=batchFixture();f.hass.states[f.entity].state='cleaning';
+  assert.equal(adapter.canControl(f.hass,f.entity,'pause',f.registry),false);
+  await assert.rejects(adapter.controlCleaning(f.hass,f.entity,'pause',f.registry),/not available/);
+  assert.equal(f.calls.length,0);
+  const hd=hassDysonFixture();hd.hass.states[hd.entity].state='cleaning';
+  hd.registry.find(e=>e.entity_id===hd.entity).disabled_by='user';
+  assert.equal(adapter.canControl(hd.hass,hd.entity,'pause',hd.registry),false);
 });
 
 test('two-step start revalidates replacement HA snapshots, registry, card configuration and removal after Save', async () => {

@@ -12,7 +12,7 @@ integration: hass_dyson
 entity: vacuum.your_hass_dyson_robot
 ```
 
-`integration` accepts `auto` (also the behavior when omitted), `dyson_spot_scrub`, or `hass_dyson`. Initial automatic discovery prefers Spot+Scrub when both have eligible vacuums. An explicitly configured robot determines the adapter in Automatic mode, including while offline. Choosing an explicit integration filters the editor's robot list; changing integrations resets room visibility/order and image overrides. A mismatched YAML integration/entity pair cannot discover or operate another integration's entities. No runtime fallback switches robots after an error.
+`integration` accepts `auto` (also the behavior when omitted), `dyson_spot_scrub`, or `hass_dyson`. Initial automatic discovery prefers Spot+Scrub when both have eligible vacuums. An explicitly configured robot determines the adapter in Automatic mode, including while offline. Choosing an explicit integration filters the editor's robot list; changing integrations resets room visibility/order and image overrides. While the registry loads, the editor preserves eligible selections from `hass.entities`; a completed empty registry overrides this metadata fallback. A mismatched YAML integration/entity pair cannot discover or operate another integration's entities, including Pause/Resume/Home. No runtime fallback switches robots after an error.
 
 ## Implemented functions
 
@@ -52,9 +52,9 @@ Washing/drying activity remains visible even when the vacuum also reports `error
 
 Edits remain local until Save or Start. Save translates only fields still different from current HA values and calls `set_room_cleaning_modes` once. The backend performs robot preference readback; the card's existing Save confirmation waits for the translated select values to appear in HA.
 
-Start with edits calls Save first, including edited unselected rooms, then revalidates the **latest** HA snapshot, registry, map/room identity, card configuration and readiness before calling `start_zone_clean`. No global cleaning-mode override is sent, preserving mixed per-room modes. Start without edits calls only `start_zone_clean`.
+Start with edits calls Save first, including edited unselected rooms, then revalidates the **latest** HA snapshot, registry, map/room identity, card configuration and readiness before calling `start_zone_clean`. A card removed during Save cannot complete Start, even if it is reattached before Save finishes. No global cleaning-mode override is sent, preserving mixed per-room modes. Start without edits calls only `start_zone_clean`. Previously finished-job telemetry remains non-live during subsequent dock activity and cannot confirm a new Start.
 
-This is **not an atomic transaction**. A successful Save remains applied if Start fails. The card reports that distinction, keeps the local draft for review, and never automatically retries either command. Another client can intervene between the actions; the frontend lock is only per configured vacuum in this loaded module. The backend's room-start handler uses unordered zones: click order is sent but execution order is not guaranteed. A planner note explains this behavior.
+This is **not an atomic transaction**. A successful Save remains applied if Start fails. The card reports that distinction, keeps the local draft for review, and never automatically retries either command. Another client can intervene between the actions; the frontend lock is per resolved HA device ID in this loaded module and survives vacuum entity renames. The backend's room-start handler uses unordered zones: click order is sent but execution order is not guaranteed. A planner note explains this behavior.
 
 ## Unsupported for now
 

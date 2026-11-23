@@ -97,6 +97,7 @@ header,.station-rows{--hud-red:var(--error-color,#db4437);--hud-blue:var(--blue-
 :host([data-theme=modern]) .compact-status .activity-copy{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:20px}
 :host([data-theme=modern]) .compact-status .activity-remaining{display:inline;margin:0;font-size:12px}
 :host([data-theme=modern]) .compact-status .activity-start-block{display:none}
+:host([data-theme=modern]) .compact-status.has-drying .activity-start-block:not([hidden]){display:block}
 :host([data-theme=modern]) .compact-status .drying-progress{position:absolute;left:26px;right:44px;bottom:2px;width:auto;height:3px;margin:0}
 :host([data-theme=modern]) .compact-status .cancel-drying{min-width:36px;min-height:36px;width:36px;height:36px;padding:7px;background:transparent;border-color:transparent}
 :host([data-theme=modern]) .compact-status .cancel-drying ha-icon{width:18px;height:18px;--mdc-icon-size:18px}
@@ -390,6 +391,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     }, 1000);
   }
   disconnectedCallback() {
+    this._detachRevision = (this._detachRevision ?? 0) + 1;
     this._previewDialog?.removeEventListener(previewViewChanged, this._previewChanged);
     this._previewDialog = null;
     this._modernObserver?.disconnect();
@@ -550,6 +552,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     this.clearSessionEnd();
     this.busy = true; this.error = false;
     const config = this.config, context = this.draftContext;
+    const detachRevision = this._detachRevision ?? 0;
     try {
       if (this.registryError) throw new UiError(this.registryError);
       const model = this.getModel();
@@ -561,7 +564,8 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       }) };
       this.message = 'Sending room settings and start request …'; this.render();
       const plan = await this.adapter.sendRoomDraft({ hass: this._hass, model, config, selected: [...this.selected], draft: this.settingDraft, start: true, context, registry:this.registry,
-        getCurrent:() => ({ hass:this._hass, registry:this.registry, config:this.config, active:this.isConnected && !this._previewDialog }) });
+        getCurrent:() => ({ hass:this._hass, registry:this.registry, config:this.config,
+          active:this.isConnected && !this._previewDialog && (this._detachRevision ?? 0) === detachRevision }) });
       if (this.config !== config || !this.isConnected) return;
       if (context !== this.adapter.roomContext(this._hass, config.entity, this.registry)) {
         // The command may already be accepted; clear only its stale presentation.
@@ -619,8 +623,12 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       if (this.config === config) { this.error = true; this.message = error; }
     } finally { this.busy = false; this.saving = false; this.render(); }
   }
+  canControl(action) {
+    return this.adapter.vacuumEntries(this.registry ?? []).some(entry => entry.entity_id === this.config.entity)
+      && this.adapter.canControl(this._hass, this.config.entity, action, this.registry);
+  }
   async control(action) {
-    if (this._previewDialog || this.busy || this.controlBusy || !this.isConnected) return;
+    if (this._previewDialog || this.busy || this.controlBusy || !this.isConnected || !this.canControl(action)) return;
     const entity = this.config.entity;
     this.controlBusy = true; this.message = ''; this.error = false; this.render();
     try {
@@ -878,7 +886,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       progress.removeAttribute('aria-valuetext');
     }
     const cancel = row.querySelector('.cancel-drying');
-    const supported = this.adapter.canControl(this._hass, this.config.entity, 'cancel_drying', this.registry);
+    const supported = this.canControl('cancel_drying');
     cancel.disabled = !!this._previewDialog || this.busy || this.controlBusy || !supported;
     this.updateHeaderNotice();
     cancel.title = this.t(supported ? 'Cancel drying' : 'Drying cancellation requires a connected robot and the integration cancel_drying action.');
@@ -910,7 +918,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     toggle.querySelector('span').textContent = this.t(paused ? 'Resume' : 'Pause');
     toggle.querySelector('ha-icon').setAttribute('icon', paused ? 'mdi:play' : 'mdi:pause');
     for (const button of root.querySelectorAll('[data-control]')) {
-      const supported = this.adapter.canControl(this._hass, this.config.entity, button.dataset.control, this.registry);
+      const supported = this.canControl(button.dataset.control);
       button.disabled = !!this._previewDialog || this.busy || this.controlBusy || !supported;
       button.title = supported ? '' : this.t('This action is not available in the current robot state.');
     }

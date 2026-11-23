@@ -1,5 +1,6 @@
 // French UI translations. Dyson terminology is referenced in docs/translations.md.
 export const fr = {
+  "Map entity must use the {domain} domain for this integration.": "L’entité du plan doit utiliser le domaine {domain} pour cette intégration.",
   "Map image": "Image du plan",
   "hass-dyson (experimental)": "hass-dyson (expérimental)",
   "Invalid integration selection.": "Sélection d’intégration non valide.",

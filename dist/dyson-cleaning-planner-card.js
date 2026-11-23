@@ -1,6 +1,7 @@
 /* Dyson Cleaning Planner Card v1.5.0 | MIT */
 // English messages are also stable translation keys. Never use translated labels in action payloads.
 const en = {
+  "Map entity must use the {domain} domain for this integration.": "Map entity must use the {domain} domain for this integration.",
   "Map image": "Map image",
   "hass-dyson (experimental)": "hass-dyson (experimental)",
   "Invalid integration selection.": "Invalid integration selection.",
@@ -261,6 +262,7 @@ const en = {
 
 // German display text. Entity names and protocol values are never rewritten.
 const de = {
+  "Map entity must use the {domain} domain for this integration.": "Die Kartenentität muss für diese Integration die Domain {domain} verwenden.",
   "Map image": "Kartenbild",
   "hass-dyson (experimental)": "hass-dyson (experimentell)",
   "Invalid integration selection.": "Ungültige Integrationsauswahl.",
@@ -521,6 +523,7 @@ const de = {
 
 // Dutch UI text. Protocol values and entity names remain unchanged.
 const nl = {
+  "Map entity must use the {domain} domain for this integration.": "De kaartentiteit moet voor deze integratie het domein {domain} gebruiken.",
   "Map image": "Kaartafbeelding",
   "hass-dyson (experimental)": "hass-dyson (experimenteel)",
   "Invalid integration selection.": "Ongeldige integratiekeuze.",
@@ -781,6 +784,7 @@ const nl = {
 
 // French UI translations. Dyson terminology is referenced in docs/translations.md.
 const fr = {
+  "Map entity must use the {domain} domain for this integration.": "L’entité du plan doit utiliser le domaine {domain} pour cette intégration.",
   "Map image": "Image du plan",
   "hass-dyson (experimental)": "hass-dyson (expérimental)",
   "Invalid integration selection.": "Sélection d’intégration non valide.",
@@ -1096,6 +1100,8 @@ function normalizeConfig(config) {
   if (config.always_show_all_settings !== undefined && typeof config.always_show_all_settings !== 'boolean') throw new UiError('always_show_all_settings must be true or false.');
   if (config.camera_rotation !== undefined && ![0, 90, 180, 270].includes(config.camera_rotation)) throw new UiError('camera_rotation must be 0, 90, 180 or 270.');
   if (config.camera_entity && (typeof config.camera_entity !== 'string' || !/^(camera|image)\./.test(config.camera_entity))) throw new UiError('Select a camera entity.');
+  const mapDomain = { dyson_spot_scrub:'camera', hass_dyson:'image' }[config.integration];
+  if (config.camera_entity && mapDomain && !config.camera_entity.startsWith(`${mapDomain}.`)) throw new UiError('Map entity must use the {domain} domain for this integration.', { domain:mapDomain });
   if (config.zone_dimension_unit !== undefined && !['off','auto','cm','inch'].includes(config.zone_dimension_unit)) throw new UiError('Invalid zone dimension unit.');
   if (config.header_icon_style !== undefined && !['home_assistant','integration'].includes(config.header_icon_style)) throw new UiError('Invalid header icon style.');
   return { ...config, header_icon_style: config.header_icon_style ?? 'integration', zone_dimension_unit: config.zone_dimension_unit ?? 'auto', language: config.language ?? 'auto', theme: config.theme ?? 'modern', show_battery_percentage: config.show_battery_percentage ?? false, show_status_bar: config.show_status_bar ?? true, hidden_status_items: config.hidden_status_items ?? [], title: config.title ?? '', always_show_all_settings: config.always_show_all_settings ?? false, unsupported_settings: 'hidden', excluded_rooms: config.excluded_rooms ?? [], room_order: config.room_order ?? [], show_camera: config.show_camera ?? true, camera_rotation: config.camera_rotation ?? 0 };
@@ -1817,7 +1823,7 @@ function cleaningView(hass, entity, pendingStart = false, registry = []) {
   // FULL_CLEAN_FINISHED is mapped to returning upstream, but is explicitly a
   // writable/finished state. Other returning states remain active sessions.
   const state = hass?.states?.[entity];
-  if (available(state) && hass?.connected !== false && !startBlockReason(hass, entity, registry)) return pendingStart
+  if (available(state) && hass?.connected !== false && (state.attributes?.raw_state === 'FULL_CLEAN_FINISHED' || !startBlockReason(hass, entity, registry))) return pendingStart
     ? { active:true, title:'Starting clean', detail:'Waiting for the robot to report its status.', live:false }
     : { active:false, live:false };
   if (available(state) && hass?.connected !== false && state.attributes?.raw_state === 'FULL_CLEAN_CHARGING') return { active:true, title:'Cleaning session active', detail:'', live:true };
@@ -1868,9 +1874,10 @@ async function sendRoomDraft({ hass, model, config, selected = [], draft = {}, s
   const requireAction = service => { if (!hass.services?.[DOMAIN]?.[service]) throw new UiError('Update the Dyson integration: {action} is unavailable.', { action:`${DOMAIN}.${service}` }); };
   if (start) requireAction('start_zone_clean');
   if (hasSettings) requireAction('set_room_cleaning_modes');
-  if (pending.has(config.entity)) throw new UiError('An action for this Dyson is already running in this browser.');
+  const lockKey = live.deviceId;
+  if (pending.has(lockKey)) throw new UiError('An action for this Dyson is already running in this browser.');
   if (!start && !hasSettings) return { rooms:[], settings, sent:false };
-  pending.add(config.entity);
+  pending.add(lockKey);
   let saved = false;
   try {
     if (hasSettings) {
@@ -1890,10 +1897,11 @@ async function sendRoomDraft({ hass, model, config, selected = [], draft = {}, s
   } catch (error) {
     if (start && saved) throw new UiError('Settings were saved, but cleaning did not start. Review the robot status before retrying. {error}', { error });
     throw error;
-  } finally { pending.delete(config.entity); }
+  } finally { pending.delete(lockKey); }
   return { rooms:rooms.map(r => ({ entity_id:r.entity, room_id:r.roomId, name:r.name })), settings, sent:true };
 }
 function canControl(hass, entity, action, registry = []) {
+  if (!vacuumEntries(registry).some(entry => entry.entity_id === entity)) return false;
   if (action === 'cancel_drying') return false;
   if (['WASHING_MOP','COLLECTING_DUST','DRYING_MOP'].includes(dockState(hass, entity, registry))) return false;
   return spotScrubAdapter.canControl(hass, entity, action);
@@ -1940,7 +1948,7 @@ return Object.freeze({ id:DOMAIN, infoTabs:['consumables'], mapEntityLabel:'Map 
     return view.active ? { text:({cleaning:'Cleaning', paused:'Paused', returning:'Returning / mapping', error:'Robot needs attention'})[hass?.states?.[entity]?.state] ?? view.title, icon:'mdi:robot-vacuum', drying:false } : null;
   },
   dockBusy:(hass, entity, registry) => !!dockActivity(hass, entity, registry),
-  dockBlocksStart:(hass, entity, registry) => !!dockActivity(hass, entity, registry), dockActivity,
+  dockBlocksStart:(hass, entity, registry) => ['WASHING_MOP','COLLECTING_DUST'].includes(dockState(hass, entity, registry)) && !!dockActivity(hass, entity, registry), dockActivity,
   dryingRemainingTime, dryingRemainingPercent:() => null,
   stationSettings:() => [], stationActions:() => [], robotSettings:() => [],
   changeStationSetting:unsupported, pressStationAction:unsupported, changeRobotSetting:unsupported,
@@ -1971,9 +1979,16 @@ function integrationVacuumEntries(config = {}, registry = []) {
   return adapters.flatMap(a => a.vacuumEntries(registry));
 }
 
-function defaultIntegrationEntity(hass, config = {}, registry = Object.values(hass?.entities ?? {})) {
-  return integrationVacuumEntries(config, registry)[0]?.entity_id
-    ?? (!config.integration || config.integration === 'auto' || config.integration === spotScrubAdapter.id ? spotScrubAdapter.defaultEntity(hass) : '');
+function defaultIntegrationEntity(hass, config = {}, registry, registryLoaded = true) {
+  const metadata = Object.values(hass?.entities ?? {});
+  const choose = entries => entries.find(entry => entry.entity_id === config.entity)?.entity_id ?? entries[0]?.entity_id;
+  const match = choose(integrationVacuumEntries(config, registry ?? metadata));
+  if (match) return match;
+  if (!registryLoaded) return choose(integrationVacuumEntries(config, metadata)) ?? '';
+  // Explicit completed registries, including empty ones, are authoritative.
+  // Only stub generation without a registry retains the legacy state fallback.
+  return registry === undefined && (!config.integration || config.integration === 'auto' || config.integration === spotScrubAdapter.id)
+    ? spotScrubAdapter.defaultEntity(hass) : '';
 }
 
 
@@ -2608,6 +2623,7 @@ header,.station-rows{--hud-red:var(--error-color,#db4437);--hud-blue:var(--blue-
 :host([data-theme=modern]) .compact-status .activity-copy{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:20px}
 :host([data-theme=modern]) .compact-status .activity-remaining{display:inline;margin:0;font-size:12px}
 :host([data-theme=modern]) .compact-status .activity-start-block{display:none}
+:host([data-theme=modern]) .compact-status.has-drying .activity-start-block:not([hidden]){display:block}
 :host([data-theme=modern]) .compact-status .drying-progress{position:absolute;left:26px;right:44px;bottom:2px;width:auto;height:3px;margin:0}
 :host([data-theme=modern]) .compact-status .cancel-drying{min-width:36px;min-height:36px;width:36px;height:36px;padding:7px;background:transparent;border-color:transparent}
 :host([data-theme=modern]) .compact-status .cancel-drying ha-icon{width:18px;height:18px;--mdc-icon-size:18px}
@@ -2901,6 +2917,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     }, 1000);
   }
   disconnectedCallback() {
+    this._detachRevision = (this._detachRevision ?? 0) + 1;
     this._previewDialog?.removeEventListener(previewViewChanged, this._previewChanged);
     this._previewDialog = null;
     this._modernObserver?.disconnect();
@@ -3061,6 +3078,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     this.clearSessionEnd();
     this.busy = true; this.error = false;
     const config = this.config, context = this.draftContext;
+    const detachRevision = this._detachRevision ?? 0;
     try {
       if (this.registryError) throw new UiError(this.registryError);
       const model = this.getModel();
@@ -3072,7 +3090,8 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       }) };
       this.message = 'Sending room settings and start request …'; this.render();
       const plan = await this.adapter.sendRoomDraft({ hass: this._hass, model, config, selected: [...this.selected], draft: this.settingDraft, start: true, context, registry:this.registry,
-        getCurrent:() => ({ hass:this._hass, registry:this.registry, config:this.config, active:this.isConnected && !this._previewDialog }) });
+        getCurrent:() => ({ hass:this._hass, registry:this.registry, config:this.config,
+          active:this.isConnected && !this._previewDialog && (this._detachRevision ?? 0) === detachRevision }) });
       if (this.config !== config || !this.isConnected) return;
       if (context !== this.adapter.roomContext(this._hass, config.entity, this.registry)) {
         // The command may already be accepted; clear only its stale presentation.
@@ -3130,8 +3149,12 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       if (this.config === config) { this.error = true; this.message = error; }
     } finally { this.busy = false; this.saving = false; this.render(); }
   }
+  canControl(action) {
+    return this.adapter.vacuumEntries(this.registry ?? []).some(entry => entry.entity_id === this.config.entity)
+      && this.adapter.canControl(this._hass, this.config.entity, action, this.registry);
+  }
   async control(action) {
-    if (this._previewDialog || this.busy || this.controlBusy || !this.isConnected) return;
+    if (this._previewDialog || this.busy || this.controlBusy || !this.isConnected || !this.canControl(action)) return;
     const entity = this.config.entity;
     this.controlBusy = true; this.message = ''; this.error = false; this.render();
     try {
@@ -3389,7 +3412,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       progress.removeAttribute('aria-valuetext');
     }
     const cancel = row.querySelector('.cancel-drying');
-    const supported = this.adapter.canControl(this._hass, this.config.entity, 'cancel_drying', this.registry);
+    const supported = this.canControl('cancel_drying');
     cancel.disabled = !!this._previewDialog || this.busy || this.controlBusy || !supported;
     this.updateHeaderNotice();
     cancel.title = this.t(supported ? 'Cancel drying' : 'Drying cancellation requires a connected robot and the integration cancel_drying action.');
@@ -3421,7 +3444,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     toggle.querySelector('span').textContent = this.t(paused ? 'Resume' : 'Pause');
     toggle.querySelector('ha-icon').setAttribute('icon', paused ? 'mdi:play' : 'mdi:pause');
     for (const button of root.querySelectorAll('[data-control]')) {
-      const supported = this.adapter.canControl(this._hass, this.config.entity, button.dataset.control, this.registry);
+      const supported = this.canControl(button.dataset.control);
       button.disabled = !!this._previewDialog || this.busy || this.controlBusy || !supported;
       button.title = supported ? '' : this.t('This action is not available in the current robot state.');
     }
@@ -3547,6 +3570,11 @@ if (!window.customCards.some(card => card.type === 'dyson-cleaning-planner-card'
 
 // Bundled after card.js; uses the same registry connection and identity matching.
 class DysonCleaningPlannerEditor extends DysonRegistryElement {
+  get selectableRegistry() {
+    if (this._registryLoaded) return this.registry;
+    const known = new Set(this.registry.map(entry => entry.entity_id));
+    return [...this.registry, ...Object.values(this._hass?.entities ?? {}).filter(entry => !known.has(entry.entity_id))];
+  }
   constructor() {
     super();
     const previewInteraction = event => {
@@ -3572,8 +3600,8 @@ class DysonCleaningPlannerEditor extends DysonRegistryElement {
       const next = { ...this.config };
       if (el.dataset.key) {
         next[el.dataset.key] = el.type === 'checkbox' ? el.checked : el.dataset.key === 'camera_rotation' ? Number(el.value) : el.value;
-        if (el.dataset.key === 'integration' && !integrationVacuumEntries(next, this.registry).some(e => e.entity_id === next.entity)) {
-          next.entity = defaultIntegrationEntity(this._hass, next, this.registry);
+        if (el.dataset.key === 'integration' && !integrationVacuumEntries(next, this.selectableRegistry).some(e => e.entity_id === next.entity)) {
+          next.entity = defaultIntegrationEntity(this._hass, next, this.registry, !!this._registryLoaded);
         }
         if (el.dataset.key === 'entity' || el.dataset.key === 'integration') {
           delete next.mode_entity; delete next.start_entity; delete next.room_entities; delete next.camera_entity;
@@ -3629,7 +3657,7 @@ class DysonCleaningPlannerEditor extends DysonRegistryElement {
   update() {
     if (!this.config || !this._hass) return;
     const h = escapeHtml;
-    const vacuums = integrationVacuumEntries(this.config, this.registry);
+    const vacuums = integrationVacuumEntries(this.config, this.selectableRegistry);
     const config = { ...this.config, excluded_rooms: this.config.excluded_rooms ?? [], room_order: this.config.room_order ?? [] };
     this.model = config.entity ? this.adapter.discover(this._hass, this.registry, config) : { rooms: [], issues: [] };
     const field = (key, label) => {

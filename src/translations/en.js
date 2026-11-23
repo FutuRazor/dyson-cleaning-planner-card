@@ -1,5 +1,6 @@
 // English messages are also stable translation keys. Never use translated labels in action payloads.
 export const en = {
+  "Map entity must use the {domain} domain for this integration.": "Map entity must use the {domain} domain for this integration.",
   "Map image": "Map image",
   "hass-dyson (experimental)": "hass-dyson (experimental)",
   "Invalid integration selection.": "Invalid integration selection.",

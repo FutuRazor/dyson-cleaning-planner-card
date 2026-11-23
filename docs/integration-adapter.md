@@ -9,22 +9,24 @@ Integration behavior is isolated behind internal adapters. The existing `dyson_s
 - `src/adapters/hass-dyson.js` implements native-ID room selects, normalized options, separate save/start actions, optional images/consumables and standard session controls. It does not borrow Spot+Scrub custom actions or station entities.
 - `src/shared.js` contains configuration validation, display labels and generic helpers.
 - `src/zone-geometry.js` contains image calibration validation, hashing and geometry/display helpers, without integration domains or service calls.
-- Card and editor use `this.adapter`. Zone and session-map components receive that same adapter. The adapter is a stateless singleton apart from the existing per-vacuum in-flight room-action lock; each card retains its own model, drafts, registry, request badges and timers.
+- Card and editor use `this.adapter`. Zone and session-map components receive that same adapter. Each card retains its own model, drafts, registry, request badges and timers. The Spot+Scrub in-flight room-action lock uses the configured vacuum entity; hass-dyson uses the resolved HA device ID so an entity rename cannot bypass the lock.
 - `src/core.js` and `src/zone-core.js` retain compatibility exports so existing tests and module consumers exercise the moved implementation. They do not contain a second implementation of backend policy.
 
 The adapter does not own DOM rendering, translations, editor previews, image decoding/fetch scheduling or pointer interaction. Home Assistant supplies registry transport and live states. Generic HA state/domain conventions remain usable in rendering; backend-specific identity, attributes and custom actions belong in the adapter.
 
 ## Current internal interface
 
-All reads receive current HA/registry/model arguments rather than capturing a card or robot. Writes return the original action promise/result; failures propagate without automatic command retries.
+All reads receive current HA/registry/model arguments rather than capturing a card or robot. `sendRoomDraft` resolves to a plan `{rooms, settings, sent}`, not the original HA action result. `rooms` records the requested room identities, `settings` contains the changed canonical card values, and `sent: false` denotes an empty Save that made no action call. Other write helpers forward or await their action call. Failures propagate without automatic command retries.
+
+For hass-dyson, Save and Start are separate steps. If Save succeeds and a subsequent validation or Start call fails, the adapter reports a partial failure; the saved settings remain applied. A failed action call does not establish whether a robot command took effect when transport confirmation is missing. There is no rollback or transaction binding Start to a preference revision across external clients.
 
 | Group | Methods / data |
 |---|---|
 | Identity | `id`, `vacuumEntries(registry)`, `cameraEntries(registry, entity)`, `defaultEntity(hass)`, `trustedCamera(registry, entity, camera)` |
-| Room model | `discover(hass, registry, config, previousRooms)`, `roomContext(hass, entity)`, `hasRoomList(hass, entity)`, `roomSelectionState(hass, roomEntity)` |
-| Room writes | `roomActionAvailable(hass, start)`, `sendRoomDraft({hass, model, config, selected, draft, start, context})` |
-| Status/readiness | `robotTelemetry(hass, entity, camera)`, `cleaningView(hass, entity, pendingStart)`, `activityStatus(hass, entity, pendingStart)`, `dockActivity(hass, entity)`, `dockBusy`, `dockBlocksStart`, `startBlockReason` (each receives `hass, entity`) |
-| Session controls | `canControl(hass, entity, action)`, `controlCleaning(hass, entity, action)` |
+| Room model | `discover(hass, registry, config, previousRooms)`, `roomContext(hass, entity, registry)`, `hasRoomList(hass, entity)`, `roomSelectionState(hass, roomEntity)` |
+| Room writes | `roomActionAvailable(hass, start)`, `sendRoomDraft({hass, model, config, selected, draft, start, context, registry, getCurrent})` |
+| Status/readiness | `robotTelemetry(hass, entity, camera, registry)`, `cleaningView(hass, entity, pendingStart, registry)`, `activityStatus(hass, entity, pendingStart, registry)`, `dockActivity(hass, entity, registry)`, `dockBusy(hass, entity, registry)`, `dockBlocksStart(hass, entity, registry)`, `startBlockReason(hass, entity, registry)` |
+| Session controls | `canControl(hass, entity, action, registry)`, `controlCleaning(hass, entity, action, registry)` |
 | Optional reads | `batteryStatus(hass, model)`; `dryingRemainingTime`/`dryingRemainingPercent(hass, entity, registry)`; `consumableStatus`, `robotSettings`, `stationSettings`, `stationActions` (each receives `hass, registry, entity`) |
 | Optional writes | `changeRobotSetting`/`changeStationSetting(hass, registry, entity, key, value)`, `pressStationAction(hass, registry, entity, key)` |
 | Map | `mapId(hass, vacuum)`, `mapPicture(hass, camera)`, `mapCalibration(hass, camera)` |
@@ -33,7 +35,11 @@ All reads receive current HA/registry/model arguments rather than capturing a ca
 
 `robotTelemetry` returns `{state, available, name, dockState, fault, faultCode, cleaning, bumperColor}`. `discover` retains the existing room model (`entity`, `name`, `context`, `roomId`, `settings`, `available`, `excluded`) and optional battery/charging/camera entity IDs. `startZone` accepts `{vacuum, camera, calibration, trusted, preview, rect, rotation, mode, strategy, water, passes}` and builds the wire payload inside the adapter. The existing UI verifies image bytes, minimum rectangle size and offered options before dispatch; the adapter rechecks zone readiness and validates geometry/settings when constructing the action.
 
-See the [integration contract](integration-contract.md) for exact entities, values, payloads and timing. This interface is internal and may evolve when a second backend is implemented.
+The registry arguments above are required for hass-dyson to resolve device identity, map membership and dock sensors. The original Spot+Scrub implementation may ignore arguments it does not need. For a two-step room Start, the card supplies `getCurrent()`, returning `{hass, registry, config, active}` from the latest frontend state. The adapter calls it initially and again after Save. `active` remains false for that request after any card detachment, even when the same element is reattached before Save finishes. A changed configuration, inactive request, changed room/map identity or new readiness veto prevents the Start step while keeping already-saved settings.
+
+Session buttons and dispatch also require the configured vacuum to belong to the selected adapter's enabled registry entries. Editor selection can use `hass.entities` while the full registry is loading; once loaded, even an empty registry is authoritative.
+
+See the [integration contract](integration-contract.md) for exact entities, values, payloads and timing. This internal interface is already used by both adapters and may evolve as their supported capabilities grow.
 
 ## Verification before the next phase
 

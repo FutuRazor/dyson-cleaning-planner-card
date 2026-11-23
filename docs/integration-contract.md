@@ -524,7 +524,7 @@ Zone option capabilities use the intersection of known labels across the discove
 
 ## 16. Frontend-only configuration and source audit
 
-Only `entity`, `camera_entity` and `room_entities` choose integration entities. `room_entities` overrides room-switch lookup only; it cannot change platform, device, select identity or action names. `excluded_rooms` and `room_order` contain room-switch entity IDs. No YAML setting chooses an integration domain or remaps services/options.
+`entity`, `camera_entity` and `room_entities` choose integration entities. The YAML `integration` setting selects `auto`, `dyson_spot_scrub` or `hass_dyson`; the registry routes to the corresponding adapter. `room_entities` overrides room-switch lookup for Spot+Scrub only; it cannot change platform, device, select identity or action names. For this Spot+Scrub contract, `excluded_rooms` and `room_order` contain room-switch entity IDs; hass-dyson uses its room-select IDs instead. YAML can select an adapter but cannot remap its service names, payload keys or option values. Explicit Spot+Scrub selection requires `camera_entity: camera.*`; explicit hass-dyson selection requires `image.*`. Automatic accepts either domain pending adapter discovery, which still restricts entities to the correct device/platform.
 
 Although `unsupported_settings` accepts legacy values `disabled` and `hidden` during validation, normalization currently forces `hidden`; it cannot enable controls for missing entities.
 
@@ -533,7 +533,7 @@ Title, theme, language, header illustration, status visibility, percentage visib
 | Source | Contract responsibility |
 |---|---|
 | `src/adapters/spot-scrub.js` | Platform, discovery, IDs, settings, readiness, features, action data, optional entity validation and zone options/model gate |
-| `src/integration.js` | Supplies the existing Spot+Scrub adapter only |
+| `src/integration.js` | Selects Spot+Scrub or hass-dyson from explicit configuration/registry identity; automatic initial discovery prefers Spot+Scrub |
 | `src/shared.js` | Configuration validation and generic display helpers |
 | `src/card.js` | Registry reads, room draft lifecycle, Save confirmation, pending-start timeout, UI capability gating |
 | `src/editor.js` | Configuration UI, discovery and preview behavior |

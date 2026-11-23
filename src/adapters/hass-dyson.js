@@ -143,7 +143,7 @@ function cleaningView(hass, entity, pendingStart = false, registry = []) {
   // FULL_CLEAN_FINISHED is mapped to returning upstream, but is explicitly a
   // writable/finished state. Other returning states remain active sessions.
   const state = hass?.states?.[entity];
-  if (available(state) && hass?.connected !== false && !startBlockReason(hass, entity, registry)) return pendingStart
+  if (available(state) && hass?.connected !== false && (state.attributes?.raw_state === 'FULL_CLEAN_FINISHED' || !startBlockReason(hass, entity, registry))) return pendingStart
     ? { active:true, title:'Starting clean', detail:'Waiting for the robot to report its status.', live:false }
     : { active:false, live:false };
   if (available(state) && hass?.connected !== false && state.attributes?.raw_state === 'FULL_CLEAN_CHARGING') return { active:true, title:'Cleaning session active', detail:'', live:true };
@@ -194,9 +194,10 @@ async function sendRoomDraft({ hass, model, config, selected = [], draft = {}, s
   const requireAction = service => { if (!hass.services?.[DOMAIN]?.[service]) throw new UiError('Update the Dyson integration: {action} is unavailable.', { action:`${DOMAIN}.${service}` }); };
   if (start) requireAction('start_zone_clean');
   if (hasSettings) requireAction('set_room_cleaning_modes');
-  if (pending.has(config.entity)) throw new UiError('An action for this Dyson is already running in this browser.');
+  const lockKey = live.deviceId;
+  if (pending.has(lockKey)) throw new UiError('An action for this Dyson is already running in this browser.');
   if (!start && !hasSettings) return { rooms:[], settings, sent:false };
-  pending.add(config.entity);
+  pending.add(lockKey);
   let saved = false;
   try {
     if (hasSettings) {
@@ -216,10 +217,11 @@ async function sendRoomDraft({ hass, model, config, selected = [], draft = {}, s
   } catch (error) {
     if (start && saved) throw new UiError('Settings were saved, but cleaning did not start. Review the robot status before retrying. {error}', { error });
     throw error;
-  } finally { pending.delete(config.entity); }
+  } finally { pending.delete(lockKey); }
   return { rooms:rooms.map(r => ({ entity_id:r.entity, room_id:r.roomId, name:r.name })), settings, sent:true };
 }
 function canControl(hass, entity, action, registry = []) {
+  if (!vacuumEntries(registry).some(entry => entry.entity_id === entity)) return false;
   if (action === 'cancel_drying') return false;
   if (['WASHING_MOP','COLLECTING_DUST','DRYING_MOP'].includes(dockState(hass, entity, registry))) return false;
   return spotScrubAdapter.canControl(hass, entity, action);
@@ -266,7 +268,7 @@ return Object.freeze({ id:DOMAIN, infoTabs:['consumables'], mapEntityLabel:'Map 
     return view.active ? { text:({cleaning:'Cleaning', paused:'Paused', returning:'Returning / mapping', error:'Robot needs attention'})[hass?.states?.[entity]?.state] ?? view.title, icon:'mdi:robot-vacuum', drying:false } : null;
   },
   dockBusy:(hass, entity, registry) => !!dockActivity(hass, entity, registry),
-  dockBlocksStart:(hass, entity, registry) => !!dockActivity(hass, entity, registry), dockActivity,
+  dockBlocksStart:(hass, entity, registry) => ['WASHING_MOP','COLLECTING_DUST'].includes(dockState(hass, entity, registry)) && !!dockActivity(hass, entity, registry), dockActivity,
   dryingRemainingTime, dryingRemainingPercent:() => null,
   stationSettings:() => [], stationActions:() => [], robotSettings:() => [],
   changeStationSetting:unsupported, pressStationAction:unsupported, changeRobotSetting:unsupported,

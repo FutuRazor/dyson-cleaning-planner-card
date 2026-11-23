@@ -1,5 +1,10 @@
 // Bundled after card.js; uses the same registry connection and identity matching.
 class DysonCleaningPlannerEditor extends DysonRegistryElement {
+  get selectableRegistry() {
+    if (this._registryLoaded) return this.registry;
+    const known = new Set(this.registry.map(entry => entry.entity_id));
+    return [...this.registry, ...Object.values(this._hass?.entities ?? {}).filter(entry => !known.has(entry.entity_id))];
+  }
   constructor() {
     super();
     const previewInteraction = event => {
@@ -25,8 +30,8 @@ class DysonCleaningPlannerEditor extends DysonRegistryElement {
       const next = { ...this.config };
       if (el.dataset.key) {
         next[el.dataset.key] = el.type === 'checkbox' ? el.checked : el.dataset.key === 'camera_rotation' ? Number(el.value) : el.value;
-        if (el.dataset.key === 'integration' && !integrationVacuumEntries(next, this.registry).some(e => e.entity_id === next.entity)) {
-          next.entity = defaultIntegrationEntity(this._hass, next, this.registry);
+        if (el.dataset.key === 'integration' && !integrationVacuumEntries(next, this.selectableRegistry).some(e => e.entity_id === next.entity)) {
+          next.entity = defaultIntegrationEntity(this._hass, next, this.registry, !!this._registryLoaded);
         }
         if (el.dataset.key === 'entity' || el.dataset.key === 'integration') {
           delete next.mode_entity; delete next.start_entity; delete next.room_entities; delete next.camera_entity;
@@ -82,7 +87,7 @@ class DysonCleaningPlannerEditor extends DysonRegistryElement {
   update() {
     if (!this.config || !this._hass) return;
     const h = escapeHtml;
-    const vacuums = integrationVacuumEntries(this.config, this.registry);
+    const vacuums = integrationVacuumEntries(this.config, this.selectableRegistry);
     const config = { ...this.config, excluded_rooms: this.config.excluded_rooms ?? [], room_order: this.config.room_order ?? [] };
     this.model = config.entity ? this.adapter.discover(this._hass, this.registry, config) : { rooms: [], issues: [] };
     const field = (key, label) => {
