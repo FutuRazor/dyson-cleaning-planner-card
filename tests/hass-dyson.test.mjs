@@ -158,8 +158,8 @@ test('finished telemetry does not confirm a pending start; mid-job charging rema
   assert.equal(adapter.activityStatus(f.hass,f.entity).text,'Robot unavailable');
 });
 
-test('dock washing, collection, drying and missing or ambiguous dock telemetry block new room starts', async () => {
-  for (const phase of ['WASHING_MOP','COLLECTING_DUST','DRYING_MOP','unknown','unavailable','OTHER','disabled','duplicate','foreign']) {
+test('dock washing, collection and missing or ambiguous dock telemetry block new room starts', async () => {
+  for (const phase of ['WASHING_MOP','COLLECTING_DUST','unknown','unavailable','OTHER','disabled','duplicate','foreign']) {
     const f=hassDysonFixture();
     f.hass.states[f.dock].state=phase;
     const entry=f.registry.find(e=>e.entity_id===f.dock);
@@ -169,6 +169,29 @@ test('dock washing, collection, drying and missing or ambiguous dock telemetry b
     assert.ok(adapter.startBlockReason(f.hass,f.entity,f.registry),phase);
     await assert.rejects(adapter.sendRoomDraft({...request(f),start:true,selected:[f.fields['12'].cleaning_mode]}));
     assert.equal(f.calls.length,0,phase);
+  }
+});
+
+test('drying permits room starts with and without edits without a cancellation command', async () => {
+  for (const withEdits of [false,true]) {
+    const f=hassDysonFixture();f.hass.states[f.dock].state='DRYING_MOP';
+    assert.equal(adapter.startBlockReason(f.hass,f.entity,f.registry),null);
+    assert.equal(adapter.cleaningView(f.hass,f.entity,false,f.registry).active,false);
+    assert.equal(adapter.activityStatus(f.hass,f.entity,false,f.registry).text,'Drying mop roller');
+    await adapter.sendRoomDraft({...request(f),start:true,selected:[f.fields['12'].cleaning_mode],draft:withEdits?{'12':{cleaning_mode:'Mop'}}:{}});
+    assert.deepEqual(f.calls.map(c=>c.service),withEdits?['set_room_cleaning_modes','start_zone_clean']:['start_zone_clean']);
+    assert.equal(f.hass.states[f.dock].state,'DRYING_MOP','no optimistic dock-state changes');
+  }
+});
+
+test('drying does not override unavailable, mapping or integration-vetoed robot states', async () => {
+  for (const kind of ['mapping','unavailable','veto']) {
+    const f=hassDysonFixture();f.hass.states[f.dock].state='DRYING_MOP';
+    if(kind==='mapping')f.hass.states[f.entity].attributes.raw_state='MAPPING_RUNNING';
+    if(kind==='unavailable')f.hass.states[f.entity].state='unavailable';
+    if(kind==='veto')f.hass.states[f.entity].attributes.ready_to_start=false;
+    await assert.rejects(adapter.sendRoomDraft({...request(f),start:true,selected:[f.fields['12'].cleaning_mode]}));
+    assert.equal(f.calls.length,0);
   }
 });
 

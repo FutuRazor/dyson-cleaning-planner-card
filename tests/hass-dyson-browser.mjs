@@ -53,12 +53,15 @@ try {
   assert.equal(await page.evaluate(()=>Object.keys(demo.card.settingDraft).length),0);
   await card.locator('input[data-room]').first().check();
   await card.locator('[data-setting="cleaning_mode"]').first().selectOption('Vacuum and Mop');
+  await page.evaluate(()=>{hd.hass.states[hd.dock].state='DRYING_MOP';demo.card.hass={...hd.hass};});
+  assert.equal(await card.locator('[data-action="start"]').isEnabled(),true);
+  assert.match(await card.locator('.activity-text').innerText(),/Drying mop roller/);
   await card.locator('[data-action="start"]').click();
   await page.waitForFunction(()=>!demo.card.busy);
   assert.deepEqual(await page.evaluate(()=>hd.calls.slice(-2).map(c=>c.service)),['set_room_cleaning_modes','start_zone_clean']);
   assert.deepEqual(await page.evaluate(()=>hd.calls.at(-1).data),{device_id:'hd-device',zones:['12'],map:'123'});
   await page.evaluate(()=>{
-    hd.hass.states[hd.entity].state='cleaning';hd.hass.states[hd.entity].attributes.raw_state='FULL_CLEAN_RUNNING';demo.card.hass={...hd.hass};
+    hd.hass.states[hd.dock].state='IDLE';hd.hass.states[hd.entity].state='cleaning';hd.hass.states[hd.entity].attributes.raw_state='FULL_CLEAN_RUNNING';demo.card.hass={...hd.hass};
   });
   const map=card.locator('dyson-planner-map');
   await page.waitForFunction(()=>{

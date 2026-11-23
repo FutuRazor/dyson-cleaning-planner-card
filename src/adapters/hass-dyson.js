@@ -132,8 +132,9 @@ function startBlockReason(hass, entity, registry = []) {
   const dock = dockState(hass, entity, registry);
   if (dock === 'WASHING_MOP') return 'Cleaning mop roller';
   if (dock === 'COLLECTING_DUST') return 'Emptying dust bin';
-  if (dock === 'DRYING_MOP') return 'Drying mop roller';
-  if (dock !== 'IDLE') return 'Waiting for the robot to be ready';
+  // A new room job may be started while the dock is drying. The integration
+  // owns the transition; do not send an unverified cancel-drying command.
+  if (!['IDLE','DRYING_MOP'].includes(dock)) return 'Waiting for the robot to be ready';
   const raw = state.attributes?.raw_state;
   if (!['INACTIVE_CHARGED','INACTIVE_CHARGING','FULL_CLEAN_FINISHED'].includes(raw)) return 'Waiting for the robot to be ready';
   return ['docked','idle','returning'].includes(state.state) ? null : 'Waiting for the robot to be ready';
