@@ -50,7 +50,7 @@ For integration developers, the [complete integration contract](docs/integration
   </tr>
   <tr>
     <td align="center"><img src="docs/images/station-settings.gif" alt="Station switches, preferences and dock action buttons" width="360"><br>Station settings</td>
-    <td align="center"><img src="docs/images/robot-settings.gif" alt="Voice Prompts, Child Lock and DND" width="360"><br>Consumables</td>
+    <td align="center"><img src="docs/images/robot-settings.gif" alt="Voice Prompts, Child Lock and DND" width="360"><br>Robot settings</td>
   </tr>
     <tr>
     <td align="center"><img src="docs/images/zone-cleaning.gif" alt="Zone planner with a movable rectangle and resize handle; Start is disabled while the mop roller is being washed" width="360"><br>Zone Cleaning</td>
