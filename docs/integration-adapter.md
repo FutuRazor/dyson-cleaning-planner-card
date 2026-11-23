@@ -1,6 +1,6 @@
-# Integration adapter experiment
+# Integration adapters
 
-This branch isolates integration behavior behind internal adapters. The existing `dyson_spot_scrub` adapter passed the initial offline and maintainer live checks. The next phase adds an [experimental hass-dyson adapter](hass-dyson.md) and integration selection, without changing release version 1.4.0. Existing Spot+Scrub YAML and action payloads remain the compatibility baseline.
+Integration behavior is isolated behind internal adapters. The existing `dyson_spot_scrub` adapter passed the initial offline and maintainer live checks. Stable release **v1.5.0** adds the [experimental hass-dyson adapter](hass-dyson.md) as a second backend with integration selection. Existing Spot+Scrub YAML and action payloads remain the compatibility baseline.
 
 ## Boundaries
 
@@ -48,4 +48,4 @@ Before starting a second adapter, verify the experimental bundle in live Home As
 5. Zone rotation, image verification, settings, map changes, Start and room/zone draft retention work on desktop and mobile.
 6. Reloading, renamed entities, unavailable entities and backend failures preserve the previous handling.
 
-The maintainer reported successful initial Spot+Scrub live testing. The pre-existing zone Pause/Resume problem was corrected in the integration and both actions were subsequently confirmed live. The next phase implements the selection policy above and the experimental hass-dyson scope described in its guide; it now needs its own live acceptance.
+The maintainer reported successful Spot+Scrub live testing. The pre-existing zone Pause/Resume problem was corrected in the integration and both actions were subsequently confirmed live. hass-dyson Save/readback, room starts, Pause/Resume/Home, vacuum/mop coverage, dock status, drying countdown, the washing start interlock and starting during drying were also confirmed live. See the adapter guide for the current experimental supported scope.

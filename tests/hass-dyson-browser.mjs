@@ -108,6 +108,12 @@ try {
     },theme);
     assert.match(await card.locator('.activity-text').innerText(),/Cleaning mop roller/);
     assert.match(await card.locator('.activity-remaining').innerText(),/00:02/);
+    await page.evaluate(()=>{hd.hass.states[hd.dockTimer].state='unknown';demo.card.hass={...hd.hass};});
+    assert.match(await card.locator('.activity-text').innerText(),/Cleaning mop roller/);
+    assert.equal(await card.locator('.activity-remaining').isVisible(),false);
+    assert.doesNotMatch(await card.locator('.activity-copy').getAttribute('title'),/Unavailable|unavailable/);
+    await page.evaluate(()=>{hd.hass.states[hd.dockTimer].state=new Date(dockNow+120000).toISOString();demo.card.hass={...hd.hass};});
+    assert.match(await card.locator('.activity-remaining').innerText(),/00:02/);
     await page.evaluate(()=>{hd.hass.states[hd.dock].state='DRYING_MOP';demo.card.hass={...hd.hass};});
     assert.match(await card.locator('.activity-text').innerText(),/Drying mop roller/);
     assert.equal(await card.locator('.cancel-drying').isVisible(),false);

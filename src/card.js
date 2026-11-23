@@ -860,8 +860,9 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     row.querySelector('.activity-icon').setAttribute('icon', status?.icon ?? 'mdi:robot-vacuum');
     row.querySelector('.drying-control').hidden = !status?.drying || this.adapter.supportsDryingCancellation === false;
     const remaining = row.querySelector('.activity-remaining');
-    const showRemaining = status?.remaining ?? status?.drying;
-    const time = showRemaining ? this.adapter.dryingRemainingTime(this._hass, this.config.entity, this.registry) : null;
+    const wantsRemaining = status?.remaining ?? status?.drying;
+    const time = wantsRemaining ? this.adapter.dryingRemainingTime(this._hass, this.config.entity, this.registry) : null;
+    const showRemaining = wantsRemaining && (status?.drying || time !== null);
     remaining.hidden = !showRemaining;
     remaining.textContent = compact ? ` · ${time ?? this.t('Unavailable')}` : time === null ? this.t('Remaining time: unavailable') : this.t('Remaining time: {time} (hh:mm)', { time });
     row.querySelector('.activity-copy').title = [this.t(status?.text), showRemaining ? remaining.textContent : '', blockNote.hidden ? '' : blockNote.textContent].filter(Boolean).join(' ');

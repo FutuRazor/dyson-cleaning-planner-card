@@ -1,6 +1,15 @@
 # Changelog
 
-## Unreleased
+## v1.5.0
+
+- Introduce integration adapters while preserving existing Spot+Scrub configuration and action payloads.
+- Add experimental hass-dyson support for Spot+Scrub room discovery, all four room settings, Save and room Start, standard Pause/Resume/Home controls, battery/charging, consumables and refill status.
+- Add automatic integration selection with Spot+Scrub priority for initial discovery, plus explicit integration selection in the visual editor and YAML. Keep the configured robot authoritative when offline.
+- Display hass-dyson's complete two-panel vacuum/mop coverage image and allow same-device image selection.
+- Show dock activity and a local countdown from the dock timer's timezone-aware end timestamp, including during retained robot faults. Hide missing washing time instead of showing Unavailable.
+- Block room starts during roller washing and dust collection while allowing a ready robot to start during drying. Revalidate current HA state between hass-dyson's separate Save and Start actions and report partial failures without automatic retries.
+- Document the experimental adapter's single-map requirement, integration-controlled room order and unsupported station/robot settings, rectangular zones and drying cancellation.
+- Extend adapter, dock, countdown and standalone-bundle regression coverage. Simplify Marketplace and HACS installation to direct catalog search.
 
 - Add French (Français [fr]) for the card and editor, including automatic selection for French Home Assistant locales. Use Dyson France terminology where publicly documented.
 

@@ -1,4 +1,4 @@
-# Integration contract — card v1.4.0
+# Integration contract — card v1.5.0
 
 This contract describes the **Spot+Scrub adapter**. The experimental `hass_dyson` adapter has a separate [entity/action contract and setup guide](hass-dyson.md). `integration: auto` selects the configured vacuum's registry platform; initial discovery prefers Spot+Scrub. Explicit adapter choices are available in the visual editor.
 

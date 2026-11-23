@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/images/planner-banner.svg?v=1.4.0" alt="Dyson Cleaning Planner — a dashboard card for Home Assistant" width="1100">
+  <img src="docs/images/planner-banner.svg?v=1.5.0" alt="Dyson Cleaning Planner — a dashboard card for Home Assistant" width="1100">
 </p>
 
 <p align="center">
@@ -18,7 +18,7 @@
   Plan room or zone cleaning, adjust cleaning settings, and follow your Dyson's progress in Home Assistant.
 </p>
 
-**Version 1.4.0**
+**Version 1.5.0**
 
 <p align="center">
   <a href="#installation">Installation</a> &middot;
@@ -29,10 +29,10 @@
 
 ## Requirements
 
-- [Dyson Spot+Scrub integration by UNsync3D](https://github.com/UNsync3D/ha-dyson-spot-scrub), **v2.1.0 or newer**, installed and configured in Home Assistant.
-
-This experimental branch also provides a [hass-dyson adapter for Spot+Scrub](docs/hass-dyson.md): rooms/settings, room starts, session controls, battery, consumables and the combined vacuum/mop coverage image. Select **Integration → hass-dyson (experimental)** in the editor. Automatic initial discovery prefers the existing Spot+Scrub integration; an explicitly selected robot remains authoritative. Rectangle cleaning and station/robot preferences remain exclusive to the existing adapter. Live acceptance of the new adapter is still required.
+- A supported integration installed and configured in Home Assistant: [Dyson Spot+Scrub by UNsync3D](https://github.com/UNsync3D/ha-dyson-spot-scrub), **v2.1.0 or newer**, or [hass-dyson](https://github.com/cmgrayb/hass-dyson) with the experimental Spot+Scrub adapter described below.
 - **Home Assistant Marketplace** for the recommended installation method on Home Assistant **2026.11 or newer**. On older versions, use [HACS](https://www.hacs.xyz/). Manual installation is also supported.
+
+The [experimental hass-dyson adapter](docs/hass-dyson.md) supports rooms/settings, room starts, session controls, battery/consumables, dock status/countdown and the combined vacuum/mop coverage image. Maintainer live tests confirmed Save with entity readback, room starts, Pause/Resume/Home, battery percentage, separate vacuum/mop coverage, dock activity display, the drying countdown, blocked starts during roller washing, and new room starts during drying. Select **Integration → hass-dyson (experimental)** in the editor. Automatic initial discovery prefers the existing Spot+Scrub integration; an explicitly selected robot remains authoritative. Rectangle cleaning and station/robot preferences remain exclusive to the original Spot+Scrub adapter. hass-dyson currently requires one unambiguous known map; room execution order is controlled by the integration.
 
 For integration developers, the [complete integration contract](docs/integration-contract.md) documents required and optional entities, registry identities, attributes, action payloads and validation. 
 
@@ -66,22 +66,20 @@ For integration developers, the [complete integration contract](docs/integration
 ### Marketplace (recommended — Home Assistant 2026.11 or newer)
 
 1. Open **Settings → Marketplace**.
-2. Select **Add from link** in the upper-right corner.
-3. Enter `https://github.com/FutuRazor/dyson-cleaning-planner-card` and select **Add**. If asked for the content type, choose **Dashboard**. Connect your GitHub account if prompted.
-4. Open **Dyson Cleaning Planner Card** and select **Install**.
-5. Reload your Home Assistant page, then add the card to your dashboard as described below.
+2. Search the Marketplace library for **Dyson Cleaning Planner**.
+3. Open **Dyson Cleaning Planner Card** and select **Install**.
+4. Reload your Home Assistant page, then add the card to your dashboard as described below.
 
-You can install through **Add from link** even before the card is listed in the public catalog. If it is already listed, find and install it directly. See the [Marketplace instructions](https://www.home-assistant.io/integrations/marketplace) for details.
+The card is listed in the Marketplace library; no custom repository or **Add from link** step is needed. See the [Marketplace instructions](https://www.home-assistant.io/integrations/marketplace) for details.
 
 ### HACS (Home Assistant versions before 2026.11)
 
 1. Open **HACS** in Home Assistant.
-2. Open the **⋮ menu → Custom repositories**.
-3. Enter `https://github.com/FutuRazor/dyson-cleaning-planner-card`, select **Dashboard** as the type, and click **Add**.
-4. Find **Dyson Cleaning Planner Card** in HACS, open it, and download it.
-5. Reload your Home Assistant page.
+2. Search for **Dyson Cleaning Planner**.
+3. Open **Dyson Cleaning Planner Card** and download it.
+4. Reload your Home Assistant page.
 
-If the repository is already listed in HACS, you can find and download it directly. See [HACS custom repository instructions](https://www.hacs.xyz/docs/faq/custom_repositories/) if needed.
+The card is included in the [default HACS catalog](https://github.com/hacs/default/blob/master/plugin); no custom repository needs to be added.
 
 ### Manual installation
 

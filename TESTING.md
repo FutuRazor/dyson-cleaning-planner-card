@@ -1,8 +1,18 @@
-# Testing v1.4.0
+# Testing v1.5.0
 
-## Integration adapter experiment
+## v1.5.0 release acceptance
 
-This branch retains the tested Spot+Scrub adapter and now adds an experimental hass-dyson adapter with automatic/explicit integration selection. See [adapter boundaries and live acceptance](docs/integration-adapter.md) and [hass-dyson setup and limitations](docs/hass-dyson.md).
+This is a stable release without a beta suffix. Only the hass-dyson adapter remains labeled experimental.
+
+- Run `npm run check`: 89 unit tests, syntax checks, generated bundle and standalone-bundle smoke check.
+- Run `node tests/hass-dyson-browser.mjs`, `node tests/batch-browser.mjs` and `node tests/zone-browser.mjs` with Playwright and an installed browser to cover both adapters.
+- Maintainer live checks confirmed hass-dyson Save/readback, room starts, Pause/Resume/Home, battery percentage, vacuum/mop coverage, dock status, drying remaining time, washing start interlock and starting during drying.
+- Preserve existing Spot+Scrub configuration, action payloads and zone support. Keep unsupported hass-dyson controls hidden and reject ambiguous multi-map room starts.
+- Verify the package, lockfile, README, integration contract and generated bundle identify v1.5.0. The UI intentionally has no version badge; do not reintroduce one for this release.
+
+## Integration adapters
+
+The card retains the tested Spot+Scrub adapter and adds an experimental hass-dyson adapter with automatic/explicit integration selection. See [adapter boundaries and live acceptance](docs/integration-adapter.md) and [hass-dyson setup and limitations](docs/hass-dyson.md). The validation notes below record the staged implementation under v1.4.0; current release acceptance is recorded above.
 
 - Run `node tests/hass-dyson-browser.mjs` with Playwright to verify the new adapter's editor selection, both themes, Save/Start, combined two-panel image, consumables and standard session controls against simulated HA.
 - `tests/hass-dyson.test.mjs` covers native identities/options, translated payloads, map ambiguity, readiness, partial failures, shared locking and replacement HA snapshots between Save and Start.
@@ -17,7 +27,7 @@ Start-during-drying follow-up: **89 unit tests** pass. Room Start is allowed dur
 
 - `npm run check` includes adapter isolation, shared in-flight locking, normalized telemetry, exact zone dispatch and a standalone generated-bundle smoke check, in addition to existing regression tests.
 - Run `node tests/batch-browser.mjs`, `node tests/zone-browser.mjs`, `node tests/robot-bumper-browser.mjs`, `node tests/start-readiness-browser.mjs`, `node tests/room-identity-browser.mjs` and `node tests/editor-session-preview-browser.mjs` with Playwright and an installed browser (`BROWSER_CHANNEL=msedge` on Windows where applicable).
-- Maintainer Spot+Scrub live checks passed; the separate integration fix for zone Pause/Resume was also confirmed. The new hass-dyson adapter still requires its own live HA/robot acceptance. Keep release version 1.4.0 during this experiment.
+- Maintainer Spot+Scrub live checks passed; the separate integration fix for zone Pause/Resume was also confirmed. Subsequent hass-dyson live confirmations are included in the v1.5.0 acceptance above.
 
 Validation on 21 November 2026: all 69 unit tests, the generated-bundle smoke check and the six browser scripts listed above passed in Edge. `tests/ui-browser.mjs` still fails at line 32 because its select-only field expectation does not match the current Modern controls; the identical failure was reproduced with the unchanged HEAD bundle in an isolated preview. It is not an adapter regression. The zone browser screenshot path now uses `fileURLToPath` so workspace paths containing spaces work on Windows.
 
