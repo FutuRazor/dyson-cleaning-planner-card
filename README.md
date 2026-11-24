@@ -40,23 +40,23 @@ For integration developers, the [complete integration contract](docs/integration
 
 ## Screenshots
 
-<p align="center">
-  <img src="docs/images/planner-wide.gif" alt="Modern planner with room selection beside the cleaning settings" width="720">
-  <br>Modern planner — wide layout
-</p>
 
 <table>
   <tr>
+    <td align="center"><img src="docs/images/planner-wide.gif" alt="Modern planner with room selection beside the cleaning settings" width="400"><br>Modern planner — wide layout</td>
     <td align="center"><img src="docs/images/cleaning-session.gif" alt="Active mopping session with live map and Pause/Home controls" width="400"><br>Cleaning session</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/images/zone-cleaning.gif" alt="Zone planner with a movable rectangle and resize handle; Start is disabled while the mop roller is being washed" width="360"><br>Zone Cleaning</td>
+    <td align="center"><img src="docs/images/zone-cleaning-gif.gif" alt="Zone Cleaning with positioning, start and cleaning" width="360"><br>Zone Cleaning Video</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/images/schedules.gif" alt="Schedules with countdown, switches, editing" width="400"><br>Schedules</td>
     <td align="center"><img src="docs/images/consumables.gif" alt="Consumable remaining-life bars and cleaning-solution availability" width="360"><br>Consumables</td>
   </tr>
   <tr>
     <td align="center"><img src="docs/images/station-settings.gif" alt="Station switches, preferences and dock action buttons" width="360"><br>Station settings</td>
     <td align="center"><img src="docs/images/robot-settings.gif" alt="Voice Prompts, Child Lock and DND" width="360"><br>Robot settings</td>
-  </tr>
-    <tr>
-    <td align="center"><img src="docs/images/zone-cleaning.gif" alt="Zone planner with a movable rectangle and resize handle; Start is disabled while the mop roller is being washed" width="360"><br>Zone Cleaning</td>
-    <td align="center"><img src="docs/images/zone-cleaning-gif.gif" alt="Zone Cleaning with positioning, start and cleaning" width="360"><br>Zone Cleaning Video</td>
   </tr>
 </table>
 
