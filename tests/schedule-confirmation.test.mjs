@@ -23,6 +23,14 @@ test('schedule edits check days/time and the exact selected room order/map',()=>
   assert.equal(scheduleRequestConfirmed(s,{kind:'edit',id:101,days:['mon','thu'],time:'11:30'}),true);
 });
 
+test('schedule deletion cannot be confirmed by a known incomplete list',()=>{
+  const absent={available:true,schedules:[]},request={kind:'delete',id:101};
+  assert.equal(scheduleRequestConfirmed({...absent,inSync:false},request),false);
+  assert.equal(scheduleRequestConfirmed({...absent,inSync:true},request),true);
+  assert.equal(scheduleRequestConfirmed(absent,request),true,'older metadata without sync status remains supported');
+  assert.equal(scheduleRequestConfirmed({...state(),inSync:true},request),false,'a present target is never confirmed deleted');
+});
+
 test('saved room settings must reflect the requested values before success is reported',()=>{
   const s=state(),request={kind:'edit',id:101,roomSettings:{'13':{water_level:'High'}}};
   assert.equal(scheduleRequestConfirmed(s,request),true);

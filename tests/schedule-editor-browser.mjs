@@ -36,6 +36,7 @@ try {
       sensor.attributes.schedules.push(...[201,202].map((id,i)=>({...structuredClone(sensor.attributes.schedules[0]),schedule_id:id,time:`1${6+i}:00`})));
       sensor.attributes.known=4;sensor.state='4';
       demo.card.setConfig({...sched.config,language:'en',theme,show_camera:false});demo.card.hass={...sched.hass};await demo.card.loadRegistry();
+      demo.card.resetDraft();
       demo.card.selected=[sched.ids[1],sched.ids[0]];
       demo.card.settingDraft={'11':{cleaning_mode:'Mop'}};demo.card.expanded.clear();demo.card.updateDirty();demo.card.render();
     },theme);

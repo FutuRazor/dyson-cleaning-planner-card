@@ -4,6 +4,12 @@
 
 This is a stable release without a beta suffix. Only the hass-dyson adapter remains labeled experimental.
 
+### PR #39 review follow-up — 24 November 2026
+
+- Validation passed: `npm run check` with **126 unit tests**, rebuilt bundle and standalone smoke checks, plus nine Edge browser suites: the new schedule review regressions, schedule editor, both adapters' schedule flows, shared feedback, asynchronous menus, general planner/session browser checks, prior review regressions and scrolling. The editor fixture now explicitly resets its draft after installing each fresh fixture.
+- `tests/schedules-review-browser.mjs` covers all four reproduced CodeRabbit findings with asynchronous HA card rendering: preserve scroll/focus after room selection, settings and HA updates; start a fresh dialog at the top; allow Pause/Resume/Home during schedule transport and readback while retaining action/navigation locks; withhold deletion success for explicitly incomplete lists, including timeout and late confirmation; reject old-map creation drafts and map changes after opening while retaining drafts and allowing refreshed valid creation. Both adapters are covered; editor scroll checks run in Modern and Classic.
+- `tests/schedule-confirmation.test.mjs` also checks incomplete-list deletion rejection, complete-list confirmation and compatibility when no sync status is reported. All review validation uses simulated Home Assistant and sends no real robot commands.
+
 ### Countdown follow-up — 24 November 2026
 
 - Maintainer live verification confirmed that the countdown works in Home Assistant and immediately updates the next planned start when schedules are enabled or disabled.
@@ -22,7 +28,7 @@ This is a stable release without a beta suffix. Only the hass-dyson adapter rema
 
 ### Release acceptance checklist
 
-- Run `npm run check`: 125 unit tests, syntax checks, generated bundle and standalone-bundle smoke checks for both adapters.
+- Run `npm run check`: 126 unit tests, syntax checks, generated bundle and standalone-bundle smoke checks for both adapters.
 - Run `node tests/schedules-browser.mjs` with Playwright for the experimental hass-dyson schedule flow: create with the stored-room-selection warning, edit only days/time, toggle enabled state, retain room drafts and failed dialogs, preserve keyboard focus, survive HA updates, and check both themes at mobile/desktop widths. Assert that unfiltered room names from the integration are not presented as selected rooms. Legacy Spot+Scrub builds without schedule metadata stay unchanged. This uses simulated HA and creates no real schedules.
 - Run `node tests/spot-schedules-browser.mjs` for the Spot+Scrub v2.2.0 schedule interface: all three planning tabs and their ARIA relationships, explicit selected IDs/order and schedule-only settings, accurate selected-room names, edit/toggle/delete, room reorder/add/remove, saved schedule settings distinct from live preferences, preselection/readback after reopening, explicit setting overrides, legacy/partial metadata without assumed values, empty-plan/map validation, dismissible header messages, read-only model behavior, sync warnings, four-row scrolling, offline states and backend rejection. Both themes run at 375/900 px. `tests/spot-schedules.test.mjs` covers map/identity isolation, exact payloads, missing capabilities, invalid drafts and locking. Maintainer live checks and remaining execution checks are recorded in [Spot+Scrub schedule validation](docs/spot-scrub-schedules.md#validation).
 - The schedule browser check also selects and applies 21:15 using only mouse clicks, cancels a tentative time without losing the applied value, preserves an open time picker across HA updates, verifies its horizontal bounds at 375/900 px in both themes, and checks arrow/Home/End/Escape navigation.

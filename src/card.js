@@ -282,6 +282,10 @@ class DysonRegistryElement extends HTMLElement {
   paint(html, view = null) {
     if (html === this._html) return;
     cancelAnimationFrame(this._plannerScrollFrame);
+    cancelAnimationFrame(this._scheduleScrollFrame);
+    const dialog = this.scheduleDialog;
+    const dialogScrollTop = dialog && this._paintedScheduleDialog === dialog
+      ? this.shadowRoot.querySelector('.schedule-overlay')?.scrollTop : null;
     const previous = this.shadowRoot.querySelector('.planner-content');
     const keepPlanner = view === 'planner' && this._paintedView === 'planner' && previous;
     const keepSchedules = view === 'schedules' && this._paintedView === 'schedules' && previous;
@@ -291,6 +295,7 @@ class DysonRegistryElement extends HTMLElement {
     const selection = active?.tagName === 'INPUT' && active.type === 'text' ? [active.selectionStart, active.selectionEnd, active.selectionDirection] : null;
     this._html = html;
     this._paintedView = view;
+    this._paintedScheduleDialog = dialog;
     if (keepPlanner || keepSchedules) {
       // Retain HA's mounted card/slot for local planner and schedule updates.
       // Recreating its asynchronous Lit slot briefly removes all measurable
@@ -329,6 +334,14 @@ class DysonRegistryElement extends HTMLElement {
       });
     }
     this.updateScheduleDialog?.();
+    if (dialogScrollTop != null) {
+      const overlay = this.shadowRoot.querySelector('.schedule-overlay');
+      const restore = () => {
+        if (overlay?.isConnected && this.scheduleDialog === dialog) overlay.scrollTop = dialogScrollTop;
+      };
+      restore();
+      this._scheduleScrollFrame = requestAnimationFrame(restore);
+    }
   }
 }
 
@@ -561,7 +574,8 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     if (el?.dataset.action === 'close-consumables') { this.toggleConsumables(false); return; }
     if (el?.dataset.infoTab) { this.infoTab = el.dataset.infoTab; this.updateConsumables(); return; }
     if (this.consumablesOpen) return;
-    if (!el || el.disabled || this.busy || this.controlBusy || this.scheduleSending) return;
+    if (!el || el.disabled || this.busy || this.controlBusy) return;
+    if (this.scheduleSending && !(this.view.active && ['pause','start','return_to_base'].includes(el.dataset.control))) return;
     if (el.dataset.option !== undefined) {
       this.onChange({ target: { dataset: el.dataset, value: el.dataset.option, blur() {} } });
       return;

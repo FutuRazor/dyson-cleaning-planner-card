@@ -3016,7 +3016,7 @@ function scheduleCountdownDuration(timestamp, now, language) {
 // the selected adapter exposes, and do not guess which of several new entries is ours.
 function scheduleRequestConfirmed(state, request) {
   if (!state.available) return false;
-  if (request.kind === 'delete') return !state.schedules.some(schedule => schedule.id === request.id);
+  if (request.kind === 'delete') return state.inSync !== false && !state.schedules.some(schedule => schedule.id === request.id);
   const matches = schedule => {
     if (request.enabled !== undefined && schedule.enabled !== request.enabled) return false;
     if (request.time !== undefined && schedule.time !== request.time) return false;
@@ -3372,10 +3372,15 @@ const scheduleCardMethods = {
     const state = this.getScheduleState(), schedule = state.schedules.find(s => s.id === id);
     if (!state.writable || (id !== undefined && !schedule) || (mode === 'delete' && (!schedule || !state.deleteSupported))) return;
     if (id === undefined && !this.scheduleCreationReady()) return;
+    const context = this.adapter.roomContext(this._hass,this.config.entity,this.registry);
+    if (id === undefined && this.draftContext !== context) {
+      this.message = uiMessage('A room in your draft is unavailable or ambiguous. Review or discard the draft.');
+      this.error = true; this._dismissedNotice = ''; this.render(); return;
+    }
     this.closeScheduleMenu();
     this.scheduleDialog = { id, mode, days:schedule ? [...schedule.days] : [], time:schedule?.time ?? '',
       selected:[...this.selected], rooms:this.selected.map(entity => this.model.rooms.find(room => room.entity === entity)?.name ?? entity),
-      draft:structuredClone(this.settingDraft), context:this.adapter.roomContext(this._hass,this.config.entity,this.registry), config:this.config };
+      draft:structuredClone(this.settingDraft), context:id === undefined ? this.draftContext : context, config:this.config };
     if (schedule?.roomIds && this.adapter.scheduleRoomOptions) {
       Object.assign(this.scheduleDialog, {schedule:structuredClone(schedule), roomPlan:{roomIds:[...schedule.roomIds],settings:{}},
         roomNames:Object.fromEntries(schedule.roomIds.map((roomId,index) => [roomId,schedule.rooms[index]])), roomsChanged:false});
@@ -3893,6 +3898,10 @@ class DysonRegistryElement extends HTMLElement {
   paint(html, view = null) {
     if (html === this._html) return;
     cancelAnimationFrame(this._plannerScrollFrame);
+    cancelAnimationFrame(this._scheduleScrollFrame);
+    const dialog = this.scheduleDialog;
+    const dialogScrollTop = dialog && this._paintedScheduleDialog === dialog
+      ? this.shadowRoot.querySelector('.schedule-overlay')?.scrollTop : null;
     const previous = this.shadowRoot.querySelector('.planner-content');
     const keepPlanner = view === 'planner' && this._paintedView === 'planner' && previous;
     const keepSchedules = view === 'schedules' && this._paintedView === 'schedules' && previous;
@@ -3902,6 +3911,7 @@ class DysonRegistryElement extends HTMLElement {
     const selection = active?.tagName === 'INPUT' && active.type === 'text' ? [active.selectionStart, active.selectionEnd, active.selectionDirection] : null;
     this._html = html;
     this._paintedView = view;
+    this._paintedScheduleDialog = dialog;
     if (keepPlanner || keepSchedules) {
       // Retain HA's mounted card/slot for local planner and schedule updates.
       // Recreating its asynchronous Lit slot briefly removes all measurable
@@ -3940,6 +3950,14 @@ class DysonRegistryElement extends HTMLElement {
       });
     }
     this.updateScheduleDialog?.();
+    if (dialogScrollTop != null) {
+      const overlay = this.shadowRoot.querySelector('.schedule-overlay');
+      const restore = () => {
+        if (overlay?.isConnected && this.scheduleDialog === dialog) overlay.scrollTop = dialogScrollTop;
+      };
+      restore();
+      this._scheduleScrollFrame = requestAnimationFrame(restore);
+    }
   }
 }
 
@@ -4172,7 +4190,8 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     if (el?.dataset.action === 'close-consumables') { this.toggleConsumables(false); return; }
     if (el?.dataset.infoTab) { this.infoTab = el.dataset.infoTab; this.updateConsumables(); return; }
     if (this.consumablesOpen) return;
-    if (!el || el.disabled || this.busy || this.controlBusy || this.scheduleSending) return;
+    if (!el || el.disabled || this.busy || this.controlBusy) return;
+    if (this.scheduleSending && !(this.view.active && ['pause','start','return_to_base'].includes(el.dataset.control))) return;
     if (el.dataset.option !== undefined) {
       this.onChange({ target: { dataset: el.dataset, value: el.dataset.option, blur() {} } });
       return;

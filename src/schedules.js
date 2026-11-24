@@ -58,7 +58,7 @@ export function scheduleCountdownDuration(timestamp, now, language) {
 // the selected adapter exposes, and do not guess which of several new entries is ours.
 export function scheduleRequestConfirmed(state, request) {
   if (!state.available) return false;
-  if (request.kind === 'delete') return !state.schedules.some(schedule => schedule.id === request.id);
+  if (request.kind === 'delete') return state.inSync !== false && !state.schedules.some(schedule => schedule.id === request.id);
   const matches = schedule => {
     if (request.enabled !== undefined && schedule.enabled !== request.enabled) return false;
     if (request.time !== undefined && schedule.time !== request.time) return false;
@@ -414,10 +414,15 @@ export const scheduleCardMethods = {
     const state = this.getScheduleState(), schedule = state.schedules.find(s => s.id === id);
     if (!state.writable || (id !== undefined && !schedule) || (mode === 'delete' && (!schedule || !state.deleteSupported))) return;
     if (id === undefined && !this.scheduleCreationReady()) return;
+    const context = this.adapter.roomContext(this._hass,this.config.entity,this.registry);
+    if (id === undefined && this.draftContext !== context) {
+      this.message = uiMessage('A room in your draft is unavailable or ambiguous. Review or discard the draft.');
+      this.error = true; this._dismissedNotice = ''; this.render(); return;
+    }
     this.closeScheduleMenu();
     this.scheduleDialog = { id, mode, days:schedule ? [...schedule.days] : [], time:schedule?.time ?? '',
       selected:[...this.selected], rooms:this.selected.map(entity => this.model.rooms.find(room => room.entity === entity)?.name ?? entity),
-      draft:structuredClone(this.settingDraft), context:this.adapter.roomContext(this._hass,this.config.entity,this.registry), config:this.config };
+      draft:structuredClone(this.settingDraft), context:id === undefined ? this.draftContext : context, config:this.config };
     if (schedule?.roomIds && this.adapter.scheduleRoomOptions) {
       Object.assign(this.scheduleDialog, {schedule:structuredClone(schedule), roomPlan:{roomIds:[...schedule.roomIds],settings:{}},
         roomNames:Object.fromEntries(schedule.roomIds.map((roomId,index) => [roomId,schedule.rooms[index]])), roomsChanged:false});
