@@ -51,6 +51,7 @@ try {
     assert.equal(position, 0, `${state}: new view starts at top`);
     assert.ok(await page.locator('#card ha-card').isVisible(), `${state}: frame visible`);
     if (state === 'cleaning') {
+      await page.locator('#card h2').waitFor({ state: 'visible' });
       assert.equal(await page.locator('#card h2').innerText(), 'Cleaning session');
       assert.equal(await page.locator('#card dyson-planner-map').evaluate(el => typeof el.setOptions), 'function');
     }
@@ -66,6 +67,8 @@ try {
     document.body.append(card);
   });
   await page.locator('#active-on-load .home').waitFor();
+  // Initial map loading can briefly cover the header title.
+  await page.locator('#active-on-load h2').waitFor({ state: 'visible' });
   assert.ok(await page.locator('#active-on-load ha-card').isVisible());
   assert.equal(await page.locator('#active-on-load h2').innerText(), 'Cleaning session');
   await page.evaluate(() => {

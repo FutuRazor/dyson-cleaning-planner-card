@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/images/planner-banner.svg?v=1.5.0" alt="Dyson Cleaning Planner — a dashboard card for Home Assistant" width="1100">
+  <img src="docs/images/planner-banner.svg?v=1.6.0" alt="Dyson Cleaning Planner — a dashboard card for Home Assistant" width="1100">
 </p>
 
 <p align="center">
@@ -15,14 +15,15 @@
 </p>
 
 <p align="center">
-  Plan room or zone cleaning, adjust cleaning settings, and follow your Dyson's progress in Home Assistant.
+  Plan room or zone cleaning, manage weekly schedules, and follow your Dyson's progress in Home Assistant.
 </p>
 
-**Version 1.5.0**
+**Version 1.6.0**
 
 <p align="center">
   <a href="#installation">Installation</a> &middot;
   <a href="#using-the-card">Using the card</a> &middot;
+  <a href="#robot-schedules">Schedules</a> &middot;
   <a href="#customization">Customization</a> &middot;
   <a href="#limitations-and-troubleshooting">Troubleshooting</a>
 </p>
@@ -30,6 +31,7 @@
 ## Requirements
 
 - A supported integration installed and configured in Home Assistant: [Dyson Spot+Scrub by UNsync3D](https://github.com/UNsync3D/ha-dyson-spot-scrub), **v2.1.0 or newer**, or [hass-dyson](https://github.com/cmgrayb/hass-dyson) with the experimental Spot+Scrub adapter described below.
+- Schedule management requires **Spot+Scrub integration v2.2.0 or newer** with schedule entities enabled. Schedule writes are currently supported for Spot+Scrub AI / RB05; R1/R2 expose a read-only list. The experimental hass-dyson schedule interface was tested against **v0.40.0-beta.6** and has the limitations described [below](#robot-schedules).
 - **Home Assistant Marketplace** for the recommended installation method on Home Assistant **2026.11 or newer**. On older versions, use [HACS](https://www.hacs.xyz/). Manual installation is also supported.
 
 The [experimental hass-dyson adapter](docs/hass-dyson.md) supports rooms/settings, room starts, session controls, battery/consumables, dock status/countdown and the combined vacuum/mop coverage image. Maintainer live tests confirmed Save with entity readback, room starts, Pause/Resume/Home, battery percentage, separate vacuum/mop coverage, dock activity display, the drying countdown, blocked starts during roller washing, and new room starts during drying. Select **Integration → hass-dyson (experimental)** in the editor. Automatic initial discovery prefers the existing Spot+Scrub integration; an explicitly selected robot remains authoritative. Rectangle cleaning and station/robot preferences remain exclusive to the original Spot+Scrub adapter. hass-dyson currently requires one unambiguous known map; room execution order is controlled by the integration.
@@ -38,23 +40,23 @@ For integration developers, the [complete integration contract](docs/integration
 
 ## Screenshots
 
-<p align="center">
-  <img src="docs/images/planner-wide.gif" alt="Modern planner with room selection beside the cleaning settings" width="720">
-  <br>Modern planner — wide layout
-</p>
 
 <table>
   <tr>
+    <td align="center"><img src="docs/images/planner-wide.gif" alt="Modern planner with room selection beside the cleaning settings" width="400"><br>Modern planner — wide layout</td>
     <td align="center"><img src="docs/images/cleaning-session.gif" alt="Active mopping session with live map and Pause/Home controls" width="400"><br>Cleaning session</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/images/zone-cleaning.gif" alt="Zone planner with a movable rectangle and resize handle; Start is disabled while the mop roller is being washed" width="360"><br>Zone Cleaning</td>
+    <td align="center"><img src="docs/images/zone-cleaning-gif.gif" alt="Zone Cleaning with positioning, start and cleaning" width="360"><br>Zone Cleaning Video</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/images/schedules.gif" alt="Schedules with countdown, switches, editing" width="400"><br>Schedules</td>
     <td align="center"><img src="docs/images/consumables.gif" alt="Consumable remaining-life bars and cleaning-solution availability" width="360"><br>Consumables</td>
   </tr>
   <tr>
     <td align="center"><img src="docs/images/station-settings.gif" alt="Station switches, preferences and dock action buttons" width="360"><br>Station settings</td>
     <td align="center"><img src="docs/images/robot-settings.gif" alt="Voice Prompts, Child Lock and DND" width="360"><br>Robot settings</td>
-  </tr>
-    <tr>
-    <td align="center"><img src="docs/images/zone-cleaning.gif" alt="Zone planner with a movable rectangle and resize handle; Start is disabled while the mop roller is being washed" width="360"><br>Zone Cleaning</td>
-    <td align="center"><img src="docs/images/zone-cleaning-gif.gif" alt="Zone Cleaning with positioning, start and cleaning" width="360"><br>Zone Cleaning Video</td>
   </tr>
 </table>
 
@@ -149,6 +151,22 @@ Switching between **Rooms** and **Zone** keeps your local plans. Reload fetches 
 
 Zone dimensions follow Home Assistant's unit system by default, using **cm** or whole **inches**. In the editor, choose **Automatic**, **cm**, **inch**, or **Off**. Off hides only the selection badge; dimensions shown during a cleaning session still use Home Assistant's units.
 
+### Robot schedules
+
+Choose **Schedules** beside Rooms and Zone to see your weekly plans. Each card shows its time, weekdays and known selected rooms. A small green badge on the tab counts enabled plans; grey means none are enabled. Four entries fit before the list becomes scrollable. Use the switch to enable or disable a plan, or the **three-dot menu** to edit or delete it. Deletion asks for confirmation.
+
+A compact line above the list counts down to the next enabled weekly plan in Home Assistant's time zone. Hover over it for the scheduled date/time. It refreshes locally without robot commands and follows changes reported by Home Assistant. With incomplete metadata it shows the next **known** cleaning; missing dates for one-time plans or an unavailable time zone are not guessed. The countdown predicts the planned start, not confirmed robot execution.
+
+Enabling or disabling a plan recalculates the countdown as soon as Home Assistant reports the change. This behavior has been confirmed in live Home Assistant testing.
+
+With **Spot+Scrub integration v2.2.0 or newer**, select rooms in the planner and click the **calendar-plus** button beside Save to create a schedule. Choose weekdays and a start time, then review the rooms and settings. The editor uses the same room tiles and cleaning controls as the planner: numbered circles select rooms and determine the submitted order. Deselect and reselect a room to move it to the end. Existing schedules open with their own saved settings; missing values are marked as unreported and unchanged settings are preserved. Schedule edits have their own draft and do not change general room preferences or start cleaning.
+
+Times use **Home Assistant's time zone**. The time picker stays inside the card and has explicit Apply/Cancel controls. Switches show a local loading indicator until Home Assistant confirms the change. Confirmed create/save/delete notices disappear after three seconds; errors and missing-confirmation warnings stay available for review.
+
+Schedules are shown only when the integration exposes the required sensor. Spot+Scrub AI / RB05 supports creation, room/settings editing, toggling and deletion. R1/R2 currently show a read-only list. The integration learns plans when they are saved or changed while connected; open and save existing schedules in MyDyson if the list is incomplete. See the [Spot+Scrub schedule guide](docs/spot-scrub-schedules.md) for capabilities and validation.
+
+The **experimental hass-dyson adapter**, tested against v0.40.0-beta.6, supports creation, weekdays/time editing, toggling and deletion when its actions are available. Creation reuses the robot's stored room selection; the card cannot choose schedule rooms or display reliable selected-room names through that interface. The creation dialog explains this limitation. See [hass-dyson schedules](docs/hass-dyson.md#experimental-robot-schedules). Actual scheduled execution, room execution order and behavior across daylight-saving changes still need separate live verification.
+
 ### During and after cleaning
 
 The card switches to a cleaning view with robot status, an optional live map, and room badges when known. A zone started from this card shows its dimensions instead. Use **Pause**, **Resume**, or **Home** as available.
@@ -163,11 +181,11 @@ The **Info** button opens three tabs:
 
 - **Station:** hot-water options, cleaning solution, extended roller preparation, self-cleaning frequency and drying duration, plus **Empty dust bin**, **Wash mop roller** and **Dry mop roller**.
 - **Robot:** voice prompts, volume in 10% steps, child lock, and Do Not Disturb with start/end times. Volume is disabled while voice prompts are off; DND times are disabled while DND is off.
-- **Consumables:** remaining life for supported parts, including the brush bar, mop roller or pads, side brushes and filters, plus cleaning-solution availability and whether its use is enabled.
+- **Supplies:** remaining life for supported parts, including the brush bar, mop roller or pads, side brushes and filters, plus cleaning-solution availability and whether its use is enabled.
 
 Only settings and consumables supported by the selected device and exposed by the integration are shown. This applies to room and zone settings as well as the Info tabs. Temporary unavailability or a busy robot disables existing controls rather than removing them.
 
-**Station and Robot settings take effect immediately** and are separate from the cleaning drafts. Consumable bars change from the theme accent to orange and red as their remaining life decreases. Both the Info button and Consumables tab highlight red when a consumable needs attention. Click outside the Info or zone-settings overlay to close it.
+**Station and Robot settings take effect immediately** and are separate from the cleaning drafts. Consumable bars change from the theme accent to orange and red as their remaining life decreases. Both the Info button and Supplies tab highlight red when a consumable needs attention. Click outside the Info or zone-settings overlay to close it.
 
 ## Customization
 

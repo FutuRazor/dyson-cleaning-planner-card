@@ -1,5 +1,23 @@
 # Changelog
 
+## v1.6.0
+
+- Match the Info overlay's outer inset to the schedule room editor at 4 px.
+- Shorten the Info supplies tab labels in all four languages to fit narrow cards, retaining the full localized consumables label as a tooltip.
+- Preserve scrolling within an open schedule editor and keep supported session controls usable while schedule transport/readback is pending. Do not confirm deletion from an explicitly incomplete list, and reject schedule creation from stale room-map drafts without discarding them.
+- Show a compact local countdown above the schedule list for the next enabled weekly plan in Home Assistant's time zone. Identify incomplete/unknown data, handle clock changes in the calculation and preserve menus and scrolling during refresh.
+- Add weekly schedule management for the Spot+Scrub integration v2.2.0: create from room planning, enable/disable, edit days/time and delete individual schedules after confirmation. Detect model capabilities and keep unsupported models read-only.
+- Create and edit Spot+Scrub schedules with explicit selected rooms, submitted room order and per-room cleaning settings. Display the schedule's own saved settings and preserve unchanged or unreported values independently of general room preferences.
+- Reuse the room planner's tiles, numbered selection circles and cleaning controls in the schedule editor. Keep its draft isolated, match the planner's responsive two-column layout and footer heights, and hide mode-irrelevant water/power settings.
+- Introduce a responsive schedule overview with prominent times, a vertical separator, seven weekday chips, matching room colors and an accessible three-dot Edit/Delete menu. Adapt chip spacing to card width and show four entries before scrolling.
+- Show a compact active-count badge on the Schedules tab without increasing tab width or wrapping labels. Use confirmed counts, indicate zero in grey and omit unknown counts.
+- Replace native time popups with a picker contained inside the card, with explicit Apply/Cancel controls and keyboard navigation.
+- Confirm schedule changes from Home Assistant metadata. Keep toggle feedback local, automatically dismiss confirmed create/save/delete notices after three seconds, and retain errors or missing-confirmation warnings without retrying commands.
+- Preserve Home Assistant's mounted card during schedule updates so asynchronous rendering does not close menus immediately. Retain list scrolling and open dialogs across state updates.
+- Allow deletion of a known schedule even when its reported room plan is empty; room-selection validation applies to creation and editing.
+- Add experimental hass-dyson schedule creation, toggling, days/time editing and deletion. Explain its stored-room-selection limitation and avoid presenting unfiltered room names as selected rooms.
+- Localize schedule controls in English, German, Dutch and French, and extend adapter, confirmation, accessibility and responsive browser coverage.
+
 ## v1.5.0
 
 - Introduce integration adapters while preserving existing Spot+Scrub configuration and action payloads.

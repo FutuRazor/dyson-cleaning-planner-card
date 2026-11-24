@@ -19,6 +19,9 @@ try {
   const state = value => page.evaluate(value => { demo.hass.states[demo.entity].state = value; demo.card.hass = { ...demo.hass }; }, value);
   const shot = name => page.screenshot({ path: fileURLToPath(new URL(`../artifacts/${name}.png`, import.meta.url)), fullPage: true });
   await card.locator('.room').first().waitFor();
+  // This regression covers Classic's select controls and numbered room labels.
+  // Modern sliders, selection circles and split layouts have dedicated suites.
+  await page.evaluate(() => demo.card.setConfig({ ...demo.card.config, theme: 'classic' }));
   assert.equal(await card.locator('.room').count(), 5);
   assert.equal(await card.locator('[data-move]').count(), 0, 'room settings do not contain display-order controls');
   assert.equal(await card.locator('.hint').count(), 0, 'the preferred-sequence hint is removed');
@@ -65,7 +68,7 @@ try {
   await card.locator('[data-setting="mop_repetitions"]').nth(0).selectOption('Two Passes');
   assert.equal(imageRequests, 0, 'planner does not fetch the camera');
   await mkdir(new URL('../artifacts/', import.meta.url), { recursive: true });
-  await shot('planner-v1.5.0');
+  await shot('planner-v1.6.0');
   await page.evaluate(() => { demo.hass.states[demo.ids[4]].state = 'unavailable'; demo.card.hass = { ...demo.hass }; });
   await page.evaluate(() => {
     demo.previewService = demo.hass.callService;
@@ -86,7 +89,7 @@ try {
   assert.equal(await card.locator('.room').count(), 0);
   assert.equal(await card.locator('.start').count(), 0);
   assert.deepEqual(await card.locator('.requested li').allTextContents(), ['Küche', 'Wohnzimmer']);
-  assert.equal(await card.locator('.session-title').innerText(), 'Cleaning session');
+  assert.equal(await card.locator('.session-title').textContent(), 'Cleaning session');
   assert.deepEqual(await page.evaluate(() => demo.calls.at(-1)), { domain: 'dyson_spot_scrub', service: 'start_rooms_with_settings', data: { entity_id: 'vacuum.kuche_dyson_spot_scrub', room_ids: ['11', '10'], room_settings: { 10: { mop_repetitions: 'Two Passes' } } } });
   assert.equal(await page.evaluate(() => demo.calls.some(c => ['select', 'switch', 'button'].includes(c.domain))), false);
   const map = card.locator('dyson-planner-map');
@@ -103,7 +106,7 @@ try {
     assert.equal(await card.locator('.requested li').count(), 2);
   }
   await page.evaluate(() => { demo.hass.states[demo.battery].state = '78'; demo.hass.states[demo.charging].state = 'off'; demo.card.hass = { ...demo.hass }; });
-  await shot('cleaning-desktop-v1.5.0');
+  await shot('cleaning-desktop-v1.6.0');
   const beforeControl = await page.evaluate(() => demo.calls.length);
   await card.locator('[data-control="pause"]').click();
   await page.waitForFunction(() => !demo.card.controlBusy);
@@ -114,7 +117,7 @@ try {
     { domain: 'vacuum', service: 'return_to_base', data: { entity_id: 'vacuum.kuche_dyson_spot_scrub' } }
   ]);
   assert.equal(await page.evaluate(() => demo.hass.states[demo.ids[0]].state), 'off');
-  assert.equal(await card.locator('.session-title').innerText(), 'Cleaning session');
+  assert.equal(await card.locator('.session-title').textContent(), 'Cleaning session');
   assert.equal(await page.evaluate(() => demo.card.message), '');
   assert.equal(await page.evaluate(() => demo.map === demo.card.shadowRoot.querySelector('dyson-planner-map')), true);
   await page.evaluate(() => demo.card.start());
@@ -145,8 +148,10 @@ try {
       const title = header.querySelector('h2').getBoundingClientRect();
       const battery = header.querySelector('.battery').getBoundingClientRect();
       const info = header.querySelector('.consumables-info').getBoundingClientRect();
-      return battery.bottom <= title.top && title.right <= info.left &&
-        Math.abs((title.top + title.bottom) - (info.top + info.bottom)) < 2 &&
+      const main = header.querySelector('.header-main').getBoundingClientRect();
+      return battery.bottom <= main.top + 1 && title.right <= info.left &&
+        Math.min(title.top, info.top) >= main.top - 1 &&
+        Math.max(title.bottom, info.bottom) <= main.bottom + 1 &&
         battery.right <= header.getBoundingClientRect().right;
     });
     assert.equal(headerFits, true, `battery and title fit at ${width}px`);
@@ -154,7 +159,7 @@ try {
   await page.setViewportSize({ width: 390, height: 844 });
   assert.equal(await card.locator('.requested li').count(), 2);
   await page.locator('#settings').click();
-  await shot('cleaning-mobile-rotated-v1.5.0');
+  await shot('cleaning-mobile-rotated-v1.6.0');
   await map.scrollIntoViewIfNeeded();
   await page.route('**/preview/map.svg*', route => route.fulfill({ status: 503, body: 'Unavailable' }));
   await page.waitForFunction(() => demo.map.caption.textContent.includes('Showing the last received image.'), null, { timeout: 10000 });
@@ -179,13 +184,13 @@ try {
   assert.equal(await card.locator('.requested li').count(), 0);
   assert.equal(await card.locator('.requested-note').count(), 0);
   await state('paused');
-  assert.equal(await card.locator('.session-title').innerText(), 'Cleaning session');
+  assert.equal(await card.locator('.session-title').textContent(), 'Cleaning session');
   assert.equal(await card.getByRole('button', { name: 'Resume', exact: true }).isEnabled(), true);
   await card.locator('[data-control="start"]').click();
   await page.waitForFunction(() => !demo.card.controlBusy);
   assert.deepEqual(await page.evaluate(() => demo.calls.at(-1)), { domain: 'vacuum', service: 'start', data: { entity_id: 'vacuum.kuche_dyson_spot_scrub' } });
   await state('unavailable');
-  assert.equal(await card.locator('.session-title').innerText(), 'Cleaning session');
+  assert.equal(await card.locator('.session-title').textContent(), 'Cleaning session');
   assert.equal(await card.locator('[data-control="pause"]').isDisabled(), true);
   assert.equal(await card.locator('[data-control="return_to_base"]').isDisabled(), true);
   assert.equal(await card.locator('.start').count(), 0);

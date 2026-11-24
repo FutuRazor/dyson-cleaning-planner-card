@@ -1,15 +1,59 @@
-# Testing v1.5.0
+# Testing v1.6.0
 
-## v1.5.0 release acceptance
+## v1.6.0 release acceptance
 
 This is a stable release without a beta suffix. Only the hass-dyson adapter remains labeled experimental.
 
-- Run `npm run check`: 95 unit tests, syntax checks, generated bundle and standalone-bundle smoke checks for both adapters.
+### Compact Info tab labels
+
+The third Info tab uses Supplies / Verbrauch / Conso. / Verbruik, with the full localized consumables name in its tooltip. `tests/languages-browser.mjs` checks all three tab labels fit on one line in both themes at 375/450/732 px; station and consumables browser checks retain the existing interactions.
+
+Validation passed: `npm run check` with 126 unit tests and the language, station and consumables browser suites in Edge.
+
+The Info overlay's outer inset now matches the schedule room editor at 4 px. The inset change passed `npm run check` and the layout, language and consumables browser suites, including narrow and manually sized cards.
+
+### PR #39 review follow-up — 24 November 2026
+
+- Validation passed: `npm run check` with **126 unit tests**, rebuilt bundle and standalone smoke checks, plus nine Edge browser suites: the new schedule review regressions, schedule editor, both adapters' schedule flows, shared feedback, asynchronous menus, general planner/session browser checks, prior review regressions and scrolling. The editor fixture now explicitly resets its draft after installing each fresh fixture.
+- `tests/schedules-review-browser.mjs` covers all four reproduced CodeRabbit findings with asynchronous HA card rendering: preserve scroll/focus after room selection, settings and HA updates; start a fresh dialog at the top; allow Pause/Resume/Home during schedule transport and readback while retaining action/navigation locks; withhold deletion success for explicitly incomplete lists, including timeout and late confirmation; reject old-map creation drafts and map changes after opening while retaining drafts and allowing refreshed valid creation. Both adapters are covered; editor scroll checks run in Modern and Classic.
+- `tests/schedule-confirmation.test.mjs` also checks incomplete-list deletion rejection, complete-list confirmation and compatibility when no sync status is reported. All review validation uses simulated Home Assistant and sends no real robot commands.
+
+### Countdown follow-up — 24 November 2026
+
+- Maintainer live verification confirmed that the countdown works in Home Assistant and immediately updates the next planned start when schedules are enabled or disabled.
+- Validation passed: `npm run check` with **125 unit tests**, regenerated bundle and standalone smoke checks. Edge browser checks passed for the countdown, responsive schedule layout/design, shared feedback, asynchronous menus and hass-dyson's dock/session timer regression. Countdown screenshots were reviewed at narrow and wide widths; no real robot commands were sent.
+- The overview now shows a compact countdown above its first row. `tests/schedule-countdown.test.mjs` covers HA-local dates, enabled weekdays, chronological selection, week/year rollover, fractional offsets, DST gaps/overlaps, unknown/one-time data and duration formatting.
+- Run `node tests/schedules-countdown-browser.mjs` for both adapters with a browser in a different time zone: local ticking without HA events/actions, state changes, preserved menu nodes, missing metadata and compact one-line layouts in both themes/four languages at 320/375/732 px. Screenshots are saved under `artifacts/schedules-countdown/`.
+
+### Initial release review — 24 November 2026
+
+- `npm run check` passed all **120 unit tests**, source syntax checks, bundle generation and standalone registration/discovery checks for both adapters.
+- All **30 browser scripts** passed in headless Edge against simulated Home Assistant. Coverage includes room drafts and actions, zones and map rotation, session controls, readiness, dock/robot settings, consumables, translations, keyboard interaction, scrolling, both adapters and the complete schedule UI. The scroll suite also passed separately with `CARD_THEME=modern`.
+- Visually reviewed generated Modern schedule overview and editor screenshots at narrow and wide widths. Responsive layout, four-row scrolling, weekday states, room chips and the active-count badge passed the browser layout checks.
+- Updated older Classic regression scripts to select Classic explicitly, scoped Info assertions to the current Station/Robot/Consumables tabs, and accounted for header notices covering titles during map loading. These were outdated test expectations, not application defects.
+- A final edge-case check reproduced and fixed deletion being silently blocked when a Spot+Scrub schedule reported no selected rooms. The browser regression verifies the exact schedule ID is deleted and the dialog closes; creation/editing still require a room selection. After the fix, `npm run check`, both adapters' schedule browser flows and the shared confirmation/feedback suite passed again.
+- Verified release-version consistency, local documentation links and reproducible bundle generation. Automated checks send no commands to a real robot; scheduled execution, actual room execution order and daylight-saving behavior remain separate live checks.
+
+### Release acceptance checklist
+
+- Run `npm run check`: 126 unit tests, syntax checks, generated bundle and standalone-bundle smoke checks for both adapters.
+- Run `node tests/schedules-browser.mjs` with Playwright for the experimental hass-dyson schedule flow: create with the stored-room-selection warning, edit only days/time, toggle enabled state, retain room drafts and failed dialogs, preserve keyboard focus, survive HA updates, and check both themes at mobile/desktop widths. Assert that unfiltered room names from the integration are not presented as selected rooms. Legacy Spot+Scrub builds without schedule metadata stay unchanged. This uses simulated HA and creates no real schedules.
+- Run `node tests/spot-schedules-browser.mjs` for the Spot+Scrub v2.2.0 schedule interface: all three planning tabs and their ARIA relationships, explicit selected IDs/order and schedule-only settings, accurate selected-room names, edit/toggle/delete, room reorder/add/remove, saved schedule settings distinct from live preferences, preselection/readback after reopening, explicit setting overrides, legacy/partial metadata without assumed values, empty-plan/map validation, dismissible header messages, read-only model behavior, sync warnings, four-row scrolling, offline states and backend rejection. Both themes run at 375/900 px. `tests/spot-schedules.test.mjs` covers map/identity isolation, exact payloads, missing capabilities, invalid drafts and locking. Maintainer live checks and remaining execution checks are recorded in [Spot+Scrub schedule validation](docs/spot-scrub-schedules.md#validation).
+- The schedule browser check also selects and applies 21:15 using only mouse clicks, cancels a tentative time without losing the applied value, preserves an open time picker across HA updates, verifies its horizontal bounds at 375/900 px in both themes, and checks arrow/Home/End/Escape navigation.
+- Spot+Scrub schedule checks cover mode-dependent water/power visibility, combined and unknown modes, the all-settings override, summary relevance, and retaining hidden choices without transmitting their overrides.
+- Schedule deletion tests cover enabled/disabled entries, exact same-device ID targeting, unavailable/foreign targets, missing service capabilities, cancellation and Cancel focus, delayed authoritative removal, repeated-click protection, error retention, and locking against other room/schedule writes. The fixture deletes simulated schedules only.
+- Run `node tests/schedules-layout-browser.mjs` to verify rounded schedule cards, seven weekday badges, switch/menu alignment, bounded Edit/Delete menus, keyboard navigation, natural growth for three/four entries, stable card height for five/eight entries, scrolling only the rows, retained scroll across HA updates/dialogs, and responsive resizing in both themes at 375/900 px.
+- Run `node tests/schedules-design-browser.mjs` for light/dark visual acceptance of both themes at narrow, medium and wide widths. Verify weekdays stay beside the time with a vertical separator at 512/600/732 px viewport widths, plus selected weekday states, consistent room colors, four complete cards and outside-click menu dismissal. Screenshots are written to `artifacts/schedules-design/` using simulated HA only.
+- The design check also resizes continuously through the weekday wrap: chips must narrow first, widen on their new line, and narrow again at smaller widths, with equal chip widths, unchanged label size and readable text. Check the closer control spacing and reduced right inset throughout.
+- Run `node tests/schedules-badge-browser.mjs` for the active-count badge across both themes, light/dark appearance, all four languages and 320/375/450/732 px widths. Cover zero, one, two digits, capped large counts and unknown metadata; the tab bar and labels must keep their size and remain on one line. Feedback checks also verify that pending toggles leave the count unchanged until HA confirms the new state.
+- Run `node tests/schedules-feedback-browser.mjs` for both adapters with delayed authoritative state: local toggle spinner without header chatter, confirmed create/save/delete notices that expire after three seconds, persistent failures and confirmation timeouts, late state updates, no automatic retries, timer ownership and cancellation after reconfiguration. `tests/schedule-confirmation.test.mjs` checks selected room order/map/settings and unique new schedule identity before success.
+- Run `node tests/schedules-menu-browser.mjs` to reproduce HA's asynchronous `ha-card` slot rendering. Verify repeated three-dot menu opening with mouse and touch, survival across HA updates, and opening/cancelling Edit and Delete without sending actions. This regression failed before retaining the mounted HA card; the default preview's unregistered `ha-card` did not expose that timing issue.
+- Run `node tests/schedule-editor-browser.mjs` for the planner-style schedule editor in both themes at 375/512/540/560/600/900 px: all rooms, numbered circle selection and reorder, shared sliders/repetition controls, a split or inline settings panel matching the planner at the same card width, a small outer inset, footer heights matching the planner, isolated drafts, discard without commands, and explicit room selection/settings during creation. Screenshots are written to `artifacts/schedule-editor/`; HA slot rendering is asynchronous in this fixture.
 - Run `node tests/review-regressions-browser.mjs` to check finished-session handling, readiness warnings during drying, editor registry loading, transient detach during Save and session-control integration isolation. The preview icon stub supports reconnection so the detach check also rejects browser errors.
 - Run `node tests/hass-dyson-browser.mjs`, `node tests/batch-browser.mjs` and `node tests/zone-browser.mjs` with Playwright and an installed browser to cover both adapters.
 - Maintainer live checks confirmed hass-dyson Save/readback, room starts, Pause/Resume/Home, battery percentage, vacuum/mop coverage, dock status, drying remaining time, washing start interlock and starting during drying.
 - Preserve existing Spot+Scrub configuration, action payloads and zone support. Keep unsupported hass-dyson controls hidden and reject ambiguous multi-map room starts.
-- Verify the package, lockfile, README, integration contract and generated bundle identify v1.5.0. The UI intentionally has no version badge; do not reintroduce one for this release.
+- Verify the package, lockfile, README, integration contract and generated bundle identify v1.6.0. The UI intentionally has no version badge; do not reintroduce one for this release.
 
 ## Integration adapters
 
@@ -30,9 +74,9 @@ Start-during-drying follow-up: **89 unit tests** pass. Room Start is allowed dur
 
 - `npm run check` includes adapter isolation, shared in-flight locking, normalized telemetry, exact zone dispatch and a standalone generated-bundle smoke check, in addition to existing regression tests.
 - Run `node tests/batch-browser.mjs`, `node tests/zone-browser.mjs`, `node tests/robot-bumper-browser.mjs`, `node tests/start-readiness-browser.mjs`, `node tests/room-identity-browser.mjs` and `node tests/editor-session-preview-browser.mjs` with Playwright and an installed browser (`BROWSER_CHANNEL=msedge` on Windows where applicable).
-- Maintainer Spot+Scrub live checks passed; the separate integration fix for zone Pause/Resume was also confirmed. Subsequent hass-dyson live confirmations are included in the v1.5.0 acceptance above.
+- Maintainer Spot+Scrub live checks passed; the separate integration fix for zone Pause/Resume was also confirmed. Subsequent hass-dyson live confirmations are included in the current acceptance above.
 
-Validation on 21 November 2026: all 69 unit tests, the generated-bundle smoke check and the six browser scripts listed above passed in Edge. `tests/ui-browser.mjs` still fails at line 32 because its select-only field expectation does not match the current Modern controls; the identical failure was reproduced with the unchanged HEAD bundle in an isolated preview. It is not an adapter regression. The zone browser screenshot path now uses `fileURLToPath` so workspace paths containing spaces work on Windows.
+Validation on 21 November 2026: all 69 unit tests, the generated-bundle smoke check and the six browser scripts listed above passed in Edge. At that point, `tests/ui-browser.mjs` still used select-only expectations against the Modern controls; the identical failure was reproduced with the unchanged HEAD bundle. The v1.6.0 release review corrected that test's explicit theme and verified the full script. The zone browser screenshot path uses `fileURLToPath` so workspace paths containing spaces work on Windows.
 
 ## v1.4.0 release acceptance
 

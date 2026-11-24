@@ -1,8 +1,8 @@
 # Compatibility assessment: cmgrayb/hass-dyson
 
-**Current branch status, 23 November 2026:** the [experimental hass-dyson adapter](hass-dyson.md) now implements the first room/settings/session/image scope. The comparison below records the original 21 November assessment of the Spot+Scrub contract; it is background for the implemented translations, not a claim that the new adapter is absent. Live acceptance of hass-dyson is still pending.
+**Historical assessment; status updated 24 November 2026:** the [experimental hass-dyson adapter](hass-dyson.md) now implements the first room/settings/session/image scope. The comparison below records the original 21 November assessment of the Spot+Scrub contract; it is background for the implemented translations, not a claim that the new adapter is absent. Maintainer live checks have since confirmed the supported room/session/dock scope; the linked adapter guide records current capabilities and limitations.
 
-Reviewed **21 November 2026** against the public `main` branch of [cmgrayb/hass-dyson](https://github.com/cmgrayb/hass-dyson). This is a source-based assessment and implementation proposal, not an implemented hass-dyson adapter or a hardware-tested compatibility claim. Upstream may change. The exact current card contract is in [integration-contract.md](integration-contract.md).
+Reviewed **21 November 2026** against the public `main` branch of [cmgrayb/hass-dyson](https://github.com/cmgrayb/hass-dyson). This section preserves the source-based assessment and implementation proposal from that date; it does not describe the current implementation or establish compatibility with untested hardware. Upstream may change. The exact current card contract is in [integration-contract.md](integration-contract.md).
 
 ## Result
 

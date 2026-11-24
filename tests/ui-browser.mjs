@@ -13,15 +13,18 @@ try {
   await page.goto(`http://127.0.0.1:${server.address().port}`);
   const card = page.locator('#card');
   await card.locator('.room').first().waitFor();
+  // Keep the select-only controls and map-caption assertions in Classic.
+  // Modern uses sliders, a side panel and a caption-free cleaning map.
+  await page.evaluate(() => demo.card.setConfig({ ...demo.card.config, theme: 'classic' }));
   await page.locator('#settings').click();
   const editor = page.locator('dyson-cleaning-planner-card-editor');
   const title = editor.locator('[data-key="title"]');
   await title.fill('My clean');
-  assert.equal(await card.locator('h2').innerText(), 'My clean', 'input updates the preview without blur or Enter');
+  assert.equal(await card.locator('h2').textContent(), 'My clean', 'input updates the preview without blur or Enter');
   await title.evaluate(el => { el.focus(); el.setSelectionRange(3, 3); });
   await page.keyboard.type('daily ');
   assert.equal(await title.inputValue(), 'My daily clean');
-  assert.equal(await card.locator('h2').innerText(), 'My daily clean');
+  assert.equal(await card.locator('h2').textContent(), 'My daily clean');
   assert.equal(await title.evaluate(el => el.selectionStart), 9, 'rerenders retain the caret');
   const override = editor.locator('[data-key="always_show_all_settings"]');
   assert.equal(await override.isChecked(), false);
@@ -58,7 +61,9 @@ try {
   assert.equal(await room.locator('[data-setting="water_level"]').isDisabled(), true, 'override keeps unavailable options visible');
   assert.equal(await page.evaluate(() => demo.calls.length), 0);
   await page.evaluate(() => { demo.hass.states[demo.entity].state = 'cleaning'; demo.card.hass = { ...demo.hass }; });
-  assert.equal(await card.locator('h2').innerText(), 'Cleaning session');
+  // Loading-map feedback temporarily covers the title in the header.
+  await card.locator('h2').waitFor({ state: 'visible' });
+  assert.equal(await card.locator('h2').textContent(), 'Cleaning session');
   assert.equal(await card.locator('.pause').innerText(), 'Pause');
   assert.equal(await card.locator('.pause').evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(239, 140, 0)');
   assert.equal(await card.locator('.home').evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(198, 40, 40)');
@@ -67,16 +72,16 @@ try {
   await page.evaluate(() => { demo.savedMap = demo.card.shadowRoot.querySelector('dyson-planner-map'); });
   await card.getByRole('button', { name: 'Pause', exact: true }).click();
   await page.waitForFunction(() => !demo.card.controlBusy);
-  assert.equal(await card.locator('h2').innerText(), 'Cleaning session');
+  assert.equal(await card.locator('h2').textContent(), 'Cleaning session');
   assert.equal(await card.locator('.resume').evaluate(el => getComputedStyle(el).backgroundColor), 'rgb(46, 125, 50)');
   await card.getByRole('button', { name: 'Resume', exact: true }).click();
   await page.waitForFunction(() => !demo.card.controlBusy);
-  assert.equal(await card.locator('h2').innerText(), 'Cleaning session');
+  assert.equal(await card.locator('h2').textContent(), 'Cleaning session');
   assert.equal(await page.evaluate(() => demo.savedMap === demo.card.shadowRoot.querySelector('dyson-planner-map')), true);
   assert.deepEqual(await page.evaluate(() => demo.calls.map(c => c.service)), ['pause', 'start']);
   assert.doesNotMatch(await card.innerText(), /Requested rooms|not reported|Requested from|Stop behavior|integration may also|Start requested/);
   await page.evaluate(() => { demo.hass.states[demo.entity].state = 'docked'; demo.card.hass = { ...demo.hass }; });
-  assert.equal(await card.locator('h2').innerText(), 'My daily clean');
+  assert.equal(await card.locator('h2').textContent(), 'My daily clean');
   await page.evaluate(() => {
     demo.card.selected = [demo.ids[0]];
     demo.card.settingDraft = { 10: { cleaning_mode: 'Mop' } };
@@ -95,7 +100,7 @@ try {
   assert.equal(await card.locator('.activity-status').isVisible(), false);
   assert.equal(await card.locator('[data-action="start"]').isEnabled(), true);
   await page.locator('[data-mode="VACUUMING"]').click();
-  assert.equal(await card.locator('h2').innerText(), 'Cleaning session');
+  assert.equal(await card.locator('h2').textContent(), 'Cleaning session');
   assert.equal(await card.locator('.activity-text').innerText(), 'Vacuuming');
   await page.evaluate(() => { demo.savedMap = demo.card.shadowRoot.querySelector('dyson-planner-map'); });
   await page.locator('[data-mode="MOPPING"]').click();
@@ -133,5 +138,5 @@ try {
   await page.locator('#docked').click();
   assert.equal(await card.locator('.activity-status').isVisible(), false);
   assert.deepEqual(errors, []);
-  console.log('v1.5.0 UI checks passed: live title/caret, mode visibility, override, retained drafts, session colors/actions, caption placement and persistent map.');
+  console.log('v1.6.0 UI checks passed: live title/caret, mode visibility, override, retained drafts, session colors/actions, caption placement and persistent map.');
 } finally { await browser?.close(); await new Promise(resolve => server.close(resolve)); }

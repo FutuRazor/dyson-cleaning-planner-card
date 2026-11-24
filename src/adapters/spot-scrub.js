@@ -470,7 +470,124 @@ function startZone(hass, { vacuum, camera, calibration, trusted, preview, rect, 
   return hass.callService(DOMAIN, 'clean_zone', data);
 }
 
+// Integration v2.2.0: sensor metadata is authoritative for selection and per-model
+// write capability. Never infer support from globally registered services alone.
+const scheduleDays = ['mon','tue','wed','thu','fri','sat','sun'];
+function scheduleRoomSettings(raw, roomIds) {
+  // Saved settings are optional metadata. Missing/unknown fields must never fall back to
+  // general room preferences or become implicit writes on the next edit.
+  return Object.fromEntries(roomIds.map(id => [id, Object.fromEntries(Object.keys(ROOM_FIELDS).flatMap(key => {
+    const value = raw?.[id]?.[key];
+    return typeof value === 'string' && value.trim() ? [[key,value]] : [];
+  }))]));
+}
+function scheduleState(hass, registry, entity) {
+  const vacuum = vacuumEntries(registry).find(entry => entry.entity_id === entity);
+  const matches = vacuum ? deviceEntities(registry, entity, 'sensor', 'schedules') : [];
+  const sensor = matches.length === 1 && !matches[0].disabled_by ? matches[0].entity_id : undefined;
+  const state = hass?.states?.[sensor], attrs = state?.attributes ?? {};
+  const raw = attrs.schedules;
+  const valid = Array.isArray(raw) && raw.every(s => s && Number.isSafeInteger(s.schedule_id) && s.schedule_id > 0
+    && typeof s.enabled === 'boolean' && Array.isArray(s.days) && s.days.length > 0 && s.days.every(day => scheduleDays.includes(day))
+    && /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(s.time) && Array.isArray(s.rooms) && s.rooms.every(name => typeof name === 'string')
+    && Array.isArray(s.room_ids) && s.room_ids.length === s.rooms.length && s.room_ids.every(id => typeof id === 'string' && /^\d+$/.test(id))
+    && new Set(s.room_ids).size === s.room_ids.length && (s.map_id === null || typeof s.map_id === 'string'))
+    && new Set(raw.map(s => s.schedule_id)).size === raw.length;
+  const readable = !!sensor && hass?.connected !== false && available(state) && valid;
+  const canChange = attrs.can_change === true;
+  const online = readable && available(hass?.states?.[entity]);
+  const activeMap = mapId(hass, entity);
+  return { supported:!!sensor, available:readable,
+    writable:online && canChange && !!hass?.services?.[DOMAIN]?.set_schedule,
+    createSupported:!!sensor && canChange && !!hass?.services?.[DOMAIN]?.set_schedule,
+    createReady:activeMap != null && /^\d+$/.test(String(activeMap)),
+    deleteSupported:!!sensor && canChange && !!hass?.services?.[DOMAIN]?.delete_schedule,
+    schedules:readable ? raw.map(s => ({id:s.schedule_id, enabled:s.enabled, days:[...s.days], time:s.time,
+      rooms:[...s.rooms], roomIds:[...s.room_ids], roomSettings:scheduleRoomSettings(s.room_settings,s.room_ids), mapId:s.map_id, repeat:s.repeat})) : [],
+    inSync:attrs.in_sync, robotTotal:readable && /^\d+$/.test(String(state.state)) ? Number(state.state) : null,
+    enabledCount:!readable ? null : attrs.in_sync === true ? raw.filter(schedule => schedule.enabled).length
+      : Number.isSafeInteger(attrs.on) && attrs.on >= 0 ? attrs.on : null,
+    roomSelectionKnown:true, creationUsesSelectedRooms:true };
+}
+function scheduleRoomOptions(hass, registry, config, schedule) {
+  if (!schedule?.mapId || schedule.mapId !== String(mapId(hass, config.entity))) return null;
+  const model = discover(hass, registry, config);
+  return model.rooms.filter(room => room.available && !room.excluded && room.roomId
+    && model.rooms.filter(other => other.roomId === room.roomId).length === 1);
+}
+async function setSchedule({ hass, registry, config, id, days, time, enabled, selected = [], draft = {}, context, roomPlan }) {
+  const state = scheduleState(hass, registry, config.entity);
+  if (!state.writable) throw new UiError('Schedules are unavailable. Check the robot connection and integration.');
+  const data = {entity_id:config.entity};
+  if (id !== undefined) {
+    if (!Number.isSafeInteger(id) || !state.schedules.some(s => s.id === id)) throw new UiError('This schedule is no longer available. Refresh the schedule list.');
+    data.schedule_id = id;
+  }
+  if (days !== undefined || time !== undefined || id === undefined) {
+    if (!Array.isArray(days) || !days.length || days.some(day => !scheduleDays.includes(day))
+        || !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(time)) throw new UiError('Choose at least one weekday and a valid time.');
+    data.days = scheduleDays.filter(day => days.includes(day)); data.time = time;
+  }
+  if (enabled !== undefined) {
+    if (typeof enabled !== 'boolean') throw new UiError('Invalid schedule state.');
+    data.enabled = enabled;
+  }
+  if (id === undefined || roomPlan !== undefined) {
+    if (!state.createReady || context !== roomContext(hass, config.entity)) throw new UiError('The room plan changed. Close the dialog and review your room settings.');
+    const schedule = state.schedules.find(s => s.id === id);
+    if (id !== undefined && !scheduleRoomOptions(hass,registry,config,schedule)) throw new UiError('The room plan changed. Close the dialog and review your room settings.');
+    const model = discover(hass, registry, config);
+    const resolve = roomId => {
+      const matches = model.rooms.filter(room => room.roomId === roomId);
+      const room = matches.length === 1 ? matches[0] : null;
+      if (!room?.available || room.excluded || room.context !== context) throw new UiError('A room in your draft is unavailable or ambiguous. Review or discard the draft.');
+      const liveIds = new Set(Object.values(room.settings).flatMap(field => {
+        const source = hass.states[field.entity];
+        return available(source) && source.attributes?.room_id != null ? [String(source.attributes.room_id)] : [];
+      }));
+      if (liveIds.size !== 1 || !liveIds.has(roomId)) throw new UiError('A selected room has no stable room ID. Refresh rooms and check the integration.');
+      return room;
+    };
+    const roomIds = id !== undefined ? roomPlan?.roomIds : selected.map(entity => {
+      const room = model.rooms.find(room => room.entity === entity);
+      if (!room?.roomId) throw new UiError('A selected room has no stable room ID. Refresh rooms and check the integration.');
+      return resolve(room.roomId).roomId;
+    });
+    if (!Array.isArray(roomIds) || !roomIds.length || roomIds.some(roomId => typeof roomId !== 'string') || new Set(roomIds).size !== roomIds.length) throw new UiError('Select at least one room without duplicates.');
+    // Existing rooms can be retained/reordered even if their switch was disabled.
+    // Added rooms and changed settings must resolve against this map's live entities.
+    for (const roomId of roomIds) if (id === undefined || !schedule.roomIds.includes(roomId)) resolve(roomId);
+    const settings = {};
+    for (const [roomId, values] of Object.entries(id === undefined ? draft : roomPlan.settings ?? {})) {
+      if (id !== undefined && !roomIds.includes(roomId)) throw new UiError('A room in your draft is unavailable or ambiguous. Review or discard the draft.');
+      const room = resolve(roomId);
+      for (const [key, value] of Object.entries(values)) {
+        const field = room.settings[key];
+        if (!Object.hasOwn(ROOM_FIELDS,key) || !field?.available || !field.options.includes(value)) throw new UiError('A room in your draft is unavailable or ambiguous. Review or discard the draft.');
+        (settings[roomId] ??= {})[key] = value;
+      }
+    }
+    data.room_ids = roomIds;
+    if (Object.keys(settings).length) data.room_settings = settings;
+  }
+  if (draftRequests.has(config.entity)) throw new UiError('An action for this Dyson is already running in this browser.');
+  draftRequests.add(config.entity);
+  try { await hass.callService(DOMAIN, 'set_schedule', data); }
+  finally { draftRequests.delete(config.entity); }
+}
+async function deleteSchedule({ hass, registry, config, id }) {
+  const state = scheduleState(hass, registry, config.entity);
+  if (!state.writable) throw new UiError('Schedules are unavailable. Check the robot connection and integration.');
+  if (!state.deleteSupported) throw new UiError('Update the Dyson integration: {action} is unavailable.', {action:`${DOMAIN}.delete_schedule`});
+  if (!Number.isSafeInteger(id) || !state.schedules.some(s => s.id === id)) throw new UiError('This schedule is no longer available. Refresh the schedule list.');
+  if (draftRequests.has(config.entity)) throw new UiError('An action for this Dyson is already running in this browser.');
+  draftRequests.add(config.entity);
+  try { await hass.callService(DOMAIN, 'delete_schedule', {entity_id:config.entity, schedule_id:id}); }
+  finally { draftRequests.delete(config.entity); }
+}
+
 return Object.freeze({ id: DOMAIN, roomContext, discover, batteryStatus, sendRoomDraft, dockBusy, dockBlocksStart, startBlockReason, activityStatus, cleaningView, dryingRemainingTime, dryingRemainingPercent, canControl, controlCleaning, CONSUMABLES, consumableStatus, ROBOT_FIELDS, robotSettings, changeRobotSetting, STATION_FIELDS, STATION_ACTIONS, stationActions, pressStationAction, stationSettings, changeStationSetting, supportsZoneDevice, ZONE_CHOICES, zoneDeviceOptions, vacuumEntries, cameraEntries, defaultEntity, roomSelectionState, hasRoomList, roomActionAvailable, mapId, mapPicture, mapCalibration, trustedCamera, robotTelemetry, dockActivity, zoneReady, startZone, zoneSettingsPayload,
+  scheduleState, scheduleRoomOptions, setSchedule, deleteSchedule,
   mapPictureAllowed:picture => typeof picture === 'string' && picture.startsWith('/api/camera_proxy/'),
 });
 })();

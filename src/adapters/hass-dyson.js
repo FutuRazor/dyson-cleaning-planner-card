@@ -251,7 +251,83 @@ function robotTelemetry(hass, entity, camera, registry = []) {
     cleaning:hass?.connected !== false && state?.state === 'cleaning' && dockState(hass, entity, registry) === 'IDLE', fault:undefined, faultCode:undefined, dockState:dockState(hass, entity, registry), bumperColor:undefined };
 }
 const unsupported = () => { throw new UiError('This action is not available for the current robot state.'); };
+// Robot schedules are discovered by registry identity, never by translated names.
+const scheduleDays = ['mon','tue','wed','thu','fri','sat','sun'];
+function scheduleState(hass, registry, entity) {
+  const { entries, serial, deviceId } = deviceEntries(registry, entity);
+  const sensor = pick(entries, serial, 'sensor', 'jdm_schedules');
+  const state = hass?.states?.[sensor];
+  const supported = !!sensor && !!hass?.services?.[DOMAIN]?.set_robot_schedule;
+  const raw = state?.attributes?.schedules;
+  const valid = Array.isArray(raw) && raw.every(s => s && Number.isSafeInteger(s.schedule_id) && s.schedule_id >= 0
+    && typeof s.enabled === 'boolean' && Array.isArray(s.days) && s.days.length > 0
+    && s.days.every(d => scheduleDays.includes(d)) && /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(s.time)
+    && Array.isArray(s.rooms) && s.rooms.every(name => typeof name === 'string'))
+    && new Set(raw.map(s => s.schedule_id)).size === raw.length;
+  const readable = supported && hass?.connected !== false && available(state) && valid;
+  return { supported, available:readable, writable:readable && !!deviceId && available(hass?.states?.[entity]),
+    deleteSupported:supported && !!hass?.services?.[DOMAIN]?.delete_robot_schedule,
+    schedules:readable ? raw.map(s => ({ id:s.schedule_id, enabled:s.enabled, days:[...s.days], time:s.time, rooms:[...s.rooms], repeat:s.repeat })) : [],
+    inSync:state?.attributes?.in_sync, robotTotal:state?.attributes?.robot_total,
+    enabledCount:readable && state.attributes.in_sync === true ? raw.filter(schedule => schedule.enabled).length : null,
+    // beta.6's describe_order lists every preference row, including unselected
+    // rooms. Its action preserves the robot's stored selection flags. Neither
+    // the selected-room flags nor an input to change them reach this API.
+    roomSelectionKnown:false, creationUsesStoredRooms:true, deviceId };
+}
+async function setSchedule({ hass, registry, config, id, days, time, enabled, draft = {}, context }) {
+  const state = scheduleState(hass, registry, config.entity);
+  if (!state.writable) throw new UiError('Schedules are unavailable. Check the robot connection and integration.');
+  const data = { device_id:state.deviceId };
+  if (id !== undefined) {
+    if (!Number.isSafeInteger(id) || !state.schedules.some(s => s.id === id)) throw new UiError('This schedule is no longer available. Refresh the schedule list.');
+    data.schedule_id = id;
+  }
+  if (days !== undefined || time !== undefined || id === undefined) {
+    if (!Array.isArray(days) || !days.length || days.some(d => !scheduleDays.includes(d))
+        || !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(time)) throw new UiError('Choose at least one weekday and a valid time.');
+    data.days = scheduleDays.filter(d => days.includes(d)); data.time = time;
+  }
+  if (enabled !== undefined) {
+    if (typeof enabled !== 'boolean') throw new UiError('Invalid schedule state.');
+    data.enabled = enabled;
+  }
+  if (id === undefined) {
+    if (context !== roomContext(hass, config.entity, registry)) throw new UiError('The room plan changed. Close the dialog and review your room settings.');
+    const model = discover(hass, registry, config);
+    if (!model.mapId || !model.rooms.length) throw new UiError('The room map is unavailable or ambiguous. Refresh rooms and check the integration.');
+    const native = {};
+    for (const [roomId, values] of Object.entries(draft)) {
+      const matches = model.rooms.filter(r => r.roomId === roomId);
+      const room = matches.length === 1 && matches[0];
+      if (!room?.available || room.excluded) throw new UiError('A room in your draft is unavailable or ambiguous. Review or discard the draft.');
+      for (const [key, value] of Object.entries(values)) {
+        const field = room.settings[key], mapping = fields[key];
+        if (!mapping || !field?.available || !field.options.includes(value)) throw new UiError('A room in your draft is unavailable or ambiguous. Review or discard the draft.');
+        const option = Object.keys(mapping[2]).find(v => mapping[2][v] === value);
+        if (option === undefined) throw new UiError('A room in your draft is unavailable or ambiguous. Review or discard the draft.');
+        (native[roomId] ??= {})[mapping[0]] = key === 'mop_repetitions' ? Number(option.slice(0,-1)) : option;
+      }
+    }
+    if (Object.keys(native).length) data.room_modes = native;
+  }
+  if (pending.has(state.deviceId)) throw new UiError('An action for this Dyson is already running in this browser.');
+  pending.add(state.deviceId);
+  try { await hass.callService(DOMAIN, 'set_robot_schedule', data); }
+  finally { pending.delete(state.deviceId); }
+}
+async function deleteSchedule({ hass, registry, config, id }) {
+  const state = scheduleState(hass, registry, config.entity);
+  if (!state.writable) throw new UiError('Schedules are unavailable. Check the robot connection and integration.');
+  if (!state.deleteSupported) throw new UiError('Update the Dyson integration: {action} is unavailable.', {action:`${DOMAIN}.delete_robot_schedule`});
+  if (!Number.isSafeInteger(id) || !state.schedules.some(s => s.id === id)) throw new UiError('This schedule is no longer available. Refresh the schedule list.');
+  if (pending.has(state.deviceId)) throw new UiError('An action for this Dyson is already running in this browser.');
+  pending.add(state.deviceId);
+  try { await hass.callService(DOMAIN, 'delete_robot_schedule', {device_id:state.deviceId, schedule_id:id}); }
+  finally { pending.delete(state.deviceId); }
+}
 return Object.freeze({ id:DOMAIN, infoTabs:['consumables'], mapEntityLabel:'Map image',
+  scheduleState, setSchedule, deleteSchedule,
   usesDockTimer:true, supportsDryingCancellation:false,
   planningHint:'Room order is controlled by hass-dyson. Changed settings are saved before cleaning starts.',
   vacuumEntries, cameraEntries, roomContext, discover, sendRoomDraft,
