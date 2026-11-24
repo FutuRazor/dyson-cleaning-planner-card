@@ -4,6 +4,12 @@
 
 This is a stable release without a beta suffix. Only the hass-dyson adapter remains labeled experimental.
 
+### Compact Info tab labels
+
+The third Info tab uses Supplies / Verbrauch / Conso. / Verbruik, with the full localized consumables name in its tooltip. `tests/languages-browser.mjs` checks all three tab labels fit on one line in both themes at 375/450/732 px; station and consumables browser checks retain the existing interactions.
+
+Validation passed: `npm run check` with 126 unit tests and the language, station and consumables browser suites in Edge.
+
 ### PR #39 review follow-up — 24 November 2026
 
 - Validation passed: `npm run check` with **126 unit tests**, rebuilt bundle and standalone smoke checks, plus nine Edge browser suites: the new schedule review regressions, schedule editor, both adapters' schedule flows, shared feedback, asynchronous menus, general planner/session browser checks, prior review regressions and scrolling. The editor fixture now explicitly resets its draft after installing each fresh fixture.

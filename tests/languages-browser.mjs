@@ -91,12 +91,31 @@ try {
   await frenchMode.selectOption({label:'Aspiration puis lavage'});
   assert.equal(await frenchMode.inputValue(), 'Vacuum then Mop');
   await card.locator('[data-action=consumables]').click();
-  assert.equal(await card.locator('#tab-consumables').textContent(), 'Consommables');
+  assert.equal(await card.locator('#tab-consumables').textContent(), 'Conso.');
+  assert.equal(await card.locator('#tab-consumables').getAttribute('title'), 'Consommables');
   await card.locator('[data-action=close-consumables]').click();
   for (const width of [375, 482, 700]) {
     await page.evaluate(width => { document.querySelector('main').style.maxWidth = `${width}px`; }, width);
     await page.waitForTimeout(100);
     assert.ok(await card.evaluate(el => el.shadowRoot.querySelector('.planner-content').scrollWidth <= el.clientWidth), `${width}: French has no horizontal overflow`);
+  }
+  // All three Info tabs stay on one line with compact translated labels.
+  for (const theme of ['modern','classic']) for (const [language,label] of [['en','Supplies'],['de','Verbrauch'],['nl','Verbruik'],['fr','Conso.']]) for (const width of [375,450,732]) {
+    await page.setViewportSize({width,height:1100});
+    await page.evaluate(({theme,language})=>{
+      document.querySelector('main').style.maxWidth='900px';
+      demo.card.setConfig({...demo.card.config,theme,language});demo.card.toggleConsumables(true);
+    },{theme,language});
+    assert.equal(await card.locator('#tab-consumables').textContent(),label);
+    const fits=await card.locator('.info-toolbar').evaluate(toolbar=>{
+      const box=toolbar.getBoundingClientRect();
+      return [...toolbar.querySelectorAll('.info-tabs button')].every(button=>{
+        const range=document.createRange();range.selectNodeContents(button);
+        const text=range.getBoundingClientRect(),rect=button.getBoundingClientRect();
+        return range.getClientRects().length===1 && text.left>=rect.left && text.right<=rect.right && rect.right<=box.right;
+      });
+    });
+    assert.ok(fits,`${theme}/${language}/${width}: Info tab labels fit on one line`);
   }
   assert.deepEqual(errors, []);
   console.log('Languages verified: automatic/user selection, draft preservation, original service values, station controls, session/map/editor, and narrow/wide layouts.');

@@ -102,6 +102,7 @@ const en = {
   "Robot": "Robot",
   "Station settings": "Station settings",
   "Consumables": "Consumables",
+  "Supplies": "Supplies",
   "Robot information": "Robot information",
   "Close information": "Close information",
   "Consumables: replacement needed soon": "Consumables: replacement needed soon",
@@ -422,6 +423,7 @@ const de = {
   "Robot": "Roboter",
   "Station settings": "Stationseinstellungen",
   "Consumables": "Verbrauchsmaterialien",
+  "Supplies": "Verbrauch",
   "Robot information": "Roboterinformationen",
   "Close information": "Informationen schließen",
   "Consumables: replacement needed soon": "Verbrauchsmaterialien: baldiger Austausch erforderlich",
@@ -742,6 +744,7 @@ const nl = {
   "Robot": "Robot",
   "Station settings": "Stationinstellingen",
   "Consumables": "Verbruiksartikelen",
+  "Supplies": "Verbruik",
   "Robot information": "Robotinformatie",
   "Close information": "Informatie sluiten",
   "Consumables: replacement needed soon": "Verbruiksartikelen: binnenkort vervangen",
@@ -1062,6 +1065,7 @@ const fr = {
   "Robot": "Robot",
   "Station settings": "Réglages de la station",
   "Consumables": "Consommables",
+  "Supplies": "Conso.",
   "Robot information": "Informations du robot",
   "Close information": "Fermer les informations",
   "Consumables: replacement needed soon": "Consommables : remplacement bientôt nécessaire",
@@ -4311,7 +4315,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     } finally { this.controlBusy = false; this.render(); }
   }
   consumablesHtml() {
-    return `<div class="consumables-overlay" hidden><section class="consumables-panel" role="dialog" aria-modal="true" aria-label="${this.ht("Robot information")}"><div class="info-toolbar"><div class="info-tabs" role="tablist" aria-label="${this.ht("Robot information")}"><button id="tab-station" role="tab" data-info-tab="station" aria-controls="panel-station">${this.ht("Station")}</button><button id="tab-robot" role="tab" data-info-tab="robot" aria-controls="panel-robot">${this.ht("Robot")}</button><button id="tab-consumables" role="tab" data-info-tab="consumables" aria-controls="panel-consumables">${this.ht("Consumables")}</button></div><button class="consumables-close" data-action="close-consumables" data-focus="consumables-close" aria-label="${this.ht("Close information")}"><ha-icon icon="mdi:close" aria-hidden="true"></ha-icon></button></div><div id="panel-station" role="tabpanel" aria-labelledby="tab-station"><div class="station-rows"></div><p class="station-message notice" role="status" aria-live="polite"></p></div><div id="panel-robot" role="tabpanel" aria-labelledby="tab-robot" hidden><div class="robot-settings"></div><p class="robot-message notice error" role="status" hidden></p></div><div id="panel-consumables" role="tabpanel" aria-labelledby="tab-consumables" hidden><div class="consumables-rows"></div></div></section></div>`;
+    return `<div class="consumables-overlay" hidden><section class="consumables-panel" role="dialog" aria-modal="true" aria-label="${this.ht("Robot information")}"><div class="info-toolbar"><div class="info-tabs" role="tablist" aria-label="${this.ht("Robot information")}"><button id="tab-station" role="tab" data-info-tab="station" aria-controls="panel-station">${this.ht("Station")}</button><button id="tab-robot" role="tab" data-info-tab="robot" aria-controls="panel-robot">${this.ht("Robot")}</button><button id="tab-consumables" role="tab" data-info-tab="consumables" aria-controls="panel-consumables" title="${this.ht("Consumables")}">${this.ht("Supplies")}</button></div><button class="consumables-close" data-action="close-consumables" data-focus="consumables-close" aria-label="${this.ht("Close information")}"><ha-icon icon="mdi:close" aria-hidden="true"></ha-icon></button></div><div id="panel-station" role="tabpanel" aria-labelledby="tab-station"><div class="station-rows"></div><p class="station-message notice" role="status" aria-live="polite"></p></div><div id="panel-robot" role="tabpanel" aria-labelledby="tab-robot" hidden><div class="robot-settings"></div><p class="robot-message notice error" role="status" hidden></p></div><div id="panel-consumables" role="tabpanel" aria-labelledby="tab-consumables" hidden><div class="consumables-rows"></div></div></section></div>`;
   }
   toggleConsumables(open) {
     this.consumablesOpen = open;

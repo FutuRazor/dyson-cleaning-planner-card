@@ -101,6 +101,7 @@ export const fr = {
   "Robot": "Robot",
   "Station settings": "Réglages de la station",
   "Consumables": "Consommables",
+  "Supplies": "Conso.",
   "Robot information": "Informations du robot",
   "Close information": "Fermer les informations",
   "Consumables: replacement needed soon": "Consommables : remplacement bientôt nécessaire",

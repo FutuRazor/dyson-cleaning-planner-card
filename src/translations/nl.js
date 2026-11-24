@@ -101,6 +101,7 @@ export const nl = {
   "Robot": "Robot",
   "Station settings": "Stationinstellingen",
   "Consumables": "Verbruiksartikelen",
+  "Supplies": "Verbruik",
   "Robot information": "Robotinformatie",
   "Close information": "Informatie sluiten",
   "Consumables: replacement needed soon": "Verbruiksartikelen: binnenkort vervangen",

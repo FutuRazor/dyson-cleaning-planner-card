@@ -101,6 +101,7 @@ export const en = {
   "Robot": "Robot",
   "Station settings": "Station settings",
   "Consumables": "Consumables",
+  "Supplies": "Supplies",
   "Robot information": "Robot information",
   "Close information": "Close information",
   "Consumables: replacement needed soon": "Consumables: replacement needed soon",

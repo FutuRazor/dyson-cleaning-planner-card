@@ -101,6 +101,7 @@ export const de = {
   "Robot": "Roboter",
   "Station settings": "Stationseinstellungen",
   "Consumables": "Verbrauchsmaterialien",
+  "Supplies": "Verbrauch",
   "Robot information": "Roboterinformationen",
   "Close information": "Informationen schließen",
   "Consumables: replacement needed soon": "Verbrauchsmaterialien: baldiger Austausch erforderlich",

@@ -18,7 +18,7 @@ try {
   const draft = await page.evaluate(() => JSON.stringify(demo.card.settingDraft));
   await card.locator('.consumables-info').click();
   assert.ok(await card.locator('#panel-station').isVisible());
-  assert.deepEqual(await card.locator('.info-tabs [role=tab]').allTextContents(), ['Station', 'Robot', 'Consumables']);
+  assert.deepEqual(await card.locator('.info-tabs [role=tab]').allTextContents(), ['Station', 'Robot', 'Supplies']);
   await card.locator('[data-info-tab="station"]').click();
   const station = card.locator('#panel-station');
   assert.equal(await station.locator('.station-row').count(), 9);
