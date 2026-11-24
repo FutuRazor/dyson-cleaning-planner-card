@@ -1,5 +1,16 @@
 # Changelog
 
+## Unreleased
+
+- Stack schedule Delete below Edit with the enable switch to their left. Limit the schedule list to four visible rows once a fifth entry exists, preserving list scrolling across HA updates and dialogs.
+- Add per-schedule deletion through hass-dyson's `delete_robot_schedule` action, with a time/day confirmation, Cancel focus, capability detection, pending-state protection and authoritative HA updates.
+- Replace the browser-native schedule time popup with a contained hour/minute picker and explicit Apply/Cancel controls, including mouse and keyboard navigation.
+- Add experimental hass-dyson robot schedules: create from room planning, list enabled/disabled schedules, toggle them, and edit weekdays/time. Keep original Spot+Scrub schedule controls hidden.
+- Group calendar-plus and Save into the left half of the room footer, with Start in the right half. Explain in the creation dialog that the integration reuses the robot's stored room selection, which cannot be changed by this card.
+- Correct the room-selection display: hass-dyson beta.6 lists all room-preference names, including unselected rooms. Show selection as unavailable rather than claiming that all listed rooms are selected. Model this distinction in schedule fixtures.
+- Send schedule-specific room settings without saving general preferences or consuming the local draft. Show incomplete-list and action-failure messages, validate same-device schedule identities, and share room-action locking.
+- Add localized schedule UI and simulated adapter/browser coverage without changing the release version.
+
 ## v1.5.0
 
 - Introduce integration adapters while preserving existing Spot+Scrub configuration and action payloads.

@@ -2,6 +2,7 @@ import { zoneDimensionText } from './zone-geometry.js';
 import { resolveLanguage, translate, uiMessage, UiError } from './localize.js';
 import { STATUS_BAR_ITEMS, ROOM_FIELDS, available, escapeHtml, normalizeConfig } from './core.js';
 import { getIntegrationAdapter, integrationVacuumEntries, defaultIntegrationEntity } from './integration.js';
+import { scheduleStyles, scheduleCardMethods } from './schedules.js';
 
 function stationIndicator(field, refillStatus, language = 'en') {
   const t = (key, params) => translate(language, key, params);
@@ -43,6 +44,7 @@ function stationIndicator(field, refillStatus, language = 'en') {
 }
 
 const styles = `
+${scheduleStyles}
 .planning-tabs{display:flex;margin:0 var(--dp-padding) 14px;border-bottom:1px solid var(--dp-line)}.planning-tabs button{flex:1;min-width:0;border:0;border-bottom:3px solid transparent;border-radius:0;background:transparent;color:var(--dp-muted);padding:9px 8px;min-height:42px}.planning-tabs button[aria-selected=true]{color:var(--primary-text-color);border-bottom-color:var(--dp-accent)}
 
 .header-buttons{grid-area:1/3/3/4;display:flex;flex-direction:column;gap:5px;align-self:center}.header-buttons .zone-open{min-height:32px;padding:3px 10px;font-size:12px;background:var(--dp-modern-surface,var(--dp-bg));color:var(--dp-muted)}
@@ -291,6 +293,11 @@ class DysonRegistryElement extends HTMLElement {
       const overlay = this.shadowRoot.querySelector('.consumables-overlay');
       const incomingOverlay = template.content.querySelector('.consumables-overlay');
       if (overlay && incomingOverlay) overlay.replaceWith(incomingOverlay);
+      const scheduleOverlay = this.shadowRoot.querySelector('.schedule-overlay');
+      const incomingSchedule = template.content.querySelector('.schedule-overlay');
+      if (scheduleOverlay && incomingSchedule) scheduleOverlay.replaceWith(incomingSchedule);
+      else if (incomingSchedule) this.shadowRoot.querySelector('ha-card').append(incomingSchedule);
+      else scheduleOverlay?.remove();
     } else {
       // Keep the original rendering path for the session, editor and view transitions.
       this.shadowRoot.innerHTML = html;
@@ -307,6 +314,7 @@ class DysonRegistryElement extends HTMLElement {
         if (previous.isConnected && this._paintedView === 'planner') previous.scrollTop = scrollTop;
       });
     }
+    this.updateScheduleDialog?.();
   }
 }
 
@@ -319,13 +327,17 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     this.shadowRoot.addEventListener('planner-notice', () => this.updateHeaderNotice());
     this.shadowRoot.addEventListener('zone-started', event => this.zoneStarted(event.detail));
     this.shadowRoot.addEventListener('change', event => this.onChange(event));
+    this.shadowRoot.addEventListener('input', event => this.scheduleInput(event));
     this.shadowRoot.addEventListener('click', event => this.onClick(event));
     this.shadowRoot.addEventListener('keydown', event => {
+      if (this.scheduleKeydown(event)) return;
       if (!this.consumablesOpen && event.target.matches('.planning-tabs [role="tab"]')
           && ['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
         event.preventDefault();
-        const action = event.key === 'Home' ? 'rooms' : event.key === 'End' ? 'zones'
-          : event.target.dataset.action === 'rooms' ? 'zones' : 'rooms';
+        const tabs = [...this.shadowRoot.querySelectorAll('.planning-tabs [role="tab"]')].map(tab => tab.dataset.action);
+        const index = tabs.indexOf(event.target.dataset.action);
+        const action = event.key === 'Home' ? tabs[0] : event.key === 'End' ? tabs.at(-1)
+          : tabs[(index + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length];
         this.shadowRoot.querySelector(`.planning-tabs [data-action="${action}"]`)?.click();
         this.shadowRoot.querySelector('.planning-tabs [aria-selected="true"]')?.focus({ preventScroll: true });
         return;
@@ -369,6 +381,8 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     this.consumablesOpen = false; this.stationMessage = ''; this.stationError = false;
     this.robotMessage = ''; this._robotMessageContext = {};
     this.zoneView = false; this.zoneDraft = null;
+    this.schedulesView = false; this.scheduleDialog = null; this.scheduleMessage = ''; this.scheduleSending = null;
+    this.scheduleScrollTop = 0;
     this.config = normalized;
     this.setAttribute('data-theme', this.config.theme);
     const rows = config.grid_options?.rows ?? config.layout_options?.grid_rows;
@@ -381,7 +395,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     this._previewChanged ??= () => this.update();
     this._previewDialog?.addEventListener(previewViewChanged, this._previewChanged);
     super.connectedCallback();
-    this._modernObserver ??= new ResizeObserver(() => this.positionModernPointer());
+    this._modernObserver ??= new ResizeObserver(() => { this.positionModernPointer(); this.updateScheduleListLayout(); });
     this._modernObserver.observe(this);
     this.update();
     clearInterval(this._dockTimer);
@@ -392,6 +406,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
   }
   disconnectedCallback() {
     this._detachRevision = (this._detachRevision ?? 0) + 1;
+    this.scheduleDialog = null;
     this._previewDialog?.removeEventListener(previewViewChanged, this._previewChanged);
     this._previewDialog = null;
     this._modernObserver?.disconnect();
@@ -462,6 +477,10 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     this.render();
   }
   onChange(event) {
+    if (event.target.dataset.scheduleToggle !== undefined) {
+      this.submitSchedule(Number(event.target.dataset.scheduleToggle), event.target.checked); return;
+    }
+    if (this.scheduleDialog) { this.scheduleInput(event); return; }
     if (event.target.dataset.robotSetting) {
       const el = event.target;
       const value = el.localName === 'ha-switch' ? el.checked : el.type === 'range' ? Number(el.value) : el.value;
@@ -493,6 +512,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     this.updateDirty(); this.message = ''; this.error = false; this.render();
   }
   onClick(event) {
+    if (this.scheduleClick(event)) return;
     if (event.target.classList?.contains("consumables-overlay")) { this.toggleConsumables(false); return; }
     const el = event.target.closest('button, ha-button');
     if (el?.dataset.action === 'dismiss-notice') {
@@ -521,17 +541,19 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     if (el?.dataset.action === 'close-consumables') { this.toggleConsumables(false); return; }
     if (el?.dataset.infoTab) { this.infoTab = el.dataset.infoTab; this.updateConsumables(); return; }
     if (this.consumablesOpen) return;
-    if (!el || el.disabled || this.busy || this.controlBusy) return;
+    if (!el || el.disabled || this.busy || this.controlBusy || this.scheduleSending) return;
     if (el.dataset.option !== undefined) {
       this.onChange({ target: { dataset: el.dataset, value: el.dataset.option, blur() {} } });
       return;
     }
-    if (['zones','rooms'].includes(el.dataset.action) && !this.view.active) {
+    if (['zones','rooms','schedules'].includes(el.dataset.action) && !this.view.active) {
       if (el.dataset.action === 'zones' && !this.supportsZone) return;
+      if (el.dataset.action === 'schedules' && !this.getScheduleState().supported) return;
+      if (el.dataset.action === 'schedules' && this.message === this.scheduleMessage) this.message = '';
       const zone = this.shadowRoot.querySelector('dyson-planner-zone');
       if (zone?.sending) return;
       if (zone) this.zoneDraft = zone.snapshot();
-      this.zoneView = el.dataset.action === 'zones'; this.requestedPlan = null; this.render(); return;
+      this.zoneView = el.dataset.action === 'zones'; this.schedulesView = el.dataset.action === 'schedules'; this.requestedPlan = null; this.render(); return;
     }
     if (el.dataset.control) { this.control(el.dataset.control); return; }
     if (this.view.active) return;
@@ -664,7 +686,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     button.title = this.t(warning ? 'Consumables: replacement needed soon' : 'Robot information');
     button.setAttribute('aria-expanded', String(!!this.consumablesOpen));
     root.querySelector('.consumables-overlay').hidden = !this.consumablesOpen;
-    root.querySelector('.planner-content').inert = !!this.consumablesOpen;
+    root.querySelector('.planner-content').inert = !!this.consumablesOpen || !!this.scheduleDialog;
     const content = rows.map(row => {
       if (row.type === 'cleaningSolution') {
         const ready = row.text === 'Ready to use', refill = row.text === 'Refill required';
@@ -895,7 +917,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     const h = escapeHtml;
     // Keep the map element mounted across status and message updates so polling,
     // the last good image and in-flight requests are independent of card renders.
-    this.paint(`<style>${styles}</style><ha-card><div class="planner-content">${this.headerHtml()}${this.statusHtml()}<section class="session"><ul class="requested"></ul></section>${this.config.show_camera ? `<div class="map-section">${this.config.theme !== 'modern' ? `<div class="map-title">${this.ht("Cleaning map")}</div><p class="map-caption">${this.ht("Refreshes about every 5 seconds")}</p>` : ''}<dyson-planner-map></dyson-planner-map></div>` : ''}<footer class="session-footer"><div class="actions session-actions"><button class="session-toggle" data-control="pause" data-focus="session-toggle"><ha-icon></ha-icon><span></span></button><button class="home" data-control="return_to_base" data-focus="home"><ha-icon icon="mdi:home-import-outline"></ha-icon>${this.ht("Home")}</button></div></footer></div>${this.consumablesHtml()}</ha-card>`, 'session');
+    this.paint(`<style>${styles}</style><ha-card><div class="planner-content">${this.headerHtml()}${this.statusHtml()}<section class="session"><ul class="requested"></ul></section>${this.config.show_camera ? `<div class="map-section">${this.config.theme !== 'modern' ? `<div class="map-title">${this.ht("Cleaning map")}</div><p class="map-caption">${this.ht("Refreshes about every 5 seconds")}</p>` : ''}<dyson-planner-map></dyson-planner-map></div>` : ''}<footer class="session-footer"><div class="actions session-actions"><button class="session-toggle" data-control="pause" data-focus="session-toggle"><ha-icon></ha-icon><span></span></button><button class="home" data-control="return_to_base" data-focus="home"><ha-icon icon="mdi:home-import-outline"></ha-icon>${this.ht("Home")}</button></div></footer></div>${this.consumablesHtml()}${this.scheduleOverlayHtml()}</ha-card>`, 'session');
     const root = this.shadowRoot;
     this.updateBattery();
     this.updateConsumables();
@@ -974,11 +996,13 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
   }
   get supportsZone() { return this.adapter.supportsZoneDevice(this.registry, this.devices, this.config.entity); }
   planningTabsHtml() {
-    if (!this.supportsZone) return '';
-    return `<nav class="planning-tabs" role="tablist" aria-label="${this.ht('Cleaning selection')}"><button id="planning-tab-rooms" role="tab" data-action="rooms" aria-selected="${!this.zoneView}" aria-controls="planning-panel-rooms" tabindex="${this.zoneView ? -1 : 0}">${this.ht('Rooms')}</button><button id="planning-tab-zones" role="tab" data-action="zones" aria-selected="${!!this.zoneView}" aria-controls="planning-panel-zones" tabindex="${this.zoneView ? 0 : -1}">${this.ht('Zone')}</button></nav>`;
+    const tabs = [['rooms','Rooms'], ...(this.supportsZone ? [['zones','Zone']] : []), ...(this.getScheduleState().supported ? [['schedules','Schedules']] : [])];
+    if (tabs.length === 1) return '';
+    const current = this.schedulesView ? 'schedules' : this.zoneView ? 'zones' : 'rooms';
+    return `<nav class="planning-tabs" role="tablist" aria-label="${this.ht('Cleaning selection')}">${tabs.map(([key,label]) => `<button id="planning-tab-${key}" role="tab" data-action="${key}" aria-selected="${current === key}" aria-controls="planning-panel-${key}" tabindex="${current === key ? 0 : -1}">${this.ht(label)}</button>`).join('')}</nav>`;
   }
   renderZone() {
-    this.paint(`<style>${styles}</style><ha-card><div class="planner-content">${this.headerHtml()}${this.statusHtml()}${this.planningTabsHtml()}<div id="planning-panel-rooms" role="tabpanel" aria-labelledby="planning-tab-rooms" hidden></div><dyson-planner-zone id="planning-panel-zones" role="tabpanel" aria-labelledby="planning-tab-zones"></dyson-planner-zone></div>${this.consumablesHtml()}</ha-card>`, 'zone');
+    this.paint(`<style>${styles}</style><ha-card><div class="planner-content">${this.headerHtml()}${this.statusHtml()}${this.planningTabsHtml()}<div id="planning-panel-rooms" role="tabpanel" aria-labelledby="planning-tab-rooms" hidden></div><dyson-planner-zone id="planning-panel-zones" role="tabpanel" aria-labelledby="planning-tab-zones"></dyson-planner-zone></div>${this.consumablesHtml()}${this.scheduleOverlayHtml()}</ha-card>`, 'zone');
     const title = this.shadowRoot.querySelector('.header-title h2');
     if (title.textContent !== this.t('Zone cleaning')) title.textContent = this.t('Zone cleaning');
     this.updateBattery(); this.updateConsumables(); this.updateStatus('');
@@ -996,6 +1020,8 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       this.renderSession(view); return;
     }
     if (this.zoneView) { this.renderZone(); return; }
+    if (this.schedulesView && this.getScheduleState().supported) { this.renderSchedules(styles); return; }
+    this.schedulesView = false;
     const h = escapeHtml, model = this.model;
     const rooms = model.rooms.filter(r => !r.excluded);
     const external = this.dirty && !this.busy && this.baseline !== this.liveSignature();
@@ -1028,7 +1054,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       }
       return `<section class="room ${selected ? 'selected' : ''}"><div class="room-head"><label class="pick"><input type="checkbox" data-focus="room-${n}" data-room="${h(room.entity)}" ${selected ? 'checked' : ''} ${disabled ? 'disabled' : ''}><span><span class="name">${h(room.name)} ${selected ? `<span class="status">(${order})</span>` : ''}</span><span class="summary">${!room.available ? this.ht(room.error || 'Unavailable') : this.ht(valueOf('cleaning_mode') ?? 'Room settings unavailable')}</span></span></label><button class="expand" data-focus="expand-${n}" data-expand="${h(room.entity || room.name)}" aria-expanded="${open}" aria-controls="fields-${n}" aria-label="${this.ht('Settings for {name}', { name: room.name })}"><span>${this.ht("Settings")}</span> ${open ? '⌃' : '⌄'}</button></div><div class="fields" id="fields-${n}" ${open ? '' : 'hidden'}>${fields}${!room.roomId ? `<p class="badge mode">${this.ht("Room ID unavailable. Check the updated integration and refresh rooms.")}</p>` : ''}</div></section>`;
     }).join('');
-    this.paint(`<style>${styles}</style><ha-card><div class="planner-content">${this.headerHtml()}${this.statusHtml()}${this.planningTabsHtml()}${this.supportsZone ? '<div id="planning-panel-zones" role="tabpanel" aria-labelledby="planning-tab-zones" hidden></div>' : ''}<div ${this.supportsZone ? 'id="planning-panel-rooms" role="tabpanel" aria-labelledby="planning-tab-rooms"' : ''} class="rooms ${modern ? 'modern-rooms' : ''}" style="--room-count:${rooms.length}">${roomHtml}</div>${!rooms.length ? `<p class="empty">${this.ht("No enabled rooms found. Check the card configuration and room discovery.")}</p>` : ''}<footer>${this.adapter.planningHint ? `<p class="integration-hint notice">${this.ht(this.adapter.planningHint)}</p>` : ''}<div class="summary-line"><span>${this.ht('{selected} of {total} rooms selected', { selected: this.selected.length, total: rooms.length })}</span><span class="status ${this.dirty ? 'draft-status' : ''}">${this.dirty ? `<button class="discard-draft" data-focus="reset" data-action="reset" ${this.busy ? 'disabled' : ''} title="${this.ht("Discard draft")}" aria-label="${this.ht("Discard draft")}"><ha-icon icon="mdi:trash-can-outline" aria-hidden="true"></ha-icon></button>${this.ht('Local draft')}` : this.ht('From Home Assistant')}</span></div><div class="actions"><button data-action="save" data-focus="save" ${this._previewDialog || !hasChanges || this.busy || !canSave ? 'disabled' : ''}>${this.ht(this.saving ? 'Saving …' : 'Save settings')}</button><button class="start" data-focus="start" data-action="start" ${this._previewDialog || this.selected.length === 0 || this.busy || (model.startBlockReason || this.adapter.startBlockReason(this._hass, this.config.entity, this.registry)) ? 'disabled' : ''}>${this.ht("Start clean")}</button></div></footer></div>${this.consumablesHtml()}</ha-card>`, 'planner');
+    this.paint(`<style>${styles}</style><ha-card><div class="planner-content">${this.headerHtml()}${this.statusHtml()}${this.planningTabsHtml()}${this.supportsZone ? '<div id="planning-panel-zones" role="tabpanel" aria-labelledby="planning-tab-zones" hidden></div>' : ''}${this.getScheduleState().supported ? '<div id="planning-panel-schedules" role="tabpanel" aria-labelledby="planning-tab-schedules" hidden></div>' : ''}<div ${this.supportsZone || this.getScheduleState().supported ? 'id="planning-panel-rooms" role="tabpanel" aria-labelledby="planning-tab-rooms"' : ''} class="rooms ${modern ? 'modern-rooms' : ''}" style="--room-count:${rooms.length}">${roomHtml}</div>${!rooms.length ? `<p class="empty">${this.ht("No enabled rooms found. Check the card configuration and room discovery.")}</p>` : ''}<footer>${this.adapter.planningHint ? `<p class="integration-hint notice">${this.ht(this.adapter.planningHint)}</p>` : ''}<div class="summary-line"><span>${this.ht('{selected} of {total} rooms selected', { selected: this.selected.length, total: rooms.length })}</span><span class="status ${this.dirty ? 'draft-status' : ''}">${this.dirty ? `<button class="discard-draft" data-focus="reset" data-action="reset" ${this.busy ? 'disabled' : ''} title="${this.ht("Discard draft")}" aria-label="${this.ht("Discard draft")}"><ha-icon icon="mdi:trash-can-outline" aria-hidden="true"></ha-icon></button>${this.ht('Local draft')}` : this.ht('From Home Assistant')}</span></div><div class="actions ${this.getScheduleState().supported ? 'with-schedules' : ''}">${this.getScheduleState().supported ? `<div class="room-secondary-actions"><button class="schedule-create" data-action="schedule-create" data-focus="schedule-create" aria-label="${this.ht('Create schedule')}" title="${this.ht('Create schedule')}" ${this._previewDialog || this.busy || !this.getScheduleState().writable || !model.mapId ? 'disabled' : ''}><ha-icon icon="mdi:calendar-plus" aria-hidden="true"></ha-icon></button>` : ''}<button data-action="save" data-focus="save" ${this._previewDialog || !hasChanges || this.busy || !canSave ? 'disabled' : ''}>${this.ht(this.saving ? 'Saving …' : 'Save settings')}</button>${this.getScheduleState().supported ? '</div>' : ''}<button class="start" data-focus="start" data-action="start" ${this._previewDialog || this.selected.length === 0 || this.busy || (model.startBlockReason || this.adapter.startBlockReason(this._hass, this.config.entity, this.registry)) ? 'disabled' : ''}>${this.ht("Start clean")}</button></div></footer></div>${this.consumablesHtml()}${this.scheduleOverlayHtml()}</ha-card>`, 'planner');
     this.updateBattery();
     this.updateConsumables();
     const plannerNotice = model.startBlockReason ? this.t(model.startBlockReason) : !canSave || !canStart ? this.t('The updated Dyson integration actions are not available. Reload the integration and refresh this dashboard.')
@@ -1037,6 +1063,8 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     this.positionModernPointer();
   }
 }
+
+Object.assign(DysonCleaningPlannerCard.prototype, scheduleCardMethods);
 
 if (!customElements.get('dyson-cleaning-planner-card')) customElements.define('dyson-cleaning-planner-card', DysonCleaningPlannerCard);
 window.customCards = window.customCards || [];

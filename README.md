@@ -36,6 +36,8 @@ The [experimental hass-dyson adapter](docs/hass-dyson.md) supports rooms/setting
 
 For integration developers, the [complete integration contract](docs/integration-contract.md) documents required and optional entities, registry identities, attributes, action payloads and validation. 
 
+Experimental robot schedules are available with hass-dyson **0.40.0-beta.6**: create from the room planner, view schedules, toggle them, edit weekdays/time, and delete individual entries after confirmation. **Creation reuses the robot's stored room selection**, which this card cannot change. The integration's room-name list includes unselected rooms, so the card does not present it as the selected cleaning plan. Verify selected rooms in MyDyson; the creation dialog explains this limitation. Schedule controls remain hidden for the original Spot+Scrub adapter. See [schedule behavior and testing](docs/hass-dyson.md#experimental-robot-schedules).
+
 ## Screenshots
 
 <p align="center">

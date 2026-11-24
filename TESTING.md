@@ -4,7 +4,11 @@
 
 This is a stable release without a beta suffix. Only the hass-dyson adapter remains labeled experimental.
 
-- Run `npm run check`: 95 unit tests, syntax checks, generated bundle and standalone-bundle smoke checks for both adapters.
+- Run `npm run check`: 104 unit tests, syntax checks, generated bundle and standalone-bundle smoke checks for both adapters.
+- Run `node tests/schedules-browser.mjs` with Playwright for the experimental hass-dyson schedule flow: create with the stored-room-selection warning, edit only days/time, toggle enabled state, retain room drafts and failed dialogs, preserve keyboard focus, survive HA updates, and check both themes at mobile/desktop widths. Assert that unfiltered room names from the integration are not presented as selected rooms. Original Spot+Scrub schedule controls stay hidden. This uses simulated HA and creates no real schedules.
+- The schedule browser check also selects and applies 21:15 using only mouse clicks, cancels a tentative time without losing the applied value, preserves an open time picker across HA updates, verifies its horizontal bounds at 375/900 px in both themes, and checks arrow/Home/End/Escape navigation.
+- Schedule deletion tests cover enabled/disabled entries, exact same-device ID targeting, unavailable/foreign targets, missing service capabilities, cancellation and Cancel focus, delayed authoritative removal, repeated-click protection, error retention, and locking against other room/schedule writes. The fixture deletes simulated schedules only.
+- Run `node tests/schedules-layout-browser.mjs` to verify stacked Edit/Delete controls with a switch to their left, natural growth for three/four entries, stable card height for five/eight entries, scrolling only the rows, retained scroll across HA updates/dialogs, and responsive resizing in both themes at 375/900 px.
 - Run `node tests/review-regressions-browser.mjs` to check finished-session handling, readiness warnings during drying, editor registry loading, transient detach during Save and session-control integration isolation. The preview icon stub supports reconnection so the detach check also rejects browser errors.
 - Run `node tests/hass-dyson-browser.mjs`, `node tests/batch-browser.mjs` and `node tests/zone-browser.mjs` with Playwright and an installed browser to cover both adapters.
 - Maintainer live checks confirmed hass-dyson Save/readback, room starts, Pause/Resume/Home, battery percentage, vacuum/mop coverage, dock status, drying remaining time, washing start interlock and starting during drying.

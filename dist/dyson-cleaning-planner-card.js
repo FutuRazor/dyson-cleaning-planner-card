@@ -1,6 +1,36 @@
 /* Dyson Cleaning Planner Card v1.5.0 | MIT */
 // English messages are also stable translation keys. Never use translated labels in action payloads.
 const en = {
+  "Delete schedule": "Delete schedule",
+  "Delete schedule {time} ({days})": "Delete schedule {time} ({days})",
+  "Delete schedule {time} ({days})?": "Delete schedule {time} ({days})?",
+  "This removes the schedule from the robot and MyDyson.": "This removes the schedule from the robot and MyDyson.",
+  "Deleting schedule …": "Deleting schedule …",
+  "The integration reuses the robot's stored room selection. This card cannot change it. Check the selected rooms in MyDyson after creating the schedule.": "The integration reuses the robot's stored room selection. This card cannot change it. Check the selected rooms in MyDyson after creating the schedule.",
+  "Selected rooms are not reported by this integration. Check them in MyDyson.": "Selected rooms are not reported by this integration. Check them in MyDyson.",
+  "Choose time": "Choose time",
+  "Apply time": "Apply time",
+  "Hour": "Hour",
+  "Minute": "Minute",
+  "Schedules": "Schedules",
+  "Create schedule": "Create schedule",
+  "Edit schedule": "Edit schedule",
+  "Save schedule": "Save schedule",
+  "Weekdays": "Weekdays",
+  "Cancel": "Cancel",
+  "Sending schedule …": "Sending schedule …",
+  "Times use the Home Assistant time zone: {zone}.": "Times use the Home Assistant time zone: {zone}.",
+  "Schedules are unavailable. Check the robot connection and integration.": "Schedules are unavailable. Check the robot connection and integration.",
+  "This schedule is no longer available. Refresh the schedule list.": "This schedule is no longer available. Refresh the schedule list.",
+  "Choose at least one weekday and a valid time.": "Choose at least one weekday and a valid time.",
+  "Invalid schedule state.": "Invalid schedule state.",
+  "The room plan changed. Close the dialog and review your room settings.": "The room plan changed. Close the dialog and review your room settings.",
+  "Schedule request sent. The list updates when Home Assistant reports the change.": "Schedule request sent. The list updates when Home Assistant reports the change.",
+  "Schedule request failed. Check the schedule in MyDyson before trying again. {error}": "Schedule request failed. Check the schedule in MyDyson before trying again. {error}",
+  "Enable schedule {time} ({days})": "Enable schedule {time} ({days})",
+  "Edit schedule {time} ({days})": "Edit schedule {time} ({days})",
+  "The schedule list may be incomplete. Turn each schedule off and on in MyDyson while the integration is connected.": "The schedule list may be incomplete. Turn each schedule off and on in MyDyson while the integration is connected.",
+  "No known schedules. Create one from the room planner, or turn existing schedules off and on in MyDyson.": "No known schedules. Create one from the room planner, or turn existing schedules off and on in MyDyson.",
   "Map entity must use the {domain} domain for this integration.": "Map entity must use the {domain} domain for this integration.",
   "Map image": "Map image",
   "hass-dyson (experimental)": "hass-dyson (experimental)",
@@ -262,6 +292,36 @@ const en = {
 
 // German display text. Entity names and protocol values are never rewritten.
 const de = {
+  "Delete schedule": "Zeitplan löschen",
+  "Delete schedule {time} ({days})": "Zeitplan {time} ({days}) löschen",
+  "Delete schedule {time} ({days})?": "Zeitplan {time} ({days}) löschen?",
+  "This removes the schedule from the robot and MyDyson.": "Der Zeitplan wird vom Roboter und aus MyDyson gelöscht.",
+  "Deleting schedule …": "Zeitplan wird gelöscht …",
+  "The integration reuses the robot's stored room selection. This card cannot change it. Check the selected rooms in MyDyson after creating the schedule.": "Die Integration übernimmt die im Roboter gespeicherte Raumauswahl. Diese Karte kann sie nicht ändern. Prüfe die ausgewählten Räume nach dem Erstellen in MyDyson.",
+  "Selected rooms are not reported by this integration. Check them in MyDyson.": "Die Integration meldet die ausgewählten Räume nicht. Prüfe sie in MyDyson.",
+  "Choose time": "Uhrzeit wählen",
+  "Apply time": "Uhrzeit übernehmen",
+  "Hour": "Stunde",
+  "Minute": "Minute",
+  "Schedules": "Zeitpläne",
+  "Create schedule": "Zeitplan erstellen",
+  "Edit schedule": "Zeitplan bearbeiten",
+  "Save schedule": "Zeitplan speichern",
+  "Weekdays": "Wochentage",
+  "Cancel": "Abbrechen",
+  "Sending schedule …": "Zeitplan wird gesendet …",
+  "Times use the Home Assistant time zone: {zone}.": "Die Uhrzeiten verwenden die Home-Assistant-Zeitzone: {zone}.",
+  "Schedules are unavailable. Check the robot connection and integration.": "Zeitpläne sind nicht verfügbar. Prüfe die Roboterverbindung und Integration.",
+  "This schedule is no longer available. Refresh the schedule list.": "Dieser Zeitplan ist nicht mehr verfügbar. Aktualisiere die Zeitplanliste.",
+  "Choose at least one weekday and a valid time.": "Wähle mindestens einen Wochentag und eine gültige Uhrzeit.",
+  "Invalid schedule state.": "Ungültiger Zeitplanstatus.",
+  "The room plan changed. Close the dialog and review your room settings.": "Die Raumplanung hat sich geändert. Schließe den Dialog und prüfe deine Raumeinstellungen.",
+  "Schedule request sent. The list updates when Home Assistant reports the change.": "Zeitplanauftrag gesendet. Die Liste wird aktualisiert, sobald Home Assistant die Änderung meldet.",
+  "Schedule request failed. Check the schedule in MyDyson before trying again. {error}": "Zeitplanauftrag fehlgeschlagen. Prüfe den Zeitplan in MyDyson, bevor du es erneut versuchst. {error}",
+  "Enable schedule {time} ({days})": "Zeitplan {time} ({days}) aktivieren",
+  "Edit schedule {time} ({days})": "Zeitplan {time} ({days}) bearbeiten",
+  "The schedule list may be incomplete. Turn each schedule off and on in MyDyson while the integration is connected.": "Die Zeitplanliste ist möglicherweise unvollständig. Schalte jeden Zeitplan in MyDyson aus und wieder ein, während die Integration verbunden ist.",
+  "No known schedules. Create one from the room planner, or turn existing schedules off and on in MyDyson.": "Keine bekannten Zeitpläne. Erstelle einen über die Raumplanung oder schalte bestehende Zeitpläne in MyDyson aus und wieder ein.",
   "Map entity must use the {domain} domain for this integration.": "Die Kartenentität muss für diese Integration die Domain {domain} verwenden.",
   "Map image": "Kartenbild",
   "hass-dyson (experimental)": "hass-dyson (experimentell)",
@@ -523,6 +583,36 @@ const de = {
 
 // Dutch UI text. Protocol values and entity names remain unchanged.
 const nl = {
+  "Delete schedule": "Schema verwijderen",
+  "Delete schedule {time} ({days})": "Schema {time} ({days}) verwijderen",
+  "Delete schedule {time} ({days})?": "Schema {time} ({days}) verwijderen?",
+  "This removes the schedule from the robot and MyDyson.": "Het schema wordt van de robot en uit MyDyson verwijderd.",
+  "Deleting schedule …": "Schema verwijderen …",
+  "The integration reuses the robot's stored room selection. This card cannot change it. Check the selected rooms in MyDyson after creating the schedule.": "De integratie neemt de in de robot opgeslagen kamerselectie over. Deze kaart kan die niet wijzigen. Controleer na het maken de geselecteerde kamers in MyDyson.",
+  "Selected rooms are not reported by this integration. Check them in MyDyson.": "De integratie meldt de geselecteerde kamers niet. Controleer ze in MyDyson.",
+  "Choose time": "Tijd kiezen",
+  "Apply time": "Tijd toepassen",
+  "Hour": "Uur",
+  "Minute": "Minuut",
+  "Schedules": "Schema's",
+  "Create schedule": "Schema maken",
+  "Edit schedule": "Schema bewerken",
+  "Save schedule": "Schema opslaan",
+  "Weekdays": "Weekdagen",
+  "Cancel": "Annuleren",
+  "Sending schedule …": "Schema verzenden …",
+  "Times use the Home Assistant time zone: {zone}.": "Tijden gebruiken de tijdzone van Home Assistant: {zone}.",
+  "Schedules are unavailable. Check the robot connection and integration.": "Schema's zijn niet beschikbaar. Controleer de robotverbinding en integratie.",
+  "This schedule is no longer available. Refresh the schedule list.": "Dit schema is niet meer beschikbaar. Vernieuw de schemalijst.",
+  "Choose at least one weekday and a valid time.": "Kies minstens één weekdag en een geldige tijd.",
+  "Invalid schedule state.": "Ongeldige schemastatus.",
+  "The room plan changed. Close the dialog and review your room settings.": "De kamerplanning is gewijzigd. Sluit het venster en controleer je kamerinstellingen.",
+  "Schedule request sent. The list updates when Home Assistant reports the change.": "Schemaopdracht verzonden. De lijst wordt bijgewerkt zodra Home Assistant de wijziging meldt.",
+  "Schedule request failed. Check the schedule in MyDyson before trying again. {error}": "Schemaopdracht mislukt. Controleer het schema in MyDyson voordat je het opnieuw probeert. {error}",
+  "Enable schedule {time} ({days})": "Schema {time} ({days}) inschakelen",
+  "Edit schedule {time} ({days})": "Schema {time} ({days}) bewerken",
+  "The schedule list may be incomplete. Turn each schedule off and on in MyDyson while the integration is connected.": "De schemalijst is mogelijk onvolledig. Schakel elk schema in MyDyson uit en weer in terwijl de integratie verbonden is.",
+  "No known schedules. Create one from the room planner, or turn existing schedules off and on in MyDyson.": "Geen bekende schema's. Maak er een via de kamerplanner of schakel bestaande schema's in MyDyson uit en weer in.",
   "Map entity must use the {domain} domain for this integration.": "De kaartentiteit moet voor deze integratie het domein {domain} gebruiken.",
   "Map image": "Kaartafbeelding",
   "hass-dyson (experimental)": "hass-dyson (experimenteel)",
@@ -784,6 +874,36 @@ const nl = {
 
 // French UI translations. Dyson terminology is referenced in docs/translations.md.
 const fr = {
+  "Delete schedule": "Supprimer le planning",
+  "Delete schedule {time} ({days})": "Supprimer le planning {time} ({days})",
+  "Delete schedule {time} ({days})?": "Supprimer le planning {time} ({days}) ?",
+  "This removes the schedule from the robot and MyDyson.": "Le planning sera supprimé du robot et de MyDyson.",
+  "Deleting schedule …": "Suppression du planning …",
+  "The integration reuses the robot's stored room selection. This card cannot change it. Check the selected rooms in MyDyson after creating the schedule.": "L'intégration reprend la sélection de pièces enregistrée sur le robot. Cette carte ne peut pas la modifier. Vérifiez les pièces sélectionnées dans MyDyson après la création du planning.",
+  "Selected rooms are not reported by this integration. Check them in MyDyson.": "L'intégration ne communique pas les pièces sélectionnées. Vérifiez-les dans MyDyson.",
+  "Choose time": "Choisir l'heure",
+  "Apply time": "Appliquer l'heure",
+  "Hour": "Heure",
+  "Minute": "Minute",
+  "Schedules": "Plannings",
+  "Create schedule": "Créer un planning",
+  "Edit schedule": "Modifier le planning",
+  "Save schedule": "Enregistrer le planning",
+  "Weekdays": "Jours de la semaine",
+  "Cancel": "Annuler",
+  "Sending schedule …": "Envoi du planning …",
+  "Times use the Home Assistant time zone: {zone}.": "Les heures utilisent le fuseau horaire de Home Assistant : {zone}.",
+  "Schedules are unavailable. Check the robot connection and integration.": "Les plannings sont indisponibles. Vérifiez la connexion du robot et l'intégration.",
+  "This schedule is no longer available. Refresh the schedule list.": "Ce planning n'est plus disponible. Actualisez la liste des plannings.",
+  "Choose at least one weekday and a valid time.": "Choisissez au moins un jour et une heure valide.",
+  "Invalid schedule state.": "État du planning invalide.",
+  "The room plan changed. Close the dialog and review your room settings.": "Le plan des pièces a changé. Fermez la fenêtre et vérifiez les réglages des pièces.",
+  "Schedule request sent. The list updates when Home Assistant reports the change.": "Demande de planning envoyée. La liste sera actualisée lorsque Home Assistant signalera le changement.",
+  "Schedule request failed. Check the schedule in MyDyson before trying again. {error}": "La demande de planning a échoué. Vérifiez le planning dans MyDyson avant de réessayer. {error}",
+  "Enable schedule {time} ({days})": "Activer le planning {time} ({days})",
+  "Edit schedule {time} ({days})": "Modifier le planning {time} ({days})",
+  "The schedule list may be incomplete. Turn each schedule off and on in MyDyson while the integration is connected.": "La liste des plannings peut être incomplète. Désactivez puis réactivez chaque planning dans MyDyson pendant que l'intégration est connectée.",
+  "No known schedules. Create one from the room planner, or turn existing schedules off and on in MyDyson.": "Aucun planning connu. Créez-en un depuis le planificateur des pièces, ou désactivez puis réactivez les plannings existants dans MyDyson.",
   "Map entity must use the {domain} domain for this integration.": "L’entité du plan doit utiliser le domaine {domain} pour cette intégration.",
   "Map image": "Image du plan",
   "hass-dyson (experimental)": "hass-dyson (expérimental)",
@@ -1931,7 +2051,82 @@ function robotTelemetry(hass, entity, camera, registry = []) {
     cleaning:hass?.connected !== false && state?.state === 'cleaning' && dockState(hass, entity, registry) === 'IDLE', fault:undefined, faultCode:undefined, dockState:dockState(hass, entity, registry), bumperColor:undefined };
 }
 const unsupported = () => { throw new UiError('This action is not available for the current robot state.'); };
+// Robot schedules are discovered by registry identity, never by translated names.
+const scheduleDays = ['mon','tue','wed','thu','fri','sat','sun'];
+function scheduleState(hass, registry, entity) {
+  const { entries, serial, deviceId } = deviceEntries(registry, entity);
+  const sensor = pick(entries, serial, 'sensor', 'jdm_schedules');
+  const state = hass?.states?.[sensor];
+  const supported = !!sensor && !!hass?.services?.[DOMAIN]?.set_robot_schedule;
+  const raw = state?.attributes?.schedules;
+  const valid = Array.isArray(raw) && raw.every(s => s && Number.isSafeInteger(s.schedule_id) && s.schedule_id >= 0
+    && typeof s.enabled === 'boolean' && Array.isArray(s.days) && s.days.length > 0
+    && s.days.every(d => scheduleDays.includes(d)) && /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(s.time)
+    && Array.isArray(s.rooms) && s.rooms.every(name => typeof name === 'string'))
+    && new Set(raw.map(s => s.schedule_id)).size === raw.length;
+  const readable = supported && hass?.connected !== false && available(state) && valid;
+  return { supported, available:readable, writable:readable && !!deviceId && available(hass?.states?.[entity]),
+    deleteSupported:supported && !!hass?.services?.[DOMAIN]?.delete_robot_schedule,
+    schedules:readable ? raw.map(s => ({ id:s.schedule_id, enabled:s.enabled, days:[...s.days], time:s.time, rooms:[...s.rooms], repeat:s.repeat })) : [],
+    inSync:state?.attributes?.in_sync, robotTotal:state?.attributes?.robot_total,
+    // beta.6's describe_order lists every preference row, including unselected
+    // rooms. Its action preserves the robot's stored selection flags. Neither
+    // the selected-room flags nor an input to change them reach this API.
+    roomSelectionKnown:false, creationUsesStoredRooms:true, deviceId };
+}
+async function setSchedule({ hass, registry, config, id, days, time, enabled, draft = {}, context }) {
+  const state = scheduleState(hass, registry, config.entity);
+  if (!state.writable) throw new UiError('Schedules are unavailable. Check the robot connection and integration.');
+  const data = { device_id:state.deviceId };
+  if (id !== undefined) {
+    if (!Number.isSafeInteger(id) || !state.schedules.some(s => s.id === id)) throw new UiError('This schedule is no longer available. Refresh the schedule list.');
+    data.schedule_id = id;
+  }
+  if (days !== undefined || time !== undefined || id === undefined) {
+    if (!Array.isArray(days) || !days.length || days.some(d => !scheduleDays.includes(d))
+        || !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(time)) throw new UiError('Choose at least one weekday and a valid time.');
+    data.days = scheduleDays.filter(d => days.includes(d)); data.time = time;
+  }
+  if (enabled !== undefined) {
+    if (typeof enabled !== 'boolean') throw new UiError('Invalid schedule state.');
+    data.enabled = enabled;
+  }
+  if (id === undefined) {
+    if (context !== roomContext(hass, config.entity, registry)) throw new UiError('The room plan changed. Close the dialog and review your room settings.');
+    const model = discover(hass, registry, config);
+    if (!model.mapId || !model.rooms.length) throw new UiError('The room map is unavailable or ambiguous. Refresh rooms and check the integration.');
+    const native = {};
+    for (const [roomId, values] of Object.entries(draft)) {
+      const matches = model.rooms.filter(r => r.roomId === roomId);
+      const room = matches.length === 1 && matches[0];
+      if (!room?.available || room.excluded) throw new UiError('A room in your draft is unavailable or ambiguous. Review or discard the draft.');
+      for (const [key, value] of Object.entries(values)) {
+        const field = room.settings[key], mapping = fields[key];
+        if (!mapping || !field?.available || !field.options.includes(value)) throw new UiError('A room in your draft is unavailable or ambiguous. Review or discard the draft.');
+        const option = Object.keys(mapping[2]).find(v => mapping[2][v] === value);
+        if (option === undefined) throw new UiError('A room in your draft is unavailable or ambiguous. Review or discard the draft.');
+        (native[roomId] ??= {})[mapping[0]] = key === 'mop_repetitions' ? Number(option.slice(0,-1)) : option;
+      }
+    }
+    if (Object.keys(native).length) data.room_modes = native;
+  }
+  if (pending.has(state.deviceId)) throw new UiError('An action for this Dyson is already running in this browser.');
+  pending.add(state.deviceId);
+  try { await hass.callService(DOMAIN, 'set_robot_schedule', data); }
+  finally { pending.delete(state.deviceId); }
+}
+async function deleteSchedule({ hass, registry, config, id }) {
+  const state = scheduleState(hass, registry, config.entity);
+  if (!state.writable) throw new UiError('Schedules are unavailable. Check the robot connection and integration.');
+  if (!state.deleteSupported) throw new UiError('Update the Dyson integration: {action} is unavailable.', {action:`${DOMAIN}.delete_robot_schedule`});
+  if (!Number.isSafeInteger(id) || !state.schedules.some(s => s.id === id)) throw new UiError('This schedule is no longer available. Refresh the schedule list.');
+  if (pending.has(state.deviceId)) throw new UiError('An action for this Dyson is already running in this browser.');
+  pending.add(state.deviceId);
+  try { await hass.callService(DOMAIN, 'delete_robot_schedule', {device_id:state.deviceId, schedule_id:id}); }
+  finally { pending.delete(state.deviceId); }
+}
 return Object.freeze({ id:DOMAIN, infoTabs:['consumables'], mapEntityLabel:'Map image',
+  scheduleState, setSchedule, deleteSchedule,
   usesDockTimer:true, supportsDryingCancellation:false,
   planningHint:'Room order is controlled by hass-dyson. Changed settings are saved before cleaning starts.',
   vacuumEntries, cameraEntries, roomContext, discover, sendRoomDraft,
@@ -2529,6 +2724,271 @@ class DysonPlannerZone extends HTMLElement {
 if (!customElements.get('dyson-planner-zone')) customElements.define('dyson-planner-zone', DysonPlannerZone);
 
 
+const weekdays = ['mon','tue','wed','thu','fri','sat','sun'];
+const scheduleStyles = `
+.actions.with-schedules{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);flex-direction:row}
+.room-secondary-actions{display:flex;gap:8px;min-width:0}.actions .schedule-create{flex:0 0 38px;padding:6px;display:flex;align-items:center;justify-content:center}
+.room-secondary-actions button{min-width:0}.schedule-create ha-icon{--mdc-icon-size:22px}
+.schedules{padding:0 var(--dp-padding,24px) 18px}.schedule-row{display:flex;gap:10px;align-items:center;padding:14px 0;border-bottom:1px solid var(--dp-line)}
+.schedule-copy{flex:1;min-width:0}.schedule-copy strong{font-size:18px}.schedule-copy p{margin:4px 0 0;font-size:13px;color:var(--dp-muted);overflow-wrap:anywhere}
+.schedule-row button{padding:7px;display:flex;align-items:center;justify-content:center}.schedule-row input{flex:0 0 auto}
+.schedule-controls{display:flex;align-items:center;gap:10px;flex-shrink:0}.schedule-buttons{display:flex;flex-direction:column;gap:6px}
+.schedule-list{overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
+.schedule-delete{color:var(--error-color,#b3261e)}.schedule-dialog .schedule-delete-confirm{background:var(--error-color,#b3261e);border-color:transparent;color:var(--text-primary-color,#fff)}
+.schedule-row input[type=checkbox]{appearance:none;width:36px;height:22px;margin:0;position:relative;border:1px solid var(--dp-line);border-radius:20px;background:var(--dp-soft);cursor:pointer}
+.schedule-row input[type=checkbox]::before{content:'';position:absolute;left:2px;top:2px;width:16px;height:16px;border-radius:50%;background:var(--dp-muted)}
+.schedule-row input[type=checkbox]:checked{background:var(--dp-accent);border-color:var(--dp-accent)}.schedule-row input[type=checkbox]:checked::before{transform:translateX(14px);background:var(--text-primary-color,#fff)}
+.schedule-row input[type=checkbox]:disabled{opacity:.45;cursor:default}
+.schedule-note{font-size:13px;line-height:1.5;overflow-wrap:anywhere}.schedule-warning{padding:10px;border:1px solid var(--warning-color,#b87900);border-radius:10px;background:var(--dp-soft)}
+.schedule-overlay{position:absolute;inset:0;z-index:20;background:#0007;padding:12px;display:flex;align-items:flex-start;justify-content:center;overflow:auto;border-radius:var(--ha-card-border-radius,12px)}
+.schedule-dialog{background:var(--dp-modern-surface,var(--dp-bg));border:1px solid var(--dp-line);border-radius:14px;padding:16px;width:100%;max-width:480px;box-sizing:border-box}
+.schedule-dialog header{display:flex;align-items:center;justify-content:space-between;padding:0;gap:8px}.schedule-dialog h3{margin:0;font-size:17px}.schedule-dialog header button{padding:6px;display:flex}
+.schedule-dialog fieldset{border:0;padding:0;margin:16px 0}.schedule-dialog legend{font-size:13px;margin-bottom:8px}.schedule-days{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.schedule-days label{display:flex;flex-direction:column;align-items:center;gap:5px;font-size:12px;min-width:0}.schedule-time{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px}
+.schedule-time button{display:flex;align-items:center;gap:8px;min-width:0;font-variant-numeric:tabular-nums}
+.schedule-time-picker{box-sizing:border-box;max-width:100%;min-width:0;margin-top:12px;padding:12px;border:1px solid var(--dp-line);border-radius:10px;background:var(--dp-bg)}
+.schedule-time-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.schedule-time-column{min-width:0;font-size:13px}.schedule-time-column>span{display:block;margin-bottom:6px}
+.schedule-time-options{position:relative;max-height:160px;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;border:1px solid var(--dp-line);border-radius:8px;padding:4px}
+.schedule-time-options button{display:block;width:100%;min-height:36px;padding:5px;border:0;border-radius:6px;background:transparent;font-variant-numeric:tabular-nums}
+.schedule-time-options button[aria-pressed=true]{background:var(--dp-accent);color:var(--text-primary-color,#fff)}
+.schedule-time-picker .actions{flex-direction:row;gap:8px}.schedule-time-picker .actions button{min-height:40px;padding:7px;font-size:13px}
+.schedule-dialog .actions{display:flex;margin-top:16px}.schedule-dialog .actions button{min-width:0}.schedule-dialog [role=status]:empty{display:none}
+`;
+
+// Shared schedule UI. Only the selected integration adapter knows entity/service identities.
+const scheduleCardMethods = {
+  getScheduleState() {
+    return this.adapter.scheduleState?.(this._hass, this.registry, this.config.entity) ?? { supported:false, schedules:[] };
+  },
+  scheduleDaysText(days) {
+    const format = new Intl.DateTimeFormat(this.language, { weekday:'short', timeZone:'UTC' });
+    return weekdays.filter(d => days.includes(d)).map(d => format.format(new Date(Date.UTC(2024,0,1 + weekdays.indexOf(d))))).join(', ');
+  },
+  scheduleTimePickerHtml() {
+    const picker = this.scheduleDialog?.timePicker;
+    if (!picker) return '';
+    return `<section class="schedule-time-picker" role="group" aria-label="${this.ht('Choose time')}"><div class="schedule-time-columns">${[['hour','Hour',24],['minute','Minute',60]].map(([part,label,count]) => `<div class="schedule-time-column"><span id="schedule-time-${part}-label">${this.ht(label)}</span><div class="schedule-time-options" role="group" aria-labelledby="schedule-time-${part}-label">${Array.from({length:count},(_,value) => `<button data-schedule-time-part="${part}" data-schedule-time-value="${value}" data-focus="schedule-time-${part}-${value}" aria-pressed="${picker[part] === value}" tabindex="${picker[part] === value ? 0 : -1}">${String(value).padStart(2,'0')}</button>`).join('')}</div></div>`).join('')}</div><div class="actions"><button data-schedule-action="time-cancel" data-focus="schedule-time-cancel">${this.ht('Cancel')}</button><button class="start" data-schedule-action="time-apply" data-focus="schedule-time-apply">${this.ht('Apply time')}</button></div></section>`;
+  },
+  updateScheduleTimePicker() {
+    const picker = this.scheduleDialog?.timePicker;
+    if (!picker) return;
+    for (const list of this.shadowRoot.querySelectorAll('.schedule-time-options')) {
+      for (const option of list.querySelectorAll('[data-schedule-time-part]')) {
+        const selected = Number(option.dataset.scheduleTimeValue) === picker[option.dataset.scheduleTimePart];
+        option.setAttribute('aria-pressed', String(selected)); option.tabIndex = selected ? 0 : -1;
+        option.disabled = !!this.scheduleSending;
+      }
+      if (!list.dataset.positioned) {
+        const selected = list.querySelector('[aria-pressed="true"]');
+        list.scrollTop = selected.offsetTop - (list.clientHeight - selected.offsetHeight) / 2;
+        list.dataset.positioned = 'true';
+      }
+    }
+  },
+  chooseScheduleTime(part, value) {
+    const picker = this.scheduleDialog?.timePicker;
+    if (!picker || this.scheduleSending || !['hour','minute'].includes(part)
+        || !Number.isInteger(value) || value < 0 || value >= (part === 'hour' ? 24 : 60)) return;
+    picker[part] = value; this.updateScheduleTimePicker();
+  },
+  scheduleTimeAction(action) {
+    const dialog = this.scheduleDialog;
+    if (!dialog || this.scheduleSending) return;
+    if (action === 'time-open') {
+      const [hour,minute] = (dialog.time || '09:00').split(':').map(Number);
+      dialog.timePicker = {hour,minute}; this.render();
+      this.shadowRoot.querySelector(`[data-schedule-time-part="hour"][aria-pressed="true"]`)?.focus({preventScroll:true});
+      this.shadowRoot.querySelector('.schedule-time-picker')?.scrollIntoView({block:'nearest'});
+      return;
+    }
+    if (!dialog.timePicker) return;
+    if (action === 'time-apply') {
+      dialog.time = [dialog.timePicker.hour,dialog.timePicker.minute].map(value => String(value).padStart(2,'0')).join(':');
+      dialog.error = '';
+    }
+    dialog.timePicker = null; this.render();
+    this.shadowRoot.querySelector('[data-schedule-time]')?.focus({preventScroll:true});
+  },
+  scheduleDeleteOverlayHtml(dialog) {
+    return `<div class="schedule-overlay"><section class="schedule-dialog" role="dialog" aria-modal="true" aria-labelledby="schedule-dialog-title" aria-describedby="schedule-delete-description" tabindex="-1">
+      <header><h3 id="schedule-dialog-title">${this.ht('Delete schedule')}</h3><button data-schedule-action="close" data-focus="schedule-close" aria-label="${this.ht('Close')}" ${this.scheduleSending ? 'disabled' : ''}><ha-icon icon="mdi:close" aria-hidden="true"></ha-icon></button></header>
+      <p class="schedule-note">${this.ht('Delete schedule {time} ({days})?', {time:dialog.time, days:this.scheduleDaysText(dialog.days)})}</p>
+      <p class="schedule-note" id="schedule-delete-description">${this.ht('This removes the schedule from the robot and MyDyson.')}</p>
+      <p class="schedule-note error schedule-dialog-message" role="status" aria-live="polite">${this.ht(dialog.error ?? '')}</p>
+      <div class="actions"><button data-schedule-action="close" data-focus="schedule-cancel" ${this.scheduleSending ? 'disabled' : ''}>${this.ht('Cancel')}</button><button class="schedule-delete-confirm" data-schedule-action="confirm" data-focus="schedule-confirm">${this.ht(this.scheduleSending ? 'Deleting schedule …' : 'Delete schedule')}</button></div>
+    </section></div>`;
+  },
+  scheduleOverlayHtml() {
+    const dialog = this.scheduleDialog;
+    if (!dialog) return '';
+    if (dialog.mode === 'delete') return this.scheduleDeleteOverlayHtml(dialog);
+    const state = this.getScheduleState();
+    return `<div class="schedule-overlay"><section class="schedule-dialog" role="dialog" aria-modal="true" aria-labelledby="schedule-dialog-title" tabindex="-1">
+      <header><h3 id="schedule-dialog-title">${this.ht(dialog.id === undefined ? 'Create schedule' : 'Edit schedule')}</h3><button data-schedule-action="close" data-focus="schedule-close" aria-label="${this.ht('Close')}" ${this.scheduleSending ? 'disabled' : ''}><ha-icon icon="mdi:close" aria-hidden="true"></ha-icon></button></header>
+      ${dialog.id === undefined && state.creationUsesStoredRooms ? `<p class="schedule-note schedule-warning">${this.ht("The integration reuses the robot's stored room selection. This card cannot change it. Check the selected rooms in MyDyson after creating the schedule.")}</p>` : ''}
+      <fieldset ${this.scheduleSending ? 'disabled' : ''}><legend>${this.ht('Weekdays')}</legend><div class="schedule-days">${weekdays.map(day => `<label><span>${escapeHtml(this.scheduleDaysText([day]))}</span><input type="checkbox" data-schedule-day="${day}" data-focus="schedule-${day}" ${dialog.days.includes(day) ? 'checked' : ''}></label>`).join('')}</div></fieldset>
+      <div class="schedule-time"><span id="schedule-start-time-label">${this.ht('Start time')}</span><button data-schedule-time data-schedule-action="time-open" data-focus="schedule-time" aria-labelledby="schedule-start-time-label schedule-time-value" aria-expanded="${!!dialog.timePicker}" aria-controls="schedule-time-selection" ${this.scheduleSending ? 'disabled' : ''}><span id="schedule-time-value">${dialog.time ? escapeHtml(dialog.time) : this.ht('Choose time')}</span><ha-icon icon="mdi:clock-outline" aria-hidden="true"></ha-icon></button></div>
+      <div id="schedule-time-selection">${this.scheduleTimePickerHtml()}</div>
+      <p class="schedule-note">${this.ht('Times use the Home Assistant time zone: {zone}.', {zone:this._hass.config?.time_zone ?? this.t('Unavailable')})}</p>
+      <p class="schedule-note error schedule-dialog-message" role="status" aria-live="polite">${this.ht(dialog.error ?? '')}</p>
+      <div class="actions"><button data-schedule-action="close" data-focus="schedule-cancel" ${this.scheduleSending ? 'disabled' : ''}>${this.ht('Cancel')}</button><button class="start" data-schedule-action="confirm" data-focus="schedule-confirm">${this.ht(this.scheduleSending ? 'Sending schedule …' : dialog.id === undefined ? 'Create schedule' : 'Save schedule')}</button></div>
+    </section></div>`;
+  },
+  updateScheduleDialog() {
+    this.shadowRoot.querySelector('.planner-content')?.toggleAttribute('inert', !!this.scheduleDialog || !!this.consumablesOpen);
+    const confirm = this.shadowRoot.querySelector('[data-schedule-action="confirm"]');
+    if (confirm) confirm.disabled = !!this._previewDialog || !!this.scheduleSending || !this.getScheduleState().writable
+      || (this.scheduleDialog.mode === 'delete' ? !this.getScheduleState().deleteSupported
+        : !!this.scheduleDialog.timePicker || !this.scheduleDialog.days.length || !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(this.scheduleDialog.time));
+    this.updateScheduleTimePicker();
+    const panel = this.shadowRoot.querySelector('.schedule-dialog');
+    if (panel && (this.scheduleSending || !panel.contains(this.shadowRoot.activeElement))) {
+      (panel.querySelector('button:not(:disabled)') ?? panel).focus({preventScroll:true});
+    }
+  },
+  scheduleInput(event) {
+    const dialog = this.scheduleDialog, el = event.target;
+    if (!dialog || this.scheduleSending) return;
+    if (el.dataset.scheduleDay) dialog.days = weekdays.filter(d => d === el.dataset.scheduleDay ? el.checked : dialog.days.includes(d));
+    else return;
+    dialog.error = '';
+    const message = this.shadowRoot.querySelector('.schedule-dialog-message');
+    if (message) message.textContent = '';
+    this.updateScheduleDialog();
+  },
+  openSchedule(id, mode = 'edit') {
+    if (this._previewDialog || this.busy || this.scheduleSending || this.view.active || !this.isConnected) return;
+    const state = this.getScheduleState(), schedule = state.schedules.find(s => s.id === id);
+    if (!state.writable || (id !== undefined && !schedule) || (mode === 'delete' && (!schedule || !state.deleteSupported))) return;
+    this.scheduleMessage = ''; this.scheduleError = false;
+    this.scheduleDialog = { id, mode, days:schedule ? [...schedule.days] : [], time:schedule?.time ?? '',
+      draft:structuredClone(this.settingDraft), context:this.adapter.roomContext(this._hass,this.config.entity,this.registry), config:this.config };
+    this.render();
+    this.shadowRoot.querySelector(mode === 'delete' ? '[data-focus="schedule-cancel"]' : '[data-focus="schedule-mon"]')?.focus({preventScroll:true});
+  },
+  closeSchedule() {
+    if (this.scheduleSending) return;
+    const id = this.scheduleDialog?.id, deleting = this.scheduleDialog?.mode === 'delete';
+    this.scheduleDialog = null; this.render();
+    this.shadowRoot.querySelector(id === undefined ? '[data-action="schedule-create"]' : `[data-schedule-${deleting ? 'delete' : 'edit'}="${id}"]`)?.focus({preventScroll:true});
+  },
+  scheduleKeydown(event) {
+    if (!this.scheduleDialog) return false;
+    const option = event.target.closest('[data-schedule-time-part]');
+    if (option && ['ArrowUp','ArrowDown','Home','End'].includes(event.key)) {
+      event.preventDefault();
+      const part = option.dataset.scheduleTimePart, count = part === 'hour' ? 24 : 60;
+      const value = event.key === 'Home' ? 0 : event.key === 'End' ? count-1
+        : (Number(option.dataset.scheduleTimeValue) + (event.key === 'ArrowDown' ? 1 : -1) + count) % count;
+      this.chooseScheduleTime(part,value);
+      const next = this.shadowRoot.querySelector(`[data-schedule-time-part="${part}"][data-schedule-time-value="${value}"]`);
+      next.focus({preventScroll:true}); next.scrollIntoView({block:'nearest'});
+    }
+    if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); this.scheduleDialog.timePicker ? this.scheduleTimeAction('time-cancel') : this.closeSchedule(); }
+    if (event.key === 'Tab') {
+      const items = [...this.shadowRoot.querySelectorAll('.schedule-dialog button:not(:disabled), .schedule-dialog input:not(:disabled)')].filter(el => el.tabIndex >= 0 && !el.closest('fieldset:disabled') && el.getClientRects().length);
+      const active = this.shadowRoot.activeElement;
+      if (!items.length) { event.preventDefault(); this.shadowRoot.querySelector('.schedule-dialog')?.focus(); }
+      else if (event.shiftKey && active === items[0]) { event.preventDefault(); items.at(-1)?.focus(); }
+      else if (!event.shiftKey && active === items.at(-1)) { event.preventDefault(); items[0]?.focus(); }
+    }
+    return true;
+  },
+  scheduleClick(event) {
+    if (event.target.classList?.contains('schedule-overlay')) { this.closeSchedule(); return true; }
+    const el = event.target.closest('button');
+    if (el?.dataset.scheduleTimePart) {
+      if (!el.disabled) this.chooseScheduleTime(el.dataset.scheduleTimePart, Number(el.dataset.scheduleTimeValue));
+      return true;
+    }
+    if (el?.dataset.scheduleAction) {
+      if (!el.disabled) {
+        if (el.dataset.scheduleAction.startsWith('time-')) this.scheduleTimeAction(el.dataset.scheduleAction);
+        else el.dataset.scheduleAction === 'confirm' ? this.submitSchedule() : this.closeSchedule();
+      }
+      return true;
+    }
+    if (this.scheduleDialog) return true;
+    if (el?.dataset.action === 'schedule-create') { if (!el.disabled) this.openSchedule(); return true; }
+    if (el?.dataset.scheduleEdit !== undefined) { if (!el.disabled) this.openSchedule(Number(el.dataset.scheduleEdit)); return true; }
+    if (el?.dataset.scheduleDelete !== undefined) { if (!el.disabled) this.openSchedule(Number(el.dataset.scheduleDelete),'delete'); return true; }
+    return false;
+  },
+  async submitSchedule(id, enabled) {
+    if (this._previewDialog || this.busy || this.scheduleSending || this.view.active || !this.isConnected) return;
+    const dialog = enabled === undefined ? this.scheduleDialog : null;
+    if (!dialog && enabled === undefined) return;
+    if (dialog?.timePicker) return;
+    if (dialog && dialog.config !== this.config) return;
+    const config = this.config, detach = this._detachRevision;
+    const operation = {}; this.scheduleSending = operation;
+    this.scheduleMessage = ''; this.scheduleError = false;
+    if (dialog) dialog.error = '';
+    this.render();
+    try {
+      if (dialog?.mode === 'delete') await this.adapter.deleteSchedule({hass:this._hass, registry:this.registry, config, id:dialog.id});
+      else await this.adapter.setSchedule({hass:this._hass, registry:this.registry, config,
+        ...(dialog ? {id:dialog.id, days:[...dialog.days], time:dialog.time, draft:dialog.draft, context:dialog.context} : {id, enabled})});
+      if (this.config !== config || this._detachRevision !== detach || !this.isConnected) return;
+      this.scheduleDialog = null;
+      this.scheduleMessage = 'Schedule request sent. The list updates when Home Assistant reports the change.';
+      if (dialog?.id === undefined && dialog) {
+        this.message = this.scheduleMessage; this.error = false;
+      }
+    } catch (error) {
+      if (this.config !== config || this._detachRevision !== detach || !this.isConnected) return;
+      const message = uiMessage('Schedule request failed. Check the schedule in MyDyson before trying again. {error}', {error});
+      if (dialog) dialog.error = message;
+      else { this.scheduleMessage = message; this.scheduleError = true; }
+    } finally {
+      if (this.scheduleSending === operation) {
+        this.scheduleSending = null;
+        if (this.isConnected && this.config === config && this._detachRevision === detach) {
+          this.render();
+          if (!this.scheduleDialog) {
+            const target = dialog ? dialog.mode === 'delete' ? '.planning-tabs [aria-selected="true"]'
+              : dialog.id === undefined ? '[data-action="schedule-create"]' : `[data-schedule-edit="${dialog.id}"]`
+              : `[data-schedule-toggle="${id}"]`;
+            this.shadowRoot.querySelector(target)?.focus({preventScroll:true});
+          }
+        }
+      }
+    }
+  },
+  updateScheduleListLayout() {
+    const list = this.shadowRoot.querySelector('.schedule-list');
+    if (!list) return;
+    const rows = [...list.querySelectorAll('.schedule-row')];
+    const height = rows.length > 4 ? `${Math.ceil(rows.slice(0,4).reduce((total,row) => total + row.getBoundingClientRect().height,0))}px` : '';
+    if (list.style.maxHeight !== height) list.style.maxHeight = height;
+  },
+  renderSchedules(styles) {
+    const state = this.getScheduleState();
+    const disabled = this.scheduleSending || this._previewDialog || !state.writable;
+    const previousList = this.shadowRoot.querySelector('.schedule-list');
+    const scrollTop = previousList?.scrollTop ?? this.scheduleScrollTop ?? 0;
+    const previousHeight = state.schedules.length > 4 ? previousList?.style.maxHeight ?? '' : '';
+    const rows = state.schedules.slice().sort((a,b) => a.time.localeCompare(b.time) || a.id-b.id).map(schedule => `<section class="schedule-row">
+      <div class="schedule-copy"><strong>${escapeHtml(schedule.time)}</strong><p>${escapeHtml(this.scheduleDaysText(schedule.days))}</p><p class="schedule-room-selection">${state.roomSelectionKnown ? escapeHtml(schedule.rooms.join(', ')) : this.ht('Selected rooms are not reported by this integration. Check them in MyDyson.')}</p></div>
+      <div class="schedule-controls"><input type="checkbox" role="switch" data-schedule-toggle="${schedule.id}" data-focus="schedule-toggle-${schedule.id}" ${schedule.enabled ? 'checked' : ''} ${disabled ? 'disabled' : ''} aria-label="${this.ht('Enable schedule {time} ({days})', {time:schedule.time, days:this.scheduleDaysText(schedule.days)})}"><div class="schedule-buttons">
+      <button data-schedule-edit="${schedule.id}" data-focus="schedule-edit-${schedule.id}" ${disabled ? 'disabled' : ''} aria-label="${this.ht('Edit schedule {time} ({days})', {time:schedule.time, days:this.scheduleDaysText(schedule.days)})}"><ha-icon icon="mdi:pencil-outline" aria-hidden="true"></ha-icon></button>
+      ${state.deleteSupported ? `<button class="schedule-delete" data-schedule-delete="${schedule.id}" data-focus="schedule-delete-${schedule.id}" ${disabled ? 'disabled' : ''} aria-label="${this.ht('Delete schedule {time} ({days})', {time:schedule.time, days:this.scheduleDaysText(schedule.days)})}"><ha-icon icon="mdi:trash-can-outline" aria-hidden="true"></ha-icon></button>` : ''}</div></div></section>`).join('');
+    this.paint(`<style>${styles}</style><ha-card><div class="planner-content">${this.headerHtml()}${this.statusHtml()}${this.planningTabsHtml()}<div id="planning-panel-rooms" role="tabpanel" aria-labelledby="planning-tab-rooms" hidden></div><section id="planning-panel-schedules" role="tabpanel" aria-labelledby="planning-tab-schedules" class="schedules">
+      ${!state.available ? `<p class="schedule-note">${this.ht('Schedules are unavailable. Check the robot connection and integration.')}</p>` : ''}
+      ${state.inSync === false ? `<p class="schedule-note schedule-warning">${this.ht('The schedule list may be incomplete. Turn each schedule off and on in MyDyson while the integration is connected.')}</p>` : ''}
+      <div class="schedule-list" role="region" aria-label="${this.ht('Schedules')}" ${state.schedules.length > 4 ? 'tabindex="0"' : ''} style="max-height:${previousHeight}">${rows}</div>
+      ${!rows && state.available ? `<p class="schedule-note">${this.ht('No known schedules. Create one from the room planner, or turn existing schedules off and on in MyDyson.')}</p>` : ''}
+      <p class="schedule-note ${this.scheduleError ? 'error' : ''}" role="status" aria-live="polite">${this.ht(this.scheduleMessage ?? '')}</p>
+    </section></div>${this.consumablesHtml()}${this.scheduleOverlayHtml()}</ha-card>`, 'schedules');
+    this.updateBattery(); this.updateConsumables(); this.updateStatus(''); this.updateScheduleDialog();
+    this.updateScheduleListLayout();
+    const list = this.shadowRoot.querySelector('.schedule-list');
+    list.scrollTop = scrollTop;
+    list.onscroll = () => { this.scheduleScrollTop = list.scrollTop; };
+  },
+};
+
+
 function stationIndicator(field, refillStatus, language = 'en') {
   const t = (key, params) => translate(language, key, params);
   const { key, label, value } = field;
@@ -2569,6 +3029,7 @@ function stationIndicator(field, refillStatus, language = 'en') {
 }
 
 const styles = `
+${scheduleStyles}
 .planning-tabs{display:flex;margin:0 var(--dp-padding) 14px;border-bottom:1px solid var(--dp-line)}.planning-tabs button{flex:1;min-width:0;border:0;border-bottom:3px solid transparent;border-radius:0;background:transparent;color:var(--dp-muted);padding:9px 8px;min-height:42px}.planning-tabs button[aria-selected=true]{color:var(--primary-text-color);border-bottom-color:var(--dp-accent)}
 
 .header-buttons{grid-area:1/3/3/4;display:flex;flex-direction:column;gap:5px;align-self:center}.header-buttons .zone-open{min-height:32px;padding:3px 10px;font-size:12px;background:var(--dp-modern-surface,var(--dp-bg));color:var(--dp-muted)}
@@ -2817,6 +3278,11 @@ class DysonRegistryElement extends HTMLElement {
       const overlay = this.shadowRoot.querySelector('.consumables-overlay');
       const incomingOverlay = template.content.querySelector('.consumables-overlay');
       if (overlay && incomingOverlay) overlay.replaceWith(incomingOverlay);
+      const scheduleOverlay = this.shadowRoot.querySelector('.schedule-overlay');
+      const incomingSchedule = template.content.querySelector('.schedule-overlay');
+      if (scheduleOverlay && incomingSchedule) scheduleOverlay.replaceWith(incomingSchedule);
+      else if (incomingSchedule) this.shadowRoot.querySelector('ha-card').append(incomingSchedule);
+      else scheduleOverlay?.remove();
     } else {
       // Keep the original rendering path for the session, editor and view transitions.
       this.shadowRoot.innerHTML = html;
@@ -2833,6 +3299,7 @@ class DysonRegistryElement extends HTMLElement {
         if (previous.isConnected && this._paintedView === 'planner') previous.scrollTop = scrollTop;
       });
     }
+    this.updateScheduleDialog?.();
   }
 }
 
@@ -2845,13 +3312,17 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     this.shadowRoot.addEventListener('planner-notice', () => this.updateHeaderNotice());
     this.shadowRoot.addEventListener('zone-started', event => this.zoneStarted(event.detail));
     this.shadowRoot.addEventListener('change', event => this.onChange(event));
+    this.shadowRoot.addEventListener('input', event => this.scheduleInput(event));
     this.shadowRoot.addEventListener('click', event => this.onClick(event));
     this.shadowRoot.addEventListener('keydown', event => {
+      if (this.scheduleKeydown(event)) return;
       if (!this.consumablesOpen && event.target.matches('.planning-tabs [role="tab"]')
           && ['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
         event.preventDefault();
-        const action = event.key === 'Home' ? 'rooms' : event.key === 'End' ? 'zones'
-          : event.target.dataset.action === 'rooms' ? 'zones' : 'rooms';
+        const tabs = [...this.shadowRoot.querySelectorAll('.planning-tabs [role="tab"]')].map(tab => tab.dataset.action);
+        const index = tabs.indexOf(event.target.dataset.action);
+        const action = event.key === 'Home' ? tabs[0] : event.key === 'End' ? tabs.at(-1)
+          : tabs[(index + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length];
         this.shadowRoot.querySelector(`.planning-tabs [data-action="${action}"]`)?.click();
         this.shadowRoot.querySelector('.planning-tabs [aria-selected="true"]')?.focus({ preventScroll: true });
         return;
@@ -2895,6 +3366,8 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     this.consumablesOpen = false; this.stationMessage = ''; this.stationError = false;
     this.robotMessage = ''; this._robotMessageContext = {};
     this.zoneView = false; this.zoneDraft = null;
+    this.schedulesView = false; this.scheduleDialog = null; this.scheduleMessage = ''; this.scheduleSending = null;
+    this.scheduleScrollTop = 0;
     this.config = normalized;
     this.setAttribute('data-theme', this.config.theme);
     const rows = config.grid_options?.rows ?? config.layout_options?.grid_rows;
@@ -2907,7 +3380,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     this._previewChanged ??= () => this.update();
     this._previewDialog?.addEventListener(previewViewChanged, this._previewChanged);
     super.connectedCallback();
-    this._modernObserver ??= new ResizeObserver(() => this.positionModernPointer());
+    this._modernObserver ??= new ResizeObserver(() => { this.positionModernPointer(); this.updateScheduleListLayout(); });
     this._modernObserver.observe(this);
     this.update();
     clearInterval(this._dockTimer);
@@ -2918,6 +3391,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
   }
   disconnectedCallback() {
     this._detachRevision = (this._detachRevision ?? 0) + 1;
+    this.scheduleDialog = null;
     this._previewDialog?.removeEventListener(previewViewChanged, this._previewChanged);
     this._previewDialog = null;
     this._modernObserver?.disconnect();
@@ -2988,6 +3462,10 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     this.render();
   }
   onChange(event) {
+    if (event.target.dataset.scheduleToggle !== undefined) {
+      this.submitSchedule(Number(event.target.dataset.scheduleToggle), event.target.checked); return;
+    }
+    if (this.scheduleDialog) { this.scheduleInput(event); return; }
     if (event.target.dataset.robotSetting) {
       const el = event.target;
       const value = el.localName === 'ha-switch' ? el.checked : el.type === 'range' ? Number(el.value) : el.value;
@@ -3019,6 +3497,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     this.updateDirty(); this.message = ''; this.error = false; this.render();
   }
   onClick(event) {
+    if (this.scheduleClick(event)) return;
     if (event.target.classList?.contains("consumables-overlay")) { this.toggleConsumables(false); return; }
     const el = event.target.closest('button, ha-button');
     if (el?.dataset.action === 'dismiss-notice') {
@@ -3047,17 +3526,19 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     if (el?.dataset.action === 'close-consumables') { this.toggleConsumables(false); return; }
     if (el?.dataset.infoTab) { this.infoTab = el.dataset.infoTab; this.updateConsumables(); return; }
     if (this.consumablesOpen) return;
-    if (!el || el.disabled || this.busy || this.controlBusy) return;
+    if (!el || el.disabled || this.busy || this.controlBusy || this.scheduleSending) return;
     if (el.dataset.option !== undefined) {
       this.onChange({ target: { dataset: el.dataset, value: el.dataset.option, blur() {} } });
       return;
     }
-    if (['zones','rooms'].includes(el.dataset.action) && !this.view.active) {
+    if (['zones','rooms','schedules'].includes(el.dataset.action) && !this.view.active) {
       if (el.dataset.action === 'zones' && !this.supportsZone) return;
+      if (el.dataset.action === 'schedules' && !this.getScheduleState().supported) return;
+      if (el.dataset.action === 'schedules' && this.message === this.scheduleMessage) this.message = '';
       const zone = this.shadowRoot.querySelector('dyson-planner-zone');
       if (zone?.sending) return;
       if (zone) this.zoneDraft = zone.snapshot();
-      this.zoneView = el.dataset.action === 'zones'; this.requestedPlan = null; this.render(); return;
+      this.zoneView = el.dataset.action === 'zones'; this.schedulesView = el.dataset.action === 'schedules'; this.requestedPlan = null; this.render(); return;
     }
     if (el.dataset.control) { this.control(el.dataset.control); return; }
     if (this.view.active) return;
@@ -3190,7 +3671,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     button.title = this.t(warning ? 'Consumables: replacement needed soon' : 'Robot information');
     button.setAttribute('aria-expanded', String(!!this.consumablesOpen));
     root.querySelector('.consumables-overlay').hidden = !this.consumablesOpen;
-    root.querySelector('.planner-content').inert = !!this.consumablesOpen;
+    root.querySelector('.planner-content').inert = !!this.consumablesOpen || !!this.scheduleDialog;
     const content = rows.map(row => {
       if (row.type === 'cleaningSolution') {
         const ready = row.text === 'Ready to use', refill = row.text === 'Refill required';
@@ -3421,7 +3902,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     const h = escapeHtml;
     // Keep the map element mounted across status and message updates so polling,
     // the last good image and in-flight requests are independent of card renders.
-    this.paint(`<style>${styles}</style><ha-card><div class="planner-content">${this.headerHtml()}${this.statusHtml()}<section class="session"><ul class="requested"></ul></section>${this.config.show_camera ? `<div class="map-section">${this.config.theme !== 'modern' ? `<div class="map-title">${this.ht("Cleaning map")}</div><p class="map-caption">${this.ht("Refreshes about every 5 seconds")}</p>` : ''}<dyson-planner-map></dyson-planner-map></div>` : ''}<footer class="session-footer"><div class="actions session-actions"><button class="session-toggle" data-control="pause" data-focus="session-toggle"><ha-icon></ha-icon><span></span></button><button class="home" data-control="return_to_base" data-focus="home"><ha-icon icon="mdi:home-import-outline"></ha-icon>${this.ht("Home")}</button></div></footer></div>${this.consumablesHtml()}</ha-card>`, 'session');
+    this.paint(`<style>${styles}</style><ha-card><div class="planner-content">${this.headerHtml()}${this.statusHtml()}<section class="session"><ul class="requested"></ul></section>${this.config.show_camera ? `<div class="map-section">${this.config.theme !== 'modern' ? `<div class="map-title">${this.ht("Cleaning map")}</div><p class="map-caption">${this.ht("Refreshes about every 5 seconds")}</p>` : ''}<dyson-planner-map></dyson-planner-map></div>` : ''}<footer class="session-footer"><div class="actions session-actions"><button class="session-toggle" data-control="pause" data-focus="session-toggle"><ha-icon></ha-icon><span></span></button><button class="home" data-control="return_to_base" data-focus="home"><ha-icon icon="mdi:home-import-outline"></ha-icon>${this.ht("Home")}</button></div></footer></div>${this.consumablesHtml()}${this.scheduleOverlayHtml()}</ha-card>`, 'session');
     const root = this.shadowRoot;
     this.updateBattery();
     this.updateConsumables();
@@ -3500,11 +3981,13 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
   }
   get supportsZone() { return this.adapter.supportsZoneDevice(this.registry, this.devices, this.config.entity); }
   planningTabsHtml() {
-    if (!this.supportsZone) return '';
-    return `<nav class="planning-tabs" role="tablist" aria-label="${this.ht('Cleaning selection')}"><button id="planning-tab-rooms" role="tab" data-action="rooms" aria-selected="${!this.zoneView}" aria-controls="planning-panel-rooms" tabindex="${this.zoneView ? -1 : 0}">${this.ht('Rooms')}</button><button id="planning-tab-zones" role="tab" data-action="zones" aria-selected="${!!this.zoneView}" aria-controls="planning-panel-zones" tabindex="${this.zoneView ? 0 : -1}">${this.ht('Zone')}</button></nav>`;
+    const tabs = [['rooms','Rooms'], ...(this.supportsZone ? [['zones','Zone']] : []), ...(this.getScheduleState().supported ? [['schedules','Schedules']] : [])];
+    if (tabs.length === 1) return '';
+    const current = this.schedulesView ? 'schedules' : this.zoneView ? 'zones' : 'rooms';
+    return `<nav class="planning-tabs" role="tablist" aria-label="${this.ht('Cleaning selection')}">${tabs.map(([key,label]) => `<button id="planning-tab-${key}" role="tab" data-action="${key}" aria-selected="${current === key}" aria-controls="planning-panel-${key}" tabindex="${current === key ? 0 : -1}">${this.ht(label)}</button>`).join('')}</nav>`;
   }
   renderZone() {
-    this.paint(`<style>${styles}</style><ha-card><div class="planner-content">${this.headerHtml()}${this.statusHtml()}${this.planningTabsHtml()}<div id="planning-panel-rooms" role="tabpanel" aria-labelledby="planning-tab-rooms" hidden></div><dyson-planner-zone id="planning-panel-zones" role="tabpanel" aria-labelledby="planning-tab-zones"></dyson-planner-zone></div>${this.consumablesHtml()}</ha-card>`, 'zone');
+    this.paint(`<style>${styles}</style><ha-card><div class="planner-content">${this.headerHtml()}${this.statusHtml()}${this.planningTabsHtml()}<div id="planning-panel-rooms" role="tabpanel" aria-labelledby="planning-tab-rooms" hidden></div><dyson-planner-zone id="planning-panel-zones" role="tabpanel" aria-labelledby="planning-tab-zones"></dyson-planner-zone></div>${this.consumablesHtml()}${this.scheduleOverlayHtml()}</ha-card>`, 'zone');
     const title = this.shadowRoot.querySelector('.header-title h2');
     if (title.textContent !== this.t('Zone cleaning')) title.textContent = this.t('Zone cleaning');
     this.updateBattery(); this.updateConsumables(); this.updateStatus('');
@@ -3522,6 +4005,8 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       this.renderSession(view); return;
     }
     if (this.zoneView) { this.renderZone(); return; }
+    if (this.schedulesView && this.getScheduleState().supported) { this.renderSchedules(styles); return; }
+    this.schedulesView = false;
     const h = escapeHtml, model = this.model;
     const rooms = model.rooms.filter(r => !r.excluded);
     const external = this.dirty && !this.busy && this.baseline !== this.liveSignature();
@@ -3554,7 +4039,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       }
       return `<section class="room ${selected ? 'selected' : ''}"><div class="room-head"><label class="pick"><input type="checkbox" data-focus="room-${n}" data-room="${h(room.entity)}" ${selected ? 'checked' : ''} ${disabled ? 'disabled' : ''}><span><span class="name">${h(room.name)} ${selected ? `<span class="status">(${order})</span>` : ''}</span><span class="summary">${!room.available ? this.ht(room.error || 'Unavailable') : this.ht(valueOf('cleaning_mode') ?? 'Room settings unavailable')}</span></span></label><button class="expand" data-focus="expand-${n}" data-expand="${h(room.entity || room.name)}" aria-expanded="${open}" aria-controls="fields-${n}" aria-label="${this.ht('Settings for {name}', { name: room.name })}"><span>${this.ht("Settings")}</span> ${open ? '⌃' : '⌄'}</button></div><div class="fields" id="fields-${n}" ${open ? '' : 'hidden'}>${fields}${!room.roomId ? `<p class="badge mode">${this.ht("Room ID unavailable. Check the updated integration and refresh rooms.")}</p>` : ''}</div></section>`;
     }).join('');
-    this.paint(`<style>${styles}</style><ha-card><div class="planner-content">${this.headerHtml()}${this.statusHtml()}${this.planningTabsHtml()}${this.supportsZone ? '<div id="planning-panel-zones" role="tabpanel" aria-labelledby="planning-tab-zones" hidden></div>' : ''}<div ${this.supportsZone ? 'id="planning-panel-rooms" role="tabpanel" aria-labelledby="planning-tab-rooms"' : ''} class="rooms ${modern ? 'modern-rooms' : ''}" style="--room-count:${rooms.length}">${roomHtml}</div>${!rooms.length ? `<p class="empty">${this.ht("No enabled rooms found. Check the card configuration and room discovery.")}</p>` : ''}<footer>${this.adapter.planningHint ? `<p class="integration-hint notice">${this.ht(this.adapter.planningHint)}</p>` : ''}<div class="summary-line"><span>${this.ht('{selected} of {total} rooms selected', { selected: this.selected.length, total: rooms.length })}</span><span class="status ${this.dirty ? 'draft-status' : ''}">${this.dirty ? `<button class="discard-draft" data-focus="reset" data-action="reset" ${this.busy ? 'disabled' : ''} title="${this.ht("Discard draft")}" aria-label="${this.ht("Discard draft")}"><ha-icon icon="mdi:trash-can-outline" aria-hidden="true"></ha-icon></button>${this.ht('Local draft')}` : this.ht('From Home Assistant')}</span></div><div class="actions"><button data-action="save" data-focus="save" ${this._previewDialog || !hasChanges || this.busy || !canSave ? 'disabled' : ''}>${this.ht(this.saving ? 'Saving …' : 'Save settings')}</button><button class="start" data-focus="start" data-action="start" ${this._previewDialog || this.selected.length === 0 || this.busy || (model.startBlockReason || this.adapter.startBlockReason(this._hass, this.config.entity, this.registry)) ? 'disabled' : ''}>${this.ht("Start clean")}</button></div></footer></div>${this.consumablesHtml()}</ha-card>`, 'planner');
+    this.paint(`<style>${styles}</style><ha-card><div class="planner-content">${this.headerHtml()}${this.statusHtml()}${this.planningTabsHtml()}${this.supportsZone ? '<div id="planning-panel-zones" role="tabpanel" aria-labelledby="planning-tab-zones" hidden></div>' : ''}${this.getScheduleState().supported ? '<div id="planning-panel-schedules" role="tabpanel" aria-labelledby="planning-tab-schedules" hidden></div>' : ''}<div ${this.supportsZone || this.getScheduleState().supported ? 'id="planning-panel-rooms" role="tabpanel" aria-labelledby="planning-tab-rooms"' : ''} class="rooms ${modern ? 'modern-rooms' : ''}" style="--room-count:${rooms.length}">${roomHtml}</div>${!rooms.length ? `<p class="empty">${this.ht("No enabled rooms found. Check the card configuration and room discovery.")}</p>` : ''}<footer>${this.adapter.planningHint ? `<p class="integration-hint notice">${this.ht(this.adapter.planningHint)}</p>` : ''}<div class="summary-line"><span>${this.ht('{selected} of {total} rooms selected', { selected: this.selected.length, total: rooms.length })}</span><span class="status ${this.dirty ? 'draft-status' : ''}">${this.dirty ? `<button class="discard-draft" data-focus="reset" data-action="reset" ${this.busy ? 'disabled' : ''} title="${this.ht("Discard draft")}" aria-label="${this.ht("Discard draft")}"><ha-icon icon="mdi:trash-can-outline" aria-hidden="true"></ha-icon></button>${this.ht('Local draft')}` : this.ht('From Home Assistant')}</span></div><div class="actions ${this.getScheduleState().supported ? 'with-schedules' : ''}">${this.getScheduleState().supported ? `<div class="room-secondary-actions"><button class="schedule-create" data-action="schedule-create" data-focus="schedule-create" aria-label="${this.ht('Create schedule')}" title="${this.ht('Create schedule')}" ${this._previewDialog || this.busy || !this.getScheduleState().writable || !model.mapId ? 'disabled' : ''}><ha-icon icon="mdi:calendar-plus" aria-hidden="true"></ha-icon></button>` : ''}<button data-action="save" data-focus="save" ${this._previewDialog || !hasChanges || this.busy || !canSave ? 'disabled' : ''}>${this.ht(this.saving ? 'Saving …' : 'Save settings')}</button>${this.getScheduleState().supported ? '</div>' : ''}<button class="start" data-focus="start" data-action="start" ${this._previewDialog || this.selected.length === 0 || this.busy || (model.startBlockReason || this.adapter.startBlockReason(this._hass, this.config.entity, this.registry)) ? 'disabled' : ''}>${this.ht("Start clean")}</button></div></footer></div>${this.consumablesHtml()}${this.scheduleOverlayHtml()}</ha-card>`, 'planner');
     this.updateBattery();
     this.updateConsumables();
     const plannerNotice = model.startBlockReason ? this.t(model.startBlockReason) : !canSave || !canStart ? this.t('The updated Dyson integration actions are not available. Reload the integration and refresh this dashboard.')
@@ -3563,6 +4048,8 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     this.positionModernPointer();
   }
 }
+
+Object.assign(DysonCleaningPlannerCard.prototype, scheduleCardMethods);
 
 if (!customElements.get('dyson-cleaning-planner-card')) customElements.define('dyson-cleaning-planner-card', DysonCleaningPlannerCard);
 window.customCards = window.customCards || [];

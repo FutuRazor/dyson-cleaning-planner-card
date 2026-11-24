@@ -7,7 +7,7 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "test": "node --test tests/*.test.mjs",
-    "check": "node --check src/shared.js && node --check src/adapters/spot-scrub.js && node --check src/adapters/hass-dyson.js && node --check src/integration.js && node --check src/core.js && node --check src/map.js && node --check src/zone-geometry.js && node --check src/zone-core.js && node --check src/zone.js && node --check src/card.js && node --check src/editor.js && npm test && npm run build && node tests/bundle-smoke.mjs"
+    "check": "node --check src/shared.js && node --check src/adapters/spot-scrub.js && node --check src/adapters/hass-dyson.js && node --check src/integration.js && node --check src/core.js && node --check src/map.js && node --check src/zone-geometry.js && node --check src/zone-core.js && node --check src/zone.js && node --check src/schedules.js && node --check src/card.js && node --check src/editor.js && npm test && npm run build && node tests/bundle-smoke.mjs"
   },
   "engines": {
     "node": ">=22"

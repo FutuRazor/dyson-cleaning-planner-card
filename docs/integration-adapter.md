@@ -31,6 +31,7 @@ For hass-dyson, Save and Start are separate steps. If Save succeeds and a subseq
 | Optional writes | `changeRobotSetting`/`changeStationSetting(hass, registry, entity, key, value)`, `pressStationAction(hass, registry, entity, key)` |
 | Map | `mapId(hass, vacuum)`, `mapPicture(hass, camera)`, `mapCalibration(hass, camera)` |
 | Zone | `supportsZoneDevice(registry, devices, entity)`, `zoneDeviceOptions(rooms)`, `zoneReady(hass, vacuum, camera, calibration, trusted, preview)`, `zoneSettingsPayload(mode, strategy, water, passes)`, `startZone(hass, request)` |
+| Optional schedules | `scheduleState(hass, registry, entity)` returns capabilities (including `deleteSupported`), availability, normalized schedules, sync state, whether room selection is known, and whether creation reuses stored selection; `setSchedule({hass, registry, config, id, days, time, enabled, draft, context})` creates, edits or toggles; `deleteSchedule({hass, registry, config, id})` removes one known same-device schedule through the backend |
 | Compatibility constants | `CONSUMABLES`, `ROBOT_FIELDS`, `STATION_FIELDS`, `STATION_ACTIONS`, `ZONE_CHOICES` |
 
 `robotTelemetry` returns `{state, available, name, dockState, fault, faultCode, cleaning, bumperColor}`. `discover` retains the existing room model (`entity`, `name`, `context`, `roomId`, `settings`, `available`, `excluded`) and optional battery/charging/camera entity IDs. `startZone` accepts `{vacuum, camera, calibration, trusted, preview, rect, rotation, mode, strategy, water, passes}` and builds the wire payload inside the adapter. The existing UI verifies image bytes, minimum rectangle size and offered options before dispatch; the adapter rechecks zone readiness and validates geometry/settings when constructing the action.
@@ -40,6 +41,8 @@ The registry arguments above are required for hass-dyson to resolve device ident
 Session buttons and dispatch also require the configured vacuum to belong to the selected adapter's enabled registry entries. Editor selection can use `hass.entities` while the full registry is loading; once loaded, even an empty registry is authoritative.
 
 See the [integration contract](integration-contract.md) for exact entities, values, payloads and timing. This internal interface is already used by both adapters and may evolve as their supported capabilities grow.
+
+Schedule rendering and dialog behavior live in `src/schedules.js`. The hass-dyson adapter owns all schedule sensor identities, service validation and payload translation. An adapter without schedule methods exposes no schedule UI; the original Spot+Scrub adapter deliberately remains in this state until it provides a supported contract. Backend identities are not inferred from display names or borrowed from another integration.
 
 ## Verification before the next phase
 
