@@ -7,6 +7,20 @@ import { spotSchedulesFixture } from './spot-schedules-fixture.mjs';
 const request=f=>({hass:f.hass,registry:f.registry,config:f.config,context:adapter.roomContext(f.hass,f.entity),
   selected:[f.ids[1],f.ids[0]],days:['tue','thu'],time:'11:15'});
 
+test('Spot+Scrub enabled count follows confirmed schedules or the robot summary when the list is incomplete',()=>{
+  const f=spotSchedulesFixture(), count=()=>adapter.scheduleState(f.hass,f.registry,f.entity).enabledCount;
+  const attrs=f.hass.states[f.sensor].attributes;
+  assert.equal(count(),1);
+  attrs.schedules[1].enabled=true;
+  assert.equal(count(),2,'confirmed entry state is not held back by an older summary count');
+  attrs.in_sync=false;attrs.on=3;
+  assert.equal(count(),3,'summary includes enabled schedules not yet known individually');
+  attrs.on=null;assert.equal(count(),null);
+  attrs.on=-1;assert.equal(count(),null);
+  attrs.in_sync=true;attrs.schedules.forEach(s=>{s.enabled=false;});assert.equal(count(),0);
+  f.hass.connected=false;assert.equal(count(),null,'unavailable data is not presented as zero');
+});
+
 test('Spot+Scrub normalizes saved schedule settings separately from live preferences and handles missing readback',()=>{
   const f=spotSchedulesFixture(), get=()=>adapter.scheduleState(f.hass,f.registry,f.entity).schedules[0];
   assert.equal(get().roomSettings['10'].cleaning_mode,'Vacuum and Mop');

@@ -12,6 +12,10 @@ try {
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.goto(`http://127.0.0.1:${server.address().port}`);
   const card=page.locator('#card');await card.locator('.room').first().waitFor();
+  const scheduleAction=async(id,action)=>{
+    await card.locator(`[data-schedule-menu="${id}"]`).click();
+    await card.locator(`[data-schedule-${action}="${id}"]`).click();
+  };
   const chooseTime = async value => {
     const [hour,minute]=value.split(':').map(Number);
     await card.locator('[data-schedule-time]').click();
@@ -73,7 +77,7 @@ try {
   await card.locator('[data-schedule-toggle="102"]').check();
   await page.waitForFunction(()=>!demo.card.scheduleSending);
   assert.deepEqual(await page.evaluate(()=>sched.calls.at(-1).data),{device_id:'hd-device',schedule_id:102,enabled:true});
-  await card.locator('[data-schedule-edit="101"]').click();
+  await scheduleAction(101,'edit');
   assert.equal(await card.locator('#schedule-time-value').innerText(),'10:00');
   assert.equal(await card.locator('[data-schedule-day="tue"]').isChecked(),true);
   assert.equal(await card.locator('.planner-content').evaluate(el=>el.inert),true);
@@ -117,12 +121,12 @@ try {
   await page.evaluate(()=>{delete sched.hass.services.hass_dyson.delete_robot_schedule;demo.card.hass={...sched.hass};});
   assert.equal(await card.locator('[data-schedule-delete]').count(),0,'unsupported deletion stays hidden');
   await page.evaluate(()=>{sched.hass.services.hass_dyson.delete_robot_schedule={};demo.card.hass={...sched.hass};});
-  await card.locator('[data-schedule-delete="102"]').click();
+  await scheduleAction(102,'delete');
   assert.match(await card.locator('.schedule-dialog').innerText(),/Delete schedule 08:30 \(Mon, Wed, Fri\)\?/);
   assert.equal(await card.locator('[data-focus="schedule-cancel"]').evaluate(el=>el===el.getRootNode().activeElement),true,'confirmation defaults to Cancel');
   await card.locator('[data-focus="schedule-cancel"]').click();
   assert.equal(await page.evaluate(()=>sched.calls.length),3,'cancel does not delete');
-  assert.equal(await card.locator('[data-schedule-delete="102"]').evaluate(el=>el===el.getRootNode().activeElement),true);
+  assert.equal(await card.locator('[data-schedule-menu="102"]').evaluate(el=>el===el.getRootNode().activeElement),true);
   await page.evaluate(()=>{
     window.deleteRequests=0;window.originalScheduleCall=sched.hass.callService;
     sched.hass.callService=async(...args)=>{
@@ -132,7 +136,7 @@ try {
     };
     demo.card.hass={...sched.hass};
   });
-  await card.locator('[data-schedule-delete="102"]').click();
+  await scheduleAction(102,'delete');
   await card.locator('[data-schedule-action="confirm"]').click();
   assert.equal(await card.locator('.schedule-row').count(),3,'no optimistic removal');
   assert.equal(await card.locator('[data-schedule-action="confirm"]').isDisabled(),true);
@@ -149,13 +153,13 @@ try {
   await page.evaluate(()=>{sched.hass.callService=originalScheduleCall;demo.card.hass={...sched.hass};});
   await mkdir('artifacts/schedules',{recursive:true});
   await card.screenshot({path:'artifacts/schedules/overview.png'});
-  await card.locator('[data-schedule-edit="101"]').click();
+  await scheduleAction(101,'edit');
   await page.evaluate(()=>{sched.hass.callService=async()=>{throw new Error('Robot refused');};demo.card.hass={...sched.hass};});
   await card.locator('[data-schedule-action="confirm"]').click();await page.waitForFunction(()=>!demo.card.scheduleSending);
   assert.match(await card.locator('.schedule-dialog-message').innerText(),/Robot refused/);
   assert.equal(await card.locator('.schedule-overlay').count(),1,'failures retain the dialog');
   await page.keyboard.press('Escape');
-  await card.locator('[data-schedule-delete="101"]').click();
+  await scheduleAction(101,'delete');
   await card.locator('[data-schedule-action="confirm"]').click();await page.waitForFunction(()=>!demo.card.scheduleSending);
   assert.match(await card.locator('.schedule-dialog-message').innerText(),/Robot refused/);
   assert.equal(await card.locator('.schedule-row').count(),2,'failed deletion preserves the displayed schedule');

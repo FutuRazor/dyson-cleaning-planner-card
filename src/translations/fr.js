@@ -1,5 +1,15 @@
 // French UI translations. Dyson terminology is referenced in docs/translations.md.
 export const fr = {
+  "Schedules, active: {count}": "Plannings, actifs : {count}",
+  "Active schedules: {count}": "Plannings actifs : {count}",
+  "Schedule created.": "Programme créé.",
+  "Schedule saved.": "Programme enregistré.",
+  "Schedule deleted.": "Programme supprimé.",
+  "Saving schedule …": "Enregistrement du programme …",
+  "Updating schedule …": "Mise à jour du programme …",
+  "The change has not been confirmed by Home Assistant. Check the schedule in MyDyson before trying again.": "Home Assistant n’a pas encore confirmé la modification. Vérifiez le programme dans MyDyson avant de réessayer.",
+  "Discard": "Abandonner",
+  "Schedule actions {time} ({days})": "Actions du programme {time} ({days})",
   "Stored settings not reported": "Réglages enregistrés non communiqués",
   "Move room up": "Monter la pièce",
   "Move room down": "Descendre la pièce",

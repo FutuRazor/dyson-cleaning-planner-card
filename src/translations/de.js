@@ -1,5 +1,15 @@
 // German display text. Entity names and protocol values are never rewritten.
 export const de = {
+  "Schedules, active: {count}": "Zeitpläne, aktiv: {count}",
+  "Active schedules: {count}": "Aktive Zeitpläne: {count}",
+  "Schedule created.": "Zeitplan erstellt.",
+  "Schedule saved.": "Zeitplan gespeichert.",
+  "Schedule deleted.": "Zeitplan gelöscht.",
+  "Saving schedule …": "Zeitplan wird gespeichert …",
+  "Updating schedule …": "Zeitplan wird aktualisiert …",
+  "The change has not been confirmed by Home Assistant. Check the schedule in MyDyson before trying again.": "Home Assistant hat die Änderung noch nicht bestätigt. Prüfe den Zeitplan in MyDyson vor einem erneuten Versuch.",
+  "Discard": "Verwerfen",
+  "Schedule actions {time} ({days})": "Aktionen für Zeitplan {time} ({days})",
   "Stored settings not reported": "Gespeicherte Einstellungen nicht gemeldet",
   "Move room up": "Raum nach oben",
   "Move room down": "Raum nach unten",

@@ -269,6 +269,7 @@ function scheduleState(hass, registry, entity) {
     deleteSupported:supported && !!hass?.services?.[DOMAIN]?.delete_robot_schedule,
     schedules:readable ? raw.map(s => ({ id:s.schedule_id, enabled:s.enabled, days:[...s.days], time:s.time, rooms:[...s.rooms], repeat:s.repeat })) : [],
     inSync:state?.attributes?.in_sync, robotTotal:state?.attributes?.robot_total,
+    enabledCount:readable && state.attributes.in_sync === true ? raw.filter(schedule => schedule.enabled).length : null,
     // beta.6's describe_order lists every preference row, including unselected
     // rooms. Its action preserves the robot's stored selection flags. Neither
     // the selected-room flags nor an input to change them reach this API.

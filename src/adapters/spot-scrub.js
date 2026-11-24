@@ -505,6 +505,8 @@ function scheduleState(hass, registry, entity) {
     schedules:readable ? raw.map(s => ({id:s.schedule_id, enabled:s.enabled, days:[...s.days], time:s.time,
       rooms:[...s.rooms], roomIds:[...s.room_ids], roomSettings:scheduleRoomSettings(s.room_settings,s.room_ids), mapId:s.map_id, repeat:s.repeat})) : [],
     inSync:attrs.in_sync, robotTotal:readable && /^\d+$/.test(String(state.state)) ? Number(state.state) : null,
+    enabledCount:!readable ? null : attrs.in_sync === true ? raw.filter(schedule => schedule.enabled).length
+      : Number.isSafeInteger(attrs.on) && attrs.on >= 0 ? attrs.on : null,
     roomSelectionKnown:true, creationUsesSelectedRooms:true };
 }
 function scheduleRoomOptions(hass, registry, config, schedule) {

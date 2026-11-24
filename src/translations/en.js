@@ -1,5 +1,15 @@
 // English messages are also stable translation keys. Never use translated labels in action payloads.
 export const en = {
+  "Schedules, active: {count}": "Schedules, active: {count}",
+  "Active schedules: {count}": "Active schedules: {count}",
+  "Schedule created.": "Schedule created.",
+  "Schedule saved.": "Schedule saved.",
+  "Schedule deleted.": "Schedule deleted.",
+  "Saving schedule …": "Saving schedule …",
+  "Updating schedule …": "Updating schedule …",
+  "The change has not been confirmed by Home Assistant. Check the schedule in MyDyson before trying again.": "The change has not been confirmed by Home Assistant. Check the schedule in MyDyson before trying again.",
+  "Discard": "Discard",
+  "Schedule actions {time} ({days})": "Schedule actions {time} ({days})",
   "Stored settings not reported": "Stored settings not reported",
   "Move room up": "Move room up",
   "Move room down": "Move room down",

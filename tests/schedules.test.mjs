@@ -9,6 +9,17 @@ import { batchFixture } from './fixture.mjs';
 const request = f => ({hass:f.hass,registry:f.registry,config:f.config,
   context:adapter.roomContext(f.hass,f.entity,f.registry), days:['tue','thu'],time:'10:00'});
 
+test('hass-dyson enabled schedule count distinguishes a complete list from unknown or unavailable data',()=>{
+  const f=schedulesFixture(), count=()=>adapter.scheduleState(f.hass,f.registry,f.entity).enabledCount;
+  const attrs=f.hass.states[f.sensor].attributes;
+  assert.equal(count(),1);
+  attrs.schedules[1].enabled=true;assert.equal(count(),2);
+  attrs.in_sync=false;assert.equal(count(),null);
+  attrs.in_sync=null;assert.equal(count(),null);
+  attrs.in_sync=true;attrs.schedules.forEach(s=>{s.enabled=false;});assert.equal(count(),0);
+  f.hass.connected=false;assert.equal(count(),null);
+});
+
 test('schedules require the same-device registry identity and the integration action', () => {
   const f=schedulesFixture();
   assert.equal(adapter.scheduleState(f.hass,f.registry,f.entity).schedules.length,2);

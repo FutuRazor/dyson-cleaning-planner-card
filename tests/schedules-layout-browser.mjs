@@ -30,8 +30,9 @@ try {
     const root=el.shadowRoot,list=root.querySelector('.schedule-list'),rows=[...list.querySelectorAll('.schedule-row')];
     const box=node=>{const r=node.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height,right:r.right,bottom:r.bottom};};
     return {card:box(root.querySelector('ha-card')),list:box(list),scrollHeight:list.scrollHeight,clientHeight:list.clientHeight,
-      scrollTop:list.scrollTop,header:box(root.querySelector('.planning-tabs')),firstFour:rows.slice(0,4).reduce((height,row)=>height+row.getBoundingClientRect().height,0),
-      controls:rows.map(row=>({edit:box(row.querySelector('[data-schedule-edit]')),delete:box(row.querySelector('[data-schedule-delete]')),toggle:box(row.querySelector('[data-schedule-toggle]'))}))};
+      scrollTop:list.scrollTop,header:box(root.querySelector('.planning-tabs')),firstFour:rows.slice(0,4).reduce((height,row)=>height+row.getBoundingClientRect().height,0)+3*parseFloat(getComputedStyle(list).rowGap),
+      controls:rows.map(row=>({menu:box(row.querySelector('[data-schedule-menu]')),toggle:box(row.querySelector('[data-schedule-toggle]'))})),
+      overflow:rows.some(row=>row.scrollWidth>row.clientWidth+1),days:rows.map(row=>row.querySelectorAll('.schedule-day').length)};
   });
   for(const theme of ['modern','classic']) for(const width of [375,900]) {
     await page.setViewportSize({width,height:1200});
@@ -47,8 +48,9 @@ try {
       assert.ok(Math.abs(measured.card.h-four.card.h)<=1,JSON.stringify({theme,width,four:four.card.h,current:measured.card.h}));
       assert.ok(Math.abs(measured.list.h-measured.firstFour)<=1,'viewport fits the first four schedules');
       assert.ok(measured.scrollHeight>measured.clientHeight,'only the schedule list overflows');
-      assert.ok(measured.controls.every(({edit,delete:remove,toggle})=>Math.abs(edit.x-remove.x)<1 && remove.y>=edit.bottom
-        && toggle.right<edit.x && Math.abs(toggle.y+toggle.h/2-(edit.y+remove.bottom)/2)<1),'delete sits below Edit; switch is centered to their left');
+      assert.ok(measured.controls.every(({menu,toggle})=>toggle.right<=menu.x && Math.abs(toggle.y+toggle.h/2-(menu.y+menu.h/2))<1),'switch and menu are aligned');
+      assert.equal(measured.overflow,false,'schedule cards fit without horizontal overflow');
+      assert.ok(measured.days.every(count=>count===7),'all seven weekday badges are shown');
     }
     await card.locator('.schedule-list').hover();await page.mouse.wheel(0,1800);
     await page.waitForFunction(()=>demo.card.shadowRoot.querySelector('.schedule-list').scrollTop>0);
@@ -56,6 +58,20 @@ try {
     const saved=await card.locator('.schedule-list').evaluate(el=>{el.scrollTop=el.scrollHeight;return el.scrollTop;});
     await page.evaluate(()=>{demo.card.hass={...sched.hass};});
     assert.ok(Math.abs((await geometry()).scrollTop-saved)<2,'HA updates retain scroll position');
+    await card.locator('[data-schedule-menu="208"]').click();
+    const menuBounds=await card.evaluate(el=>{
+      const card=el.shadowRoot.querySelector('ha-card').getBoundingClientRect(),menu=el.shadowRoot.querySelector('.schedule-menu-panel').getBoundingClientRect();
+      return menu.left>=card.left && menu.right<=card.right && menu.top>=card.top && menu.bottom<=card.bottom;
+    });
+    assert.equal(menuBounds,true,'last-row menu fits within the card and outside the scrolling list');
+    await page.keyboard.press('End');
+    assert.equal(await card.locator('[data-schedule-delete="208"]').evaluate(el=>el===el.getRootNode().activeElement),true);
+    await page.keyboard.press('Escape');
+    assert.equal(await card.locator('[data-schedule-menu="208"]').evaluate(el=>el===el.getRootNode().activeElement),true,'Escape returns focus to the menu button');
+    await page.keyboard.press('ArrowDown');
+    assert.equal(await card.locator('[data-schedule-edit="208"]').evaluate(el=>el===el.getRootNode().activeElement),true,'ArrowDown opens the menu at Edit');
+    await page.evaluate(()=>{demo.card.hass={...sched.hass};});
+    assert.equal(await card.locator('.schedule-menu-panel').isVisible(),true,'HA updates preserve an open menu');
     await card.locator('[data-schedule-edit="208"]').click();
     assert.equal(await card.locator('#schedule-time-value').innerText(),'13:00');
     await page.keyboard.press('Escape');
@@ -68,11 +84,11 @@ try {
   await page.setViewportSize({width:375,height:1200});
   await page.waitForFunction(()=>{
     const list=demo.card.shadowRoot.querySelector('.schedule-list');
-    const height=[...list.children].slice(0,4).reduce((n,row)=>n+row.getBoundingClientRect().height,0);
+    const height=[...list.children].slice(0,4).reduce((n,row)=>n+row.getBoundingClientRect().height,0)+3*parseFloat(getComputedStyle(list).rowGap);
     return Math.abs(list.getBoundingClientRect().height-height)<=1;
   });
   await mkdir('artifacts/schedules',{recursive:true});
   await card.screenshot({path:'artifacts/schedules/scroll-mobile.png'});
   assert.deepEqual(errors,[]);
-  console.log('Schedule layout: stacked buttons, switch alignment, four-row height limit, scroll preservation and resizing passed in both themes at mobile/desktop widths.');
+  console.log('Schedule layout: cards, weekday badges, switch/menu alignment, bounded menus, keyboard, four-row limit, scroll preservation and resizing passed in both themes at mobile/desktop widths.');
 } finally {await browser?.close();server.close();}

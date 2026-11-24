@@ -1,5 +1,15 @@
 // Dutch UI text. Protocol values and entity names remain unchanged.
 export const nl = {
+  "Schedules, active: {count}": "Schema's, actief: {count}",
+  "Active schedules: {count}": "Actieve schema's: {count}",
+  "Schedule created.": "Schema aangemaakt.",
+  "Schedule saved.": "Schema opgeslagen.",
+  "Schedule deleted.": "Schema verwijderd.",
+  "Saving schedule …": "Schema opslaan …",
+  "Updating schedule …": "Schema bijwerken …",
+  "The change has not been confirmed by Home Assistant. Check the schedule in MyDyson before trying again.": "Home Assistant heeft de wijziging nog niet bevestigd. Controleer het schema in MyDyson voordat je het opnieuw probeert.",
+  "Discard": "Verwerpen",
+  "Schedule actions {time} ({days})": "Acties voor schema {time} ({days})",
   "Stored settings not reported": "Opgeslagen instellingen niet gemeld",
   "Move room up": "Kamer omhoog",
   "Move room down": "Kamer omlaag",

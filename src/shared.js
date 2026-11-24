@@ -1,5 +1,6 @@
 import { UiError } from './localize.js';
 export const ROOM_FIELDS = { cleaning_mode: 'Cleaning mode', cleaning_strategy: 'Vacuum Power', water_level: 'Water level', mop_repetitions: 'Clean repetitions' };
+export const ROOM_COLORS = ['#18c5d9', '#e9b85b', '#b99ae4', '#79b9a5', '#e49baf'];
 export const available = state => !!state && !['unavailable', 'unknown'].includes(state.state) && !state.attributes?.restored;
 export const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 

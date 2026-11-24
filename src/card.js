@@ -3,6 +3,7 @@ import { resolveLanguage, translate, uiMessage, UiError } from './localize.js';
 import { STATUS_BAR_ITEMS, ROOM_FIELDS, available, escapeHtml, normalizeConfig } from './core.js';
 import { getIntegrationAdapter, integrationVacuumEntries, defaultIntegrationEntity } from './integration.js';
 import { scheduleStyles, scheduleCardMethods } from './schedules.js';
+import { ROOM_COLORS } from './shared.js';
 
 function stationIndicator(field, refillStatus, language = 'en') {
   const t = (key, params) => translate(language, key, params);
@@ -45,7 +46,12 @@ function stationIndicator(field, refillStatus, language = 'en') {
 
 const styles = `
 ${scheduleStyles}
-.planning-tabs{display:flex;margin:0 var(--dp-padding) 14px;border-bottom:1px solid var(--dp-line)}.planning-tabs button{flex:1;min-width:0;border:0;border-bottom:3px solid transparent;border-radius:0;background:transparent;color:var(--dp-muted);padding:9px 8px;min-height:42px}.planning-tabs button[aria-selected=true]{color:var(--primary-text-color);border-bottom-color:var(--dp-accent)}
+.planning-tabs{display:flex;margin:0 var(--dp-padding) 14px;border-bottom:1px solid var(--dp-line)}.planning-tabs button{flex:1;min-width:0;border:0;border-bottom:3px solid transparent;border-radius:0;background:transparent;color:var(--dp-muted);padding:9px 8px;min-height:42px;white-space:nowrap}.planning-tabs button[aria-selected=true]{color:var(--primary-text-color);border-bottom-color:var(--dp-accent)}
+.planning-tab-label{position:relative;display:inline-block;white-space:nowrap}
+#planning-tab-schedules .planning-tab-label:has(.schedule-count){transform:translateX(-8px)}
+#planning-tab-schedules .planning-tab-label:has(.schedule-count.capped){transform:translateX(-13px)}
+.schedule-count{position:absolute;inset-inline-start:calc(100% + 1px);top:-8px;display:flex;align-items:center;justify-content:center;min-width:15px;height:15px;padding:0 3px;border-radius:999px;background:var(--success-color,#2e7d32);color:#fff;font-size:10px;line-height:15px;font-weight:650;font-variant-numeric:tabular-nums;box-shadow:0 0 0 2px var(--dp-bg);pointer-events:none}
+.schedule-count.is-zero{background:var(--dp-line);color:var(--dp-muted)}
 
 .header-buttons{grid-area:1/3/3/4;display:flex;flex-direction:column;gap:5px;align-self:center}.header-buttons .zone-open{min-height:32px;padding:3px 10px;font-size:12px;background:var(--dp-modern-surface,var(--dp-bg));color:var(--dp-muted)}
 /* Only constrain the content when the dashboard assigns an explicit row count. */
@@ -278,14 +284,17 @@ class DysonRegistryElement extends HTMLElement {
     cancelAnimationFrame(this._plannerScrollFrame);
     const previous = this.shadowRoot.querySelector('.planner-content');
     const keepPlanner = view === 'planner' && this._paintedView === 'planner' && previous;
+    const keepSchedules = view === 'schedules' && this._paintedView === 'schedules' && previous;
     const scrollTop = keepPlanner ? previous.scrollTop : 0;
     const active = this.shadowRoot.activeElement;
     const focused = active?.dataset.focus;
     const selection = active?.tagName === 'INPUT' && active.type === 'text' ? [active.selectionStart, active.selectionEnd, active.selectionDirection] : null;
     this._html = html;
     this._paintedView = view;
-    if (keepPlanner) {
-      // Only planner edits retain the mounted HA frame and scroll viewport.
+    if (keepPlanner || keepSchedules) {
+      // Retain HA's mounted card/slot for local planner and schedule updates.
+      // Recreating its asynchronous Lit slot briefly removes all measurable
+      // content and makes schedule menu positioning close a just-opened menu.
       const template = document.createElement('template');
       template.innerHTML = html;
       const incoming = template.content.querySelector('.planner-content');
@@ -298,13 +307,18 @@ class DysonRegistryElement extends HTMLElement {
       if (scheduleOverlay && incomingSchedule) scheduleOverlay.replaceWith(incomingSchedule);
       else if (incomingSchedule) this.shadowRoot.querySelector('ha-card').append(incomingSchedule);
       else scheduleOverlay?.remove();
+      const menuOverlay = this.shadowRoot.querySelector('.schedule-menu-overlay');
+      const incomingMenu = template.content.querySelector('.schedule-menu-overlay');
+      if (menuOverlay && incomingMenu) menuOverlay.replaceWith(incomingMenu);
+      else if (incomingMenu) this.shadowRoot.querySelector('ha-card').append(incomingMenu);
+      else menuOverlay?.remove();
     } else {
       // Keep the original rendering path for the session, editor and view transitions.
       this.shadowRoot.innerHTML = html;
     }
     if (focused) {
       const next = Array.from(this.shadowRoot.querySelectorAll('[data-focus]')).find(e => e.dataset.focus === focused);
-      if (keepPlanner) next?.focus({ preventScroll: true });
+      if (keepPlanner || view === 'schedules') next?.focus({ preventScroll: true });
       else next?.focus();
       if (selection) next?.setSelectionRange(...selection);
     }
@@ -381,7 +395,8 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     this.consumablesOpen = false; this.stationMessage = ''; this.stationError = false;
     this.robotMessage = ''; this._robotMessageContext = {};
     this.zoneView = false; this.zoneDraft = null;
-    this.schedulesView = false; this.scheduleDialog = null; this.scheduleSending = null;
+    this.cancelScheduleFeedback();
+    this.schedulesView = false; this.scheduleDialog = null; this.scheduleMenu = null; this.scheduleSending = null;
     this.scheduleScrollTop = 0;
     this.config = normalized;
     this.setAttribute('data-theme', this.config.theme);
@@ -406,6 +421,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
   }
   disconnectedCallback() {
     this._detachRevision = (this._detachRevision ?? 0) + 1;
+    this.cancelScheduleFeedback();
     this.scheduleDialog = null;
     this._previewDialog?.removeEventListener(previewViewChanged, this._previewChanged);
     this._previewDialog = null;
@@ -474,6 +490,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     if ((!this.initialized || !this.dirty) && !this.view.active && !this.busy && this.model.rooms.length) {
       this.resetDraft(false); this.initialized = true;
     }
+    this.reconcileScheduleConfirmation();
     this.render();
   }
   onChange(event) {
@@ -947,8 +964,9 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
   }
   positionModernPointer() {
     if (this.config?.theme !== 'modern') return;
-    const panel = this.shadowRoot.querySelector('.modern-rooms .fields:not([hidden])');
-    const head = this.shadowRoot.querySelector('.modern-rooms .room.open .room-head');
+    const scope = this.scheduleDialog ? this.shadowRoot.querySelector('.schedule-room-list') : this.shadowRoot.querySelector('.modern-rooms');
+    const panel = scope?.querySelector('.fields:not([hidden])');
+    const head = scope?.querySelector('.room.open .room-head');
     if (!panel || !head) return;
     const target = head.getBoundingClientRect(), bounds = panel.getBoundingClientRect();
     panel.style.setProperty('--pointer-y', `${target.top + target.height / 2 - bounds.top}px`);
@@ -964,17 +982,21 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     const extra = Math.max(0, available - used - gap * 2);
     fields.forEach((el, i) => el.style.setProperty('--field-shift', `${extra * i / 4}px`));
   }
-  modernControl(key, label, room, field, value, disabled, n) {
+  modernControl(key, label, room, field, value, disabled, n, scope = 'planner') {
     const h = escapeHtml, options = field.options;
-    const attrs = `data-setting="${key}" data-room-id="${h(room.roomId)}"`;
+    const attrs = scope === 'schedule' ? `data-schedule-room-setting="${key}" data-schedule-room="${h(room.roomId)}"`
+      : `data-setting="${key}" data-room-id="${h(room.roomId)}"`;
+    const focus = scope === 'schedule' ? `schedule-room-${room.roomId}-${key}` : `${key}-${n}`;
+    const slider = scope === 'schedule' ? `schedule-slider-${key}-${room.roomId}` : `slider-${key}-${n}`;
+    const unknown = scope === 'schedule' ? value || 'Stored settings not reported' : 'Unavailable';
     const name = `${label} ${room.name}`;
     const valid = options.includes(value);
     const blocked = disabled || !valid;
     if (key === 'mop_repetitions') {
-      return `<div class="modern-control"><span class="field-label">${label}</span><div class="segments" role="group" aria-label="${h(name)}">${options.map((option, i) => `<button ${attrs} data-option="${h(option)}" style="--stop:${options.length > 1 ? i / (options.length - 1) : 0}" data-focus="${key}-${n}-${i}" aria-pressed="${value === option}" ${disabled ? 'disabled' : ''}>${h(option === 'One Pass' ? '1×' : option === 'Two Passes' ? '2×' : this.t(option))}</button>`).join('')}</div></div>`;
+      return `<div class="modern-control"><span class="field-label">${label}</span><div class="segments" role="group" aria-label="${h(name)}">${options.map((option, i) => `<button ${attrs} data-option="${h(option)}" style="--stop:${options.length > 1 ? i / (options.length - 1) : 0}" data-focus="${focus}-${i}" aria-pressed="${value === option}" ${disabled ? 'disabled' : ''}>${h(option === 'One Pass' ? '1×' : option === 'Two Passes' ? '2×' : this.t(option))}</button>`).join('')}</div></div>`;
     }
     const index = options.indexOf(value);
-    return `<div class="modern-control"><label class="field-label" for="slider-${key}-${n}">${label}</label><div class="stepped-slider ${blocked ? 'disabled' : ''}"><div class="slider-ticks" aria-hidden="true">${options.map((_, i) => `<span class="slider-tick" style="--stop:${options.length > 1 ? i / (options.length - 1) : 0}"></span>`).join('')}</div><input id="slider-${key}-${n}" type="range" min="0" max="${options.length - 1}" step="1" value="${Math.max(0, index)}" aria-label="${h(name)}" aria-valuetext="${this.ht(valid ? value : 'Unavailable')}" ${attrs} data-focus="${key}-${n}" ${blocked || options.length < 2 ? 'disabled' : ''}></div><div class="slider-options" style="--options:${options.length}">${options.map((option, i) => `<button ${attrs} data-option="${h(option)}" style="--stop:${options.length > 1 ? i / (options.length - 1) : 0}" data-focus="${key}-${n}-${i}" aria-pressed="${value === option}" ${disabled ? 'disabled' : ''}>${this.ht(option)}</button>`).join('')}</div>${!valid ? `<span class="badge">${this.ht("Unavailable")}</span>` : ''}</div>`;
+    return `<div class="modern-control"><label class="field-label" for="${slider}">${label}</label><div class="stepped-slider ${blocked ? 'disabled' : ''}"><div class="slider-ticks" aria-hidden="true">${options.map((_, i) => `<span class="slider-tick" style="--stop:${options.length > 1 ? i / (options.length - 1) : 0}"></span>`).join('')}</div><input id="${slider}" type="range" min="0" max="${options.length - 1}" step="1" value="${Math.max(0, index)}" aria-label="${h(name)}" aria-valuetext="${this.ht(valid ? value : unknown)}" ${attrs} data-focus="${focus}" ${blocked || options.length < 2 ? 'disabled' : ''}></div><div class="slider-options" style="--options:${options.length}">${options.map((option, i) => `<button ${attrs} data-option="${h(option)}" style="--stop:${options.length > 1 ? i / (options.length - 1) : 0}" data-focus="${focus}-${i}" aria-pressed="${value === option}" ${disabled ? 'disabled' : ''}>${this.ht(option)}</button>`).join('')}</div>${!valid ? `<span class="badge">${this.ht(unknown)}</span>` : ''}</div>`;
   }
   zoneStarted(dimensions) {
     const valid = dimensions && ['widthCm','heightCm'].every(key => Number.isFinite(dimensions[key]) && dimensions[key] > 0);
@@ -995,10 +1017,15 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
   }
   get supportsZone() { return this.adapter.supportsZoneDevice(this.registry, this.devices, this.config.entity); }
   planningTabsHtml() {
-    const tabs = [['rooms','Rooms'], ...(this.supportsZone ? [['zones','Zone']] : []), ...(this.getScheduleState().supported ? [['schedules','Schedules']] : [])];
+    const schedules = this.getScheduleState();
+    const tabs = [['rooms','Rooms'], ...(this.supportsZone ? [['zones','Zone']] : []), ...(schedules.supported ? [['schedules','Schedules']] : [])];
     if (tabs.length === 1) return '';
     const current = this.schedulesView ? 'schedules' : this.zoneView ? 'zones' : 'rooms';
-    return `<nav class="planning-tabs" role="tablist" aria-label="${this.ht('Cleaning selection')}">${tabs.map(([key,label]) => `<button id="planning-tab-${key}" role="tab" data-action="${key}" aria-selected="${current === key}" aria-controls="planning-panel-${key}" tabindex="${current === key ? 0 : -1}">${this.ht(label)}</button>`).join('')}</nav>`;
+    return `<nav class="planning-tabs" role="tablist" aria-label="${this.ht('Cleaning selection')}">${tabs.map(([key,label]) => {
+      const count = key === 'schedules' ? schedules.enabledCount : null;
+      const counted = Number.isSafeInteger(count) && count >= 0;
+      return `<button id="planning-tab-${key}" role="tab" data-action="${key}" aria-selected="${current === key}" aria-controls="planning-panel-${key}" tabindex="${current === key ? 0 : -1}" ${counted ? `aria-label="${this.ht('Schedules, active: {count}',{count})}" title="${this.ht('Active schedules: {count}',{count})}"` : ''}><span class="planning-tab-label">${this.ht(label)}${counted ? `<span class="schedule-count ${count === 0 ? 'is-zero' : ''} ${count > 99 ? 'capped' : ''}" aria-hidden="true">${count > 99 ? '99+' : count}</span>` : ''}</span></button>`;
+    }).join('')}</nav>`;
   }
   renderZone() {
     this.paint(`<style>${styles}</style><ha-card><div class="planner-content">${this.headerHtml()}${this.statusHtml()}${this.planningTabsHtml()}${this.getScheduleState().supported ? '<div id="planning-panel-schedules" role="tabpanel" aria-labelledby="planning-tab-schedules" hidden></div>' : ''}<div id="planning-panel-rooms" role="tabpanel" aria-labelledby="planning-tab-rooms" hidden></div><dyson-planner-zone id="planning-panel-zones" role="tabpanel" aria-labelledby="planning-tab-zones"></dyson-planner-zone></div>${this.consumablesHtml()}${this.scheduleOverlayHtml()}</ha-card>`, 'zone');
@@ -1048,7 +1075,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
         return reserve(`<label class="field ${key === 'cleaning_mode' ? 'mode' : ''}">${label}<select data-setting="${key}" data-room-id="${h(room.roomId)}" data-focus="${key}-${n}" aria-label="${label} ${h(room.name)}" ${fieldDisabled ? 'disabled' : ''}>${!options.includes(value) ? `<option value="">${this.ht("Unavailable")}</option>` : ''}${options.map(option => `<option value="${h(option)}" ${value === option ? 'selected' : ''}>${this.ht(option)}</option>`).join('')}</select>${!field ? `<span class="badge">${this.ht("Not available")}</span>` : ''}</label>`);
       }).join('');
       if (modern) {
-        const colors = ['#18c5d9', '#e9b85b', '#b99ae4', '#79b9a5', '#e49baf'];
+        const colors = ROOM_COLORS;
         return `<section class="room ${selected ? 'selected' : ''} ${open ? 'open' : ''}" style="--room-color:${colors[n % colors.length]};--room-row:${n + 1}"><div class="room-head"><label class="pick"><input type="checkbox" data-focus="room-${n}" data-room="${h(room.entity)}" aria-label="${this.ht('Select {name}', { name: room.name })}" ${selected ? 'checked' : ''} ${disabled ? 'disabled' : ''}><span class="selection-circle" aria-hidden="true">${selected ? order : ''}</span></label><button class="expand room-settings-toggle" data-focus="expand-${n}" data-expand="${h(room.entity || room.name)}" aria-expanded="${open}" aria-controls="fields-${n}" aria-label="${this.ht('Settings for {name}', { name: room.name })}"><span class="room-settings-copy"><span class="name">${h(room.name)}</span><span class="summary">${!room.available ? this.ht(room.error || 'Unavailable') : this.ht(valueOf('cleaning_mode') ?? 'Room settings unavailable')}</span></span><span aria-hidden="true">${open ? '⌃' : '›'}</span></button></div><div class="fields" id="fields-${n}" ${open ? '' : 'hidden'}>${fields}${!room.roomId ? `<p class="badge">${this.ht("Room ID unavailable")}</p>` : ''}</div></section>`;
       }
       return `<section class="room ${selected ? 'selected' : ''}"><div class="room-head"><label class="pick"><input type="checkbox" data-focus="room-${n}" data-room="${h(room.entity)}" ${selected ? 'checked' : ''} ${disabled ? 'disabled' : ''}><span><span class="name">${h(room.name)} ${selected ? `<span class="status">(${order})</span>` : ''}</span><span class="summary">${!room.available ? this.ht(room.error || 'Unavailable') : this.ht(valueOf('cleaning_mode') ?? 'Room settings unavailable')}</span></span></label><button class="expand" data-focus="expand-${n}" data-expand="${h(room.entity || room.name)}" aria-expanded="${open}" aria-controls="fields-${n}" aria-label="${this.ht('Settings for {name}', { name: room.name })}"><span>${this.ht("Settings")}</span> ${open ? '⌃' : '⌄'}</button></div><div class="fields" id="fields-${n}" ${open ? '' : 'hidden'}>${fields}${!room.roomId ? `<p class="badge mode">${this.ht("Room ID unavailable. Check the updated integration and refresh rooms.")}</p>` : ''}</div></section>`;

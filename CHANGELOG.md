@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Add a compact raised active-count badge to the Schedules tab: green for enabled plans, grey for zero, and no misleading zero for unknown metadata. Keep tab widths and labels on one line at narrow widths, and update only from confirmed HA state.
+
+- Quiet schedule feedback for both adapters: show local switch loading, confirm changes from authoritative HA metadata, and auto-hide create/save/delete success notices after three seconds. Keep failures and missing-confirmation warnings visible, handle late updates without retrying writes, and prevent obsolete timers from clearing newer messages.
+
+- Reuse the room planner's numbered selection circles and cleaning controls in the Spot+Scrub schedule editor, including creation. Show all available rooms, derive cleaning order from selection order, and remove separate move/remove/add controls. Keep schedule drafts isolated, preserve saved settings, fill the card with a 4 px outer inset, use the same split-layout breakpoint as the planner and match its footer button heights.
+
+- Keep Home Assistant's mounted `ha-card` when updating schedules so its asynchronous slot rendering cannot immediately close the three-dot menu. Cover mouse/touch opening, repeated use and edit/delete dialogs with an asynchronous card fixture.
+
+- Redesign schedule overview as rounded cards with prominent times, seven weekday badges, consistent room-color chips and an aligned switch. Weekday side space shrinks fluidly before wrapping, expands on the new line, then shrinks again without reducing label size. Place controls slightly farther right and closer together. Move Edit/Delete into a keyboard-accessible three-dot menu that stays within the card; keep four entries visible before scrolling and adapt the layout to narrow cards in both themes.
+
 - Hide schedule water settings in Vacuum mode and vacuum power in Mop mode, including room summaries, unless all settings are explicitly requested. Keep hidden values intact and omit hidden draft overrides from schedule writes.
 
 - Read saved per-room schedule settings exposed by upstream commit `d595d5f`. Display them in summaries and preselect editor controls while sending only explicit changes; retain compatibility with older or partial metadata.
@@ -10,7 +20,7 @@
 
 - Connect the Spot+Scrub adapter to UNsync3D's `feature/schedules` sensor and actions. Create schedules from selected native room IDs/order and local settings without saving general preferences or starting cleaning; display only the backend's selected room names.
 - Reuse schedule edit/toggle/delete, four-row scrolling and the contained time picker across both adapters. Detect per-model read-only support and keep legacy Spot+Scrub builds unchanged. Preserve hass-dyson's separate room-selection limitation.
-- Stack schedule Delete below Edit with the enable switch to their left. Limit the schedule list to four visible rows once a fifth entry exists, preserving list scrolling across HA updates and dialogs.
+- Limit the schedule list to four visible rows once a fifth entry exists, preserving list scrolling across HA updates and dialogs.
 - Add per-schedule deletion through hass-dyson's `delete_robot_schedule` action, with a time/day confirmation, Cancel focus, capability detection, pending-state protection and authoritative HA updates.
 - Replace the browser-native schedule time popup with a contained hour/minute picker and explicit Apply/Cancel controls, including mouse and keyboard navigation.
 - Add experimental hass-dyson robot schedules: create from room planning, list enabled/disabled schedules, toggle them, and edit weekdays/time. Keep original Spot+Scrub schedule controls hidden.
