@@ -1,12 +1,23 @@
-# Testing v1.5.0
+# Testing v1.6.0
 
-## v1.5.0 release acceptance
+## v1.6.0 release acceptance
 
 This is a stable release without a beta suffix. Only the hass-dyson adapter remains labeled experimental.
 
+### Final release review — 24 November 2026
+
+- `npm run check` passed all **120 unit tests**, source syntax checks, bundle generation and standalone registration/discovery checks for both adapters.
+- All **30 browser scripts** passed in headless Edge against simulated Home Assistant. Coverage includes room drafts and actions, zones and map rotation, session controls, readiness, dock/robot settings, consumables, translations, keyboard interaction, scrolling, both adapters and the complete schedule UI. The scroll suite also passed separately with `CARD_THEME=modern`.
+- Visually reviewed generated Modern schedule overview and editor screenshots at narrow and wide widths. Responsive layout, four-row scrolling, weekday states, room chips and the active-count badge passed the browser layout checks.
+- Updated older Classic regression scripts to select Classic explicitly, scoped Info assertions to the current Station/Robot/Consumables tabs, and accounted for header notices covering titles during map loading. These were outdated test expectations, not application defects.
+- A final edge-case check reproduced and fixed deletion being silently blocked when a Spot+Scrub schedule reported no selected rooms. The browser regression verifies the exact schedule ID is deleted and the dialog closes; creation/editing still require a room selection. After the fix, `npm run check`, both adapters' schedule browser flows and the shared confirmation/feedback suite passed again.
+- Verified release-version consistency, local documentation links and reproducible bundle generation. Automated checks send no commands to a real robot; scheduled execution, actual room execution order and daylight-saving behavior remain separate live checks.
+
+### Release acceptance checklist
+
 - Run `npm run check`: 120 unit tests, syntax checks, generated bundle and standalone-bundle smoke checks for both adapters.
 - Run `node tests/schedules-browser.mjs` with Playwright for the experimental hass-dyson schedule flow: create with the stored-room-selection warning, edit only days/time, toggle enabled state, retain room drafts and failed dialogs, preserve keyboard focus, survive HA updates, and check both themes at mobile/desktop widths. Assert that unfiltered room names from the integration are not presented as selected rooms. Legacy Spot+Scrub builds without schedule metadata stay unchanged. This uses simulated HA and creates no real schedules.
-- Run `node tests/spot-schedules-browser.mjs` for the Spot+Scrub feature-branch interface: all three planning tabs and their ARIA relationships, explicit selected IDs/order and schedule-only settings, accurate selected-room names, edit/toggle/delete, room reorder/add/remove, saved schedule settings distinct from live preferences, preselection/readback after reopening, explicit setting overrides, legacy/partial metadata without assumed values, empty-plan/map validation, dismissible header messages, read-only model behavior, sync warnings, four-row scrolling, offline states and backend rejection. Both themes run at 375/900 px. `tests/spot-schedules.test.mjs` covers map/identity isolation, exact payloads, missing capabilities, invalid drafts and locking. Live robot acceptance remains required; see [Spot+Scrub schedule validation](docs/spot-scrub-schedules.md#validation).
+- Run `node tests/spot-schedules-browser.mjs` for the Spot+Scrub v2.2.0 schedule interface: all three planning tabs and their ARIA relationships, explicit selected IDs/order and schedule-only settings, accurate selected-room names, edit/toggle/delete, room reorder/add/remove, saved schedule settings distinct from live preferences, preselection/readback after reopening, explicit setting overrides, legacy/partial metadata without assumed values, empty-plan/map validation, dismissible header messages, read-only model behavior, sync warnings, four-row scrolling, offline states and backend rejection. Both themes run at 375/900 px. `tests/spot-schedules.test.mjs` covers map/identity isolation, exact payloads, missing capabilities, invalid drafts and locking. Maintainer live checks and remaining execution checks are recorded in [Spot+Scrub schedule validation](docs/spot-scrub-schedules.md#validation).
 - The schedule browser check also selects and applies 21:15 using only mouse clicks, cancels a tentative time without losing the applied value, preserves an open time picker across HA updates, verifies its horizontal bounds at 375/900 px in both themes, and checks arrow/Home/End/Escape navigation.
 - Spot+Scrub schedule checks cover mode-dependent water/power visibility, combined and unknown modes, the all-settings override, summary relevance, and retaining hidden choices without transmitting their overrides.
 - Schedule deletion tests cover enabled/disabled entries, exact same-device ID targeting, unavailable/foreign targets, missing service capabilities, cancellation and Cancel focus, delayed authoritative removal, repeated-click protection, error retention, and locking against other room/schedule writes. The fixture deletes simulated schedules only.
@@ -21,7 +32,7 @@ This is a stable release without a beta suffix. Only the hass-dyson adapter rema
 - Run `node tests/hass-dyson-browser.mjs`, `node tests/batch-browser.mjs` and `node tests/zone-browser.mjs` with Playwright and an installed browser to cover both adapters.
 - Maintainer live checks confirmed hass-dyson Save/readback, room starts, Pause/Resume/Home, battery percentage, vacuum/mop coverage, dock status, drying remaining time, washing start interlock and starting during drying.
 - Preserve existing Spot+Scrub configuration, action payloads and zone support. Keep unsupported hass-dyson controls hidden and reject ambiguous multi-map room starts.
-- Verify the package, lockfile, README, integration contract and generated bundle identify v1.5.0. The UI intentionally has no version badge; do not reintroduce one for this release.
+- Verify the package, lockfile, README, integration contract and generated bundle identify v1.6.0. The UI intentionally has no version badge; do not reintroduce one for this release.
 
 ## Integration adapters
 
@@ -42,9 +53,9 @@ Start-during-drying follow-up: **89 unit tests** pass. Room Start is allowed dur
 
 - `npm run check` includes adapter isolation, shared in-flight locking, normalized telemetry, exact zone dispatch and a standalone generated-bundle smoke check, in addition to existing regression tests.
 - Run `node tests/batch-browser.mjs`, `node tests/zone-browser.mjs`, `node tests/robot-bumper-browser.mjs`, `node tests/start-readiness-browser.mjs`, `node tests/room-identity-browser.mjs` and `node tests/editor-session-preview-browser.mjs` with Playwright and an installed browser (`BROWSER_CHANNEL=msedge` on Windows where applicable).
-- Maintainer Spot+Scrub live checks passed; the separate integration fix for zone Pause/Resume was also confirmed. Subsequent hass-dyson live confirmations are included in the v1.5.0 acceptance above.
+- Maintainer Spot+Scrub live checks passed; the separate integration fix for zone Pause/Resume was also confirmed. Subsequent hass-dyson live confirmations are included in the current acceptance above.
 
-Validation on 21 November 2026: all 69 unit tests, the generated-bundle smoke check and the six browser scripts listed above passed in Edge. `tests/ui-browser.mjs` still fails at line 32 because its select-only field expectation does not match the current Modern controls; the identical failure was reproduced with the unchanged HEAD bundle in an isolated preview. It is not an adapter regression. The zone browser screenshot path now uses `fileURLToPath` so workspace paths containing spaces work on Windows.
+Validation on 21 November 2026: all 69 unit tests, the generated-bundle smoke check and the six browser scripts listed above passed in Edge. At that point, `tests/ui-browser.mjs` still used select-only expectations against the Modern controls; the identical failure was reproduced with the unchanged HEAD bundle. The v1.6.0 release review corrected that test's explicit theme and verified the full script. The zone browser screenshot path uses `fileURLToPath` so workspace paths containing spaces work on Windows.
 
 ## v1.4.0 release acceptance
 

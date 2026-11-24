@@ -1,6 +1,6 @@
 import { batchFixture } from './fixture.mjs';
 
-// Contract from UNsync3D feature/schedules, d595d5fd34b372e2fbeb0fcaf4bd8d979f8c9e9f.
+// UNsync3D v2.2.0 schedule contract, initially reviewed at d595d5f.
 export function spotSchedulesFixture({reportedSettings=true}={}) {
   const f = batchFixture(), sensor='sensor.renamed_spot_schedules';
   f.hass.states[f.entity].attributes.map_id='123';

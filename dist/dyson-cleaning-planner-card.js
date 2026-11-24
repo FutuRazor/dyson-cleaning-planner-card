@@ -1,4 +1,4 @@
-/* Dyson Cleaning Planner Card v1.5.0 | MIT */
+/* Dyson Cleaning Planner Card v1.6.0 | MIT */
 // English messages are also stable translation keys. Never use translated labels in action payloads.
 const en = {
   "Schedules, active: {count}": "Schedules, active: {count}",
@@ -1885,11 +1885,11 @@ function startZone(hass, { vacuum, camera, calibration, trusted, preview, rect, 
   return hass.callService(DOMAIN, 'clean_zone', data);
 }
 
-// feature/schedules: sensor metadata is authoritative for selection and per-model
+// Integration v2.2.0: sensor metadata is authoritative for selection and per-model
 // write capability. Never infer support from globally registered services alone.
 const scheduleDays = ['mon','tue','wed','thu','fri','sat','sun'];
 function scheduleRoomSettings(raw, roomIds) {
-  // Optional since d595d5f. Missing/unknown fields must never fall back to
+  // Saved settings are optional metadata. Missing/unknown fields must never fall back to
   // general room preferences or become implicit writes on the next edit.
   return Object.fromEntries(roomIds.map(id => [id, Object.fromEntries(Object.keys(ROOM_FIELDS).flatMap(key => {
     const value = raw?.[id]?.[key];
@@ -3417,7 +3417,7 @@ const scheduleCardMethods = {
     if (this._previewDialog || this.busy || this.scheduleSending || this.view.active || !this.isConnected) return;
     const dialog = enabled === undefined ? this.scheduleDialog : null;
     if (!dialog && enabled === undefined) return;
-    if (dialog?.timePicker || (dialog?.roomPlan && !dialog.roomPlan.roomIds.length)) return;
+    if (dialog?.mode !== 'delete' && (dialog?.timePicker || (dialog?.roomPlan && !dialog.roomPlan.roomIds.length))) return;
     if (dialog && dialog.config !== this.config) return;
     const config = this.config, detach = this._detachRevision, state = this.getScheduleState();
     const request = {kind:!dialog ? 'toggle' : dialog.mode === 'delete' ? 'delete' : dialog.id === undefined ? 'create' : 'edit',id:dialog?.id ?? id};

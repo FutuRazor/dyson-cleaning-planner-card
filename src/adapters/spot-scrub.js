@@ -470,11 +470,11 @@ function startZone(hass, { vacuum, camera, calibration, trusted, preview, rect, 
   return hass.callService(DOMAIN, 'clean_zone', data);
 }
 
-// feature/schedules: sensor metadata is authoritative for selection and per-model
+// Integration v2.2.0: sensor metadata is authoritative for selection and per-model
 // write capability. Never infer support from globally registered services alone.
 const scheduleDays = ['mon','tue','wed','thu','fri','sat','sun'];
 function scheduleRoomSettings(raw, roomIds) {
-  // Optional since d595d5f. Missing/unknown fields must never fall back to
+  // Saved settings are optional metadata. Missing/unknown fields must never fall back to
   // general room preferences or become implicit writes on the next edit.
   return Object.fromEntries(roomIds.map(id => [id, Object.fromEntries(Object.keys(ROOM_FIELDS).flatMap(key => {
     const value = raw?.[id]?.[key];

@@ -18,11 +18,12 @@ try {
   const draft = await page.evaluate(() => JSON.stringify(demo.card.settingDraft));
   await card.locator('.consumables-info').click();
   assert.ok(await card.locator('#panel-station').isVisible());
-  assert.deepEqual(await card.locator('[role=tab]').allTextContents(), ['Station settings', 'Consumables']);
+  assert.deepEqual(await card.locator('.info-tabs [role=tab]').allTextContents(), ['Station', 'Robot', 'Consumables']);
   await card.locator('[data-info-tab="station"]').click();
-  assert.equal(await card.locator('.station-row').count(), 9);
-  assert.equal(await card.locator('.station-row ha-switch').count(), 4);
-  assert.deepEqual(await card.locator('.station-label > span:last-child, div.station-row > span').allTextContents(), ['Hot water mopping', 'Cleaning solution', 'Extended roller preparation', 'Hot water self-cleaning', 'Self-cleaning frequency', 'Roller drying duration', 'Empty dust bin', 'Wash mop roller', 'Dry mop roller']);
+  const station = card.locator('#panel-station');
+  assert.equal(await station.locator('.station-row').count(), 9);
+  assert.equal(await station.locator('.station-row ha-switch').count(), 4);
+  assert.deepEqual(await station.locator('.station-label > span:last-child, div.station-row > span').allTextContents(), ['Hot water mopping', 'Cleaning solution', 'Extended roller preparation', 'Hot water self-cleaning', 'Self-cleaning frequency', 'Roller drying duration', 'Empty dust bin', 'Wash mop roller', 'Dry mop roller']);
   await card.locator('ha-switch[data-station="hot_water_mopping"] input').uncheck();
   await page.waitForFunction(() => !demo.card.stationBusy);
   assert.equal(await card.locator('.station-message').isVisible(), false);
@@ -72,7 +73,7 @@ try {
   assert.match(await card.locator('.activity-remaining').innerText(), /02:58/);
   assert.equal(await card.locator('.drying-progress').getAttribute('aria-valuenow'), '99');
   await page.evaluate(() => { demo.hass.states['sensor.renamed_drying'].state = 'unavailable'; demo.card.hass = { ...demo.hass }; });
-  assert.match(await card.locator('.activity-remaining').innerText(), /unavailable/);
+  assert.match(await card.locator('.activity-remaining').innerText(), /unavailable/i);
   assert.equal(await card.locator('.drying-progress').isVisible(), false);
   assert.deepEqual(errors, []);
   console.log('Station browser checks passed: tabs, ordered controls, exact writes, draft preservation, unavailable settings, errors and keyboard navigation.');

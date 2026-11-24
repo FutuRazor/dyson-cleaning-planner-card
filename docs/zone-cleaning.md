@@ -1,7 +1,7 @@
-# Zone cleaning prototype
+# Zone cleaning
 
-This feature is experimental on `test/zone-cleaning`. It requires the matching
-[integration test branch](https://github.com/FutuRazor/ha-dyson-spot-scrub/tree/test/zone-cleaning),
+Available through the Spot+Scrub adapter with
+[UNsync3D Dyson Spot+Scrub v2.1.0 or newer](https://github.com/UNsync3D/ha-dyson-spot-scrub/releases/tag/v2.1.0),
 which provides `dyson_spot_scrub.clean_zone`, the vacuum's `map_id` and
 `ready_to_start`, and the camera's `map_calibration` attributes.
 
@@ -11,7 +11,7 @@ which provides `dyson_spot_scrub.clean_zone`, the vacuum's `map_id` and
 2. Wait for the verified camera snapshot. A blue zone appears automatically.
 3. Drag the rectangle to move it. Drag its bottom-right handle to resize it.
    Mouse, touch and keyboard arrow controls are supported; Shift increases the
-   keyboard step. One rectangle is supported in this prototype.
+   keyboard step. One rectangle is supported at a time.
 4. Open the mode/settings button to choose the cleaning mode, power, water level
    and repetitions. Only relevant controls appear for each mode.
 5. Press **Start clean** to send the local zone settings without saving or changing
@@ -66,12 +66,14 @@ successful transport still requires robot telemetry to confirm the start.
 - `node tests/scroll-browser.mjs`: existing planner/session scroll regression.
 
 The offline preview's usual SVG map is not calibrated and cannot start a zone.
-The browser test supplies its own calibrated PNG. Real robot testing remains
-necessary; no release version is changed for this test branch.
+The browser test supplies its own calibrated PNG. These checks send no robot
+commands. Maintainer hardware checks are recorded below; other models still
+need separate confirmation.
 
 Reloading preserves the selection only when the map ID and image transform are unchanged. Camera requests remove width/height parameters and verify the original PNG fingerprint and dimensions before enabling Start.
 
-Update the integration test branch before using these settings:
+Supported settings depend on the model and available integration entities:
+
 - Modes: Vacuum, Vacuum and Mop, Mop, Vacuum then Mop.
 - Power: Auto, Boost, Quiet, Quick (hidden for Mop).
 - Water: Very Low, Low, Medium, High (hidden for Vacuum).

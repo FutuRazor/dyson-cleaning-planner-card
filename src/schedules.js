@@ -487,7 +487,7 @@ export const scheduleCardMethods = {
     if (this._previewDialog || this.busy || this.scheduleSending || this.view.active || !this.isConnected) return;
     const dialog = enabled === undefined ? this.scheduleDialog : null;
     if (!dialog && enabled === undefined) return;
-    if (dialog?.timePicker || (dialog?.roomPlan && !dialog.roomPlan.roomIds.length)) return;
+    if (dialog?.mode !== 'delete' && (dialog?.timePicker || (dialog?.roomPlan && !dialog.roomPlan.roomIds.length))) return;
     if (dialog && dialog.config !== this.config) return;
     const config = this.config, detach = this._detachRevision, state = this.getScheduleState();
     const request = {kind:!dialog ? 'toggle' : dialog.mode === 'delete' ? 'delete' : dialog.id === undefined ? 'create' : 'edit',id:dialog?.id ?? id};

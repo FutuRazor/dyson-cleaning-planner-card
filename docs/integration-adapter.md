@@ -1,6 +1,6 @@
 # Integration adapters
 
-Integration behavior is isolated behind internal adapters. The existing `dyson_spot_scrub` adapter passed the initial offline and maintainer live checks. Stable release **v1.5.0** adds the [experimental hass-dyson adapter](hass-dyson.md) as a second backend with integration selection. Existing Spot+Scrub YAML and action payloads remain the compatibility baseline.
+Integration behavior is isolated behind internal adapters. The existing `dyson_spot_scrub` adapter passed the initial offline and maintainer live checks. Card **v1.6.0** supports the [experimental hass-dyson adapter](hass-dyson.md) as a second backend with integration selection, introduced in v1.5.0. Existing Spot+Scrub YAML and action payloads remain the compatibility baseline.
 
 ## Boundaries
 
@@ -31,7 +31,7 @@ For hass-dyson, Save and Start are separate steps. If Save succeeds and a subseq
 | Optional writes | `changeRobotSetting`/`changeStationSetting(hass, registry, entity, key, value)`, `pressStationAction(hass, registry, entity, key)` |
 | Map | `mapId(hass, vacuum)`, `mapPicture(hass, camera)`, `mapCalibration(hass, camera)` |
 | Zone | `supportsZoneDevice(registry, devices, entity)`, `zoneDeviceOptions(rooms)`, `zoneReady(hass, vacuum, camera, calibration, trusted, preview)`, `zoneSettingsPayload(mode, strategy, water, passes)`, `startZone(hass, request)` |
-| Optional schedules | `scheduleState(hass, registry, entity)` returns capabilities (`createSupported`, `createReady`, `deleteSupported`), availability, normalized schedules, sync state, whether room selection is known, and whether creation uses selected or stored rooms; `setSchedule({hass, registry, config, id, days, time, enabled, selected, draft, context, roomPlan})` creates, edits or toggles; `deleteSchedule({hass, registry, config, id})` removes one known same-device schedule through the backend |
+| Optional schedules | `scheduleState(hass, registry, entity)` returns capabilities (`createSupported`, `createReady`, `deleteSupported`), availability, normalized schedules, nullable `enabledCount`, sync state, whether room selection is known, and whether creation uses selected or stored rooms; `setSchedule({hass, registry, config, id, days, time, enabled, selected, draft, context, roomPlan})` creates, edits or toggles; `deleteSchedule({hass, registry, config, id})` removes one known same-device schedule through the backend |
 | Compatibility constants | `CONSUMABLES`, `ROBOT_FIELDS`, `STATION_FIELDS`, `STATION_ACTIONS`, `ZONE_CHOICES` |
 
 `robotTelemetry` returns `{state, available, name, dockState, fault, faultCode, cleaning, bumperColor}`. `discover` retains the existing room model (`entity`, `name`, `context`, `roomId`, `settings`, `available`, `excluded`) and optional battery/charging/camera entity IDs. `startZone` accepts `{vacuum, camera, calibration, trusted, preview, rect, rotation, mode, strategy, water, passes}` and builds the wire payload inside the adapter. The existing UI verifies image bytes, minimum rectangle size and offered options before dispatch; the adapter rechecks zone readiness and validates geometry/settings when constructing the action.
@@ -42,13 +42,13 @@ Session buttons and dispatch also require the configured vacuum to belong to the
 
 See the [integration contract](integration-contract.md) for exact entities, values, payloads and timing. This internal interface is already used by both adapters and may evolve as their supported capabilities grow.
 
-Schedule rendering and dialog behavior live in `src/schedules.js`; each adapter owns its own sensor identities, capability detection, validation and action payloads. Spot+Scrub uses the [feature/schedules contract](spot-scrub-schedules.md), including selected room IDs and `can_change`. Its optional `scheduleRoomOptions(hass, registry, config, schedule)` supplies same-map room choices; explicit `roomPlan` changes stay separate from planner drafts, normalized `roomSettings` supplies saved labels separately from write overrides, and missing saved settings remain unknown. The hass-dyson adapter retains its separate schedule sensor/actions and stored-selection warning. Missing sensors hide schedule UI, while read-only models can show their list without creation controls. Backend identities are not inferred from display names or borrowed from another integration.
+Schedule rendering and dialog behavior live in `src/schedules.js`; each adapter owns its own sensor identities, capability detection, validation and action payloads. Spot+Scrub uses the [schedule contract](spot-scrub-schedules.md), including selected room IDs and `can_change`. Its optional `scheduleRoomOptions(hass, registry, config, schedule)` supplies same-map room choices; explicit `roomPlan` changes stay separate from planner drafts, normalized `roomSettings` supplies saved labels separately from write overrides, and missing saved settings remain unknown. The hass-dyson adapter retains its separate schedule sensor/actions and stored-selection warning. Missing sensors hide schedule UI, while read-only models can show their list without creation controls. Backend identities are not inferred from display names or borrowed from another integration.
 
-## Verification before the next phase
+## Regression acceptance
 
 `npm run check` runs syntax checks, the existing regression suite, new adapter boundary tests, bundle generation and a standalone-bundle registration/discovery smoke check. Browser fixtures exercise the generated bundle with simulated HA, including room actions, editor behavior, optional controls and rectangle dispatch. None of these calls a real robot.
 
-Before starting a second adapter, verify the experimental bundle in live Home Assistant:
+For release validation, check both adapters in live Home Assistant:
 
 1. Existing YAML loads unchanged; the same robot, rooms and optional entities appear in both themes.
 2. Room selection/settings remain local until Save/Start; Save changes only edited fields, and Start sends the selected room IDs/settings once.

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/images/planner-banner.svg?v=1.5.0" alt="Dyson Cleaning Planner — a dashboard card for Home Assistant" width="1100">
+  <img src="docs/images/planner-banner.svg?v=1.6.0" alt="Dyson Cleaning Planner — a dashboard card for Home Assistant" width="1100">
 </p>
 
 <p align="center">
@@ -15,14 +15,15 @@
 </p>
 
 <p align="center">
-  Plan room or zone cleaning, adjust cleaning settings, and follow your Dyson's progress in Home Assistant.
+  Plan room or zone cleaning, manage weekly schedules, and follow your Dyson's progress in Home Assistant.
 </p>
 
-**Version 1.5.0**
+**Version 1.6.0**
 
 <p align="center">
   <a href="#installation">Installation</a> &middot;
   <a href="#using-the-card">Using the card</a> &middot;
+  <a href="#robot-schedules">Schedules</a> &middot;
   <a href="#customization">Customization</a> &middot;
   <a href="#limitations-and-troubleshooting">Troubleshooting</a>
 </p>
@@ -30,13 +31,12 @@
 ## Requirements
 
 - A supported integration installed and configured in Home Assistant: [Dyson Spot+Scrub by UNsync3D](https://github.com/UNsync3D/ha-dyson-spot-scrub), **v2.1.0 or newer**, or [hass-dyson](https://github.com/cmgrayb/hass-dyson) with the experimental Spot+Scrub adapter described below.
+- Schedule management requires **Spot+Scrub integration v2.2.0 or newer** with schedule entities enabled. Schedule writes are currently supported for Spot+Scrub AI / RB05; R1/R2 expose a read-only list. The experimental hass-dyson schedule interface was tested against **v0.40.0-beta.6** and has the limitations described [below](#robot-schedules).
 - **Home Assistant Marketplace** for the recommended installation method on Home Assistant **2026.11 or newer**. On older versions, use [HACS](https://www.hacs.xyz/). Manual installation is also supported.
 
 The [experimental hass-dyson adapter](docs/hass-dyson.md) supports rooms/settings, room starts, session controls, battery/consumables, dock status/countdown and the combined vacuum/mop coverage image. Maintainer live tests confirmed Save with entity readback, room starts, Pause/Resume/Home, battery percentage, separate vacuum/mop coverage, dock activity display, the drying countdown, blocked starts during roller washing, and new room starts during drying. Select **Integration → hass-dyson (experimental)** in the editor. Automatic initial discovery prefers the existing Spot+Scrub integration; an explicitly selected robot remains authoritative. Rectangle cleaning and station/robot preferences remain exclusive to the original Spot+Scrub adapter. hass-dyson currently requires one unambiguous known map; room execution order is controlled by the integration.
 
 For integration developers, the [complete integration contract](docs/integration-contract.md) documents required and optional entities, registry identities, attributes, action payloads and validation. 
-
-Experimental robot schedules are available for both adapters: create from room planning, view schedules, toggle them, edit weekdays/time and delete individual entries after confirmation. The [Spot+Scrub `feature/schedules` interface](docs/spot-scrub-schedules.md) accepts the card's selected room IDs/order and draft settings, and reports the actual selected rooms. Its schedule editor uses the planner's room tiles, numbered selection circles and cleaning controls to choose rooms, their order and settings in an isolated draft. With upstream commit `d595d5f` or later, saved per-room settings are displayed and preselected. Older builds or missing individual values remain labeled as unreported; every field you do not change is preserved. The Schedules tab has a compact active-count badge without changing tab width or wrapping the label. Schedule switches show local loading feedback. Confirmed create/save/delete notices disappear after three seconds; errors and missing-confirmation warnings remain dismissible. Older Spot+Scrub builds without the schedule sensor keep the controls hidden; models without write capability show a read-only list. With [hass-dyson 0.40.0-beta.6](docs/hass-dyson.md#experimental-robot-schedules), creation reuses the robot's stored room selection and selected-room metadata remains unavailable; the creation dialog explains that backend's limitation.
 
 ## Screenshots
 
@@ -150,6 +150,18 @@ The button beside Reload shows the current cleaning mode. Open it to choose **Va
 Switching between **Rooms** and **Zone** keeps your local plans. Reload fetches a fresh map and preserves the rectangle when the map and its coordinates are unchanged. Map rotation also applies to zone selection. One rectangular zone is supported at a time; zone cleaning has been hardware-tested on the Spot+Scrub AI, while other models still need confirmation.
 
 Zone dimensions follow Home Assistant's unit system by default, using **cm** or whole **inches**. In the editor, choose **Automatic**, **cm**, **inch**, or **Off**. Off hides only the selection badge; dimensions shown during a cleaning session still use Home Assistant's units.
+
+### Robot schedules
+
+Choose **Schedules** beside Rooms and Zone to see your weekly plans. Each card shows its time, weekdays and known selected rooms. A small green badge on the tab counts enabled plans; grey means none are enabled. Four entries fit before the list becomes scrollable. Use the switch to enable or disable a plan, or the **three-dot menu** to edit or delete it. Deletion asks for confirmation.
+
+With **Spot+Scrub integration v2.2.0 or newer**, select rooms in the planner and click the **calendar-plus** button beside Save to create a schedule. Choose weekdays and a start time, then review the rooms and settings. The editor uses the same room tiles and cleaning controls as the planner: numbered circles select rooms and determine the submitted order. Deselect and reselect a room to move it to the end. Existing schedules open with their own saved settings; missing values are marked as unreported and unchanged settings are preserved. Schedule edits have their own draft and do not change general room preferences or start cleaning.
+
+Times use **Home Assistant's time zone**. The time picker stays inside the card and has explicit Apply/Cancel controls. Switches show a local loading indicator until Home Assistant confirms the change. Confirmed create/save/delete notices disappear after three seconds; errors and missing-confirmation warnings stay available for review.
+
+Schedules are shown only when the integration exposes the required sensor. Spot+Scrub AI / RB05 supports creation, room/settings editing, toggling and deletion. R1/R2 currently show a read-only list. The integration learns plans when they are saved or changed while connected; open and save existing schedules in MyDyson if the list is incomplete. See the [Spot+Scrub schedule guide](docs/spot-scrub-schedules.md) for capabilities and validation.
+
+The **experimental hass-dyson adapter**, tested against v0.40.0-beta.6, supports creation, weekdays/time editing, toggling and deletion when its actions are available. Creation reuses the robot's stored room selection; the card cannot choose schedule rooms or display reliable selected-room names through that interface. The creation dialog explains this limitation. See [hass-dyson schedules](docs/hass-dyson.md#experimental-robot-schedules). Actual scheduled execution, room execution order and behavior across daylight-saving changes still need separate live verification.
 
 ### During and after cleaning
 

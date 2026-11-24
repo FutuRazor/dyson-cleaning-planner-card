@@ -185,6 +185,18 @@ try {
   assert.equal(await card.locator('.schedule-row').count(),2);
   await page.evaluate(()=>{
     const attrs=spot.hass.states[spot.sensor].attributes;
+    attrs.schedules.push({...attrs.schedules[0],schedule_id:902,time:'16:10',room_ids:[],rooms:[],room_settings:{}});
+    demo.card.hass={...spot.hass};
+  });
+  await scheduleAction(902,'delete');
+  assert.equal(await card.locator('[data-schedule-action="confirm"]').isEnabled(),true);
+  await card.locator('[data-schedule-action="confirm"]').click();
+  await page.waitForFunction(()=>!demo.card.scheduleSending);
+  assert.deepEqual(await page.evaluate(()=>spot.calls.at(-1)),{domain:'dyson_spot_scrub',service:'delete_schedule',data:{entity_id:'vacuum.kuche_dyson_spot_scrub',schedule_id:902}},'deletion does not require a nonempty room plan');
+  assert.equal(await card.locator('.schedule-row').count(),2);
+  assert.equal(await card.locator('.schedule-dialog').count(),0);
+  await page.evaluate(()=>{
+    const attrs=spot.hass.states[spot.sensor].attributes;
     attrs.schedules.push(...[201,202,203].map((id,i)=>({...attrs.schedules[0],schedule_id:id,time:`15:0${i}`})));
     attrs.unknown=1;attrs.in_sync=false;spot.hass.states[spot.sensor].state='6';demo.card.hass={...spot.hass};
   });

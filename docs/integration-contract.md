@@ -1,12 +1,12 @@
-# Integration contract — card v1.5.0
+# Integration contract — card v1.6.0
 
 This contract describes the **Spot+Scrub adapter**. The experimental `hass_dyson` adapter has a separate [entity/action contract and setup guide](hass-dyson.md). `integration: auto` selects the configured vacuum's registry platform; initial discovery prefers Spot+Scrub. Explicit adapter choices are available in the visual editor.
 
-This document describes what the **current card actually reads and sends**, based on the Spot+Scrub adapter and its card/editor/map/zone consumers. The adapter experiment preserves this contract; see [adapter architecture](integration-adapter.md). It is a frontend contract, not a specification of Dyson's MQTT protocol or a guarantee about the integration's internal implementation.
+This document describes what the **current card actually reads and sends**, based on the Spot+Scrub adapter and its card/editor/map/zone consumers. Both adapters preserve their own contracts; see [adapter architecture](integration-adapter.md). It is a frontend contract, not a specification of Dyson's MQTT protocol or a guarantee about the integration's internal implementation.
 
-Both Modern and Classic use this same contract. The documented minimum integration version is **UNsync3D Dyson Spot+Scrub v2.1.0**; optional features require the corresponding entities/actions in the installed version.
+Both Modern and Classic use this same contract. The documented minimum integration version is **UNsync3D Dyson Spot+Scrub v2.1.0**; schedule management requires **v2.2.0 or newer** and the corresponding optional entities/actions.
 
-Reviewed against the repository source on **21 November 2026**, without a release-version change. This describes every integration-facing feature in the current source; it does not certify another integration or replace hardware verification. For a migration assessment, see [hass-dyson compatibility](hass-dyson-compatibility.md).
+The core interface was reviewed on **21 November 2026**; the schedule contract was updated for integration v2.2.0 and card v1.6.0 on **24 November 2026**. This describes every integration-facing feature in the current source; it does not certify another integration or replace hardware verification. For a migration assessment, see [hass-dyson compatibility](hass-dyson-compatibility.md).
 
 ## Minimum working setup
 
@@ -403,7 +403,7 @@ Cleaning solution displays Ready to use / Refill required; its Enabled/Disabled 
 - No global cleaning-mode select or original Vacuum Start button; there is no legacy start adapter fallback.
 - No separate docked/fault binary sensor, raw fault-code entity or room-area sensor is read by the current card.
 - No direct Dyson login, token storage, MQTT subscription, raw preference array or robot API call.
-- No standalone calendar rendering, map switching, cross-map room selection or estimated cleaning duration. Optional robot schedule management uses the [feature/schedules contract](spot-scrub-schedules.md).
+- No standalone calendar rendering, map switching, cross-map room selection or estimated cleaning duration. Optional robot schedule management uses the [schedule contract](spot-scrub-schedules.md).
 - No confirmed per-room progress or integration-provided active-room list consumed for badges.
 - No background automation from the editor simulation. It only changes the current preview and suppresses action calls.
 
