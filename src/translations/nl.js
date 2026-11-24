@@ -1,5 +1,17 @@
 // Dutch UI text. Protocol values and entity names remain unchanged.
 export const nl = {
+  "Stored settings not reported": "Opgeslagen instellingen niet gemeld",
+  "Move room up": "Kamer omhoog",
+  "Move room down": "Kamer omlaag",
+  "Remove room": "Kamer verwijderen",
+  "Keep stored setting": "Opgeslagen instelling behouden",
+  "Rooms and cleaning settings": "Kamers en reinigingsinstellingen",
+  "Some stored settings are not reported. Unchanged settings will be preserved.": "Sommige opgeslagen instellingen worden niet gemeld. Ongewijzigde instellingen blijven behouden.",
+  "Room editing requires the schedule map to be active. You can still change weekdays and time.": "Om kamers te bewerken moet de kaart van het schema actief zijn. Weekdagen en tijd kun je nog wijzigen.",
+  "Add room": "Kamer toevoegen",
+  "Choose room": "Kamer kiezen",
+
+  "Selected rooms: {rooms}": "Geselecteerde kamers: {rooms}",
   "Delete schedule": "Schema verwijderen",
   "Delete schedule {time} ({days})": "Schema {time} ({days}) verwijderen",
   "Delete schedule {time} ({days})?": "Schema {time} ({days}) verwijderen?",

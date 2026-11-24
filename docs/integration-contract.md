@@ -403,7 +403,7 @@ Cleaning solution displays Ready to use / Refill required; its Enabled/Disabled 
 - No global cleaning-mode select or original Vacuum Start button; there is no legacy start adapter fallback.
 - No separate docked/fault binary sensor, raw fault-code entity or room-area sensor is read by the current card.
 - No direct Dyson login, token storage, MQTT subscription, raw preference array or robot API call.
-- No scheduler/calendar, map switching, cross-map room selection or estimated cleaning duration.
+- No standalone calendar rendering, map switching, cross-map room selection or estimated cleaning duration. Optional robot schedule management uses the [feature/schedules contract](spot-scrub-schedules.md).
 - No confirmed per-room progress or integration-provided active-room list consumed for badges.
 - No background automation from the editor simulation. It only changes the current preview and suppresses action calls.
 

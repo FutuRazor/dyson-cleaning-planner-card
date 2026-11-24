@@ -56,3 +56,17 @@ test('active statuses retain session rendering when the zone editor is closed', 
     assert.equal(card.zoneDraft, card.sessionView.live ? null : draft, state);
   }
 });
+
+test('an open schedule list survives non-live outages while real cleaning still opens the session', () => {
+  const card=fixture(false);
+  card.schedulesView=true;
+  card.getScheduleState=()=>({supported:true});
+  card.renderSchedules=()=>{card.rendered='schedules';};
+  for(const state of ['unavailable','unknown','waiting','docked','idle']) {
+    card._hass.states['vacuum.robot'].state=state;card.render();
+    assert.equal(card.rendered,'schedules',state);
+  }
+  card._hass.connected=false;card.render();assert.equal(card.rendered,'schedules');
+  card._hass.connected=true;card._hass.states['vacuum.robot'].state='cleaning';card.render();
+  assert.equal(card.rendered,'session');
+});

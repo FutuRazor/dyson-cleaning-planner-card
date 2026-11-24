@@ -1,5 +1,17 @@
 // German display text. Entity names and protocol values are never rewritten.
 export const de = {
+  "Stored settings not reported": "Gespeicherte Einstellungen nicht gemeldet",
+  "Move room up": "Raum nach oben",
+  "Move room down": "Raum nach unten",
+  "Remove room": "Raum entfernen",
+  "Keep stored setting": "Gespeicherte Einstellung beibehalten",
+  "Rooms and cleaning settings": "Räume und Reinigungsoptionen",
+  "Some stored settings are not reported. Unchanged settings will be preserved.": "Einige gespeicherte Einstellungen werden nicht gemeldet. Unveränderte Einstellungen bleiben erhalten.",
+  "Room editing requires the schedule map to be active. You can still change weekdays and time.": "Zum Bearbeiten der Räume muss die Karte des Zeitplans aktiv sein. Wochentage und Uhrzeit können weiterhin geändert werden.",
+  "Add room": "Raum hinzufügen",
+  "Choose room": "Raum auswählen",
+
+  "Selected rooms: {rooms}": "Ausgewählte Räume: {rooms}",
   "Delete schedule": "Zeitplan löschen",
   "Delete schedule {time} ({days})": "Zeitplan {time} ({days}) löschen",
   "Delete schedule {time} ({days})?": "Zeitplan {time} ({days}) löschen?",

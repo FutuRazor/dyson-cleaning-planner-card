@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Hide schedule water settings in Vacuum mode and vacuum power in Mop mode, including room summaries, unless all settings are explicitly requested. Keep hidden values intact and omit hidden draft overrides from schedule writes.
+
+- Read saved per-room schedule settings exposed by upstream commit `d595d5f`. Display them in summaries and preselect editor controls while sending only explicit changes; retain compatibility with older or partial metadata.
+
+- Add Spot+Scrub schedule room editing: reorder, remove/add rooms and change per-room settings in the schedule dialog. Preserve unmodified saved settings and explicitly label missing setting readback. Move schedule action messages to the dismissible header notice for both adapters.
+
+- Connect the Spot+Scrub adapter to UNsync3D's `feature/schedules` sensor and actions. Create schedules from selected native room IDs/order and local settings without saving general preferences or starting cleaning; display only the backend's selected room names.
+- Reuse schedule edit/toggle/delete, four-row scrolling and the contained time picker across both adapters. Detect per-model read-only support and keep legacy Spot+Scrub builds unchanged. Preserve hass-dyson's separate room-selection limitation.
 - Stack schedule Delete below Edit with the enable switch to their left. Limit the schedule list to four visible rows once a fifth entry exists, preserving list scrolling across HA updates and dialogs.
 - Add per-schedule deletion through hass-dyson's `delete_robot_schedule` action, with a time/day confirmation, Cancel focus, capability detection, pending-state protection and authoritative HA updates.
 - Replace the browser-native schedule time popup with a contained hour/minute picker and explicit Apply/Cancel controls, including mouse and keyboard navigation.

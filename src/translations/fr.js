@@ -1,5 +1,17 @@
 // French UI translations. Dyson terminology is referenced in docs/translations.md.
 export const fr = {
+  "Stored settings not reported": "Réglages enregistrés non communiqués",
+  "Move room up": "Monter la pièce",
+  "Move room down": "Descendre la pièce",
+  "Remove room": "Retirer la pièce",
+  "Keep stored setting": "Conserver le réglage enregistré",
+  "Rooms and cleaning settings": "Pièces et réglages de nettoyage",
+  "Some stored settings are not reported. Unchanged settings will be preserved.": "Certains réglages enregistrés ne sont pas communiqués. Les réglages inchangés seront conservés.",
+  "Room editing requires the schedule map to be active. You can still change weekdays and time.": "Le plan du programme doit être actif pour modifier les pièces. Les jours et l’heure restent modifiables.",
+  "Add room": "Ajouter une pièce",
+  "Choose room": "Choisir une pièce",
+
+  "Selected rooms: {rooms}": "Pièces sélectionnées : {rooms}",
   "Delete schedule": "Supprimer le planning",
   "Delete schedule {time} ({days})": "Supprimer le planning {time} ({days})",
   "Delete schedule {time} ({days})?": "Supprimer le planning {time} ({days}) ?",

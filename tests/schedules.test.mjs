@@ -4,6 +4,7 @@ import { hassDysonAdapter as adapter } from '../src/adapters/hass-dyson.js';
 import { spotScrubAdapter } from '../src/adapters/spot-scrub.js';
 import { hassDysonFixture } from './hass-dyson-fixture.mjs';
 import { schedulesFixture } from './schedules-fixture.mjs';
+import { batchFixture } from './fixture.mjs';
 
 const request = f => ({hass:f.hass,registry:f.registry,config:f.config,
   context:adapter.roomContext(f.hass,f.entity,f.registry), days:['tue','thu'],time:'10:00'});
@@ -14,7 +15,8 @@ test('schedules require the same-device registry identity and the integration ac
   assert.equal(adapter.scheduleState(f.hass,f.registry,f.entity).roomSelectionKnown,false);
   assert.equal(adapter.scheduleState(f.hass,f.registry,f.entity).creationUsesStoredRooms,true);
   assert.deepEqual(f.appScheduleRooms.get(101),['Kitchen']);
-  assert.equal(spotScrubAdapter.scheduleState,undefined);
+  const legacy=batchFixture();
+  assert.equal(spotScrubAdapter.scheduleState(legacy.hass,legacy.registry,legacy.entity).supported,false);
   const old=hassDysonFixture();
   assert.equal(adapter.scheduleState(old.hass,old.registry,old.entity).supported,false);
   f.registry.find(e=>e.entity_id===f.sensor).device_id='other';
@@ -112,7 +114,7 @@ test('delete rejects unsupported, unavailable, unknown and foreign targets befor
     assert.equal(f.calls.length,0,kind);
     assert.equal(f.hass.states[f.sensor].attributes.schedules.length,2,kind);
   }
-  assert.equal(spotScrubAdapter.deleteSchedule,undefined);
+  assert.equal(typeof spotScrubAdapter.deleteSchedule,'function');
 });
 
 test('pending delete locks other schedule and room writes; errors preserve state and release the lock without retries', async () => {

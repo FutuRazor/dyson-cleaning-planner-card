@@ -40,7 +40,7 @@ The `clean_coverage` image already contains **two panels, one vacuumed and one m
 
 ## Experimental robot schedules
 
-Tested against the hass-dyson `v0.40.0-beta.6` source contract. The card discovers the enabled same-device sensor with unique ID `<serial>_jdm_schedules` and requires `hass_dyson.set_robot_schedule`. Older versions and the original Spot+Scrub adapter keep schedule controls hidden. A registered but unavailable sensor keeps the view visible and disables writes.
+Tested against the hass-dyson `v0.40.0-beta.6` source contract. The card discovers the enabled same-device sensor with unique ID `<serial>_jdm_schedules` and requires `hass_dyson.set_robot_schedule`. Older hass-dyson versions keep schedule controls hidden. A registered but unavailable sensor keeps the view visible and disables writes. The original Spot+Scrub adapter has a separate [feature/schedules interface](spot-scrub-schedules.md).
 
 The room footer groups a calendar-plus icon and Save into its left half; Start occupies the right half. The calendar icon opens a dialog requiring weekdays and a local start time in Home Assistant's time zone. Confirm sends one `set_robot_schedule` action with `device_id`, `days`, `time`, and optional `room_modes` translated from the local room-settings draft. It neither saves general preferences nor starts cleaning, and the draft remains available for a later Save or Start.
 

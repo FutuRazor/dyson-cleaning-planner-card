@@ -1,5 +1,17 @@
 // English messages are also stable translation keys. Never use translated labels in action payloads.
 export const en = {
+  "Stored settings not reported": "Stored settings not reported",
+  "Move room up": "Move room up",
+  "Move room down": "Move room down",
+  "Remove room": "Remove room",
+  "Keep stored setting": "Keep stored setting",
+  "Rooms and cleaning settings": "Rooms and cleaning settings",
+  "Some stored settings are not reported. Unchanged settings will be preserved.": "Some stored settings are not reported. Unchanged settings will be preserved.",
+  "Room editing requires the schedule map to be active. You can still change weekdays and time.": "Room editing requires the schedule map to be active. You can still change weekdays and time.",
+  "Add room": "Add room",
+  "Choose room": "Choose room",
+
+  "Selected rooms: {rooms}": "Selected rooms: {rooms}",
   "Delete schedule": "Delete schedule",
   "Delete schedule {time} ({days})": "Delete schedule {time} ({days})",
   "Delete schedule {time} ({days})?": "Delete schedule {time} ({days})?",
