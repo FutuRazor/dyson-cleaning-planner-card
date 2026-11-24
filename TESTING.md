@@ -6,6 +6,7 @@ This is a stable release without a beta suffix. Only the hass-dyson adapter rema
 
 ### Countdown follow-up — 24 November 2026
 
+- Maintainer live verification confirmed that the countdown works in Home Assistant and immediately updates the next planned start when schedules are enabled or disabled.
 - Validation passed: `npm run check` with **125 unit tests**, regenerated bundle and standalone smoke checks. Edge browser checks passed for the countdown, responsive schedule layout/design, shared feedback, asynchronous menus and hass-dyson's dock/session timer regression. Countdown screenshots were reviewed at narrow and wide widths; no real robot commands were sent.
 - The overview now shows a compact countdown above its first row. `tests/schedule-countdown.test.mjs` covers HA-local dates, enabled weekdays, chronological selection, week/year rollover, fractional offsets, DST gaps/overlaps, unknown/one-time data and duration formatting.
 - Run `node tests/schedules-countdown-browser.mjs` for both adapters with a browser in a different time zone: local ticking without HA events/actions, state changes, preserved menu nodes, missing metadata and compact one-line layouts in both themes/four languages at 320/375/732 px. Screenshots are saved under `artifacts/schedules-countdown/`.

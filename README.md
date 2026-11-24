@@ -157,6 +157,8 @@ Choose **Schedules** beside Rooms and Zone to see your weekly plans. Each card s
 
 A compact line above the list counts down to the next enabled weekly plan in Home Assistant's time zone. Hover over it for the scheduled date/time. It refreshes locally without robot commands and follows changes reported by Home Assistant. With incomplete metadata it shows the next **known** cleaning; missing dates for one-time plans or an unavailable time zone are not guessed. The countdown predicts the planned start, not confirmed robot execution.
 
+Enabling or disabling a plan recalculates the countdown as soon as Home Assistant reports the change. This behavior has been confirmed in live Home Assistant testing.
+
 With **Spot+Scrub integration v2.2.0 or newer**, select rooms in the planner and click the **calendar-plus** button beside Save to create a schedule. Choose weekdays and a start time, then review the rooms and settings. The editor uses the same room tiles and cleaning controls as the planner: numbered circles select rooms and determine the submitted order. Deselect and reselect a room to move it to the end. Existing schedules open with their own saved settings; missing values are marked as unreported and unchanged settings are preserved. Schedule edits have their own draft and do not change general room preferences or start cleaning.
 
 Times use **Home Assistant's time zone**. The time picker stays inside the card and has explicit Apply/Cancel controls. Switches show a local loading indicator until Home Assistant confirms the change. Confirmed create/save/delete notices disappear after three seconds; errors and missing-confirmation warnings stay available for review.
