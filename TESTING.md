@@ -10,6 +10,8 @@ The third Info tab uses Supplies / Verbrauch / Conso. / Verbruik, with the full 
 
 Validation passed: `npm run check` with 126 unit tests and the language, station and consumables browser suites in Edge.
 
+The Info overlay's outer inset now matches the schedule room editor at 4 px. The inset change passed `npm run check` and the layout, language and consumables browser suites, including narrow and manually sized cards.
+
 ### PR #39 review follow-up — 24 November 2026
 
 - Validation passed: `npm run check` with **126 unit tests**, rebuilt bundle and standalone smoke checks, plus nine Edge browser suites: the new schedule review regressions, schedule editor, both adapters' schedule flows, shared feedback, asynchronous menus, general planner/session browser checks, prior review regressions and scrolling. The editor fixture now explicitly resets its draft after installing each fresh fixture.

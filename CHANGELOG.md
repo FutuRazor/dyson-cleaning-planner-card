@@ -2,6 +2,7 @@
 
 ## v1.6.0
 
+- Match the Info overlay's outer inset to the schedule room editor at 4 px.
 - Shorten the Info supplies tab labels in all four languages to fit narrow cards, retaining the full localized consumables label as a tooltip.
 - Preserve scrolling within an open schedule editor and keep supported session controls usable while schedule transport/readback is pending. Do not confirm deletion from an explicitly incomplete list, and reject schedule creation from stale room-map drafts without discarding them.
 - Show a compact local countdown above the schedule list for the next enabled weekly plan in Home Assistant's time zone. Identify incomplete/unknown data, handle clock changes in the calculation and preserve menus and scrolling during refresh.
