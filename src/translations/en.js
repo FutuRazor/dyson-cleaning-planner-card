@@ -1,5 +1,12 @@
 // English messages are also stable translation keys. Never use translated labels in action payloads.
 export const en = {
+  "Next cleaning in {duration}": "Next cleaning in {duration}",
+  "Next known cleaning in {duration}": "Next known cleaning in {duration}",
+  "No active schedules": "No active schedules",
+  "Next cleaning unknown": "Next cleaning unknown",
+  "Next cleaning unavailable": "Next cleaning unavailable",
+  "The Home Assistant time zone is unavailable.": "The Home Assistant time zone is unavailable.",
+  "Calculated from reported weekly schedules; actual execution may differ.": "Calculated from reported weekly schedules; actual execution may differ.",
   "Schedules, active: {count}": "Schedules, active: {count}",
   "Active schedules: {count}": "Active schedules: {count}",
   "Schedule created.": "Schedule created.",

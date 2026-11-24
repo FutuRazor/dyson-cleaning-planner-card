@@ -58,6 +58,8 @@ Edit and Delete are in a keyboard-accessible three-dot menu to the right of the 
 
 The integration currently writes a UTC offset when a schedule is changed. This card does not implement daylight-saving-time migration; verify actual execution across clock changes separately.
 
+The shared overview includes a compact countdown above the list for the next enabled weekly plan, calculated in HA's configured time zone and refreshed locally without actions. Incomplete metadata is labeled as the next known cleaning; one-time plans without a date and unknown time zones are not guessed. The tooltip gives the nominal date/time. This calculation does not change the integration's stored offset or confirm the robot's actual execution.
+
 Run `node tests/schedules-browser.mjs` with Playwright for the simulated UI flow. Live acceptance: create one schedule with safe settings, verify its days/time and actual selected rooms in MyDyson, toggle it, edit its time, and confirm that general room preferences and the card's local draft remain unchanged. Repeat after reload; check the empty, disconnected and incomplete-list states. Fixtures deliberately model different selected rooms in MyDyson and unfiltered room names in the HA sensor. No real robot schedule was created during automated validation.
 
 ## Map and readiness requirements

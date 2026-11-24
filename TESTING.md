@@ -4,7 +4,13 @@
 
 This is a stable release without a beta suffix. Only the hass-dyson adapter remains labeled experimental.
 
-### Final release review — 24 November 2026
+### Countdown follow-up — 24 November 2026
+
+- Validation passed: `npm run check` with **125 unit tests**, regenerated bundle and standalone smoke checks. Edge browser checks passed for the countdown, responsive schedule layout/design, shared feedback, asynchronous menus and hass-dyson's dock/session timer regression. Countdown screenshots were reviewed at narrow and wide widths; no real robot commands were sent.
+- The overview now shows a compact countdown above its first row. `tests/schedule-countdown.test.mjs` covers HA-local dates, enabled weekdays, chronological selection, week/year rollover, fractional offsets, DST gaps/overlaps, unknown/one-time data and duration formatting.
+- Run `node tests/schedules-countdown-browser.mjs` for both adapters with a browser in a different time zone: local ticking without HA events/actions, state changes, preserved menu nodes, missing metadata and compact one-line layouts in both themes/four languages at 320/375/732 px. Screenshots are saved under `artifacts/schedules-countdown/`.
+
+### Initial release review — 24 November 2026
 
 - `npm run check` passed all **120 unit tests**, source syntax checks, bundle generation and standalone registration/discovery checks for both adapters.
 - All **30 browser scripts** passed in headless Edge against simulated Home Assistant. Coverage includes room drafts and actions, zones and map rotation, session controls, readiness, dock/robot settings, consumables, translations, keyboard interaction, scrolling, both adapters and the complete schedule UI. The scroll suite also passed separately with `CARD_THEME=modern`.
@@ -15,7 +21,7 @@ This is a stable release without a beta suffix. Only the hass-dyson adapter rema
 
 ### Release acceptance checklist
 
-- Run `npm run check`: 120 unit tests, syntax checks, generated bundle and standalone-bundle smoke checks for both adapters.
+- Run `npm run check`: 125 unit tests, syntax checks, generated bundle and standalone-bundle smoke checks for both adapters.
 - Run `node tests/schedules-browser.mjs` with Playwright for the experimental hass-dyson schedule flow: create with the stored-room-selection warning, edit only days/time, toggle enabled state, retain room drafts and failed dialogs, preserve keyboard focus, survive HA updates, and check both themes at mobile/desktop widths. Assert that unfiltered room names from the integration are not presented as selected rooms. Legacy Spot+Scrub builds without schedule metadata stay unchanged. This uses simulated HA and creates no real schedules.
 - Run `node tests/spot-schedules-browser.mjs` for the Spot+Scrub v2.2.0 schedule interface: all three planning tabs and their ARIA relationships, explicit selected IDs/order and schedule-only settings, accurate selected-room names, edit/toggle/delete, room reorder/add/remove, saved schedule settings distinct from live preferences, preselection/readback after reopening, explicit setting overrides, legacy/partial metadata without assumed values, empty-plan/map validation, dismissible header messages, read-only model behavior, sync warnings, four-row scrolling, offline states and backend rejection. Both themes run at 375/900 px. `tests/spot-schedules.test.mjs` covers map/identity isolation, exact payloads, missing capabilities, invalid drafts and locking. Maintainer live checks and remaining execution checks are recorded in [Spot+Scrub schedule validation](docs/spot-scrub-schedules.md#validation).
 - The schedule browser check also selects and applies 21:15 using only mouse clicks, cancels a tentative time without losing the applied value, preserves an open time picker across HA updates, verifies its horizontal bounds at 375/900 px in both themes, and checks arrow/Home/End/Escape navigation.

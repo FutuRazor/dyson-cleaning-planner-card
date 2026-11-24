@@ -2,6 +2,7 @@
 
 ## v1.6.0
 
+- Show a compact local countdown above the schedule list for the next enabled weekly plan in Home Assistant's time zone. Identify incomplete/unknown data, handle clock changes in the calculation and preserve menus and scrolling during refresh.
 - Add weekly schedule management for the Spot+Scrub integration v2.2.0: create from room planning, enable/disable, edit days/time and delete individual schedules after confirmation. Detect model capabilities and keep unsupported models read-only.
 - Create and edit Spot+Scrub schedules with explicit selected rooms, submitted room order and per-room cleaning settings. Display the schedule's own saved settings and preserve unchanged or unreported values independently of general room preferences.
 - Reuse the room planner's tiles, numbered selection circles and cleaning controls in the schedule editor. Keep its draft isolated, match the planner's responsive two-column layout and footer heights, and hide mode-irrelevant water/power settings.

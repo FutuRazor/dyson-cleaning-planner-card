@@ -1,6 +1,13 @@
 /* Dyson Cleaning Planner Card v1.6.0 | MIT */
 // English messages are also stable translation keys. Never use translated labels in action payloads.
 const en = {
+  "Next cleaning in {duration}": "Next cleaning in {duration}",
+  "Next known cleaning in {duration}": "Next known cleaning in {duration}",
+  "No active schedules": "No active schedules",
+  "Next cleaning unknown": "Next cleaning unknown",
+  "Next cleaning unavailable": "Next cleaning unavailable",
+  "The Home Assistant time zone is unavailable.": "The Home Assistant time zone is unavailable.",
+  "Calculated from reported weekly schedules; actual execution may differ.": "Calculated from reported weekly schedules; actual execution may differ.",
   "Schedules, active: {count}": "Schedules, active: {count}",
   "Active schedules: {count}": "Active schedules: {count}",
   "Schedule created.": "Schedule created.",
@@ -314,6 +321,13 @@ const en = {
 
 // German display text. Entity names and protocol values are never rewritten.
 const de = {
+  "Next cleaning in {duration}": "Nächste Reinigung in {duration}",
+  "Next known cleaning in {duration}": "Nächste bekannte Reinigung in {duration}",
+  "No active schedules": "Keine aktiven Zeitpläne",
+  "Next cleaning unknown": "Nächste Reinigung unbekannt",
+  "Next cleaning unavailable": "Nächste Reinigung nicht verfügbar",
+  "The Home Assistant time zone is unavailable.": "Die Home-Assistant-Zeitzone ist nicht verfügbar.",
+  "Calculated from reported weekly schedules; actual execution may differ.": "Aus den gemeldeten Wochenzeitplänen berechnet; die tatsächliche Ausführung kann abweichen.",
   "Schedules, active: {count}": "Zeitpläne, aktiv: {count}",
   "Active schedules: {count}": "Aktive Zeitpläne: {count}",
   "Schedule created.": "Zeitplan erstellt.",
@@ -627,6 +641,13 @@ const de = {
 
 // Dutch UI text. Protocol values and entity names remain unchanged.
 const nl = {
+  "Next cleaning in {duration}": "Volgende reiniging over {duration}",
+  "Next known cleaning in {duration}": "Volgende bekende reiniging over {duration}",
+  "No active schedules": "Geen actieve schema's",
+  "Next cleaning unknown": "Volgende reiniging onbekend",
+  "Next cleaning unavailable": "Volgende reiniging niet beschikbaar",
+  "The Home Assistant time zone is unavailable.": "De tijdzone van Home Assistant is niet beschikbaar.",
+  "Calculated from reported weekly schedules; actual execution may differ.": "Berekend uit de gemelde weekschema's; de werkelijke uitvoering kan afwijken.",
   "Schedules, active: {count}": "Schema's, actief: {count}",
   "Active schedules: {count}": "Actieve schema's: {count}",
   "Schedule created.": "Schema aangemaakt.",
@@ -940,6 +961,13 @@ const nl = {
 
 // French UI translations. Dyson terminology is referenced in docs/translations.md.
 const fr = {
+  "Next cleaning in {duration}": "Prochain nettoyage dans {duration}",
+  "Next known cleaning in {duration}": "Prochain nettoyage connu dans {duration}",
+  "No active schedules": "Aucune programmation active",
+  "Next cleaning unknown": "Prochain nettoyage inconnu",
+  "Next cleaning unavailable": "Prochain nettoyage indisponible",
+  "The Home Assistant time zone is unavailable.": "Le fuseau horaire de Home Assistant est indisponible.",
+  "Calculated from reported weekly schedules; actual execution may differ.": "Calculé à partir des programmations hebdomadaires reçues ; l'exécution réelle peut différer.",
   "Schedules, active: {count}": "Plannings, actifs : {count}",
   "Active schedules: {count}": "Plannings actifs : {count}",
   "Schedule created.": "Programme créé.",
@@ -2933,6 +2961,57 @@ if (!customElements.get('dyson-planner-zone')) customElements.define('dyson-plan
 
 const weekdays = ['mon','tue','wed','thu','fri','sat','sun'];
 
+// Treat schedule times as HA-local wall times, independently of the browser zone.
+// At clock changes use compatible disambiguation: earlier overlap, forward gap.
+// This predicts the nominal weekly plan, not the robot's execution/UTC-offset policy.
+function nextScheduledClean(state, timeZone, now = Date.now()) {
+  const result = {timestamp:null, id:null, knownOnly:state.inSync !== true, reason:'unknown'};
+  if (!state.available || !Number.isFinite(now)) return {...result, reason:'unavailable'};
+  let format;
+  try {
+    if (!timeZone) return {...result, reason:'timezone'};
+    format = new Intl.DateTimeFormat('en-GB', {timeZone, calendar:'gregory', numberingSystem:'latn',
+      year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit', hourCycle:'h23'});
+  } catch { return {...result, reason:'timezone'}; }
+  const wall = timestamp => {
+    const parts = Object.fromEntries(format.formatToParts(timestamp).filter(part => part.type !== 'literal').map(part => [part.type,Number(part.value)]));
+    return Date.UTC(parts.year,parts.month-1,parts.day,parts.hour,parts.minute,parts.second);
+  };
+  const local = new Date(wall(now));
+  const today = Date.UTC(local.getUTCFullYear(),local.getUTCMonth(),local.getUTCDate());
+  const enabled = state.schedules.filter(schedule => schedule.enabled);
+  if (!enabled.length && !result.knownOnly) return {...result, reason:'inactive'};
+  if (enabled.some(schedule => schedule.repeat !== true)) result.knownOnly = true;
+  for (const schedule of enabled) {
+    // One-time schedules expose no execution date through the normalized interface.
+    if (schedule.repeat !== true || !/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(schedule.time) || !Array.isArray(schedule.days)) continue;
+    const [hour,minute] = schedule.time.split(':').map(Number);
+    for (let day = 0; day <= 7; day++) {
+      const date = today + day*86400000;
+      if (!schedule.days.includes(weekdays[(new Date(date).getUTCDay()+6)%7])) continue;
+      const target = date + hour*3600000 + minute*60000;
+      const offsets = new Set([-86400000,0,86400000].map(delta => wall(target+delta)-(target+delta)));
+      const candidates = [...offsets].map(offset => ({timestamp:target-offset, local:wall(target-offset)}));
+      const exact = candidates.filter(candidate => candidate.local === target).sort((a,b) => a.timestamp-b.timestamp);
+      const after = candidates.filter(candidate => candidate.local > target).sort((a,b) => a.local-b.local);
+      const timestamp = (exact[0] ?? after[0])?.timestamp;
+      if (timestamp > now && (result.timestamp === null || timestamp < result.timestamp)) {
+        result.timestamp = timestamp; result.id = schedule.id; result.reason = 'next';
+      }
+    }
+  }
+  return result;
+}
+
+function scheduleCountdownDuration(timestamp, now, language) {
+  const minutes = Math.max(0,Math.ceil((timestamp-now)/60000));
+  const unit = (value,name) => new Intl.NumberFormat(language,{style:'unit',unit:name,unitDisplay:'narrow'}).format(value);
+  if (minutes <= 1) return `${timestamp-now < 60000 ? '< ' : ''}${unit(1,'minute')}`;
+  if (minutes >= 1440) return `${unit(Math.floor(minutes/1440),'day')} ${unit(Math.floor(minutes%1440/60),'hour')}`;
+  if (minutes >= 60) return `${unit(Math.floor(minutes/60),'hour')} ${unit(minutes%60,'minute')}`;
+  return unit(minutes,'minute');
+}
+
 // A resolved service call is not yet a reflected HA state. Confirm only fields
 // the selected adapter exposes, and do not guess which of several new entries is ours.
 function scheduleRequestConfirmed(state, request) {
@@ -2955,6 +3034,7 @@ const scheduleStyles = `
 .room-secondary-actions{display:flex;gap:8px;min-width:0}.actions .schedule-create{flex:0 0 38px;padding:6px;display:flex;align-items:center;justify-content:center}
 .room-secondary-actions button{min-width:0}.schedule-create ha-icon{--mdc-icon-size:22px}
 .schedules{padding:8px var(--dp-padding,24px) 18px;container:dyson-schedules / inline-size}
+.schedule-countdown{margin:0 0 6px;font-size:12px;line-height:1.4;color:var(--dp-muted);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .schedule-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center;padding:18px 14px 18px 20px;border:1px solid var(--dp-line);border-radius:18px;background:var(--dp-modern-surface,var(--dp-soft));flex-shrink:0;min-width:0;box-sizing:border-box;container:dyson-schedule-row / inline-size}
 .schedule-copy{min-width:0;container:dyson-schedule-copy / inline-size}.schedule-main{display:flex;align-items:center;gap:16px;min-width:0}
 .schedule-time-value{font-size:30px;font-weight:700;line-height:1.2;font-variant-numeric:tabular-nums;letter-spacing:-.6px;white-space:nowrap;padding-right:16px;border-right:1px solid var(--dp-line)}
@@ -3017,6 +3097,29 @@ const scheduleStyles = `
 const scheduleCardMethods = {
   getScheduleState() {
     return this.adapter.scheduleState?.(this._hass, this.registry, this.config.entity) ?? { supported:false, schedules:[] };
+  },
+  updateScheduleCountdown() {
+    const line = this.shadowRoot.querySelector('.schedule-countdown');
+    if (!line) return;
+    const state = this.getScheduleState(), timeZone = this._hass?.config?.time_zone, now = Date.now();
+    const signature = JSON.stringify([timeZone,state.available,state.inSync,state.schedules.map(({id,enabled,days,time,repeat}) => [id,enabled,days,time,repeat])]);
+    let cached = this._scheduleCountdown;
+    if (!cached || cached.signature !== signature || now < cached.checkedAt || (cached.next.timestamp !== null && cached.next.timestamp <= now)) {
+      cached = this._scheduleCountdown = {signature, checkedAt:now, next:nextScheduledClean(state,timeZone,now)};
+    }
+    const next = cached.next;
+    let text, title;
+    if (next.timestamp !== null) {
+      text = this.t(next.knownOnly ? 'Next known cleaning in {duration}' : 'Next cleaning in {duration}',
+        {duration:scheduleCountdownDuration(next.timestamp,now,this.language)});
+      const date = new Intl.DateTimeFormat(this.language,{timeZone,weekday:'long',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',timeZoneName:'short'}).format(next.timestamp);
+      title = `${text}\n${date} (${timeZone})\n${this.t('Calculated from reported weekly schedules; actual execution may differ.')}`;
+    } else {
+      text = this.t(next.reason === 'inactive' ? 'No active schedules' : next.reason === 'unknown' ? 'Next cleaning unknown' : 'Next cleaning unavailable');
+      title = next.reason === 'timezone' ? this.t('The Home Assistant time zone is unavailable.') : text;
+    }
+    if (line.textContent !== text) line.textContent = text;
+    if (line.title !== title) { line.title = title; line.setAttribute('aria-label',title); }
   },
   canOfferScheduleCreation() {
     const state = this.getScheduleState();
@@ -3499,10 +3602,12 @@ const scheduleCardMethods = {
     this.paint(`<style>${styles}</style><ha-card><div class="planner-content">${this.headerHtml()}${this.statusHtml()}${this.planningTabsHtml()}<div id="planning-panel-rooms" role="tabpanel" aria-labelledby="planning-tab-rooms" hidden></div>${this.supportsZone ? '<div id="planning-panel-zones" role="tabpanel" aria-labelledby="planning-tab-zones" hidden></div>' : ''}<section id="planning-panel-schedules" role="tabpanel" aria-labelledby="planning-tab-schedules" class="schedules">
       ${!state.available ? `<p class="schedule-note">${this.ht('Schedules are unavailable. Check the robot connection and integration.')}</p>` : ''}
       ${state.inSync === false ? `<p class="schedule-note schedule-warning">${this.ht('The schedule list may be incomplete. Turn each schedule off and on in MyDyson while the integration is connected.')}</p>` : ''}
+      <p class="schedule-countdown"></p>
       <div class="schedule-list" role="region" aria-label="${this.ht('Schedules')}" ${state.schedules.length > 4 ? 'tabindex="0"' : ''} style="max-height:${previousHeight}">${rows}</div>
       ${!rows && state.available ? `<p class="schedule-note">${this.ht('No known schedules. Create one from the room planner, or turn existing schedules off and on in MyDyson.')}</p>` : ''}
     </section></div>${this.consumablesHtml()}${menu}${this.scheduleOverlayHtml()}</ha-card>`, 'schedules');
     this.updateBattery(); this.updateConsumables(); this.updateStatus(''); this.updateScheduleDialog();
+    this.updateScheduleCountdown();
     const list = this.shadowRoot.querySelector('.schedule-list');
     list.scrollTop = scrollTop;
     this.updateScheduleListLayout();
@@ -3902,6 +4007,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     this.robotMessage = ''; this._robotMessageContext = {};
     this.zoneView = false; this.zoneDraft = null;
     this.cancelScheduleFeedback();
+    this._scheduleCountdown = null;
     this.schedulesView = false; this.scheduleDialog = null; this.scheduleMenu = null; this.scheduleSending = null;
     this.scheduleScrollTop = 0;
     this.config = normalized;
@@ -3921,8 +4027,10 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     this.update();
     clearInterval(this._dockTimer);
     this._dockTimer = setInterval(() => {
-      if (this.isConnected && !document.hidden && this.adapter.usesDockTimer && this.model
+      if (!this.isConnected || document.hidden) return;
+      if (this.adapter.usesDockTimer && this.model
           && this.shadowRoot.querySelector('.activity-remaining:not([hidden])')) this.updateStatus();
+      if (this.schedulesView) this.updateScheduleCountdown();
     }, 1000);
   }
   disconnectedCallback() {

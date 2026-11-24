@@ -1,5 +1,12 @@
 // German display text. Entity names and protocol values are never rewritten.
 export const de = {
+  "Next cleaning in {duration}": "Nächste Reinigung in {duration}",
+  "Next known cleaning in {duration}": "Nächste bekannte Reinigung in {duration}",
+  "No active schedules": "Keine aktiven Zeitpläne",
+  "Next cleaning unknown": "Nächste Reinigung unbekannt",
+  "Next cleaning unavailable": "Nächste Reinigung nicht verfügbar",
+  "The Home Assistant time zone is unavailable.": "Die Home-Assistant-Zeitzone ist nicht verfügbar.",
+  "Calculated from reported weekly schedules; actual execution may differ.": "Aus den gemeldeten Wochenzeitplänen berechnet; die tatsächliche Ausführung kann abweichen.",
   "Schedules, active: {count}": "Zeitpläne, aktiv: {count}",
   "Active schedules: {count}": "Aktive Zeitpläne: {count}",
   "Schedule created.": "Zeitplan erstellt.",

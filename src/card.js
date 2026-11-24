@@ -396,6 +396,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     this.robotMessage = ''; this._robotMessageContext = {};
     this.zoneView = false; this.zoneDraft = null;
     this.cancelScheduleFeedback();
+    this._scheduleCountdown = null;
     this.schedulesView = false; this.scheduleDialog = null; this.scheduleMenu = null; this.scheduleSending = null;
     this.scheduleScrollTop = 0;
     this.config = normalized;
@@ -415,8 +416,10 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     this.update();
     clearInterval(this._dockTimer);
     this._dockTimer = setInterval(() => {
-      if (this.isConnected && !document.hidden && this.adapter.usesDockTimer && this.model
+      if (!this.isConnected || document.hidden) return;
+      if (this.adapter.usesDockTimer && this.model
           && this.shadowRoot.querySelector('.activity-remaining:not([hidden])')) this.updateStatus();
+      if (this.schedulesView) this.updateScheduleCountdown();
     }, 1000);
   }
   disconnectedCallback() {

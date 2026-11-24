@@ -52,9 +52,11 @@ try {
       assert.equal(measured.overflow,false,'schedule cards fit without horizontal overflow');
       assert.ok(measured.days.every(count=>count===7),'all seven weekday badges are shown');
     }
-    await card.locator('.schedule-list').hover();await page.mouse.wheel(0,1800);
+    await card.locator('.schedule-list').hover();
+    // Hover may first bring the list into the browser viewport; measure after that.
+    const beforeWheel=await geometry();await page.mouse.wheel(0,1800);
     await page.waitForFunction(()=>demo.card.shadowRoot.querySelector('.schedule-list').scrollTop>0);
-    const scrolled=await geometry();assert.ok(Math.abs(scrolled.header.y-eight.header.y)<1,'tabs stay in place when scrolling schedules');
+    const scrolled=await geometry();assert.ok(Math.abs(scrolled.header.y-beforeWheel.header.y)<1,'tabs stay in place when scrolling schedules');
     const saved=await card.locator('.schedule-list').evaluate(el=>{el.scrollTop=el.scrollHeight;return el.scrollTop;});
     await page.evaluate(()=>{demo.card.hass={...sched.hass};});
     assert.ok(Math.abs((await geometry()).scrollTop-saved)<2,'HA updates retain scroll position');
