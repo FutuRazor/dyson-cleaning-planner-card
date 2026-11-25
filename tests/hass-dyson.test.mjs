@@ -134,14 +134,17 @@ test('renamed vacuum entities for the same device share the room action lock', a
   } finally {release();await first;}
 });
 
-test('finished-job telemetry stays non-live across dock interlocks without clearing a pending start', () => {
+test('finished-job return stays in the session across dock interlocks without confirming a pending start', () => {
   const f=hassDysonFixture();f.hass.states[f.entity]={state:'returning',attributes:{raw_state:'FULL_CLEAN_FINISHED'}};
   for(const phase of ['IDLE','WASHING_MOP','COLLECTING_DUST','DRYING_MOP','unknown']) {
     f.hass.states[f.dock].state=phase;
-    assert.equal(adapter.cleaningView(f.hass,f.entity,false,f.registry).active,false,phase);
+    const returning=adapter.cleaningView(f.hass,f.entity,false,f.registry);
+    assert.equal(returning.active,true,phase);
+    assert.equal(returning.title,'Robot returning',phase);
+    assert.equal(returning.live,false,phase);
     const pending=adapter.cleaningView(f.hass,f.entity,true,f.registry);
     assert.equal(pending.live,false,phase);assert.equal(pending.title,'Starting clean',phase);
-    if(['WASHING_MOP','COLLECTING_DUST','unknown'].includes(phase))assert.ok(adapter.startBlockReason(f.hass,f.entity,f.registry));
+    assert.ok(adapter.startBlockReason(f.hass,f.entity,f.registry),phase);
   }
   f.hass.states[f.entity].attributes.raw_state='FULL_CLEAN_NEEDS_CHARGE';
   assert.equal(adapter.cleaningView(f.hass,f.entity,false,f.registry).live,true);
@@ -227,7 +230,7 @@ test('standard session actions target only configured vacuum; unsupported statio
 test('finished telemetry does not confirm a pending start; mid-job charging remains a session and disconnection wins', () => {
   const f=hassDysonFixture();
   f.hass.states[f.entity]={state:'returning',attributes:{raw_state:'FULL_CLEAN_FINISHED'}};
-  assert.equal(adapter.cleaningView(f.hass,f.entity,false,f.registry).active,false);
+  assert.equal(adapter.cleaningView(f.hass,f.entity,false,f.registry).active,true);
   assert.equal(adapter.cleaningView(f.hass,f.entity,true,f.registry).live,false);
   assert.equal(adapter.cleaningView(f.hass,f.entity,true,f.registry).title,'Starting clean');
   f.hass.states[f.entity]={state:'docked',attributes:{raw_state:'FULL_CLEAN_CHARGING'}};
@@ -235,6 +238,38 @@ test('finished telemetry does not confirm a pending start; mid-job charging rema
   assert.ok(adapter.startBlockReason(f.hass,f.entity,f.registry));
   f.hass.connected=false;f.hass.states[f.entity].state='cleaning';
   assert.equal(adapter.activityStatus(f.hass,f.entity).text,'Robot unavailable');
+});
+
+test('normal completion and aborted returns reject new room jobs before any settings write', async () => {
+  for (const raw of ['FULL_CLEAN_FINISHED','FULL_CLEAN_ABORTED']) for (const phase of ['IDLE','DRYING_MOP']) for (const edited of [false,true]) {
+    const f=hassDysonFixture();
+    Object.assign(f.hass.states[f.entity],{state:'returning',attributes:{raw_state:raw,ready_to_start:true}});
+    f.hass.states[f.dock].state=phase;
+    const r=request(f), draft=edited?{'12':{cleaning_mode:'Mop'}}:{};
+    assert.equal(adapter.roomPlanningState(f.hass,f.registry,f.config,r.model,draft).canStart,false);
+    assert.equal(adapter.cleaningView(f.hass,f.entity,false,f.registry).active,true);
+    await assert.rejects(adapter.sendRoomDraft({...r,start:true,selected:[f.fields['12'].cleaning_mode],draft}));
+    assert.deepEqual(f.calls,[],`${raw}/${phase}/${edited}: no Save or Start while returning`);
+  }
+  // Even inconsistent snapshots must not authorize a job from returning alone.
+  for(const raw of ['INACTIVE_CHARGING','INACTIVE_CHARGED']) {
+    const f=hassDysonFixture();f.hass.states[f.entity].state='returning';f.hass.states[f.entity].attributes.raw_state=raw;
+    assert.ok(adapter.startBlockReason(f.hass,f.entity,f.registry));
+  }
+  for(const state of ['docked','idle']) {
+    const f=hassDysonFixture();f.hass.states[f.entity].state=state;f.hass.states[f.entity].attributes.raw_state='FULL_CLEAN_FINISHED';
+    assert.ok(adapter.startBlockReason(f.hass,f.entity,f.registry),'a completed job alone does not establish readiness');
+  }
+});
+
+test('a finished return appearing after Save withholds Start and reports the saved settings', async () => {
+  const f=hassDysonFixture(), r=request(f);
+  const latest={...f.hass,states:{...f.hass.states,[f.entity]:{state:'returning',attributes:{raw_state:'FULL_CLEAN_FINISHED'}}}};
+  let current=f.hass;
+  f.hass.callService=async(domain,service,data)=>{f.calls.push({domain,service,data});current=latest;};
+  await assert.rejects(adapter.sendRoomDraft({...r,start:true,selected:[f.fields['12'].cleaning_mode],draft:{'12':{cleaning_mode:'Mop'}},
+    getCurrent:()=>({hass:current,registry:f.registry,config:f.config,active:true})}),/Settings were saved, but cleaning did not start/);
+  assert.deepEqual(f.calls.map(call=>call.service),['set_room_cleaning_modes']);
 });
 
 test('dock washing, collection and missing or ambiguous dock telemetry block new room starts', async () => {

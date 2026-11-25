@@ -23,7 +23,32 @@ try {
   assert.equal(await page.evaluate(()=>demo.card.pendingStart),true,'washing must not confirm a new job');
   assert.equal(await page.evaluate(()=>demo.card.view.live),false);
   await page.evaluate(()=>{demo.card.clearPendingStart();demo.card.update();});
-  assert.equal(await card.locator('.room').count(),2,'finished job stays in the planner during washing');
+  assert.equal(await card.locator('.session').count(),1,'finished return retains the session during dock activity');
+  assert.equal(await card.locator('.room').count(),0);
+  for(const theme of ['modern','classic']) for(const raw of ['FULL_CLEAN_FINISHED','FULL_CLEAN_ABORTED']) {
+    await page.evaluate(({theme,raw})=>{
+      audit.hass.states[audit.entity]={state:'returning',attributes:{raw_state:raw,ready_to_start:true}};
+      audit.hass.states[audit.dock].state='IDLE';
+      demo.card.setConfig({...audit.config,theme,language:'en',show_camera:false});demo.card.hass={...audit.hass};
+      demo.card.selected=[audit.fields['12'].cleaning_mode];demo.card.settingDraft={'12':{cleaning_mode:'Mop'}};
+      demo.card.updateDirty();demo.card.render();
+    },{theme,raw});
+    assert.equal(await card.locator('.session').count(),1);
+    assert.equal(await card.locator('[data-action="start"]').count(),0,'no new room Start while returning');
+    assert.match(await card.locator('.activity-text').innerText(),/Returning \/ mapping/);
+    await page.evaluate(()=>demo.card.start());
+    assert.equal(await page.evaluate(()=>audit.calls.length),0,'even direct Start sends no settings or job');
+  }
+  await page.evaluate(()=>{
+    audit.hass.states[audit.entity]={state:'docked',attributes:{raw_state:'INACTIVE_CHARGING'}};
+    audit.hass.states[audit.dock].state='WASHING_MOP';
+    demo.card.setConfig({...audit.config,theme:'modern',language:'en',show_camera:false});demo.card.hass={...audit.hass};
+  });
+  assert.equal(await card.locator('.room').count(),2,'resting robot returns to the planner');
+  await card.locator('input[data-room]').first().check();
+  assert.equal(await card.locator('[data-action="start"]').isDisabled(),true,'washing still blocks a new job');
+  await page.evaluate(()=>{audit.hass.states[audit.dock].state='DRYING_MOP';demo.card.hass={...audit.hass};});
+  assert.equal(await card.locator('[data-action="start"]').isEnabled(),true,'resting robot may start during drying');
   await page.evaluate(()=>{
     audit.hass.states[audit.entity]={state:'docked',attributes:{raw_state:'INACTIVE_CHARGING',ready_to_start:false}};
     audit.hass.states[audit.dock].state='DRYING_MOP';demo.card.hass={...audit.hass};

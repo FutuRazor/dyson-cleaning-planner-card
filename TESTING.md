@@ -1,5 +1,29 @@
 # Testing v1.6.0
 
+## hass-dyson return Start interlock - 25 November 2026
+
+The maintainer completed the mopping phase of a hass-dyson-started "Vacuum then Mop" job and could start a new Kitchen vacuuming request while the robot was returning to the station. After cancelling that new job, its return correctly blocked another request. This report applies to hass-dyson; it supersedes the earlier no-issue observation for the complete flow.
+
+Source review and fixtures reproduce the asymmetry: the card treated `FULL_CLEAN_FINISHED` plus HA `returning` as ready, while upstream [maps both normal completion and abort to return travel](https://github.com/cmgrayb/hass-dyson/blob/28e38e9f13cf0eb13593b5255bf7516dfefbd774/custom_components/hass_dyson/const.py#L714). The exact live attribute trace and installed integration version were not supplied. The adapter now requires `INACTIVE_CHARGED`/`INACTIVE_CHARGING` together with `docked`/`idle` and the existing dock/readiness checks. Normal-completion return stays in the session but does not confirm a pending new Start. Start is checked before any associated Save and again after Save; starts during drying remain supported once the robot is ready.
+
+`npm run check` passed with **163 unit tests**, a regenerated v1.6.0 bundle and standalone smoke checks. Regression assertions failed before the correction and now cover finished/aborted return, edited/unedited requests, explicit readiness, inconsistent state combinations, dock activity and return appearing after Save. Three headless Edge suites passed: `review-regressions-browser` (including both return paths in both themes and ready/drying recovery), `hass-dyson-browser` and `browser`.
+
+After installing the updated bundle, the maintainer reports that the return-trip retest passed: the cleaning-session view remains active and a new Start is blocked while returning. An earlier repeat that still allowed Start used the previous installed bundle and is not a failure of the updated code. The report does not separately confirm post-return Start during drying or uninterrupted full-cycle drying; those remain separate from this passed return interlock check.
+
+## Maintainer live follow-up - 25 November 2026
+
+Following the Dyson compatibility review, the maintainer reports:
+
+- Zone cleaning works with the map rotated.
+- Robot and station commands work.
+- Schedules can be displayed, edited, created, deleted and enabled/disabled.
+- Room cleaning initially appears to follow the chosen settings. This is a preliminary observation, not an individually confirmed result for every room setting.
+- In a subsequent check explicitly using hass-dyson, a "Vacuum then Mop" room clean was started and initially looked correct.
+- During roller preparation in that hass-dyson-started job, both native adapter cards retain the cleaning-session view and display status information correctly.
+- Mopping subsequently starts. The Spot+Scrub adapter's header icon also reflects the selected cleaning-path color. The subsequent report describes the return after mopping and the premature Start above; drying and uninterrupted full-cycle completion remain unconfirmed.
+
+These initial observations were followed by the hass-dyson return Start issue above. Installed integration versions were not specified. The later reports identify hass-dyson as the job's start path and confirm the preparation display in both native adapter cards; the initial checks were not assigned individually to an adapter. These results are recorded within that scope rather than as blanket acceptance of both integrations. Earlier live reports, including Pause/Resume/Home and the known cross-integration Resume exception, remain documented below.
+
 ## Dyson compatibility review - 25 November 2026
 
 Development now prioritizes existing Dyson users. Dreame remains an offline prototype pending a real-device tester. This review changes tests and documentation only; application behavior and version **v1.6.0** are unchanged.
@@ -9,7 +33,7 @@ Development now prioritizes existing Dyson users. Dreame remains an offline prot
 - The schedule review suite initially timed out while navigating to the local preview with a 15-second timeout, including an isolated retry. The complete suite passed with a 60-second navigation allowance; its 15-second interaction timeout remains unchanged. That allowance is now recorded in the test, without changing the application or its command timing.
 - Two new compatibility regressions exercise both Dyson integrations with legacy YAML (no integration key), Automatic and explicit native selection. A generic robot is first in the registry and both Dyson vacuums advertise generic area/fan features. Assertions retain the chosen robot while offline, explicit camera and room mappings, display order/exclusions, native controls and exact native Start payloads. Missing native actions send no fallback commands.
 
-No Dyson behavior regression was reproduced in this review. These automated checks do not constitute a new hardware test. Before any merge, repeat a small room clean through each native integration, including changed settings, Pause/Resume/Home, and Spot+Scrub rectangle cleaning. Earlier maintainer live reports and the known cross-integration Resume exception below remain separate evidence.
+No Dyson behavior regression was reproduced in this automated review. The subsequent maintainer live follow-up is recorded above, separately from the automated checks and earlier hardware reports. The known cross-integration Resume exception below remains separate evidence.
 
 ## Offline Dreame contract prototype - 25 November 2026
 

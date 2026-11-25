@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Block hass-dyson room starts while returning after normal cleaning completion, matching the existing aborted-return interlock. Keep the return session visible and require resting/charging telemetry before a new job, including revalidation after Save. Preserve starts during drying once the robot is ready.
 - Add compatibility regressions for existing Dyson YAML, native action payloads and adapter selection in mixed households. Record the Dyson-focused review and allow slower local preview navigation in the schedule browser test without changing interaction timeouts or application behavior.
 - Add an offline Dreame v2.0.3 contract prototype, source-shaped fixtures and an executable delayed-save-rejection demonstration. Validate map-qualified room identity, exact native profile values and companion-value preservation; do not equate optimistic HA updates or service completion with robot confirmation. The prototype is not bundled or exposed as a supported adapter.
 - Exclude Spot+Scrub's known cleaning-mode options from the generic suction slider: its fan-speed API selects vacuum/mop modes rather than suction intensity. Document hass-dyson's missing standard fan capability and retain area-only starts for these devices.

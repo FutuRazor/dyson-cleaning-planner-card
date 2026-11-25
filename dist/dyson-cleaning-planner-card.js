@@ -2272,16 +2272,21 @@ function startBlockReason(hass, entity, registry = []) {
   // owns the transition; do not send an unverified cancel-drying command.
   if (!['IDLE','DRYING_MOP'].includes(dock)) return 'Waiting for the robot to be ready';
   const raw = state.attributes?.raw_state;
-  if (!['INACTIVE_CHARGED','INACTIVE_CHARGING','FULL_CLEAN_FINISHED'].includes(raw)) return 'Waiting for the robot to be ready';
-  return ['docked','idle','returning'].includes(state.state) ? null : 'Waiting for the robot to be ready';
+  // FULL_CLEAN_FINISHED means the job ended, not that the return trip ended.
+  // Require resting/charging telemetry and a compatible HA state together.
+  if (!['INACTIVE_CHARGED','INACTIVE_CHARGING'].includes(raw)) return 'Waiting for the robot to be ready';
+  return ['docked','idle'].includes(state.state) ? null : 'Waiting for the robot to be ready';
 }
 function cleaningView(hass, entity, pendingStart = false, registry = []) {
-  // FULL_CLEAN_FINISHED is mapped to returning upstream, but is explicitly a
-  // writable/finished state. Other returning states remain active sessions.
+  // A finished job can still be returning to the dock. Keep that session
+  // visible, but never use its old completion telemetry to confirm a new Start.
   const state = hass?.states?.[entity];
-  if (available(state) && hass?.connected !== false && (state.attributes?.raw_state === 'FULL_CLEAN_FINISHED' || !startBlockReason(hass, entity, registry))) return pendingStart
-    ? { active:true, title:'Starting clean', detail:'Waiting for the robot to report its status.', live:false }
-    : { active:false, live:false };
+  if (available(state) && hass?.connected !== false && (state.attributes?.raw_state === 'FULL_CLEAN_FINISHED' || !startBlockReason(hass, entity, registry))) {
+    if (pendingStart) return { active:true, title:'Starting clean', detail:'Waiting for the robot to report its status.', live:false };
+    return state.state === 'returning'
+      ? {...spotScrubAdapter.cleaningView(hass, entity), live:false}
+      : { active:false, live:false };
+  }
   if (available(state) && hass?.connected !== false && state.attributes?.raw_state === 'FULL_CLEAN_CHARGING') return { active:true, title:'Cleaning session active', detail:'', live:true };
   return spotScrubAdapter.cleaningView(hass, entity, pendingStart);
 }
