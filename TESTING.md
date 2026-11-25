@@ -1,5 +1,14 @@
 # Testing v1.6.0
 
+## Offline Dreame contract prototype - 25 November 2026
+
+Version remains **v1.6.0** on `experiment/multi_adapter`. The [Dreame contract](docs/dreame-adapter-contract.md) is pinned to Tasshack/dreame-vacuum v2.0.3 and uses synthetic source-shaped fixtures. It is not registered, selectable or bundled as a runtime adapter, and no Dreame hardware support is claimed.
+
+- `npm run check` passed with **159 unit tests**, syntax validation, a rebuilt bundle and standalone smoke checks. The generated runtime bundle remains unchanged because the prototype is deliberately outside its import graph.
+- Eleven new contract tests cover map-qualified identities, native settings and companion-value preservation, water variants, readiness and stale contexts, native room starts, and optimistic HA publications followed by late backend rejection.
+- `npm run prototype:dreame` prints the proposed profile write and an unconfirmed/failing observation trace with **zero dispatched commands**. Neither matching HA values nor a resolved service authorizes automatic Start.
+- Browser suites were not rerun: there are no runtime UI or adapter-registration changes. Real model snapshots, robot acknowledgement/readback and live start behavior remain unverified; see the contract's live-evidence checklist before activation.
+
 ## Dyson fan API clarification — 25 November 2026
 
 The maintainer reports no suction control on the selected Dyson entity and subsequently identified it as the **hass-dyson** vacuum: that entity offers HA area selection and is eligible for the generic card dropdown. The Spot+Scrub entity offers cleaning modes instead and is not offered by the generic filter in this installation. This matches current upstream source: no FAN_SPEED support in hass-dyson and a cleaning-mode selector exposed as fan speed in Spot+Scrub. A missing generic suction slider is therefore consistent with the reported setup. Exact installed versions and raw attributes were not supplied. The generic adapter now excludes Spot+Scrub's known mode options and rejects stale suction drafts containing them, while preserving area-only starts.

@@ -4,6 +4,7 @@ Integration behavior is isolated behind internal adapters. The existing `dyson_s
 
 ## Boundaries
 
+- The [Dreame contract prototype](dreame-adapter-contract.md) is an isolated, unbundled source experiment. It builds offline descriptors and models unconfirmed background writes; it is not in `integrationAdapters` and is not available in the editor or Automatic selection as a specialized backend.
 - `src/integration.js` supplies the configured adapter. Automatic initial selection prefers Spot+Scrub; an explicit robot selects its own backend. It never switches robots because an entity becomes unavailable.
 - `src/adapters/spot-scrub.js` owns platform/unique-ID matching, room identity and draft validation, telemetry, backend capability checks, preference writes, session actions, zone readiness and action payloads.
 - `src/adapters/hass-dyson.js` implements native-ID room selects, normalized options, separate save/start actions, optional images/consumables and standard session controls. It does not borrow Spot+Scrub custom actions or station entities.
