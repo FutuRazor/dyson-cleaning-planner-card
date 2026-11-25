@@ -2,9 +2,6 @@
 
 ## Unreleased
 
-- Size the Modern drying progress track to the translated status and remaining-time text, ending at the time label with the cancel control alongside it. Keep the time readable on narrow cards by truncating the status label when necessary, and retain the fixed status-row height.
-- Block hass-dyson room starts while returning after normal cleaning completion, matching the existing aborted-return interlock. Keep the return session visible and require resting/charging telemetry before a new job, including revalidation after Save. Preserve starts during drying once the robot is ready.
-- Add compatibility regressions for existing Dyson YAML, native action payloads and adapter selection in mixed households. Record the Dyson-focused review and allow slower local preview navigation in the schedule browser test without changing interaction timeouts or application behavior.
 - Add an offline Dreame v2.0.3 contract prototype, source-shaped fixtures and an executable delayed-save-rejection demonstration. Validate map-qualified room identity, exact native profile values and companion-value preservation; do not equate optimistic HA updates or service completion with robot confirmation. The prototype is not bundled or exposed as a supported adapter.
 - Exclude Spot+Scrub's known cleaning-mode options from the generic suction slider: its fan-speed API selects vacuum/mop modes rather than suction intensity. Document hass-dyson's missing standard fan capability and retain area-only starts for these devices.
 - Add an optional shared suction slider below HA area tiles when the exact vacuum exposes FAN_SPEED, native options and the set-fan-speed action. Keep edits local until Start, set only changed values, revalidate before area cleaning, and retain drafts with explicit partial-effect feedback instead of retrying or rolling back. Explain that suction is a global robot preference and may persist after the job.
@@ -14,6 +11,12 @@
 - Move room-planning capabilities, field presentation and editor metadata behind the existing Dyson adapters. Hide unsupported room actions/settings, gate dispatch with current adapter readiness, retain legacy entity-based YAML keys and allow room selection without a dedicated HA entity.
 - Show hass-dyson selections without execution-order numbers, since its integration controls room order. Preserve Spot+Scrub's numbered selection and existing action payloads.
 - Add room-capability regression tests and an entityless-room browser fixture. The maintainer reports successful live checks for both Dyson adapters; document a non-blocking cross-integration Resume exception when both integrations control the same robot.
+
+## v1.6.1
+
+- Block hass-dyson room starts while returning after normal cleaning completion, matching the existing aborted-return interlock. Keep the return session visible and require resting/charging telemetry before a new job, including revalidation after Save. Preserve starts during drying once the robot is ready. The maintainer confirmed the return interlock in a live retest with the updated bundle.
+- Size the Modern drying progress track to the translated status and remaining-time text, ending at the time label with the cancel control alongside it. Keep the time readable on narrow cards by truncating the status label when necessary, and retain the fixed status-row height. The maintainer confirmed the resulting appearance.
+- Add compatibility regressions for existing Dyson YAML, native action payloads and adapter selection in mixed households. Record the Dyson-focused review and allow slower local preview navigation in the schedule browser test without changing interaction timeouts or application behavior.
 
 ## v1.6.0
 

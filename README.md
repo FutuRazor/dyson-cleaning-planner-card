@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/images/planner-banner.svg?v=1.6.0" alt="Dyson Cleaning Planner — a dashboard card for Home Assistant" width="1100">
+  <img src="docs/images/planner-banner.svg?v=1.6.1" alt="Dyson Cleaning Planner — a dashboard card for Home Assistant" width="1100">
 </p>
 
 <p align="center">
@@ -18,7 +18,7 @@
   Plan room or zone cleaning, manage weekly schedules, and follow your Dyson's progress in Home Assistant.
 </p>
 
-**Version 1.6.0**
+**Version 1.6.1**
 
 <p align="center">
   <a href="#installation">Installation</a> &middot;

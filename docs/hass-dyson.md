@@ -1,6 +1,6 @@
 # Experimental hass-dyson adapter
 
-Card **v1.6.0** includes an experimental adapter for **Spot+Scrub / RB05 through [cmgrayb/hass-dyson](https://github.com/cmgrayb/hass-dyson)** alongside the original Spot+Scrub adapter. Source review and offline HA fixtures cover the implemented interface. Maintainer live tests confirmed Save with entity readback, room starts, Pause/Resume/Home, battery percentage, separate vacuum/mop coverage, dock activity, drying remaining time, the washing start interlock and starting during drying. The card is a stable release; hass-dyson support remains experimental, particularly for other robot models and installations.
+Card **v1.6.1** includes an experimental adapter for **Spot+Scrub / RB05 through [cmgrayb/hass-dyson](https://github.com/cmgrayb/hass-dyson)** alongside the original Spot+Scrub adapter. Source review and offline HA fixtures cover the implemented interface. Maintainer live tests confirmed Save with entity readback, room starts, Pause/Resume/Home, battery percentage, separate vacuum/mop coverage, dock activity, drying remaining time, the washing start interlock and starting during drying. The card is a stable release; hass-dyson support remains experimental, particularly for other robot models and installations.
 
 ## Setup and integration selection
 

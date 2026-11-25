@@ -1,4 +1,10 @@
-# Testing v1.6.0
+# Testing v1.6.1
+
+## v1.6.1 version alignment - 25 November 2026
+
+The maintainer assigned the latest Dyson fixes to **v1.6.1**: the hass-dyson return Start interlock and the translated Modern drying-track alignment. Both received maintainer live confirmation; the drying alignment was confirmed after the automated/visual checks below. Package metadata, README, current contract/adapter documentation and the generated bundle identify v1.6.1. The UI intentionally has no version badge.
+
+`npm run check` passes with **163 unit tests**, bundle generation and standalone smoke checks. Earlier entries retain the v1.6.0 label used when those checks were performed before this version assignment. Other adapter experiments remain under Unreleased in the changelog; this local version update does not merge or publish the experiment branch.
 
 ## Modern drying track alignment - 25 November 2026
 
