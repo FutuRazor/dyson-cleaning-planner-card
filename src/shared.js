@@ -19,7 +19,7 @@ export const STATUS_BAR_ITEMS = [
 
 export function normalizeConfig(config) {
   if (!config || typeof config.entity !== 'string' || !config.entity.startsWith('vacuum.')) throw new UiError('Select a vacuum entity.');
-  if (config.integration !== undefined && !['auto', 'dyson_spot_scrub', 'hass_dyson'].includes(config.integration)) throw new UiError('Invalid integration selection.');
+  if (config.integration !== undefined && !['auto', 'dyson_spot_scrub', 'hass_dyson', 'ha_rooms'].includes(config.integration)) throw new UiError('Invalid integration selection.');
   if (config.language !== undefined && !['auto', 'en', 'de', 'nl', 'fr'].includes(config.language)) throw new UiError('language must be auto, en, de, nl or fr.');
   if (config.theme !== undefined && !['classic', 'modern'].includes(config.theme)) throw new UiError('theme must be classic or modern.');
   if (config.unsupported_settings && !['disabled', 'hidden'].includes(config.unsupported_settings)) throw new UiError('unsupported_settings must be disabled or hidden.');

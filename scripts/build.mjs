@@ -1,7 +1,7 @@
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
 const root = new URL('../', import.meta.url);
 const { version } = JSON.parse(await readFile(new URL('package.json', root)));
-const parts = await Promise.all(['translations/en', 'translations/de', 'translations/nl', 'translations/fr', 'localize', 'shared', 'zone-geometry', 'adapters/dyson-planning', 'adapters/spot-scrub', 'adapters/hass-dyson', 'integration', 'core', 'zone-core', 'map', 'zone', 'schedules', 'card', 'editor'].map(async name =>
+const parts = await Promise.all(['translations/en', 'translations/de', 'translations/nl', 'translations/fr', 'localize', 'shared', 'zone-geometry', 'adapters/dyson-planning', 'adapters/spot-scrub', 'adapters/hass-dyson', 'adapters/ha-rooms', 'integration', 'core', 'zone-core', 'map', 'zone', 'schedules', 'card', 'editor'].map(async name =>
   (await readFile(new URL(`src/${name}.js`, root), 'utf8'))
     // Normalize before transforming so Windows and Linux produce identical bundles.
     .replace(/\r\n?/g, '\n')

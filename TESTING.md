@@ -1,8 +1,38 @@
 # Testing v1.6.0
 
+## Dyson fan API clarification — 25 November 2026
+
+The maintainer reports no suction control on the selected Dyson entity and subsequently identified it as the **hass-dyson** vacuum: that entity offers HA area selection and is eligible for the generic card dropdown. The Spot+Scrub entity offers cleaning modes instead and is not offered by the generic filter in this installation. This matches current upstream source: no FAN_SPEED support in hass-dyson and a cleaning-mode selector exposed as fan speed in Spot+Scrub. A missing generic suction slider is therefore consistent with the reported setup. Exact installed versions and raw attributes were not supplied. The generic adapter now excludes Spot+Scrub's known mode options and rejects stale suction drafts containing them, while preserving area-only starts.
+
+Validation: `npm run check` passed with **148 unit tests**, rebuilt bundle and standalone smoke checks. A new regression covers both Spot+Scrub mode lists (with/without mop), blocked mode writes and permitted area-only cleaning. The fan browser suite also checks that mode options hide the slider and preserve area-only Start. Source references and version caveats are in the [generic adapter guide](docs/home-assistant-rooms.md#optional-suction-power-and-start).
+
+## Optional HA suction control — 25 November 2026
+
+Version remains **v1.6.0** on `experiment/multi_adapter`.
+
+- `npm run check`: **147 unit tests**, syntax checks, rebuilt bundle and standalone smoke validation passed.
+- Seven Edge browser suites passed: `ha-fan-speed-browser`, `ha-rooms-browser`, `browser`, `hass-dyson-browser`, `room-planning-browser`, `languages-browser` and `schedule-editor-browser`. The fan suite additionally checks keyboard focus after rendering and consecutive arrow-key changes.
+- Eight fan-specific unit tests cover exact feature/service/options detection, unknown/current values, untouched starts, changed native values, capability loss with retained intent, pre-write mapping validation, post-write lifecycle/readiness/map/option checks, locking, partial failures and no command retry or rollback.
+- The real-adapter fan browser suite covers one shared control outside the room tiles, local edits and Discard, language preservation, offline/unknown states, native option values, exact set-fan-speed → clean-area ordering, failed setting/start calls and explicit user retry. Layouts were checked in both themes/four languages at 375/900 px; narrow light/dark screenshots were inspected.
+
+Live verification of optional suction is **pending**. The previous successful generic Dyson test below predates this control. On a device exposing FAN_SPEED, a valid `fan_speed_list` and `vacuum.set_fan_speed`, verify: changing the slider sends nothing; Start uses the chosen global value; untouched starts retain the robot's setting; Discard restores the reported value. Check actual suction, persistence after the job and whether stored room profiles override the global setting. A failed set prevents Start; after a successful set and failed/withheld Start, review the robot before a manual retry.
+
+## Generic HA area adapter — 25 November 2026
+
+Branch: `experiment/multi_adapter`. Version remains **v1.6.0**. The new `ha_rooms` adapter follows HA Core **2026.11.3** registry options and area-cleaning action semantics. This stage adds generic area selection; it does not add manufacturer-specific settings or ordering guarantees.
+
+- `npm run check`: **139 unit tests**, rebuilt bundle and standalone smoke validation, including automatic generic discovery, passed.
+- Seven Edge browser suites passed: `ha-rooms-browser`, `browser`, `hass-dyson-browser`, `room-planning-browser`, `languages-browser`, `start-readiness-browser` and `schedule-editor-browser`.
+- New unit coverage includes exact capability detection, specialized priority/deduplication, missing and malformed mappings, native-segment versus HA-area IDs, one exact targeted action, invalid selections/settings, unavailable services/devices, fresh mapping/identity/area checks, lifecycle races, concurrent requests, failure handling and standard session features.
+- The real-adapter browser fixture covers the actual editor, area visibility/display order, two-area Start, Pause/Resume/Home, hidden unsupported UI, stale persisted mapping rejection with retained selection, and both themes at 375/900 px. Narrow screenshots were inspected. All requests target simulated HA fixtures.
+
+The maintainer reports a successful first **live test of the generic path with a Dyson** after explicitly selecting Home Assistant area cleaning in the card editor: multiple area-cleaning starts, Pause, Resume and Home worked; session room chips appeared for requests initiated in that browser instance; battery percentage was visible. The supplied screenshot shows five area tiles, checkmarks and no per-room controls, matching the intended initial scope. The maintainer later identified the underlying integration as hass-dyson; its installed version was not supplied. This validates the generic path on that Dyson setup, separately from the earlier native-adapter tests.
+
+Live acceptance with a **foreign robot is still pending**, as are generic-path checks not explicitly covered by this report. Follow the [setup and live checklist](docs/home-assistant-rooms.md). Do not infer additional model/integration support from this Dyson result.
+
 ## Local multi-adapter preparation — 25 November 2026
 
-Branch: `experiment/multi_adapter`. Version remains **v1.6.0**. This is an internal room-planning refactor; no additional robot integration is enabled.
+Branch: `experiment/multi_adapter`. Version remained **v1.6.0**. This preparation stage was an internal room-planning refactor; it did not yet enable an additional robot integration.
 
 - `npm run check`: **130 unit tests**, syntax checks, regenerated bundle and standalone smoke check passed.
 - Six Edge browser suites passed: `room-planning-browser`, `browser`, `hass-dyson-browser`, `room-identity-browser`, `schedule-editor-browser` and `zone-browser`.

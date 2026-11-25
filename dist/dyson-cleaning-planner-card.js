@@ -1,6 +1,22 @@
 /* Dyson Cleaning Planner Card v1.6.0 | MIT */
 // English messages are also stable translation keys. Never use translated labels in action payloads.
 const en = {
+  "Suction power · all selected rooms": "Suction power · all selected rooms",
+  "Robot setting; it may remain active after this clean.": "Robot setting; it may remain active after this clean.",
+  "The selected suction power is no longer available. Review or discard the draft.": "The selected suction power is no longer available. Review or discard the draft.",
+  "The suction power command was sent, but area cleaning was not confirmed. Check the robot before retrying. {error}": "The suction power command was sent, but area cleaning was not confirmed. Check the robot before retrying. {error}",
+  "Select mapped Home Assistant areas. The robot controls room order.": "Select mapped Home Assistant areas. The robot controls room order.",
+  "Home Assistant · Area cleaning": "Home Assistant · Area cleaning",
+  "Select mapped Home Assistant areas. The robot controls cleaning settings and room order.": "Select mapped Home Assistant areas. The robot controls cleaning settings and room order.",
+  "Sending area cleaning request …": "Sending area cleaning request …",
+  "The robot was not found in the entity registry.": "The robot was not found in the entity registry.",
+  "This robot does not report Home Assistant area cleaning support.": "This robot does not report Home Assistant area cleaning support.",
+  "Map the robot segments to Home Assistant areas in the vacuum entity settings.": "Map the robot segments to Home Assistant areas in the vacuum entity settings.",
+  "Home Assistant areas are unavailable. Reload the dashboard.": "Home Assistant areas are unavailable. Reload the dashboard.",
+  "Home Assistant area cleaning is unavailable. Check your Home Assistant version and integration.": "Home Assistant area cleaning is unavailable. Check your Home Assistant version and integration.",
+  "Start is only available when the robot is docked or idle.": "Start is only available when the robot is docked or idle.",
+  "The room selection changed. Refresh rooms and select the areas again.": "The room selection changed. Refresh rooms and select the areas again.",
+  "An action for this robot is already running in this browser.": "An action for this robot is already running in this browser.",
   "Next cleaning in {duration}": "Next cleaning in {duration}",
   "Next known cleaning in {duration}": "Next known cleaning in {duration}",
   "No active schedules": "No active schedules",
@@ -322,6 +338,22 @@ const en = {
 
 // German display text. Entity names and protocol values are never rewritten.
 const de = {
+  "Suction power · all selected rooms": "Saugkraft · alle ausgewählten Räume",
+  "Robot setting; it may remain active after this clean.": "Robotereinstellung; sie kann nach dieser Reinigung bestehen bleiben.",
+  "The selected suction power is no longer available. Review or discard the draft.": "Die gewählte Saugkraft ist nicht mehr verfügbar. Prüfe oder verwirf den Entwurf.",
+  "The suction power command was sent, but area cleaning was not confirmed. Check the robot before retrying. {error}": "Der Saugkraftbefehl wurde gesendet, die Bereichsreinigung aber nicht bestätigt. Prüfe den Roboter vor einem erneuten Versuch. {error}",
+  "Select mapped Home Assistant areas. The robot controls room order.": "Wähle zugeordnete Home-Assistant-Bereiche. Der Roboter bestimmt die Raumreihenfolge.",
+  "Home Assistant · Area cleaning": "Home Assistant · Bereichsreinigung",
+  "Select mapped Home Assistant areas. The robot controls cleaning settings and room order.": "Wähle zugeordnete Home-Assistant-Bereiche. Der Roboter bestimmt Reinigungseinstellungen und Raumreihenfolge.",
+  "Sending area cleaning request …": "Bereichsreinigung wird angefordert …",
+  "The robot was not found in the entity registry.": "Der Roboter wurde nicht in der Entitätsregistrierung gefunden.",
+  "This robot does not report Home Assistant area cleaning support.": "Dieser Roboter meldet keine Unterstützung für die Home-Assistant-Bereichsreinigung.",
+  "Map the robot segments to Home Assistant areas in the vacuum entity settings.": "Ordne die Robotersegmente in den Einstellungen der Sauger-Entität den Home-Assistant-Bereichen zu.",
+  "Home Assistant areas are unavailable. Reload the dashboard.": "Die Home-Assistant-Bereiche sind nicht verfügbar. Lade das Dashboard neu.",
+  "Home Assistant area cleaning is unavailable. Check your Home Assistant version and integration.": "Die Home-Assistant-Bereichsreinigung ist nicht verfügbar. Prüfe deine Home-Assistant-Version und die Integration.",
+  "Start is only available when the robot is docked or idle.": "Ein Start ist nur möglich, wenn der Roboter angedockt oder im Leerlauf ist.",
+  "The room selection changed. Refresh rooms and select the areas again.": "Die Raumzuordnung hat sich geändert. Aktualisiere die Räume und wähle die Bereiche erneut aus.",
+  "An action for this robot is already running in this browser.": "Für diesen Roboter läuft in diesem Browser bereits eine Aktion.",
   "Next cleaning in {duration}": "Nächste Reinigung in {duration}",
   "Next known cleaning in {duration}": "Nächste bekannte Reinigung in {duration}",
   "No active schedules": "Keine aktiven Zeitpläne",
@@ -643,6 +675,22 @@ const de = {
 
 // Dutch UI text. Protocol values and entity names remain unchanged.
 const nl = {
+  "Suction power · all selected rooms": "Zuigkracht · alle geselecteerde kamers",
+  "Robot setting; it may remain active after this clean.": "Robotinstelling; deze kan na deze reiniging actief blijven.",
+  "The selected suction power is no longer available. Review or discard the draft.": "De gekozen zuigkracht is niet meer beschikbaar. Controleer of verwerp het concept.",
+  "The suction power command was sent, but area cleaning was not confirmed. Check the robot before retrying. {error}": "De opdracht voor de zuigkracht is verzonden, maar de ruimtereiniging is niet bevestigd. Controleer de robot voordat je het opnieuw probeert. {error}",
+  "Select mapped Home Assistant areas. The robot controls room order.": "Selecteer gekoppelde Home Assistant-ruimtes. De robot bepaalt de kamervolgorde.",
+  "Home Assistant · Area cleaning": "Home Assistant · Ruimtereiniging",
+  "Select mapped Home Assistant areas. The robot controls cleaning settings and room order.": "Selecteer gekoppelde Home Assistant-ruimtes. De robot bepaalt de reinigingsinstellingen en kamervolgorde.",
+  "Sending area cleaning request …": "Ruimtereiniging aanvragen …",
+  "The robot was not found in the entity registry.": "De robot is niet gevonden in het entiteitenregister.",
+  "This robot does not report Home Assistant area cleaning support.": "Deze robot meldt geen ondersteuning voor ruimtereiniging via Home Assistant.",
+  "Map the robot segments to Home Assistant areas in the vacuum entity settings.": "Koppel de robotsegmenten aan Home Assistant-ruimtes in de instellingen van de stofzuigerentiteit.",
+  "Home Assistant areas are unavailable. Reload the dashboard.": "De Home Assistant-ruimtes zijn niet beschikbaar. Herlaad het dashboard.",
+  "Home Assistant area cleaning is unavailable. Check your Home Assistant version and integration.": "Home Assistant-ruimtereiniging is niet beschikbaar. Controleer je Home Assistant-versie en integratie.",
+  "Start is only available when the robot is docked or idle.": "Starten is alleen mogelijk als de robot in het dock staat of inactief is.",
+  "The room selection changed. Refresh rooms and select the areas again.": "De kamerkoppeling is gewijzigd. Vernieuw de kamers en selecteer de ruimtes opnieuw.",
+  "An action for this robot is already running in this browser.": "Er loopt al een actie voor deze robot in deze browser.",
   "Next cleaning in {duration}": "Volgende reiniging over {duration}",
   "Next known cleaning in {duration}": "Volgende bekende reiniging over {duration}",
   "No active schedules": "Geen actieve schema's",
@@ -964,6 +1012,22 @@ const nl = {
 
 // French UI translations. Dyson terminology is referenced in docs/translations.md.
 const fr = {
+  "Suction power · all selected rooms": "Aspiration · toutes les pièces sélectionnées",
+  "Robot setting; it may remain active after this clean.": "Réglage du robot ; il peut rester actif après ce nettoyage.",
+  "The selected suction power is no longer available. Review or discard the draft.": "La puissance d’aspiration choisie n’est plus disponible. Vérifiez ou abandonnez le brouillon.",
+  "The suction power command was sent, but area cleaning was not confirmed. Check the robot before retrying. {error}": "La commande d’aspiration a été envoyée, mais le nettoyage des zones n’a pas été confirmé. Vérifiez le robot avant de réessayer. {error}",
+  "Select mapped Home Assistant areas. The robot controls room order.": "Sélectionnez les zones Home Assistant associées. Le robot détermine l’ordre des pièces.",
+  "Home Assistant · Area cleaning": "Home Assistant · Nettoyage par zone",
+  "Select mapped Home Assistant areas. The robot controls cleaning settings and room order.": "Sélectionnez les zones Home Assistant associées. Le robot détermine les réglages de nettoyage et l’ordre des pièces.",
+  "Sending area cleaning request …": "Demande de nettoyage des zones …",
+  "The robot was not found in the entity registry.": "Le robot est introuvable dans le registre des entités.",
+  "This robot does not report Home Assistant area cleaning support.": "Ce robot ne signale pas la prise en charge du nettoyage par zone de Home Assistant.",
+  "Map the robot segments to Home Assistant areas in the vacuum entity settings.": "Associez les segments du robot aux zones Home Assistant dans les paramètres de l’entité aspirateur.",
+  "Home Assistant areas are unavailable. Reload the dashboard.": "Les zones Home Assistant sont indisponibles. Rechargez le tableau de bord.",
+  "Home Assistant area cleaning is unavailable. Check your Home Assistant version and integration.": "Le nettoyage par zone de Home Assistant est indisponible. Vérifiez votre version de Home Assistant et l’intégration.",
+  "Start is only available when the robot is docked or idle.": "Le démarrage est possible uniquement lorsque le robot est à sa station ou inactif.",
+  "The room selection changed. Refresh rooms and select the areas again.": "L’association des pièces a changé. Actualisez les pièces et sélectionnez à nouveau les zones.",
+  "An action for this robot is already running in this browser.": "Une action pour ce robot est déjà en cours dans ce navigateur.",
   "Next cleaning in {duration}": "Prochain nettoyage dans {duration}",
   "Next known cleaning in {duration}": "Prochain nettoyage connu dans {duration}",
   "No active schedules": "Aucune programmation active",
@@ -1329,7 +1393,7 @@ const STATUS_BAR_ITEMS = [
 
 function normalizeConfig(config) {
   if (!config || typeof config.entity !== 'string' || !config.entity.startsWith('vacuum.')) throw new UiError('Select a vacuum entity.');
-  if (config.integration !== undefined && !['auto', 'dyson_spot_scrub', 'hass_dyson'].includes(config.integration)) throw new UiError('Invalid integration selection.');
+  if (config.integration !== undefined && !['auto', 'dyson_spot_scrub', 'hass_dyson', 'ha_rooms'].includes(config.integration)) throw new UiError('Invalid integration selection.');
   if (config.language !== undefined && !['auto', 'en', 'de', 'nl', 'fr'].includes(config.language)) throw new UiError('language must be auto, en, de, nl or fr.');
   if (config.theme !== undefined && !['classic', 'modern'].includes(config.theme)) throw new UiError('theme must be classic or modern.');
   if (config.unsupported_settings && !['disabled', 'hidden'].includes(config.unsupported_settings)) throw new UiError('unsupported_settings must be disabled or hidden.');
@@ -2447,7 +2511,202 @@ return Object.freeze({ id:DOMAIN, infoTabs:['consumables'], mapEntityLabel:'Map 
 })();
 
 
-const integrationAdapters = [spotScrubAdapter, hassDysonAdapter];
+// Home Assistant's vacuum contract, not a manufacturer's command dialect.
+const haRoomsAdapter = (() => {
+const CLEAN_AREA = 16384;
+const pending = new Set();
+const unsupported = () => { throw new UiError('This action is not available for the current robot state.'); };
+const object = value => value && typeof value === 'object' && !Array.isArray(value);
+const supports = (hass, entity) => !!(Number(hass?.states?.[entity]?.attributes?.supported_features) & CLEAN_AREA);
+const vacuumEntries = (registry, hass) => registry.filter(entry => !entry.disabled_by && entry.entity_id.startsWith('vacuum.') && supports(hass, entry.entity_id));
+const entryFor = (registry, entity) => registry.find(entry => entry.entity_id === entity && !entry.disabled_by && entry.entity_id.startsWith('vacuum.'));
+function mapping(entry) {
+  const raw = entry?.options?.vacuum?.area_mapping;
+  if (!object(raw)) return [];
+  return Object.entries(raw).filter(([id, segments]) => id && Array.isArray(segments) && segments.length
+    && segments.every(id => typeof id === 'string' && id.length > 0))
+    .map(([id, segments]) => [id, [...new Set(segments)].sort()]).sort(([a],[b]) => a.localeCompare(b));
+}
+function roomContext(hass, entity, registry = []) {
+  const entry = entryFor(registry, entity);
+  return JSON.stringify([entity, entry?.id ?? null, entry?.unique_id ?? null, entry?.platform ?? null,
+    entry?.device_id ?? null, mapping(entry)]);
+}
+function discover(hass, registry, config) {
+  const entry = entryFor(registry, config.entity), context = roomContext(hass, config.entity, registry);
+  const issues = [];
+  if (!entry) issues.push('The robot was not found in the entity registry.');
+  else if (!supports(hass, config.entity)) issues.push('This robot does not report Home Assistant area cleaning support.');
+  else if (!mapping(entry).length) issues.push('Map the robot segments to Home Assistant areas in the vacuum entity settings.');
+  else if (!object(hass?.areas)) issues.push('Home Assistant areas are unavailable. Reload the dashboard.');
+  const rooms = supports(hass, config.entity) ? mapping(entry).flatMap(([areaId, segmentIds]) => {
+    const area = hass?.areas?.[areaId];
+    if (!area || typeof area.name !== 'string') return [];
+    const key = `area:${areaId}`;
+    return [{key, roomId:areaId, areaId, segmentIds, name:area.name, context, settings:{},
+      available:hass?.connected !== false && available(hass?.states?.[config.entity]),
+      excluded:config.excluded_rooms?.includes(key) ?? false}];
+  }) : [];
+  if (!issues.length && !rooms.length) issues.push('Map the robot segments to Home Assistant areas in the vacuum entity settings.');
+  const rank = key => { const index = config.room_order?.indexOf(key) ?? -1; return index < 0 ? Number.MAX_SAFE_INTEGER : index; };
+  rooms.sort((a,b) => rank(a.key) - rank(b.key));
+  const sameDevice = registry.filter(row => entry?.device_id && row.device_id === entry.device_id
+    && row.platform === entry.platform && !row.disabled_by);
+  const single = (domain, deviceClass) => {
+    const matches = sameDevice.filter(row => row.entity_id.startsWith(`${domain}.`)
+      && hass?.states?.[row.entity_id]?.attributes?.device_class === deviceClass);
+    return matches.length === 1 ? matches[0].entity_id : undefined;
+  };
+  return {rooms, issues, startBlockReason:issues[0] ?? null,
+    batteryEntity:single('sensor','battery'), chargingEntity:single('binary_sensor','battery_charging')};
+}
+function startBlockReason(hass, entity) {
+  const state = hass?.states?.[entity];
+  if (hass?.connected === false || !available(state)) return 'The robot is unavailable.';
+  if (!supports(hass, entity)) return 'This robot does not report Home Assistant area cleaning support.';
+  if (!hass.services?.vacuum?.clean_area) return 'Home Assistant area cleaning is unavailable. Check your Home Assistant version and integration.';
+  return ['docked','idle'].includes(state.state) ? null : 'Start is only available when the robot is docked or idle.';
+}
+function planningSettings(hass, registry, config) {
+  const state = hass?.states?.[config.entity], raw = state?.attributes?.fan_speed_list;
+  const entry = entryFor(registry, config.entity);
+  if (!entry || !(Number(state?.attributes?.supported_features) & 32)
+      || !hass?.services?.vacuum?.set_fan_speed || !Array.isArray(raw)
+      || !raw.length || raw.some(option => typeof option !== 'string' || !option.trim())) return [];
+  // Spot+Scrub exposes its cleaning-mode selector through HA's fan API. These
+  // values must not appear as suction levels or be written by a suction draft.
+  if (entry.platform === 'dyson_spot_scrub' && raw.some(option =>
+    ['Room settings','Vacuum','Vacuum and Mop','Mop','Vacuum then Mop'].includes(option))) return [];
+  return [{key:'fan_speed',label:'Suction power · all selected rooms',
+    value:state.attributes.fan_speed,options:[...new Set(raw)],
+    available:hass?.connected !== false && available(state),
+    hint:'Robot setting; it may remain active after this clean.'}];
+}
+function validatePlanningDraft(hass, registry, config, draft) {
+  if (!object(draft) || Object.keys(draft).some(key => key !== 'fan_speed')) unsupported();
+  if (!Object.hasOwn(draft, 'fan_speed')) return;
+  const field = planningSettings(hass, registry, config)[0];
+  if (!field?.available || !field.options.includes(draft.fan_speed)) throw new UiError('The selected suction power is no longer available. Review or discard the draft.');
+}
+function roomPlanningState(hass, registry, config, model, _roomDraft, planningDraft = {}) {
+  let notice = model.startBlockReason || startBlockReason(hass, config.entity);
+  try { validatePlanningDraft(hass, registry, config, planningDraft); }
+  catch (error) { notice ||= error; }
+  return {supportsSave:false, supportsStart:true, canSave:false, ordered:false,
+    canStart:!!entryFor(registry, config.entity) && !notice, notice};
+}
+async function sendRoomDraft({hass, registry = [], config, model, selected = [], draft = {}, start = false,
+  planningDraft = {}, context = roomContext(hass, config.entity, registry), getCurrent}) {
+  if (!start || Object.keys(draft).length) unsupported();
+  const connection = hass.connection;
+  const current = () => {
+    if (getCurrent) {
+      const now = getCurrent();
+      if (!now || now.active === false || now.config !== config || now.hass?.connection !== connection) throw new UiError('The room selection changed. Refresh rooms and select the areas again.');
+      hass = now.hass; registry = now.registry;
+    }
+    if (context !== roomContext(hass, config.entity, registry)) throw new UiError('The room selection changed. Refresh rooms and select the areas again.');
+    const blocked = startBlockReason(hass, config.entity);
+    if (blocked) throw new UiError(blocked);
+    validatePlanningDraft(hass, registry, config, planningDraft);
+  };
+  current();
+  if (!selected.length || new Set(selected).size !== selected.length) throw new UiError('Select at least one room without duplicates.');
+  const lockKey = config.entity;
+  if (pending.has(lockKey)) throw new UiError('An action for this robot is already running in this browser.');
+  pending.add(lockKey);
+  let fanSent = false;
+  const validateRooms = async () => {
+    // Read current persisted mapping and areas immediately before the command.
+    // No admin-only get_segments call or manufacturer action is needed.
+    const [entry, areas] = await Promise.all([
+      hass.callWS({type:'config/entity_registry/get', entity_id:config.entity}),
+      hass.callWS({type:'config/area_registry/list'}),
+    ]);
+    current();
+    if (!entry || entry.entity_id !== config.entity || !Array.isArray(areas)) throw new UiError('The room selection changed. Refresh rooms and select the areas again.');
+    const freshRegistry = registry.filter(row => row.entity_id !== config.entity).concat(entry);
+    if (context !== roomContext(hass, config.entity, freshRegistry)) throw new UiError('The room selection changed. Refresh rooms and select the areas again.');
+    const fresh = discover({...hass, areas:Object.fromEntries(areas.map(area => [area.area_id, area]))}, freshRegistry, config);
+    if (fresh.startBlockReason) throw new UiError(fresh.startBlockReason);
+    return selected.map(key => {
+      const previous = model.rooms.filter(room => roomKey(room) === key);
+      const matches = fresh.rooms.filter(room => roomKey(room) === key && room.available && !room.excluded);
+      if (previous.length !== 1 || previous[0].context !== context || matches.length !== 1) throw new UiError('The room selection changed. Refresh rooms and select the areas again.');
+      return matches[0];
+    });
+  };
+  try {
+    let rooms = await validateRooms();
+    if (Object.hasOwn(planningDraft, 'fan_speed') && planningDraft.fan_speed !== hass.states[config.entity].attributes.fan_speed) {
+      await hass.callService('vacuum', 'set_fan_speed', {entity_id:config.entity, fan_speed:planningDraft.fan_speed});
+      fanSent = true;
+      // A setting write can publish new HA state or outlive this card. Recheck
+      // the current lifecycle, readiness and persisted mapping before Start.
+      current();
+      rooms = await validateRooms();
+    }
+    await hass.callService('vacuum', 'clean_area', {entity_id:config.entity, cleaning_area_id:rooms.map(room => room.areaId)});
+    return {rooms:rooms.map(room => ({room_id:room.areaId,name:room.name})),settings:{},sent:true};
+  } catch (error) {
+    if (fanSent) throw new UiError('The suction power command was sent, but area cleaning was not confirmed. Check the robot before retrying. {error}', {error});
+    throw error;
+  } finally { pending.delete(lockKey); }
+}
+function canControl(hass, entity, action, registry = []) {
+  const state = hass?.states?.[entity];
+  const feature = {pause:4, start:8192, return_to_base:16}[action];
+  const states = {pause:['cleaning'], start:['paused'], return_to_base:['cleaning','paused','returning','error']}[action] ?? [];
+  return !!(entryFor(registry, entity) && feature && hass?.connected !== false && available(state)
+    && states.includes(state.state) && (Number(state.attributes?.supported_features) & feature) && hass.services?.vacuum?.[action]);
+}
+async function controlCleaning(hass, entity, action, registry) {
+  if (!canControl(hass, entity, action, registry)) unsupported();
+  await hass.callService('vacuum', action, {entity_id:entity});
+}
+function cleaningView(hass, entity, pendingStart) {
+  const state = hass?.states?.[entity];
+  const titles = {cleaning:'Cleaning session',paused:'Paused',returning:'Robot returning',error:'Robot needs attention'};
+  if (hass?.connected !== false && available(state) && titles[state.state]) return {active:true,live:true,title:titles[state.state],detail:''};
+  return pendingStart ? {active:true,live:false,title:'Starting clean',detail:'Waiting for the robot to report its status.'} : {active:false,live:false};
+}
+function batteryStatus(hass, model) {
+  const state = hass?.states?.[model.batteryEntity], charge = hass?.states?.[model.chargingEntity];
+  const raw = state?.state;
+  const value = typeof raw === 'string' && raw.trim() ? Number(raw) : NaN;
+  const percent = hass?.connected !== false && available(state) && Number.isFinite(value) && value >= 0 && value <= 100 ? Math.round(value) : null;
+  return {percent,charging:hass?.connected !== false && available(charge) && charge.state === 'on',
+    level:percent === null ? 'unknown' : percent < 20 ? 'low' : percent < 50 ? 'medium' : 'high'};
+}
+return Object.freeze({id:'ha_rooms', label:'Home Assistant · Area cleaning', shortLabel:'Home Assistant', deviceLabel:'Robot',
+  editorHint:'Select mapped Home Assistant areas. The robot controls room order.',
+  planningHint:'Select mapped Home Assistant areas. The robot controls room order.',
+  roomStartMessage:'Sending area cleaning request …',
+  infoTabs:[], supportsIntegrationIcon:false, supportsRoomSettings:false, supportsSessionMap:false, supportsZoneEditor:false,
+  statusBarItems:[['battery','Battery and charging']],
+  supports, vacuumEntries, discover, roomContext, roomPlanningState, planningSettings, sendRoomDraft,
+  roomPresentation:() => ({fields:[]}), roomSelectionState:() => 'off', hasRoomList:() => true,
+  defaultEntity:hass => vacuumEntries(Object.values(hass?.entities ?? {}),hass)[0]?.entity_id ?? '',
+  startBlockReason, canControl, controlCleaning, cleaningView, batteryStatus,
+  robotTelemetry:(hass,entity) => ({state:hass?.states?.[entity]?.state, available:hass?.connected !== false && available(hass?.states?.[entity]),
+    name:hass?.states?.[entity]?.attributes?.friendly_name, cleaning:hass?.connected !== false && hass?.states?.[entity]?.state === 'cleaning'}),
+  activityStatus:(hass,entity,pendingStart) => {
+    if (hass?.connected === false || !available(hass?.states?.[entity])) return {text:'Robot unavailable',icon:'mdi:alert-circle-outline'};
+    const view = cleaningView(hass,entity,pendingStart);
+    return view.active ? {text:view.title,icon:'mdi:robot-vacuum'} : null;
+  },
+  dockBusy:() => false, dockBlocksStart:() => false, dockActivity:() => null,
+  dryingRemainingTime:() => null, dryingRemainingPercent:() => null,
+  consumableStatus:() => [], stationSettings:() => [], stationActions:() => [], robotSettings:() => [],
+  changeStationSetting:unsupported, pressStationAction:unsupported, changeRobotSetting:unsupported,
+  cameraEntries:() => [], trustedCamera:() => false, mapId:() => undefined, mapPicture:() => undefined, mapCalibration:() => undefined,
+  supportsZoneDevice:() => false, zoneDeviceOptions:() => ({}), zoneReady:() => false, startZone:unsupported,
+  scheduleState:() => ({supported:false}),
+});
+})();
+
+
+const integrationAdapters = [spotScrubAdapter, hassDysonAdapter, haRoomsAdapter];
 
 function getIntegrationAdapter(config = {}, registry = [], hass) {
   const explicit = integrationAdapters.find(a => a.id === config?.integration);
@@ -2455,21 +2714,29 @@ function getIntegrationAdapter(config = {}, registry = [], hass) {
   // The configured robot wins over priority, even when its live state is offline.
   const entry = registry.find(e => e.entity_id === config?.entity)
     ?? Object.values(hass?.entities ?? {}).find(e => e.entity_id === config?.entity);
-  return integrationAdapters.find(a => a.id === entry?.platform) ?? spotScrubAdapter;
+  const specialized = integrationAdapters.find(a => a.id === entry?.platform);
+  if (specialized) return specialized;
+  // Keep a configured foreign robot on the generic adapter even while offline
+  // or after losing a capability; never reinterpret it as a Dyson.
+  return entry || haRoomsAdapter.supports(hass, config?.entity) ? haRoomsAdapter : spotScrubAdapter;
 }
 
-function integrationVacuumEntries(config = {}, registry = []) {
+function integrationVacuumEntries(config = {}, registry = [], hass) {
   const adapters = config.integration && config.integration !== 'auto'
     ? integrationAdapters.filter(a => a.id === config.integration) : integrationAdapters;
-  return adapters.flatMap(a => a.vacuumEntries(registry));
+  const seen = new Set();
+  return adapters.flatMap(a => a.vacuumEntries(registry, hass)).filter(entry => {
+    if (seen.has(entry.entity_id)) return false;
+    seen.add(entry.entity_id); return true;
+  });
 }
 
 function defaultIntegrationEntity(hass, config = {}, registry, registryLoaded = true) {
   const metadata = Object.values(hass?.entities ?? {});
   const choose = entries => entries.find(entry => entry.entity_id === config.entity)?.entity_id ?? entries[0]?.entity_id;
-  const match = choose(integrationVacuumEntries(config, registry ?? metadata));
+  const match = choose(integrationVacuumEntries(config, registry ?? metadata, hass));
   if (match) return match;
-  if (!registryLoaded) return choose(integrationVacuumEntries(config, metadata)) ?? '';
+  if (!registryLoaded) return choose(integrationVacuumEntries(config, metadata, hass)) ?? '';
   // Explicit completed registries, including empty ones, are authoritative.
   // Only stub generation without a registry retains the legacy state fallback.
   return registry === undefined && (!config.integration || config.integration === 'auto' || config.integration === spotScrubAdapter.id)
@@ -3803,6 +4070,8 @@ header,.station-rows{--hud-red:var(--error-color,#db4437);--hud-blue:var(--blue-
 :host([data-theme=modern]) .room-settings-toggle{flex:1;min-width:0;align-self:stretch;display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:left;white-space:normal;padding:0 4px}
 :host([data-theme=modern]) .room-settings-toggle span{display:block}
 :host([data-theme=modern]) .room-plain .pick{flex:1;justify-content:flex-start;gap:12px}.room-settings-copy{min-width:0}
+.planning-settings:empty{display:none}.planning-settings{margin:16px var(--dp-padding,24px) 0}.planning-setting{border:1px solid var(--dp-line);border-radius:13px;padding:14px 16px;background:var(--dp-bg)}.planning-setting-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;font-size:13px}.planning-setting-head>span{min-width:0;line-height:1.4}.planning-setting-head output{flex-shrink:0;border-radius:8px;padding:4px 8px;background:var(--dp-soft);color:var(--primary-text-color);font-size:12px;overflow-wrap:anywhere;max-width:40%}.planning-setting-hint{font-size:11px;line-height:1.4;margin-top:8px}.planning-setting .slider-options{display:flex;justify-content:space-between;gap:6px;margin:2px 0 0;min-height:28px}.planning-settings .planning-setting .slider-options button{position:static;left:auto;transform:none;width:auto;flex:1;font-size:12px;text-align:center;padding:2px;overflow-wrap:anywhere}.planning-setting .slider-options button:first-child{text-align:left}.planning-setting .slider-options button:last-child{text-align:right}
+
 .mode-spacer{display:none}
 :host([data-theme=modern]) .pick input{position:absolute;width:1px;height:1px;opacity:0}
 .selection-circle{display:flex;align-items:center;justify-content:center;width:32px;height:32px;flex:none;border:2px solid var(--dp-muted);border-radius:50%;font-weight:650;color:var(--primary-text-color)}
@@ -4018,7 +4287,7 @@ class DysonRegistryElement extends HTMLElement {
 
 class DysonCleaningPlannerCard extends DysonRegistryElement {
   constructor() {
-    super(); this.selected = []; this.settingDraft = {}; this.dirty = false; this.busy = false; this.expanded = new Set(); this.message = '';
+    super(); this.selected = []; this.settingDraft = {}; this.planningDraft = {}; this.dirty = false; this.busy = false; this.expanded = new Set(); this.message = '';
     this._headerFaultKey = ''; this._headerFaultDismissed = false;
     this.controlBusy = false; this.pendingStart = false; this.requestedPlan = null; this.zoneView = false;
 
@@ -4087,7 +4356,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     this.setAttribute('data-theme', this.config.theme);
     const rows = config.grid_options?.rows ?? config.layout_options?.grid_rows;
     this.toggleAttribute('fixed-height', typeof rows === 'number' && Number.isFinite(rows) && rows > 0);
-    this.initialized = false; this.dirty = false; this.selected = []; this.settingDraft = {}; this.expanded.clear(); this.message = ''; this.lastRooms = [];
+    this.initialized = false; this.dirty = false; this.selected = []; this.settingDraft = {}; this.planningDraft = {}; this.expanded.clear(); this.message = ''; this.lastRooms = [];
     this.update();
   }
   connectedCallback() {
@@ -4137,25 +4406,28 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     }
     return view;
   }
-  getCardSize() { return this.view.active ? (this.config?.show_camera ? 9 : 5) : 3 + (this.model?.rooms.length ?? 3); }
+  get showSessionMap() { return this.config?.show_camera && this.adapter.supportsSessionMap !== false; }
+  getCardSize() { return this.view.active ? (this.showSessionMap ? 9 : 5) : 3 + (this.model?.rooms.length ?? 3); }
   getGridOptions() { return { columns: 12, min_columns: 9, rows: 'auto', min_rows: 1 }; }
   getModel() { return this.adapter.discover(this._hass, this.registry, this.config, this.lastRooms); }
   getRoomPlanningState(model = this.model) {
-    return this.adapter.roomPlanningState(this._hass, this.registry, this.config, model, this.settingDraft);
+    return this.adapter.roomPlanningState(this._hass, this.registry, this.config, model, this.settingDraft, this.planningDraft);
   }
+  planningSettings() { return this.adapter.planningSettings?.(this._hass, this.registry, this.config) ?? []; }
   resetDraft(clearMessage = true) {
     this.draftContext = this.adapter.roomContext(this._hass, this.config.entity, this.registry);
     this.selected = this.model.rooms.filter(r => !r.excluded && r.available && roomKey(r) && this.adapter.roomSelectionState(this._hass, r.entity, r) === 'on').map(roomKey);
-    this.settingDraft = {};
+    this.settingDraft = {}; this.planningDraft = {};
     this.baseline = this.liveSignature(); this.dirty = false;
     if (clearMessage) { this.message = ''; this.error = false; }
   }
   liveSignature() {
-    return JSON.stringify(this.model.rooms.map(r => [r.roomId, roomKey(r), this.adapter.roomSelectionState(this._hass, r.entity, r), Object.entries(r.settings ?? {}).map(([key, field]) => [key, field.entity, field.value])]));
+    return JSON.stringify([...this.model.rooms.map(r => [r.roomId, roomKey(r), this.adapter.roomSelectionState(this._hass, r.entity, r), Object.entries(r.settings ?? {}).map(([key, field]) => [key, field.entity, field.value])]),
+      ...this.planningSettings().map(field => ['planning',field.key,field.value,field.options])]);
   }
   updateDirty() {
     const live = this.model.rooms.filter(r => !r.excluded && r.available && roomKey(r) && this.adapter.roomSelectionState(this._hass, r.entity, r) === 'on').map(roomKey);
-    this.dirty = Object.keys(this.settingDraft).length > 0 || JSON.stringify(this.selected) !== JSON.stringify(live);
+    this.dirty = Object.keys(this.settingDraft).length > 0 || Object.keys(this.planningDraft ?? {}).length > 0 || JSON.stringify(this.selected) !== JSON.stringify(live);
   }
   update() {
     if (!this.config || !this._hass) return;
@@ -4200,7 +4472,16 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     }
     if (this.busy || this.view.active) return;
     const el = event.target;
-    if (el.dataset.room) {
+    if (el.dataset.planningSetting) {
+      const field = this.planningSettings().find(field => field.key === el.dataset.planningSetting);
+      const index = Number(el.value);
+      const value = el.type === 'range' ? Number.isInteger(index) ? field?.options[index] : undefined : el.value;
+      if (!field?.available || !field.options.includes(value)) return;
+      this.planningDraft ??= {};
+      if (value === field.value) delete this.planningDraft[field.key];
+      else this.planningDraft[field.key] = value;
+      if (el.type !== 'range') el.blur();
+    } else if (el.dataset.room) {
       this.selected = this.selected.filter(id => id !== el.dataset.room);
       if (el.checked) this.selected.push(el.dataset.room);
     } else if (el.dataset.setting && el.dataset.roomId) {
@@ -4294,7 +4575,8 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
         return { entity_id: room?.entity, room_id: room?.roomId, name: room?.name ?? entity };
       }) };
       this.message = this.adapter.roomStartMessage ?? 'Start clean'; this.render();
-      const plan = await this.adapter.sendRoomDraft({ hass: this._hass, model, config, selected: [...this.selected], draft: this.settingDraft, start: true, context, registry:this.registry,
+      const plan = await this.adapter.sendRoomDraft({ hass: this._hass, model, config, selected: [...this.selected], draft: this.settingDraft,
+        planningDraft:structuredClone(this.planningDraft ?? {}), start: true, context, registry:this.registry,
         getCurrent:() => ({ hass:this._hass, registry:this.registry, config:this.config,
           active:this.isConnected && !this._previewDialog && (this._detachRevision ?? 0) === detachRevision }) });
       if (this.config !== config || !this.isConnected) return;
@@ -4305,7 +4587,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
         this.requestedPlan = null; this.sessionObserved = false;
         return;
       }
-      this.settingDraft = {};
+      this.settingDraft = {}; this.planningDraft = {};
       this.requestedPlan = plan;
       this.sessionObserved = this.adapter.cleaningView(this._hass, config.entity, false, this.registry).live;
       if (!this.sessionObserved) {
@@ -4357,7 +4639,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     } finally { this.busy = false; this.saving = false; this.render(); }
   }
   canControl(action) {
-    return this.adapter.vacuumEntries(this.registry ?? []).some(entry => entry.entity_id === this.config.entity)
+    return this.adapter.vacuumEntries(this.registry ?? [], this._hass).some(entry => entry.entity_id === this.config.entity)
       && this.adapter.canControl(this._hass, this.config.entity, action, this.registry);
   }
   async control(action) {
@@ -4391,6 +4673,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     this.updateRobotSettings();
     const warning = rows.some(row => row.level === 'low');
     const button = root.querySelector('.consumables-info');
+    button.hidden = this.adapter.infoTabs?.length === 0;
     button.classList.toggle('attention', warning);
     root.querySelector('#tab-consumables').classList.toggle('attention', warning);
     button.setAttribute('aria-label', this.t(warning ? 'Consumables: replacement needed soon' : 'Robot information'));
@@ -4493,7 +4776,8 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
   headerHtml() {
     const name = this.adapter.robotTelemetry(this._hass, this.config.entity, undefined, this.registry).name;
     const subtitle = typeof name === 'string' && name.trim() ? name : this.config.entity;
-    return `<header><div class="station-status-bar"><div class="station-indicators"></div><div class="battery" role="img"><svg viewBox="0 0 32 20" aria-hidden="true"><rect x="1" y="3" width="26" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="29" y="7" width="3" height="6" rx="1" fill="currentColor"/><rect class="battery-fill" x="4" y="6" width="0" height="8" rx="1" fill="currentColor"/><path class="battery-bolt" d="M17 1 9 11h6l-2 8L23 8h-7Z" fill="var(--dp-bg)" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" hidden/></svg><span class="battery-value" aria-hidden="true" hidden></span></div></div><div class="header-main"><div class="robot ${this.config.header_icon_style === 'integration' ? 'robot-integration' : ''}">${this.config.header_icon_style === 'integration' ? `<svg class="robot-illustration" viewBox="0 0 50 50" aria-hidden="true"><defs><radialGradient id="robot-beam-gradient" gradientUnits="userSpaceOnUse" cx="25" cy="25" r="46"><stop offset=".40" stop-color="#39ff14" stop-opacity=".75"/><stop offset=".62" stop-color="#65ff39" stop-opacity=".42"/><stop offset=".85" stop-color="#65ff39" stop-opacity=".12"/><stop offset="1" stop-color="#65ff39" stop-opacity="0"/></radialGradient><filter id="robot-beam-soft" x="-35%" y="-20%" width="170%" height="150%"><feGaussianBlur stdDeviation="1.2"/></filter></defs><path class="robot-beam" d="M25 25 L2 -15 Q25 -27 48 -15 Z" fill="url(#robot-beam-gradient)" filter="url(#robot-beam-soft)" hidden/><circle cx="25" cy="26" r="22" fill="#000" opacity=".18"/><circle cx="25" cy="25" r="21" fill="#3a3a40" stroke="#e7e9ed" stroke-width="1.5"/><circle cx="25" cy="25" r="18" fill="#45454e"/><path class="robot-bumper" d="M6.8 14.5 A21 21 0 0 1 43.2 14.5" fill="none" stroke="#64646d" stroke-width="4"/><circle cx="25" cy="17" r="6" fill="#c8c8cd"/><circle cx="25" cy="17" r="2.6" fill="#39ff14"/><rect class="robot-dock" x="9" y="44" width="32" height="7" rx="2.5" fill="#3a3a40" stroke="#c8c8cd" stroke-width="1.2" hidden/></svg>` : '<ha-icon icon="mdi:robot-vacuum"></ha-icon>'}${this.config.theme === 'modern' ? `<button class="robot-warning" data-action="open-fault" aria-label="${this.ht('Show robot error')}" hidden><ha-icon icon="mdi:alert" aria-hidden="true"></ha-icon></button>` : ''}</div><div class="header-title"><h2>${escapeHtml(this.config.title || this.t('Plan a clean'))}</h2><p>${escapeHtml(subtitle)}</p></div><div class="header-buttons"><button class="consumables-info" data-action="consumables" data-focus="consumables-info" aria-label="${this.ht("Consumables")}" aria-haspopup="dialog" aria-expanded="false" title="${this.ht("Consumables")}">${this.ht("Info")}</button></div>${this.config.theme === 'modern' ? `<section class="header-fault" aria-label="${this.ht('Robot needs attention')}" hidden><div class="header-fault-copy" tabindex="0" role="status"><strong>${this.ht('Robot needs attention')}</strong><p class="header-fault-detail"></p></div><button class="header-fault-close" data-action="dismiss-fault" aria-label="${this.ht('Dismiss error message')}"><ha-icon icon="mdi:close" aria-hidden="true"></ha-icon></button></section>` : ''}<section class="header-notice" hidden><div class="header-notice-copy" role="status" aria-live="polite"></div><button class="header-fault-close" data-action="dismiss-notice" aria-label="${this.ht('Close')}"><ha-icon icon="mdi:close" aria-hidden="true"></ha-icon></button></section></div></header>`;
+    const illustrated = this.config.header_icon_style === 'integration' && this.adapter.supportsIntegrationIcon !== false;
+    return `<header><div class="station-status-bar"><div class="station-indicators"></div><div class="battery" role="img"><svg viewBox="0 0 32 20" aria-hidden="true"><rect x="1" y="3" width="26" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="29" y="7" width="3" height="6" rx="1" fill="currentColor"/><rect class="battery-fill" x="4" y="6" width="0" height="8" rx="1" fill="currentColor"/><path class="battery-bolt" d="M17 1 9 11h6l-2 8L23 8h-7Z" fill="var(--dp-bg)" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" hidden/></svg><span class="battery-value" aria-hidden="true" hidden></span></div></div><div class="header-main"><div class="robot ${illustrated ? 'robot-integration' : ''}">${illustrated ? `<svg class="robot-illustration" viewBox="0 0 50 50" aria-hidden="true"><defs><radialGradient id="robot-beam-gradient" gradientUnits="userSpaceOnUse" cx="25" cy="25" r="46"><stop offset=".40" stop-color="#39ff14" stop-opacity=".75"/><stop offset=".62" stop-color="#65ff39" stop-opacity=".42"/><stop offset=".85" stop-color="#65ff39" stop-opacity=".12"/><stop offset="1" stop-color="#65ff39" stop-opacity="0"/></radialGradient><filter id="robot-beam-soft" x="-35%" y="-20%" width="170%" height="150%"><feGaussianBlur stdDeviation="1.2"/></filter></defs><path class="robot-beam" d="M25 25 L2 -15 Q25 -27 48 -15 Z" fill="url(#robot-beam-gradient)" filter="url(#robot-beam-soft)" hidden/><circle cx="25" cy="26" r="22" fill="#000" opacity=".18"/><circle cx="25" cy="25" r="21" fill="#3a3a40" stroke="#e7e9ed" stroke-width="1.5"/><circle cx="25" cy="25" r="18" fill="#45454e"/><path class="robot-bumper" d="M6.8 14.5 A21 21 0 0 1 43.2 14.5" fill="none" stroke="#64646d" stroke-width="4"/><circle cx="25" cy="17" r="6" fill="#c8c8cd"/><circle cx="25" cy="17" r="2.6" fill="#39ff14"/><rect class="robot-dock" x="9" y="44" width="32" height="7" rx="2.5" fill="#3a3a40" stroke="#c8c8cd" stroke-width="1.2" hidden/></svg>` : '<ha-icon icon="mdi:robot-vacuum"></ha-icon>'}${this.config.theme === 'modern' ? `<button class="robot-warning" data-action="open-fault" aria-label="${this.ht('Show robot error')}" hidden><ha-icon icon="mdi:alert" aria-hidden="true"></ha-icon></button>` : ''}</div><div class="header-title"><h2>${escapeHtml(this.config.title || this.t('Plan a clean'))}</h2><p>${escapeHtml(subtitle)}</p></div><div class="header-buttons"><button class="consumables-info" data-action="consumables" data-focus="consumables-info" aria-label="${this.ht("Consumables")}" aria-haspopup="dialog" aria-expanded="false" title="${this.ht("Consumables")}">${this.ht("Info")}</button></div>${this.config.theme === 'modern' ? `<section class="header-fault" aria-label="${this.ht('Robot needs attention')}" hidden><div class="header-fault-copy" tabindex="0" role="status"><strong>${this.ht('Robot needs attention')}</strong><p class="header-fault-detail"></p></div><button class="header-fault-close" data-action="dismiss-fault" aria-label="${this.ht('Dismiss error message')}"><ha-icon icon="mdi:close" aria-hidden="true"></ha-icon></button></section>` : ''}<section class="header-notice" hidden><div class="header-notice-copy" role="status" aria-live="polite"></div><button class="header-fault-close" data-action="dismiss-notice" aria-label="${this.ht('Close')}"><ha-icon icon="mdi:close" aria-hidden="true"></ha-icon></button></section></div></header>`;
   }
   updateBattery() {
     const vacuum = this.adapter.robotTelemetry(this._hass, this.config.entity, this.model.cameraEntity, this.registry);
@@ -4628,7 +4912,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     const h = escapeHtml;
     // Keep the map element mounted across status and message updates so polling,
     // the last good image and in-flight requests are independent of card renders.
-    this.paint(`<style>${styles}</style><ha-card><div class="planner-content">${this.headerHtml()}${this.statusHtml()}<section class="session"><ul class="requested"></ul></section>${this.config.show_camera ? `<div class="map-section">${this.config.theme !== 'modern' ? `<div class="map-title">${this.ht("Cleaning map")}</div><p class="map-caption">${this.ht("Refreshes about every 5 seconds")}</p>` : ''}<dyson-planner-map></dyson-planner-map></div>` : ''}<footer class="session-footer"><div class="actions session-actions"><button class="session-toggle" data-control="pause" data-focus="session-toggle"><ha-icon></ha-icon><span></span></button><button class="home" data-control="return_to_base" data-focus="home"><ha-icon icon="mdi:home-import-outline"></ha-icon>${this.ht("Home")}</button></div></footer></div>${this.consumablesHtml()}${this.scheduleOverlayHtml()}</ha-card>`, 'session');
+    this.paint(`<style>${styles}</style><ha-card><div class="planner-content">${this.headerHtml()}${this.statusHtml()}<section class="session"><ul class="requested"></ul></section>${this.showSessionMap ? `<div class="map-section">${this.config.theme !== 'modern' ? `<div class="map-title">${this.ht("Cleaning map")}</div><p class="map-caption">${this.ht("Refreshes about every 5 seconds")}</p>` : ''}<dyson-planner-map></dyson-planner-map></div>` : ''}<footer class="session-footer"><div class="actions session-actions"><button class="session-toggle" data-control="pause" data-focus="session-toggle"><ha-icon></ha-icon><span></span></button><button class="home" data-control="return_to_base" data-focus="home"><ha-icon icon="mdi:home-import-outline"></ha-icon>${this.ht("Home")}</button></div></footer></div>${this.consumablesHtml()}${this.scheduleOverlayHtml()}</ha-card>`, 'session');
     const root = this.shadowRoot;
     this.updateBattery();
     this.updateConsumables();
@@ -4677,22 +4961,28 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     const extra = Math.max(0, available - used - gap * 2);
     fields.forEach((el, i) => el.style.setProperty('--field-shift', `${extra * i / 4}px`));
   }
+  planningSettingsHtml() {
+    return this.planningSettings().map(field => {
+      const value = this.planningDraft?.[field.key] ?? field.value;
+      return `<section class="planning-setting" aria-label="${this.ht(field.label)}"><div class="planning-setting-head"><span>${this.ht(field.label)}</span><output>${this.ht(field.options.includes(value) ? value : 'Unavailable')}</output></div>${this.modernControl(field.key, this.t(field.label), {}, field, value, this.busy || !field.available, 'global', 'planning')}<p class="planning-setting-hint">${this.ht(field.hint)}</p></section>`;
+    }).join('');
+  }
   modernControl(key, label, room, field, value, disabled, n, scope = 'planner') {
     const h = escapeHtml, options = field.options;
     const attrs = scope === 'schedule' ? `data-schedule-room-setting="${key}" data-schedule-room="${h(room.roomId)}"`
-      : `data-setting="${key}" data-room-id="${h(room.roomId)}"`;
+      : scope === 'planning' ? `data-planning-setting="${h(key)}"` : `data-setting="${key}" data-room-id="${h(room.roomId)}"`;
     const focus = scope === 'schedule' ? `schedule-room-${room.roomId}-${key}` : `${key}-${n}`;
     const slider = scope === 'schedule' ? `schedule-slider-${key}-${room.roomId}` : `slider-${key}-${n}`;
     const unknown = scope === 'schedule' ? value || 'Stored settings not reported' : 'Unavailable';
-    const name = `${label} ${room.name}`;
+    const name = scope === 'planning' ? label : `${label} ${room.name}`;
     const valid = options.includes(value);
     const blocked = disabled || !valid;
-    const presentation = this.adapter.roomPresentation(room, {}, this.config).fields.find(field => field.key === key);
+    const presentation = scope === 'planning' ? null : this.adapter.roomPresentation(room, {}, this.config).fields.find(field => field.key === key);
     if (presentation?.control === 'segments') {
       return `<div class="modern-control"><span class="field-label">${label}</span><div class="segments" role="group" aria-label="${h(name)}">${options.map((option, i) => `<button ${attrs} data-option="${h(option)}" style="--stop:${options.length > 1 ? i / (options.length - 1) : 0}" data-focus="${focus}-${i}" aria-pressed="${value === option}" ${disabled ? 'disabled' : ''}>${h(presentation.optionLabels?.[option] ?? this.t(option))}</button>`).join('')}</div></div>`;
     }
     const index = options.indexOf(value);
-    return `<div class="modern-control"><label class="field-label" for="${slider}">${label}</label><div class="stepped-slider ${blocked ? 'disabled' : ''}"><div class="slider-ticks" aria-hidden="true">${options.map((_, i) => `<span class="slider-tick" style="--stop:${options.length > 1 ? i / (options.length - 1) : 0}"></span>`).join('')}</div><input id="${slider}" type="range" min="0" max="${options.length - 1}" step="1" value="${Math.max(0, index)}" aria-label="${h(name)}" aria-valuetext="${this.ht(valid ? value : unknown)}" ${attrs} data-focus="${focus}" ${blocked || options.length < 2 ? 'disabled' : ''}></div><div class="slider-options" style="--options:${options.length}">${options.map((option, i) => `<button ${attrs} data-option="${h(option)}" style="--stop:${options.length > 1 ? i / (options.length - 1) : 0}" data-focus="${focus}-${i}" aria-pressed="${value === option}" ${disabled ? 'disabled' : ''}>${this.ht(option)}</button>`).join('')}</div>${!valid ? `<span class="badge">${this.ht(unknown)}</span>` : ''}</div>`;
+    return `<div class="modern-control">${scope === 'planning' ? '' : `<label class="field-label" for="${slider}">${label}</label>`}<div class="stepped-slider ${blocked ? 'disabled' : ''}"><div class="slider-ticks" aria-hidden="true">${options.map((_, i) => `<span class="slider-tick" style="--stop:${options.length > 1 ? i / (options.length - 1) : 0}"></span>`).join('')}</div><input id="${slider}" type="range" min="0" max="${options.length - 1}" step="1" value="${Math.max(0, index)}" aria-label="${h(name)}" aria-valuetext="${this.ht(valid ? value : unknown)}" ${attrs} data-focus="${focus}" ${blocked || options.length < 2 ? 'disabled' : ''}></div><div class="slider-options" style="--options:${options.length}">${options.map((option, i) => `<button ${attrs} data-option="${h(option)}" style="--stop:${options.length > 1 ? i / (options.length - 1) : 0}" data-focus="${focus}-${i}" aria-pressed="${value === option}" ${disabled ? 'disabled' : ''}>${this.ht(option)}</button>`).join('')}</div>${!valid ? `<span class="badge">${this.ht(unknown)}</span>` : ''}</div>`;
   }
   zoneStarted(dimensions) {
     const valid = dimensions && ['widthCm','heightCm'].every(key => Number.isFinite(dimensions[key]) && dimensions[key] > 0);
@@ -4778,7 +5068,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       }
       return `<section class="room ${selected ? 'selected' : ''}"><div class="room-head"><label class="pick"><input type="checkbox" data-focus="room-${n}" data-room="${h(key)}" ${selected ? 'checked' : ''} ${disabled ? 'disabled' : ''}><span><span class="name">${h(room.name)} ${selected && planning.ordered ? `<span class="status">(${order})</span>` : ''}</span><span class="summary">${summary}</span></span></label><button class="expand" data-focus="expand-${n}" data-expand="${h(key || room.name)}" aria-expanded="${open}" aria-controls="fields-${n}" aria-label="${this.ht('Settings for {name}', { name: room.name })}"><span>${this.ht("Settings")}</span> ${open ? '⌃' : '⌄'}</button></div><div class="fields" id="fields-${n}" ${open ? '' : 'hidden'}>${fields}${issue}</div></section>`;
     }).join('');
-    this.paint(`<style>${styles}</style><ha-card><div class="planner-content">${this.headerHtml()}${this.statusHtml()}${this.planningTabsHtml()}${this.supportsZone ? '<div id="planning-panel-zones" role="tabpanel" aria-labelledby="planning-tab-zones" hidden></div>' : ''}${this.getScheduleState().supported ? '<div id="planning-panel-schedules" role="tabpanel" aria-labelledby="planning-tab-schedules" hidden></div>' : ''}<div ${this.supportsZone || this.getScheduleState().supported ? 'id="planning-panel-rooms" role="tabpanel" aria-labelledby="planning-tab-rooms"' : ''} class="rooms ${modern ? 'modern-rooms' : ''}" style="--room-count:${rooms.length}">${roomHtml}</div>${!rooms.length ? `<p class="empty">${this.ht("No enabled rooms found. Check the card configuration and room discovery.")}</p>` : ''}<footer>${this.adapter.planningHint ? `<p class="integration-hint notice">${this.ht(this.adapter.planningHint)}</p>` : ''}<div class="summary-line"><span>${this.ht('{selected} of {total} rooms selected', { selected: this.selected.length, total: rooms.length })}</span><span class="status ${this.dirty ? 'draft-status' : ''}">${this.dirty ? `<button class="discard-draft" data-focus="reset" data-action="reset" ${this.busy ? 'disabled' : ''} title="${this.ht("Discard draft")}" aria-label="${this.ht("Discard draft")}"><ha-icon icon="mdi:trash-can-outline" aria-hidden="true"></ha-icon></button>${this.ht('Local draft')}` : this.ht('From Home Assistant')}</span></div><div class="actions ${this.canOfferScheduleCreation() ? 'with-schedules' : ''}">${this.canOfferScheduleCreation() ? `<div class="room-secondary-actions"><button class="schedule-create" data-action="schedule-create" data-focus="schedule-create" aria-label="${this.ht('Create schedule')}" title="${this.ht('Create schedule')}" ${this._previewDialog || this.busy || !this.scheduleCreationReady() ? 'disabled' : ''}><ha-icon icon="mdi:calendar-plus" aria-hidden="true"></ha-icon></button>` : ''}${planning.supportsSave ? `<button data-action="save" data-focus="save" ${this._previewDialog || !hasChanges || this.busy || !planning.canSave ? 'disabled' : ''}>${this.ht(this.saving ? 'Saving …' : 'Save settings')}</button>` : ''}${this.canOfferScheduleCreation() ? '</div>' : ''}${planning.supportsStart ? `<button class="start" data-focus="start" data-action="start" ${this._previewDialog || this.selected.length === 0 || this.busy || !planning.canStart ? 'disabled' : ''}>${this.ht("Start clean")}</button>` : ''}</div></footer></div>${this.consumablesHtml()}${this.scheduleOverlayHtml()}</ha-card>`, 'planner');
+    this.paint(`<style>${styles}</style><ha-card><div class="planner-content">${this.headerHtml()}${this.statusHtml()}${this.planningTabsHtml()}${this.supportsZone ? '<div id="planning-panel-zones" role="tabpanel" aria-labelledby="planning-tab-zones" hidden></div>' : ''}${this.getScheduleState().supported ? '<div id="planning-panel-schedules" role="tabpanel" aria-labelledby="planning-tab-schedules" hidden></div>' : ''}<div ${this.supportsZone || this.getScheduleState().supported ? 'id="planning-panel-rooms" role="tabpanel" aria-labelledby="planning-tab-rooms"' : ''} class="rooms ${modern ? 'modern-rooms' : ''}" style="--room-count:${rooms.length}">${roomHtml}</div><div class="planning-settings">${this.planningSettingsHtml()}</div>${!rooms.length ? `<p class="empty">${this.ht("No enabled rooms found. Check the card configuration and room discovery.")}</p>` : ''}<footer>${this.adapter.planningHint ? `<p class="integration-hint notice">${this.ht(this.adapter.planningHint)}</p>` : ''}<div class="summary-line"><span>${this.ht('{selected} of {total} rooms selected', { selected: this.selected.length, total: rooms.length })}</span><span class="status ${this.dirty ? 'draft-status' : ''}">${this.dirty ? `<button class="discard-draft" data-focus="reset" data-action="reset" ${this.busy ? 'disabled' : ''} title="${this.ht("Discard draft")}" aria-label="${this.ht("Discard draft")}"><ha-icon icon="mdi:trash-can-outline" aria-hidden="true"></ha-icon></button>${this.ht('Local draft')}` : this.ht('From Home Assistant')}</span></div><div class="actions ${this.canOfferScheduleCreation() ? 'with-schedules' : ''}">${this.canOfferScheduleCreation() ? `<div class="room-secondary-actions"><button class="schedule-create" data-action="schedule-create" data-focus="schedule-create" aria-label="${this.ht('Create schedule')}" title="${this.ht('Create schedule')}" ${this._previewDialog || this.busy || !this.scheduleCreationReady() ? 'disabled' : ''}><ha-icon icon="mdi:calendar-plus" aria-hidden="true"></ha-icon></button>` : ''}${planning.supportsSave ? `<button data-action="save" data-focus="save" ${this._previewDialog || !hasChanges || this.busy || !planning.canSave ? 'disabled' : ''}>${this.ht(this.saving ? 'Saving …' : 'Save settings')}</button>` : ''}${this.canOfferScheduleCreation() ? '</div>' : ''}${planning.supportsStart ? `<button class="start" data-focus="start" data-action="start" ${this._previewDialog || this.selected.length === 0 || this.busy || !planning.canStart ? 'disabled' : ''}>${this.ht("Start clean")}</button>` : ''}</div></footer></div>${this.consumablesHtml()}${this.scheduleOverlayHtml()}</ha-card>`, 'planner');
     this.updateBattery();
     this.updateConsumables();
     const plannerNotice = planning.notice ? this.t(planning.notice)
@@ -4826,7 +5116,7 @@ class DysonCleaningPlannerEditor extends DysonRegistryElement {
       const next = { ...this.config };
       if (el.dataset.key) {
         next[el.dataset.key] = el.type === 'checkbox' ? el.checked : el.dataset.key === 'camera_rotation' ? Number(el.value) : el.value;
-        if (el.dataset.key === 'integration' && !integrationVacuumEntries(next, this.selectableRegistry).some(e => e.entity_id === next.entity)) {
+        if (el.dataset.key === 'integration' && !integrationVacuumEntries(next, this.selectableRegistry, this._hass).some(e => e.entity_id === next.entity)) {
           next.entity = defaultIntegrationEntity(this._hass, next, this.registry, !!this._registryLoaded);
         }
         if (el.dataset.key === 'entity' || el.dataset.key === 'integration') {
@@ -4883,7 +5173,7 @@ class DysonCleaningPlannerEditor extends DysonRegistryElement {
   update() {
     if (!this.config || !this._hass) return;
     const h = escapeHtml;
-    const vacuums = integrationVacuumEntries(this.config, this.selectableRegistry);
+    const vacuums = integrationVacuumEntries(this.config, this.selectableRegistry, this._hass);
     const adapterLabel = entity => getIntegrationAdapter({ ...this.config, entity }, this.selectableRegistry, this._hass).shortLabel;
     const config = { ...this.config, excluded_rooms: this.config.excluded_rooms ?? [], room_order: this.config.room_order ?? [] };
     this.model = config.entity ? this.adapter.discover(this._hass, this.registry, config) : { rooms: [], issues: [] };
@@ -4893,25 +5183,25 @@ class DysonCleaningPlannerEditor extends DysonRegistryElement {
     };
     this.paint(`<style>${styles}:host{padding:8px}label{display:grid;gap:8px;margin:0 0 16px;font-size:14px}input[type=text]{padding:12px;border:1px solid var(--dp-line);border-radius:8px;background:var(--dp-bg);color:inherit;width:100%}.entry{display:flex;gap:8px;align-items:center;margin:8px 0}.entry label{display:flex;align-items:center;flex:1;margin:0}.entry button{min-width:42px}h3{font-size:15px;margin-top:24px}.status-options{margin:12px 0 0;padding:8px 0 0 12px;border:0;border-top:1px solid var(--dp-line);min-width:0}.status-options:disabled{opacity:.5}.battery-percentage-option{padding-left:24px}.battery-percentage-option:has(input[disabled]){opacity:.5}</style>
       <label>${this.ht('Integration')}<select data-key="integration" data-focus="integration">${[['auto',this.t('Automatic')],...integrationAdapters.map(adapter => [adapter.id,this.t(adapter.label)])].map(([id,label]) => `<option value="${id}" ${(config.integration ?? 'auto') === id ? 'selected' : ''}>${h(label)}</option>`).join('')}</select></label>
-      <label>${this.ht(this.adapter.deviceLabel)}<select data-key="entity" data-focus="entity"><option value="">${this.ht("Select a device")}</option>${vacuums.map(e => `<option value="${h(e.entity_id)}" ${config.entity === e.entity_id ? 'selected' : ''}>${h(this._hass.states[e.entity_id]?.attributes?.friendly_name || e.entity_id)} · ${h(adapterLabel(e.entity_id))}</option>`).join('')}</select></label>
+      <label>${this.ht("Robot")}<select data-key="entity" data-focus="entity"><option value="">${this.ht("Select a device")}</option>${vacuums.map(e => `<option value="${h(e.entity_id)}" ${config.entity === e.entity_id ? 'selected' : ''}>${h(this._hass.states[e.entity_id]?.attributes?.friendly_name || e.entity_id)} · ${h(adapterLabel(e.entity_id))}</option>`).join('')}</select></label>
       <label>${this.ht("Title")}<input type="text" data-key="title" data-focus="title" placeholder="${this.ht('Plan a clean')}" value="${h(config.title ?? '')}"></label>
       <label>${this.ht("Language")}<select data-key="language" data-focus="language"><option value="auto" ${!config.language || config.language === 'auto' ? 'selected' : ''}>${this.ht("Automatic")}</option><option value="en" ${config.language === 'en' ? 'selected' : ''}>English [en]</option><option value="de" ${config.language === 'de' ? 'selected' : ''}>Deutsch [de]</option><option value="nl" ${config.language === 'nl' ? 'selected' : ''}>Nederlands [nl]</option><option value="fr" ${config.language === 'fr' ? 'selected' : ''}>Français [fr]</option></select></label>
       <label>${this.ht("Theme")}<select data-key="theme" data-focus="theme"><option value="classic" ${config.theme === 'classic' ? 'selected' : ''}>${this.ht("Classic")}</option><option value="modern" ${config.theme !== 'classic' ? 'selected' : ''}>${this.ht("Modern")}</option></select></label>
-      <label>${this.ht("Header icon style")}<select data-key="header_icon_style" data-focus="header-icon-style"><option value="home_assistant" ${config.header_icon_style === 'home_assistant' ? 'selected' : ''}>Home Assistant</option><option value="integration" ${(config.header_icon_style ?? 'integration') === 'integration' ? 'selected' : ''}>${this.ht("Integration")}</option></select></label>
-      <div class="entry"><label><input type="checkbox" data-key="always_show_all_settings" data-focus="all-settings" ${config.always_show_all_settings === true ? 'checked' : ''}>${this.ht("Always show all settings")}</label></div>
+      ${this.adapter.supportsIntegrationIcon !== false ? `<label>${this.ht("Header icon style")}<select data-key="header_icon_style" data-focus="header-icon-style"><option value="home_assistant" ${config.header_icon_style === 'home_assistant' ? 'selected' : ''}>Home Assistant</option><option value="integration" ${(config.header_icon_style ?? 'integration') === 'integration' ? 'selected' : ''}>${this.ht("Integration")}</option></select></label>` : ''}
+      ${this.adapter.supportsRoomSettings !== false ? `<div class="entry"><label><input type="checkbox" data-key="always_show_all_settings" data-focus="all-settings" ${config.always_show_all_settings === true ? 'checked' : ''}>${this.ht("Always show all settings")}</label></div>` : ''}
       <p>${this.ht(this.adapter.editorHint)}</p>
       <h3>${this.ht("Status bar")}</h3>
       <div class="entry"><label><input type="checkbox" data-key="show_status_bar" data-focus="show-status-bar" ${config.show_status_bar !== false ? 'checked' : ''}>${this.ht("Show status bar")}</label></div>
       <fieldset class="status-options" aria-label="${this.ht("Visible status indicators")}" ${config.show_status_bar === false ? 'disabled' : ''}>
-        ${STATUS_BAR_ITEMS.map(([key, label]) => `<div class="entry"><label><input type="checkbox" data-status-item="${key}" data-focus="status-${key}" ${!config.hidden_status_items?.includes(key) ? 'checked' : ''}>${this.ht(label)}</label></div>`).join('')}
+        ${(this.adapter.statusBarItems ?? STATUS_BAR_ITEMS).map(([key, label]) => `<div class="entry"><label><input type="checkbox" data-status-item="${key}" data-focus="status-${key}" ${!config.hidden_status_items?.includes(key) ? 'checked' : ''}>${this.ht(label)}</label></div>`).join('')}
         <div class="entry battery-percentage-option"><label><input type="checkbox" data-key="show_battery_percentage" data-focus="show-battery-percentage" ${config.show_battery_percentage === true ? 'checked' : ''} ${config.hidden_status_items?.includes('battery') ? 'disabled' : ''}>${this.ht("Show battery percentage")}</label></div>
       </fieldset>
-      <h3>${this.ht("Cleaning map")}</h3><div class="entry"><label><input type="checkbox" data-key="show_camera" data-focus="show-camera" ${config.show_camera !== false ? 'checked' : ''}>${this.ht("Show camera during a cleaning session")}</label></div>
+      ${this.adapter.supportsSessionMap !== false ? `<h3>${this.ht("Cleaning map")}</h3><div class="entry"><label><input type="checkbox" data-key="show_camera" data-focus="show-camera" ${config.show_camera !== false ? 'checked' : ''}>${this.ht("Show camera during a cleaning session")}</label></div>
       <p class="notice">${this.ht("Turning this off removes the map and stops image requests from this card.")}</p>
       ${field('camera_entity', this.ht(this.adapter.mapEntityLabel ?? 'Map camera'), 'camera')}
-      <label>${this.ht("Map rotation")}<select data-key="camera_rotation" data-focus="camera-rotation">${[0, 90, 180, 270].map(deg => `<option value="${deg}" ${(config.camera_rotation ?? 0) === deg ? 'selected' : ''}>${deg}°</option>`).join('')}</select></label>
-      <h3>${this.ht("Zone cleaning")}</h3>
-      <label>${this.ht("Dimension display")}<select data-key="zone_dimension_unit" data-focus="zone-dimension-unit">${[['auto','Automatic'],['cm','Centimeters'],['inch','Inches'],['off','Off']].map(([value,label]) => `<option value="${value}" ${(config.zone_dimension_unit ?? 'auto') === value ? 'selected' : ''}>${this.ht(label)}</option>`).join('')}</select></label>
+      <label>${this.ht("Map rotation")}<select data-key="camera_rotation" data-focus="camera-rotation">${[0, 90, 180, 270].map(deg => `<option value="${deg}" ${(config.camera_rotation ?? 0) === deg ? 'selected' : ''}>${deg}°</option>`).join('')}</select></label>` : ''}
+      ${this.adapter.supportsZoneEditor !== false ? `<h3>${this.ht("Zone cleaning")}</h3>
+      <label>${this.ht("Dimension display")}<select data-key="zone_dimension_unit" data-focus="zone-dimension-unit">${[['auto','Automatic'],['cm','Centimeters'],['inch','Inches'],['off','Off']].map(([value,label]) => `<option value="${value}" ${(config.zone_dimension_unit ?? 'auto') === value ? 'selected' : ''}>${this.ht(label)}</option>`).join('')}</select></label>` : ''}
       <h3>${this.ht("Rooms in this card")}</h3><p>${this.ht("Choose which rooms to show. Arrows change the display order, not the robot cleaning order.")}</p>
       ${this.model.rooms.map((r, i) => `<div class="entry"><label><input type="checkbox" data-focus="include-${i}" data-include="${h(roomKey(r))}" ${!r.excluded ? 'checked' : ''} ${!roomKey(r) ? 'disabled' : ''}>${h(r.name)}</label><button data-order="${h(roomKey(r))}" data-direction="-1" ${i === 0 ? 'disabled' : ''} aria-label="${this.ht('Move {name} up', { name: r.name })}">↑</button><button data-order="${h(roomKey(r))}" data-direction="1" ${i === this.model.rooms.length - 1 ? 'disabled' : ''} aria-label="${this.ht('Move {name} down', { name: r.name })}">↓</button></div>`).join('')}
       <button data-action="refresh" data-focus="refresh-rooms">${this.ht("Refresh rooms")}</button>

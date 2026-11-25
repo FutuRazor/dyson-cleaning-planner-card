@@ -2,9 +2,14 @@
 
 ## Unreleased
 
+- Exclude Spot+Scrub's known cleaning-mode options from the generic suction slider: its fan-speed API selects vacuum/mop modes rather than suction intensity. Document hass-dyson's missing standard fan capability and retain area-only starts for these devices.
+- Add an optional shared suction slider below HA area tiles when the exact vacuum exposes FAN_SPEED, native options and the set-fan-speed action. Keep edits local until Start, set only changed values, revalidate before area cleaning, and retain drafts with explicit partial-effect feedback instead of retrying or rolling back. Explain that suction is a global robot preference and may persist after the job.
+- Add a generic Home Assistant area-cleaning adapter (`ha_rooms`) for entities reporting CLEAN_AREA. Discover only the robot's mapped HA areas, preserve selection locally, revalidate persisted mappings before one targeted `vacuum.clean_area` call, and support standard session controls without promising room order.
+- Prefer specialized adapters in Automatic, deduplicate eligible robots and keep unknown platforms from falling back to Dyson. Localize setup/errors in four languages and hide unavailable room settings, map/zone, preference and info controls for the generic adapter. Foreign-robot live acceptance remains pending.
+- Record a successful maintainer live test of the generic HA mode with a Dyson: multiple area starts, Pause/Resume/Home, battery display and browser-local requested-room chips. Clarify that these chips are local request snapshots rather than shared robot telemetry.
 - Move room-planning capabilities, field presentation and editor metadata behind the existing Dyson adapters. Hide unsupported room actions/settings, gate dispatch with current adapter readiness, retain legacy entity-based YAML keys and allow room selection without a dedicated HA entity.
 - Show hass-dyson selections without execution-order numbers, since its integration controls room order. Preserve Spot+Scrub's numbered selection and existing action payloads.
-- Add room-capability regression tests and an entityless-room browser fixture. The maintainer reports successful live checks for both Dyson adapters; document a non-blocking cross-integration Resume exception when both integrations control the same robot. No third-party robot adapter is included.
+- Add room-capability regression tests and an entityless-room browser fixture. The maintainer reports successful live checks for both Dyson adapters; document a non-blocking cross-integration Resume exception when both integrations control the same robot.
 
 ## v1.6.0
 

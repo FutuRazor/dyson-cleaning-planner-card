@@ -30,13 +30,17 @@
 
 ## Requirements
 
-- A supported integration installed and configured in Home Assistant: [Dyson Spot+Scrub by UNsync3D](https://github.com/UNsync3D/ha-dyson-spot-scrub), **v2.1.0 or newer**, or [hass-dyson](https://github.com/cmgrayb/hass-dyson) with the experimental Spot+Scrub adapter described below.
+- A supported integration installed and configured in Home Assistant: [Dyson Spot+Scrub by UNsync3D](https://github.com/UNsync3D/ha-dyson-spot-scrub), **v2.1.0 or newer**, [hass-dyson](https://github.com/cmgrayb/hass-dyson) with the experimental Spot+Scrub adapter described below, or an entity supporting Home Assistant area cleaning for the basic room-selection adapter.
 - Schedule management requires **Spot+Scrub integration v2.2.0 or newer** with schedule entities enabled. Schedule writes are currently supported for Spot+Scrub AI / RB05; R1/R2 expose a read-only list. The experimental hass-dyson schedule interface was tested against **v0.40.0-beta.6** and has the limitations described [below](#robot-schedules).
 - **Home Assistant Marketplace** for the recommended installation method on Home Assistant **2026.11 or newer**. On older versions, use [HACS](https://www.hacs.xyz/). Manual installation is also supported.
 
 The [experimental hass-dyson adapter](docs/hass-dyson.md) supports rooms/settings, room starts, session controls, battery/consumables, dock status/countdown and the combined vacuum/mop coverage image. Maintainer live tests confirmed Save with entity readback, room starts, Pause/Resume/Home, battery percentage, separate vacuum/mop coverage, dock activity display, the drying countdown, blocked starts during roller washing, and new room starts during drying. Select **Integration → hass-dyson (experimental)** in the editor. Automatic initial discovery prefers the existing Spot+Scrub integration; an explicitly selected robot remains authoritative. Rectangle cleaning and station/robot preferences remain exclusive to the original Spot+Scrub adapter. hass-dyson currently requires one unambiguous known map; room execution order is controlled by the integration.
 
 For integration developers, the [complete integration contract](docs/integration-contract.md) documents required and optional entities, registry identities, attributes, action payloads and validation. 
+
+In the generic HA mode, fan-capable vacuums additionally show one shared suction slider below the area tiles. Changes remain local until Start; the card sets an explicitly changed value before area cleaning and explains that it is a global robot preference which may persist. See the [optional suction behavior and live checklist](docs/home-assistant-rooms.md#optional-suction-power-and-start). This addition still needs its own live verification, including interactions with stored room profiles.
+
+The [Home Assistant area-cleaning adapter](docs/home-assistant-rooms.md) adds basic room selection for other integrations whose vacuum entity reports `CLEAN_AREA`. First map the robot segments to HA areas in the vacuum entity settings, then choose **Integration → Home Assistant · Area cleaning** and the robot, or use Automatic. It starts selected areas through `vacuum.clean_area`, uses checkmarks instead of execution-order numbers, and offers standard session controls when supported. Per-room settings, maps/zones and native schedules require a specialized adapter. This generic path has passed simulated checks and a maintainer live test with a Dyson (multiple starts, Pause/Resume/Home, local room chips and battery display); live acceptance with a foreign robot is pending.
 
 ## Screenshots
 

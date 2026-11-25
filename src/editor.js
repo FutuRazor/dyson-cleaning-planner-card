@@ -32,7 +32,7 @@ class DysonCleaningPlannerEditor extends DysonRegistryElement {
       const next = { ...this.config };
       if (el.dataset.key) {
         next[el.dataset.key] = el.type === 'checkbox' ? el.checked : el.dataset.key === 'camera_rotation' ? Number(el.value) : el.value;
-        if (el.dataset.key === 'integration' && !integrationVacuumEntries(next, this.selectableRegistry).some(e => e.entity_id === next.entity)) {
+        if (el.dataset.key === 'integration' && !integrationVacuumEntries(next, this.selectableRegistry, this._hass).some(e => e.entity_id === next.entity)) {
           next.entity = defaultIntegrationEntity(this._hass, next, this.registry, !!this._registryLoaded);
         }
         if (el.dataset.key === 'entity' || el.dataset.key === 'integration') {
@@ -89,7 +89,7 @@ class DysonCleaningPlannerEditor extends DysonRegistryElement {
   update() {
     if (!this.config || !this._hass) return;
     const h = escapeHtml;
-    const vacuums = integrationVacuumEntries(this.config, this.selectableRegistry);
+    const vacuums = integrationVacuumEntries(this.config, this.selectableRegistry, this._hass);
     const adapterLabel = entity => getIntegrationAdapter({ ...this.config, entity }, this.selectableRegistry, this._hass).shortLabel;
     const config = { ...this.config, excluded_rooms: this.config.excluded_rooms ?? [], room_order: this.config.room_order ?? [] };
     this.model = config.entity ? this.adapter.discover(this._hass, this.registry, config) : { rooms: [], issues: [] };
@@ -99,25 +99,25 @@ class DysonCleaningPlannerEditor extends DysonRegistryElement {
     };
     this.paint(`<style>${styles}:host{padding:8px}label{display:grid;gap:8px;margin:0 0 16px;font-size:14px}input[type=text]{padding:12px;border:1px solid var(--dp-line);border-radius:8px;background:var(--dp-bg);color:inherit;width:100%}.entry{display:flex;gap:8px;align-items:center;margin:8px 0}.entry label{display:flex;align-items:center;flex:1;margin:0}.entry button{min-width:42px}h3{font-size:15px;margin-top:24px}.status-options{margin:12px 0 0;padding:8px 0 0 12px;border:0;border-top:1px solid var(--dp-line);min-width:0}.status-options:disabled{opacity:.5}.battery-percentage-option{padding-left:24px}.battery-percentage-option:has(input[disabled]){opacity:.5}</style>
       <label>${this.ht('Integration')}<select data-key="integration" data-focus="integration">${[['auto',this.t('Automatic')],...integrationAdapters.map(adapter => [adapter.id,this.t(adapter.label)])].map(([id,label]) => `<option value="${id}" ${(config.integration ?? 'auto') === id ? 'selected' : ''}>${h(label)}</option>`).join('')}</select></label>
-      <label>${this.ht(this.adapter.deviceLabel)}<select data-key="entity" data-focus="entity"><option value="">${this.ht("Select a device")}</option>${vacuums.map(e => `<option value="${h(e.entity_id)}" ${config.entity === e.entity_id ? 'selected' : ''}>${h(this._hass.states[e.entity_id]?.attributes?.friendly_name || e.entity_id)} · ${h(adapterLabel(e.entity_id))}</option>`).join('')}</select></label>
+      <label>${this.ht("Robot")}<select data-key="entity" data-focus="entity"><option value="">${this.ht("Select a device")}</option>${vacuums.map(e => `<option value="${h(e.entity_id)}" ${config.entity === e.entity_id ? 'selected' : ''}>${h(this._hass.states[e.entity_id]?.attributes?.friendly_name || e.entity_id)} · ${h(adapterLabel(e.entity_id))}</option>`).join('')}</select></label>
       <label>${this.ht("Title")}<input type="text" data-key="title" data-focus="title" placeholder="${this.ht('Plan a clean')}" value="${h(config.title ?? '')}"></label>
       <label>${this.ht("Language")}<select data-key="language" data-focus="language"><option value="auto" ${!config.language || config.language === 'auto' ? 'selected' : ''}>${this.ht("Automatic")}</option><option value="en" ${config.language === 'en' ? 'selected' : ''}>English [en]</option><option value="de" ${config.language === 'de' ? 'selected' : ''}>Deutsch [de]</option><option value="nl" ${config.language === 'nl' ? 'selected' : ''}>Nederlands [nl]</option><option value="fr" ${config.language === 'fr' ? 'selected' : ''}>Français [fr]</option></select></label>
       <label>${this.ht("Theme")}<select data-key="theme" data-focus="theme"><option value="classic" ${config.theme === 'classic' ? 'selected' : ''}>${this.ht("Classic")}</option><option value="modern" ${config.theme !== 'classic' ? 'selected' : ''}>${this.ht("Modern")}</option></select></label>
-      <label>${this.ht("Header icon style")}<select data-key="header_icon_style" data-focus="header-icon-style"><option value="home_assistant" ${config.header_icon_style === 'home_assistant' ? 'selected' : ''}>Home Assistant</option><option value="integration" ${(config.header_icon_style ?? 'integration') === 'integration' ? 'selected' : ''}>${this.ht("Integration")}</option></select></label>
-      <div class="entry"><label><input type="checkbox" data-key="always_show_all_settings" data-focus="all-settings" ${config.always_show_all_settings === true ? 'checked' : ''}>${this.ht("Always show all settings")}</label></div>
+      ${this.adapter.supportsIntegrationIcon !== false ? `<label>${this.ht("Header icon style")}<select data-key="header_icon_style" data-focus="header-icon-style"><option value="home_assistant" ${config.header_icon_style === 'home_assistant' ? 'selected' : ''}>Home Assistant</option><option value="integration" ${(config.header_icon_style ?? 'integration') === 'integration' ? 'selected' : ''}>${this.ht("Integration")}</option></select></label>` : ''}
+      ${this.adapter.supportsRoomSettings !== false ? `<div class="entry"><label><input type="checkbox" data-key="always_show_all_settings" data-focus="all-settings" ${config.always_show_all_settings === true ? 'checked' : ''}>${this.ht("Always show all settings")}</label></div>` : ''}
       <p>${this.ht(this.adapter.editorHint)}</p>
       <h3>${this.ht("Status bar")}</h3>
       <div class="entry"><label><input type="checkbox" data-key="show_status_bar" data-focus="show-status-bar" ${config.show_status_bar !== false ? 'checked' : ''}>${this.ht("Show status bar")}</label></div>
       <fieldset class="status-options" aria-label="${this.ht("Visible status indicators")}" ${config.show_status_bar === false ? 'disabled' : ''}>
-        ${STATUS_BAR_ITEMS.map(([key, label]) => `<div class="entry"><label><input type="checkbox" data-status-item="${key}" data-focus="status-${key}" ${!config.hidden_status_items?.includes(key) ? 'checked' : ''}>${this.ht(label)}</label></div>`).join('')}
+        ${(this.adapter.statusBarItems ?? STATUS_BAR_ITEMS).map(([key, label]) => `<div class="entry"><label><input type="checkbox" data-status-item="${key}" data-focus="status-${key}" ${!config.hidden_status_items?.includes(key) ? 'checked' : ''}>${this.ht(label)}</label></div>`).join('')}
         <div class="entry battery-percentage-option"><label><input type="checkbox" data-key="show_battery_percentage" data-focus="show-battery-percentage" ${config.show_battery_percentage === true ? 'checked' : ''} ${config.hidden_status_items?.includes('battery') ? 'disabled' : ''}>${this.ht("Show battery percentage")}</label></div>
       </fieldset>
-      <h3>${this.ht("Cleaning map")}</h3><div class="entry"><label><input type="checkbox" data-key="show_camera" data-focus="show-camera" ${config.show_camera !== false ? 'checked' : ''}>${this.ht("Show camera during a cleaning session")}</label></div>
+      ${this.adapter.supportsSessionMap !== false ? `<h3>${this.ht("Cleaning map")}</h3><div class="entry"><label><input type="checkbox" data-key="show_camera" data-focus="show-camera" ${config.show_camera !== false ? 'checked' : ''}>${this.ht("Show camera during a cleaning session")}</label></div>
       <p class="notice">${this.ht("Turning this off removes the map and stops image requests from this card.")}</p>
       ${field('camera_entity', this.ht(this.adapter.mapEntityLabel ?? 'Map camera'), 'camera')}
-      <label>${this.ht("Map rotation")}<select data-key="camera_rotation" data-focus="camera-rotation">${[0, 90, 180, 270].map(deg => `<option value="${deg}" ${(config.camera_rotation ?? 0) === deg ? 'selected' : ''}>${deg}°</option>`).join('')}</select></label>
-      <h3>${this.ht("Zone cleaning")}</h3>
-      <label>${this.ht("Dimension display")}<select data-key="zone_dimension_unit" data-focus="zone-dimension-unit">${[['auto','Automatic'],['cm','Centimeters'],['inch','Inches'],['off','Off']].map(([value,label]) => `<option value="${value}" ${(config.zone_dimension_unit ?? 'auto') === value ? 'selected' : ''}>${this.ht(label)}</option>`).join('')}</select></label>
+      <label>${this.ht("Map rotation")}<select data-key="camera_rotation" data-focus="camera-rotation">${[0, 90, 180, 270].map(deg => `<option value="${deg}" ${(config.camera_rotation ?? 0) === deg ? 'selected' : ''}>${deg}°</option>`).join('')}</select></label>` : ''}
+      ${this.adapter.supportsZoneEditor !== false ? `<h3>${this.ht("Zone cleaning")}</h3>
+      <label>${this.ht("Dimension display")}<select data-key="zone_dimension_unit" data-focus="zone-dimension-unit">${[['auto','Automatic'],['cm','Centimeters'],['inch','Inches'],['off','Off']].map(([value,label]) => `<option value="${value}" ${(config.zone_dimension_unit ?? 'auto') === value ? 'selected' : ''}>${this.ht(label)}</option>`).join('')}</select></label>` : ''}
       <h3>${this.ht("Rooms in this card")}</h3><p>${this.ht("Choose which rooms to show. Arrows change the display order, not the robot cleaning order.")}</p>
       ${this.model.rooms.map((r, i) => `<div class="entry"><label><input type="checkbox" data-focus="include-${i}" data-include="${h(roomKey(r))}" ${!r.excluded ? 'checked' : ''} ${!roomKey(r) ? 'disabled' : ''}>${h(r.name)}</label><button data-order="${h(roomKey(r))}" data-direction="-1" ${i === 0 ? 'disabled' : ''} aria-label="${this.ht('Move {name} up', { name: r.name })}">↑</button><button data-order="${h(roomKey(r))}" data-direction="1" ${i === this.model.rooms.length - 1 ? 'disabled' : ''} aria-label="${this.ht('Move {name} down', { name: r.name })}">↓</button></div>`).join('')}
       <button data-action="refresh" data-focus="refresh-rooms">${this.ht("Refresh rooms")}</button>
