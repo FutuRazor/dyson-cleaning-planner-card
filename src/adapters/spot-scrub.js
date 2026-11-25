@@ -1,5 +1,6 @@
 import { UiError } from '../localize.js';
-import { ROOM_FIELDS, available } from '../shared.js';
+import { ROOM_FIELDS, available, roomKey } from '../shared.js';
+import { dysonRoomPresentation } from './dyson-planning.js';
 import { validZoneCalibration, zoneRobotRectangle } from '../zone-geometry.js';
 
 // Keep backend identities, telemetry and action policy inside this adapter.
@@ -51,7 +52,7 @@ function discover(hass, registry, config, previousRooms = []) {
         available: hass.connected !== false && available(state) };
     }
     const roomId = roomIds.size === 1 ? [...roomIds][0] : undefined;
-    return [{ name, entity: entry.entity_id, context, roomId, settings, available: available(hass.states[entry.entity_id]), excluded: config.excluded_rooms.includes(entry.entity_id) }];
+    return [{ name, key:entry.entity_id, entity: entry.entity_id, context, roomId, settings, available: available(hass.states[entry.entity_id]), excluded: config.excluded_rooms.includes(entry.entity_id) }];
   });
   const ids = rooms.map(r => r.entity).filter(Boolean);
   if (new Set(ids).size !== ids.length) issues.push('Multiple rooms map to the same switch.');
@@ -114,7 +115,7 @@ async function sendRoomDraft({ hass, model, config, selected = [], draft = {}, s
     }
   }
   const rooms = start ? selected.map(entity => {
-    const room = model.rooms.find(r => r.entity === entity);
+    const room = model.rooms.find(r => roomKey(r) === entity);
     if (!room?.roomId) throw new UiError('A selected room has no stable room ID. Refresh rooms and check the integration.');
     return resolve(room.roomId);
   }) : [];
@@ -422,6 +423,16 @@ function defaultEntity(hass) {
 function roomSelectionState(hass, entity) { return hass.states[entity]?.state; }
 function hasRoomList(hass, entity) { return Array.isArray(hass.states[entity]?.attributes?.rooms); }
 function roomActionAvailable(hass, start) { return !!hass?.services?.[DOMAIN]?.[start ? 'start_rooms_with_settings' : 'save_room_settings']; }
+function roomPlanningState(hass, registry, config, model) {
+  const saveAvailable = roomActionAvailable(hass, false), startAvailable = roomActionAvailable(hass, true);
+  const ready = hass?.connected !== false && available(hass?.states?.[config.entity])
+    && vacuumEntries(registry).some(entry => entry.entity_id === config.entity);
+  const blocked = model.startBlockReason || startBlockReason(hass, config.entity);
+  return { supportsSave:true, supportsStart:true, ordered:true,
+    canSave:ready && saveAvailable, canStart:ready && startAvailable && !blocked,
+    notice:model.startBlockReason || (!saveAvailable || !startAvailable
+      ? 'The updated Dyson integration actions are not available. Reload the integration and refresh this dashboard.' : null) };
+}
 function mapId(hass, entity) { return hass?.states?.[entity]?.attributes?.map_id; }
 function mapPicture(hass, entity) { return hass?.states?.[entity]?.attributes?.entity_picture; }
 function mapCalibration(hass, entity) { return hass?.states?.[entity]?.attributes?.map_calibration; }
@@ -586,7 +597,10 @@ async function deleteSchedule({ hass, registry, config, id }) {
   finally { draftRequests.delete(config.entity); }
 }
 
-return Object.freeze({ id: DOMAIN, roomContext, discover, batteryStatus, sendRoomDraft, dockBusy, dockBlocksStart, startBlockReason, activityStatus, cleaningView, dryingRemainingTime, dryingRemainingPercent, canControl, controlCleaning, CONSUMABLES, consumableStatus, ROBOT_FIELDS, robotSettings, changeRobotSetting, STATION_FIELDS, STATION_ACTIONS, stationActions, pressStationAction, stationSettings, changeStationSetting, supportsZoneDevice, ZONE_CHOICES, zoneDeviceOptions, vacuumEntries, cameraEntries, defaultEntity, roomSelectionState, hasRoomList, roomActionAvailable, mapId, mapPicture, mapCalibration, trustedCamera, robotTelemetry, dockActivity, zoneReady, startZone, zoneSettingsPayload,
+return Object.freeze({ id: DOMAIN, label:'Dyson Spot+Scrub', shortLabel:'Spot+Scrub', deviceLabel:'Dyson device',
+  editorHint:'Per-room settings are detected automatically. Saving and starting use the Dyson integration batch actions.',
+  roomStartMessage:'Sending room settings and start request …',
+  roomPlanningState, roomPresentation:dysonRoomPresentation, roomContext, discover, batteryStatus, sendRoomDraft, dockBusy, dockBlocksStart, startBlockReason, activityStatus, cleaningView, dryingRemainingTime, dryingRemainingPercent, canControl, controlCleaning, CONSUMABLES, consumableStatus, ROBOT_FIELDS, robotSettings, changeRobotSetting, STATION_FIELDS, STATION_ACTIONS, stationActions, pressStationAction, stationSettings, changeStationSetting, supportsZoneDevice, ZONE_CHOICES, zoneDeviceOptions, vacuumEntries, cameraEntries, defaultEntity, roomSelectionState, hasRoomList, roomActionAvailable, mapId, mapPicture, mapCalibration, trustedCamera, robotTelemetry, dockActivity, zoneReady, startZone, zoneSettingsPayload,
   scheduleState, scheduleRoomOptions, setSchedule, deleteSchedule,
   mapPictureAllowed:picture => typeof picture === 'string' && picture.startsWith('/api/camera_proxy/'),
 });

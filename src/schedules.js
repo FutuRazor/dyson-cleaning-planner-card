@@ -1,4 +1,4 @@
-import { escapeHtml, ROOM_FIELDS, ROOM_COLORS } from './shared.js';
+import { escapeHtml, ROOM_FIELDS, ROOM_COLORS, roomKey } from './shared.js';
 import { uiMessage } from './localize.js';
 
 const weekdays = ['mon','tue','wed','thu','fri','sat','sun'];
@@ -421,18 +421,18 @@ export const scheduleCardMethods = {
     }
     this.closeScheduleMenu();
     this.scheduleDialog = { id, mode, days:schedule ? [...schedule.days] : [], time:schedule?.time ?? '',
-      selected:[...this.selected], rooms:this.selected.map(entity => this.model.rooms.find(room => room.entity === entity)?.name ?? entity),
+      selected:[...this.selected], rooms:this.selected.map(entity => this.model.rooms.find(room => roomKey(room) === entity)?.name ?? entity),
       draft:structuredClone(this.settingDraft), context:id === undefined ? this.draftContext : context, config:this.config };
     if (schedule?.roomIds && this.adapter.scheduleRoomOptions) {
       Object.assign(this.scheduleDialog, {schedule:structuredClone(schedule), roomPlan:{roomIds:[...schedule.roomIds],settings:{}},
         roomNames:Object.fromEntries(schedule.roomIds.map((roomId,index) => [roomId,schedule.rooms[index]])), roomsChanged:false});
     } else if (id === undefined && state.creationUsesSelectedRooms && this.adapter.scheduleRoomOptions) {
       const rooms = this.model.rooms.filter(room => room.roomId);
-      const roomIds = this.selected.map(entity => rooms.find(room => room.entity === entity)?.roomId).filter(Boolean);
+      const roomIds = this.selected.map(entity => rooms.find(room => roomKey(room) === entity)?.roomId).filter(Boolean);
       Object.assign(this.scheduleDialog, {schedule:{roomIds:[...roomIds],mapId:String(this.adapter.mapId(this._hass,this.config.entity)),
         roomSettings:Object.fromEntries(rooms.map(room => [room.roomId,Object.fromEntries(Object.entries(room.settings).flatMap(([key,field]) => field.options.includes(field.value) ? [[key,field.value]] : []))]))},
         roomPlan:{roomIds,settings:structuredClone(this.settingDraft)},roomNames:Object.fromEntries(rooms.map(room => [room.roomId,room.name])),
-        roomEntities:Object.fromEntries(rooms.map(room => [room.roomId,room.entity])),roomsChanged:false});
+        roomEntities:Object.fromEntries(rooms.map(room => [room.roomId,roomKey(room)])),roomsChanged:false});
     }
     this.render();
     this.shadowRoot.querySelector(mode === 'delete' ? '[data-focus="schedule-cancel"]' : '[data-focus="schedule-mon"]')?.focus({preventScroll:true});

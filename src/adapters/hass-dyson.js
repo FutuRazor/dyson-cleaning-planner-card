@@ -1,5 +1,6 @@
 import { UiError } from '../localize.js';
-import { available } from '../shared.js';
+import { available, roomKey } from '../shared.js';
+import { dysonRoomPresentation } from './dyson-planning.js';
 import { spotScrubAdapter } from './spot-scrub.js';
 
 // Experimental RB05 room adapter. No protocol commands or fabricated HA entities.
@@ -89,7 +90,7 @@ function discover(hass, registry, config, previousRooms = []) {
     const modeEntries = entries.filter(e => e.entity_id.startsWith('select.') && e.unique_id === `${serial}_room_${id}_cleaning_mode`);
     const entity = settings.cleaning_mode?.entity ?? (modeEntries.length === 1 ? modeEntries[0].entity_id : Object.values(settings)[0]?.entity) ?? '';
     const valid = ids.size === 1 && ids.has(id);
-    return { name:name || `Room ${id}`, entity, roomId:valid ? id : undefined, context, mapId:map, settings,
+    return { name:name || `Room ${id}`, key:entity, entity, roomId:valid ? id : undefined, context, mapId:map, settings,
       available:valid && !!entity && Object.values(settings).some(f => f.available), excluded:config.excluded_rooms?.includes(entity) ?? false };
   });
   const rank = id => { const i = config.room_order?.indexOf(id) ?? -1; return i < 0 ? Number.MAX_SAFE_INTEGER : i; };
@@ -183,7 +184,7 @@ async function sendRoomDraft({ hass, model, config, selected = [], draft = {}, s
     }
   }
   const rooms = start ? selected.map(entity => {
-    const room = live.rooms.find(r => r.entity === entity);
+    const room = live.rooms.find(r => roomKey(r) === entity);
     if (!room?.roomId) fail();
     return resolve(room.roomId);
   }) : [];
@@ -326,7 +327,24 @@ async function deleteSchedule({ hass, registry, config, id }) {
   try { await hass.callService(DOMAIN, 'delete_robot_schedule', {device_id:state.deviceId, schedule_id:id}); }
   finally { pending.delete(state.deviceId); }
 }
+function roomPlanningState(hass, registry, config, model, draft = {}) {
+  const saveAvailable = !!hass?.services?.[DOMAIN]?.set_room_cleaning_modes;
+  const startAvailable = !!hass?.services?.[DOMAIN]?.start_zone_clean;
+  const ready = hass?.connected !== false && available(hass?.states?.[config.entity])
+    && vacuumEntries(registry).some(entry => entry.entity_id === config.entity);
+  const blocked = model.startBlockReason || startBlockReason(hass, config.entity, registry);
+  return { supportsSave:true, supportsStart:true, ordered:false,
+    canSave:ready && saveAvailable,
+    canStart:ready && startAvailable && !blocked && (!Object.keys(draft).length || saveAvailable),
+    notice:model.startBlockReason || (!saveAvailable || !startAvailable
+      ? 'The updated Dyson integration actions are not available. Reload the integration and refresh this dashboard.' : null) };
+}
+
 return Object.freeze({ id:DOMAIN, infoTabs:['consumables'], mapEntityLabel:'Map image',
+  label:'hass-dyson (experimental)', shortLabel:'hass-dyson', deviceLabel:'Dyson device',
+  editorHint:'Room order is controlled by hass-dyson. Changed settings are saved before cleaning starts.',
+  roomStartMessage:'Sending room settings and start request …',
+  roomPlanningState, roomPresentation:dysonRoomPresentation,
   scheduleState, setSchedule, deleteSchedule,
   usesDockTimer:true, supportsDryingCancellation:false,
   planningHint:'Room order is controlled by hass-dyson. Changed settings are saved before cleaning starts.',

@@ -1,5 +1,27 @@
 # Testing v1.6.0
 
+## Local multi-adapter preparation — 25 November 2026
+
+Branch: `experiment/multi_adapter`. Version remains **v1.6.0**. This is an internal room-planning refactor; no additional robot integration is enabled.
+
+- `npm run check`: **130 unit tests**, syntax checks, regenerated bundle and standalone smoke check passed.
+- Six Edge browser suites passed: `room-planning-browser`, `browser`, `hass-dyson-browser`, `room-identity-browser`, `schedule-editor-browser` and `zone-browser`.
+- The new room-planning tests cover independent Save/Start availability, offline and foreign-device gating, mode-dependent field descriptors, retained Dyson YAML keys, entityless room selection, hidden unsupported controls, unordered checkmarks, blocked dispatch and opaque selection keys. The browser fixture tests both themes at 375/900 px with a test-only adapter and sends no integration commands.
+
+The maintainer reports that live checks for this refactor **passed for both Dyson adapters**, with the cross-integration exception below. This is a maintainer-reported result, separate from the automated fixture checks and earlier release acceptance. The acceptance checklist is:
+
+1. Existing YAML, Automatic/manual integration selection, room exclusions and display order retain the same device and rooms. Check both themes, desktop/mobile and the editor. Spot+Scrub keeps selection numbers; hass-dyson uses checkmarks in Modern and no order numbers in Classic.
+2. Select rooms and edit settings without sending a command. Save updates only edited preferences and retains the local selection. Start one small room, then multiple rooms with edited preferences. Verify Spot+Scrub's combined action and hass-dyson's Save-then-Start behavior.
+3. Check Pause/Resume/Home, blocked starts during washing, permitted starts during drying and displayed faults. Disconnect/reconnect and confirm a draft survives; change maps and confirm an old draft is rejected without commands or automatic retries.
+4. Spot+Scrub: start a small rectangle and check rotation/draft retention. For both adapters, inspect existing schedules and confirm creation, edit/toggle/delete and draft isolation within their supported scope.
+5. Report adapter/integration version, robot model, theme and the observed result for each failed step before adding a third adapter. Do not interpret fixture checks as hardware verification.
+
+### Known cross-integration Resume exception
+
+With the same physical robot exposed through both integrations, the maintainer started a rectangle clean through Spot+Scrub, paused it, then pressed Resume through the hass-dyson card. Instead of continuing the rectangle, the robot started a new vacuuming job covering the entire hall. Use of stored/global settings was suspected but not confirmed. The maintainer does not classify this as a category-A defect or a blocker for the current refactor.
+
+Source inspection confirms that Resume calls `vacuum.start` on the selected adapter's vacuum entity without room, rectangle or settings parameters. It does not reconstruct the other integration's job. The precise integration/robot-side cause has not been established by a command trace. Cross-integration continuation of a job is not validated; the normal live acceptance applies to operation through each integration independently. No automatic retry, fallback or application-code workaround was added for this report.
+
 ## v1.6.0 release acceptance
 
 This is a stable release without a beta suffix. Only the hass-dyson adapter remains labeled experimental.

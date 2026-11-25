@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Move room-planning capabilities, field presentation and editor metadata behind the existing Dyson adapters. Hide unsupported room actions/settings, gate dispatch with current adapter readiness, retain legacy entity-based YAML keys and allow room selection without a dedicated HA entity.
+- Show hass-dyson selections without execution-order numbers, since its integration controls room order. Preserve Spot+Scrub's numbered selection and existing action payloads.
+- Add room-capability regression tests and an entityless-room browser fixture. The maintainer reports successful live checks for both Dyson adapters; document a non-blocking cross-integration Resume exception when both integrations control the same robot. No third-party robot adapter is included.
+
 ## v1.6.0
 
 - Match the Info overlay's outer inset to the schedule room editor at 4 px.
