@@ -2,6 +2,8 @@
 
 Status: **offline prototype, not a selectable or bundled adapter**. The experiment remains on `experiment/multi_adapter`; card version remains **v1.6.0**. This work does not establish Dreame hardware support or satisfy the separate merge/release milestone for another major manufacturer.
 
+Further Dreame implementation is on hold pending a real-device tester. The current development priority is compatibility and regression coverage for the existing Dyson adapters.
+
 ## Fixed reference and evidence
 
 Repository: `Tasshack/dreame-vacuum`, manifest **v2.0.3**, commit [`fec086caf064f2681e8bcc7be20a0d0ef54f444d`](https://github.com/Tasshack/dreame-vacuum/tree/fec086caf064f2681e8bcc7be20a0d0ef54f444d).

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Add compatibility regressions for existing Dyson YAML, native action payloads and adapter selection in mixed households. Record the Dyson-focused review and allow slower local preview navigation in the schedule browser test without changing interaction timeouts or application behavior.
 - Add an offline Dreame v2.0.3 contract prototype, source-shaped fixtures and an executable delayed-save-rejection demonstration. Validate map-qualified room identity, exact native profile values and companion-value preservation; do not equate optimistic HA updates or service completion with robot confirmation. The prototype is not bundled or exposed as a supported adapter.
 - Exclude Spot+Scrub's known cleaning-mode options from the generic suction slider: its fan-speed API selects vacuum/mop modes rather than suction intensity. Document hass-dyson's missing standard fan capability and retain area-only starts for these devices.
 - Add an optional shared suction slider below HA area tiles when the exact vacuum exposes FAN_SPEED, native options and the set-fan-speed action. Keep edits local until Start, set only changed values, revalidate before area cleaning, and retain drafts with explicit partial-effect feedback instead of retrying or rolling back. Explain that suction is a global robot preference and may persist after the job.

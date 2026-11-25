@@ -1,5 +1,16 @@
 # Testing v1.6.0
 
+## Dyson compatibility review - 25 November 2026
+
+Development now prioritizes existing Dyson users. Dreame remains an offline prototype pending a real-device tester. This review changes tests and documentation only; application behavior and version **v1.6.0** are unchanged.
+
+- `npm run check` passed with **161 unit tests**, syntax validation, a rebuilt bundle and standalone smoke checks. The generated bundle is unchanged.
+- Twelve headless Edge browser suites passed against simulated HA: `browser`, `hass-dyson-browser`, `review-regressions-browser`, `room-identity-browser`, `batch-browser`, `start-readiness-browser`, `zone-browser`, `schedules-review-browser`, `spot-schedules-browser`, `schedules-browser`, `station-browser` and `languages-browser`.
+- The schedule review suite initially timed out while navigating to the local preview with a 15-second timeout, including an isolated retry. The complete suite passed with a 60-second navigation allowance; its 15-second interaction timeout remains unchanged. That allowance is now recorded in the test, without changing the application or its command timing.
+- Two new compatibility regressions exercise both Dyson integrations with legacy YAML (no integration key), Automatic and explicit native selection. A generic robot is first in the registry and both Dyson vacuums advertise generic area/fan features. Assertions retain the chosen robot while offline, explicit camera and room mappings, display order/exclusions, native controls and exact native Start payloads. Missing native actions send no fallback commands.
+
+No Dyson behavior regression was reproduced in this review. These automated checks do not constitute a new hardware test. Before any merge, repeat a small room clean through each native integration, including changed settings, Pause/Resume/Home, and Spot+Scrub rectangle cleaning. Earlier maintainer live reports and the known cross-integration Resume exception below remain separate evidence.
+
 ## Offline Dreame contract prototype - 25 November 2026
 
 Version remains **v1.6.0** on `experiment/multi_adapter`. The [Dreame contract](docs/dreame-adapter-contract.md) is pinned to Tasshack/dreame-vacuum v2.0.3 and uses synthetic source-shaped fixtures. It is not registered, selectable or bundled as a runtime adapter, and no Dreame hardware support is claimed.
