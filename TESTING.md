@@ -1,5 +1,13 @@
 # Testing v1.6.1
 
+## Station and Robot switch feedback - 25 November 2026
+
+Validation passed: `npm run check` with **166 unit tests**, rebuilt bundle and standalone smoke checks. Six Edge browser suites passed: the new settings feedback tests, station controls, keyboard navigation, translations/layout, consumables and the existing schedule feedback flow. Pending-state screenshots were reviewed in Modern and Classic. No real robot commands were sent.
+
+`tests/settings-confirmation.test.mjs` checks exact switch state, disconnected/restored data and registry identity isolation. `tests/settings-feedback-browser.mjs` exercises both themes with delayed action completion and HA readback, a single local spinner without row-height changes, all supported switches, preference locking, timeouts and late updates, service failures, no retries and cancellation after configuration/device changes or detachment. Existing selects, volume and time settings retain their action behavior. These automated checks use simulated HA only.
+
+The maintainer subsequently reported successful live testing of the new Station/Robot switch feedback on 25 November 2026.
+
 ## v1.6.1 version alignment - 25 November 2026
 
 The maintainer assigned the latest Dyson fixes to **v1.6.1**: the hass-dyson return Start interlock and the translated Modern drying-track alignment. Both received maintainer live confirmation; the drying alignment was confirmed after the automated/visual checks below. Package metadata, README, current contract/adapter documentation and the generated bundle identify v1.6.1. The UI intentionally has no version badge.

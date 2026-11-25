@@ -5,6 +5,14 @@ export const ROOM_COLORS = ['#18c5d9', '#e9b85b', '#b99ae4', '#79b9a5', '#e49baf
 // selection keys for rooms which have no HA entity of their own.
 export const roomKey = room => room.key ?? room.entity ?? '';
 export const available = state => !!state && !['unavailable', 'unknown'].includes(state.state) && !state.attributes?.restored;
+
+export function switchSettingConfirmed(hass, registry, field, request) {
+  const entry = registry.find(row => row.entity_id === request.entity);
+  return hass?.connected !== false && field?.domain === 'switch' && field.supported && field.entity === request.entity
+    && !!entry && !entry.disabled_by && !!request.uniqueId && !!request.deviceId
+    && entry.unique_id === request.uniqueId && entry.device_id === request.deviceId && entry.platform === request.platform
+    && available(hass?.states?.[request.entity]) && hass.states[request.entity].state === request.value;
+}
 export const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 export const STATUS_BAR_ITEMS = [

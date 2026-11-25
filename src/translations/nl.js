@@ -1,5 +1,7 @@
 // Dutch UI text. Protocol values and entity names remain unchanged.
 export const nl = {
+  "Updating setting …": "Instelling wijzigen …",
+  "The setting change has not been confirmed by Home Assistant. Check the robot before trying again.": "Home Assistant heeft de gewijzigde instelling nog niet bevestigd. Controleer de robot voordat je het opnieuw probeert.",
   "Suction power · all selected rooms": "Zuigkracht · alle geselecteerde kamers",
   "Robot setting; it may remain active after this clean.": "Robotinstelling; deze kan na deze reiniging actief blijven.",
   "The selected suction power is no longer available. Review or discard the draft.": "De gekozen zuigkracht is niet meer beschikbaar. Controleer of verwerp het concept.",

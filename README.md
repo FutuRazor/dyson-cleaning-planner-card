@@ -191,6 +191,8 @@ Only settings and consumables supported by the selected device and exposed by th
 
 **Station and Robot settings take effect immediately** and are separate from the cleaning drafts. Consumable bars change from the theme accent to orange and red as their remaining life decreases. Both the Info button and Supplies tab highlight red when a consumable needs attention. Click outside the Info or zone-settings overlay to close it.
 
+Station and Robot switches show a loading indicator while the action is running and until Home Assistant reports the requested state. Other preference changes stay disabled during this wait. If HA has not reflected the change within ten seconds after the action returns, a message appears without retrying the command; a later matching update clears that message. The displayed switch always follows HA's reported state. This verifies HA readback, not a separate physical acknowledgement from the robot.
+
 ## Customization
 
 ### Language

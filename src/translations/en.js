@@ -1,5 +1,7 @@
 // English messages are also stable translation keys. Never use translated labels in action payloads.
 export const en = {
+  "Updating setting …": "Updating setting …",
+  "The setting change has not been confirmed by Home Assistant. Check the robot before trying again.": "The setting change has not been confirmed by Home Assistant. Check the robot before trying again.",
   "Suction power · all selected rooms": "Suction power · all selected rooms",
   "Robot setting; it may remain active after this clean.": "Robot setting; it may remain active after this clean.",
   "The selected suction power is no longer available. Review or discard the draft.": "The selected suction power is no longer available. Review or discard the draft.",

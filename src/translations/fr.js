@@ -1,5 +1,7 @@
 // French UI translations. Dyson terminology is referenced in docs/translations.md.
 export const fr = {
+  "Updating setting …": "Modification du réglage …",
+  "The setting change has not been confirmed by Home Assistant. Check the robot before trying again.": "Home Assistant n'a pas confirmé la modification du réglage. Vérifiez le robot avant de réessayer.",
   "Suction power · all selected rooms": "Aspiration · toutes les pièces sélectionnées",
   "Robot setting; it may remain active after this clean.": "Réglage du robot ; il peut rester actif après ce nettoyage.",
   "The selected suction power is no longer available. Review or discard the draft.": "La puissance d’aspiration choisie n’est plus disponible. Vérifiez ou abandonnez le brouillon.",

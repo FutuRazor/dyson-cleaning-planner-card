@@ -1,5 +1,7 @@
 // German display text. Entity names and protocol values are never rewritten.
 export const de = {
+  "Updating setting …": "Einstellung wird geändert …",
+  "The setting change has not been confirmed by Home Assistant. Check the robot before trying again.": "Home Assistant hat die Einstellungsänderung noch nicht bestätigt. Prüfe den Roboter vor einem erneuten Versuch.",
   "Suction power · all selected rooms": "Saugkraft · alle ausgewählten Räume",
   "Robot setting; it may remain active after this clean.": "Robotereinstellung; sie kann nach dieser Reinigung bestehen bleiben.",
   "The selected suction power is no longer available. Review or discard the draft.": "Die gewählte Saugkraft ist nicht mehr verfügbar. Prüfe oder verwirf den Entwurf.",
