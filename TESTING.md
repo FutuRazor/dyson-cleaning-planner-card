@@ -1,5 +1,11 @@
 # Testing v1.6.0
 
+## Modern drying track alignment - 25 November 2026
+
+The Spot+Scrub drying progress track now follows the intrinsic width of the translated status and remaining-time line instead of filling the available row. Its right edge aligns with the time label, with the cancel control alongside the text. Narrow cards retain the full time and truncate the status label when required; the Modern status slot remains 44 px tall.
+
+Validation: `npm run check` passed with **163 unit tests**, regenerated v1.6.0 bundle and standalone smoke checks. The `modern-status-browser`, `hass-dyson-browser` and `browser` Edge suites passed. Geometry checks cover English, German, Dutch and French in light/dark appearance at 320/375/450/900 px, including resize without HA updates, track/text edge alignment, readable time, bounded controls and unchanged status-slot height. German narrow/wide screenshots were visually reviewed in light/dark appearance. Existing Classic status and hass-dyson timer/no-progress behavior also passed.
+
 ## hass-dyson return Start interlock - 25 November 2026
 
 The maintainer completed the mopping phase of a hass-dyson-started "Vacuum then Mop" job and could start a new Kitchen vacuuming request while the robot was returning to the station. After cancelling that new job, its return correctly blocked another request. This report applies to hass-dyson; it supersedes the earlier no-issue observation for the complete flow.

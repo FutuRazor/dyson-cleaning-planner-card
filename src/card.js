@@ -103,11 +103,13 @@ header,.station-rows{--hud-red:var(--error-color,#db4437);--hud-blue:var(--blue-
 :host([data-theme=modern]) .activity-status:not(.compact-status){margin-top:12px}
 :host([data-theme=modern]) .compact-status{height:44px;margin:0 var(--dp-padding);padding:0;border-radius:0;background:transparent;gap:8px;position:relative;font-size:13px}
 :host([data-theme=modern]) .compact-status .activity-icon{display:flex;align-items:center;justify-content:center;width:18px;height:18px;--mdc-icon-size:18px}
-:host([data-theme=modern]) .compact-status .activity-copy{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:20px}
-:host([data-theme=modern]) .compact-status .activity-remaining{display:inline;margin:0;font-size:12px}
+:host([data-theme=modern]) .compact-status .activity-copy{flex:0 1 auto;align-self:stretch;position:relative;display:flex;flex-direction:column;justify-content:center;white-space:nowrap;overflow:hidden;line-height:20px}
+:host([data-theme=modern]) .compact-status .activity-heading{display:flex;align-items:baseline;min-width:0}
+:host([data-theme=modern]) .compact-status .activity-text{min-width:0;overflow:hidden;text-overflow:ellipsis}
+:host([data-theme=modern]) .compact-status .activity-remaining{display:inline;flex:none;white-space:pre;margin:0;font-size:12px}
 :host([data-theme=modern]) .compact-status .activity-start-block{display:none}
 :host([data-theme=modern]) .compact-status.has-drying .activity-start-block:not([hidden]){display:block}
-:host([data-theme=modern]) .compact-status .drying-progress{position:absolute;left:26px;right:44px;bottom:2px;width:auto;height:3px;margin:0}
+:host([data-theme=modern]) .compact-status .drying-progress{position:absolute;left:0;right:0;bottom:2px;width:auto;height:3px;margin:0}
 :host([data-theme=modern]) .compact-status .cancel-drying{min-width:36px;min-height:36px;width:36px;height:36px;padding:7px;background:transparent;border-color:transparent}
 :host([data-theme=modern]) .compact-status .cancel-drying ha-icon{width:18px;height:18px;--mdc-icon-size:18px}
 :host([data-theme=modern]) .session{height:43px;min-height:43px;margin:0 var(--dp-padding) 14px;padding:0;display:flex;align-items:center}
@@ -875,7 +877,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     element.querySelector('.battery-bolt').toggleAttribute('hidden', !state.charging);
   }
   statusHtml() {
-    return `<div class="activity-status" role="status" aria-live="polite" hidden><ha-icon class="activity-icon" aria-hidden="true"></ha-icon><div class="activity-copy"><span class="activity-text"></span><span class="activity-fault" hidden></span><span class="activity-start-block" hidden></span><span class="activity-remaining" hidden></span><div class="drying-progress" role="progressbar" aria-label="${this.ht("Drying time remaining")}" aria-valuemin="0" aria-valuemax="100" hidden><span class="drying-progress-fill"></span></div></div><span class="drying-control" hidden><button class="cancel-drying" data-control="cancel_drying" data-focus="cancel-drying" disabled aria-label="${this.ht("Cancel drying")}"><ha-icon icon="mdi:close" aria-hidden="true"></ha-icon></button></span></div>`;
+    return `<div class="activity-status" role="status" aria-live="polite" hidden><ha-icon class="activity-icon" aria-hidden="true"></ha-icon><div class="activity-copy"><span class="activity-heading"><span class="activity-text"></span><span class="activity-remaining" hidden></span></span><span class="activity-fault" hidden></span><span class="activity-start-block" hidden></span><div class="drying-progress" role="progressbar" aria-label="${this.ht("Drying time remaining")}" aria-valuemin="0" aria-valuemax="100" hidden><span class="drying-progress-fill"></span></div></div><span class="drying-control" hidden><button class="cancel-drying" data-control="cancel_drying" data-focus="cancel-drying" disabled aria-label="${this.ht("Cancel drying")}"><ha-icon icon="mdi:close" aria-hidden="true"></ha-icon></button></span></div>`;
   }
   updateHeaderNotice() {
     const root = this.shadowRoot;
