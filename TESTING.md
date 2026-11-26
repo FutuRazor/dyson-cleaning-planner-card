@@ -1,4 +1,4 @@
-# Testing v1.7.0 — Release candidate
+# Testing v1.7.0
 
 ## Current validation status - 26 November 2026
 
@@ -11,18 +11,25 @@ Version remains **1.7.0**. Latest full checks: **175 card unit tests**, rebuilt 
 | Schedules and availability per map | Confirmed live in both integration and card |
 | Stationless camera bounds | Corrected camera looks good in maintainer live check; original raw dock value remains uncaptured |
 | Map-switch notice in the header | Unit/browser checks passed; separate live confirmation was not reported |
-| Zone tab and automatic floor-plan loading on map changes | Unit/browser checks passed; maintainer live retest pending |
+| Zone tab and automatic floor-plan loading on map changes | Unit/browser checks passed; maintainer live acceptance confirmed |
+| Robot fault-text localization | Integration descriptions are passed through; English texts for 2509/2510 remain a deferred follow-up |
 | Fresh-room discovery before a first clean | Integration regressions passed; live creation check pending |
 | Idle off-dock retry with retained placement faults 2509/2510 | Integration regressions passed; corrected HA/card retry still needs live acceptance |
 | Stationless cleaning → Pause → Home search | Known Dyson behavior also observed in MyDyson; pause and manual docking recovery confirmed |
 
 Additional integration/map checks are listed in [the map notes](docs/spot-scrub-maps.md#remaining-live-checks). Entries below are chronological records and retain their original versions/test counts; an old pending statement does not supersede a later confirmation.
 
+## v1.7.0 release documentation - 26 November 2026
+
+The maintainer requested stable-release documentation for **v1.7.0** after confirming the Zone map-switch correction live. Current release-candidate labels are removed from the README, changelog and testing header. Release notes explicitly retain the dependency on the map-switching integration development branch and the hidden optional controls when an integration lacks the matching map select. Fault descriptions continue to be passed through from the integration; localization of the new English 2509/2510 texts remains deferred. Historical candidate-stage records below retain their original context.
+
+This preparation changes documentation only. Package/lockfile version and generated bundle remain at **1.7.0**. Documentation diffs and version consistency were checked; application tests were not repeated because application code and bundle are unchanged. This does not merge the branch or publish a release.
+
 ## Zone view across saved-map changes - 26 November 2026
 
 The maintainer reported that changing maps retains Schedules but leaves Zone for Rooms. Session status now temporarily overrides the selected Zone tab as it does Schedules, retaining that choice for the next ready state. A map-ID change cancels obsolete image loading, drops the old rectangle and automatically verifies a new PNG/calibration pair. A late matching camera-calibration update can restart the bounded image reads after an earlier mismatch; identical telemetry does not cause a retry loop. Header/map-menu updates retain the mounted zone component and its frozen selection. Actual cleaning or a local zone start still opens the session view; a local zone start explicitly leaves the editor.
 
-Validation passed: `npm run check` with **175 unit tests**, regenerated v1.7.0 bundle and smoke checks. The new `tests/zone-map-switching-browser.mjs` passed in Chromium for Modern/Classic at 375/900 px, covering card/app changes, the selected tab, old-rectangle removal, changed image dimensions, delayed calibration and session-state transitions. Existing `tests/zone-browser.mjs` and `tests/map-selection-browser.mjs` also passed. All browser actions use simulated HA. Integration code and versions are unchanged; maintainer live acceptance remains pending.
+Validation passed: `npm run check` with **175 unit tests**, regenerated v1.7.0 bundle and smoke checks. The new `tests/zone-map-switching-browser.mjs` passed in Chromium for Modern/Classic at 375/900 px, covering card/app changes, the selected tab, old-rectangle removal, changed image dimensions, delayed calibration and session-state transitions. Existing `tests/zone-browser.mjs` and `tests/map-selection-browser.mjs` also passed. All browser actions use simulated HA. Integration code and versions are unchanged. The maintainer subsequently confirmed the correction live: Zone remains selected and the new floor plan loads after a map change. This acceptance does not separately confirm every delayed-readback or temporary-session case covered by the browser tests.
 
 ## Stationless Pause → Home troubleshooting - 26 November 2026
 

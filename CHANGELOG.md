@@ -4,11 +4,13 @@
 
 - Add an offline Dreame v2.0.3 contract prototype, source-shaped fixtures and an executable delayed-save-rejection demonstration. Validate map-qualified room identity, exact native profile values and companion-value preservation; do not equate optimistic HA updates or service completion with robot confirmation. The prototype is not bundled or exposed as a supported adapter.
 
-## v1.7.0 — Release candidate
+## v1.7.0
 
 **Saved-map switching for Spot+Scrub**
 
-This candidate combines the adapter work developed under v1.6.1 with saved-map selection and schedules per map. Maintainer live tests confirmed map switching and schedule availability in the integration and Lovelace card.
+This release combines the adapter work developed under v1.6.1 with saved-map selection and schedules per map. Maintainer live tests confirmed map switching and schedule availability in the integration and Lovelace card, plus the Zone tab remaining selected and loading the new floor plan after a map change.
+
+Saved-map controls currently require the [map-switching integration development branch](https://github.com/FutuRazor/ha-dyson-spot-scrub/tree/feat/map-switching). Integrations without the matching map select keep these optional controls hidden; upstream v2.2.0 alone does not expose them. Integration-provided fault descriptions, including the new English texts for 2509/2510, retain their current language behavior; localization is a follow-up.
 
 - Keep the Zone tab selected across saved-map changes and automatically load the new calibrated floor plan. Discard the old rectangle, handle delayed camera calibration without manual Reload, and preserve the loaded zone component when the header/map menu updates.
 

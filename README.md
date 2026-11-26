@@ -18,9 +18,9 @@
   Plan room or zone cleaning, manage weekly schedules, and follow your Dyson's progress in Home Assistant.
 </p>
 
-**Version 1.7.0 — Release candidate**
+**Version 1.7.0**
 
-**Saved-map switching for Spot+Scrub.** This candidate includes map-specific schedules, the adapter refactor and the Home Assistant area-cleaning adapter. Saved-map controls require the integration development branch linked below.
+**Saved-map switching for Spot+Scrub.** This release includes map-specific schedules, the adapter refactor and the Home Assistant area-cleaning adapter. Saved-map controls require the integration development branch linked below; integrations without the matching map select keep these optional controls hidden.
 
 <p align="center">
   <a href="#installation">Installation</a> &middot;
@@ -43,6 +43,8 @@ For integration developers, the [complete integration contract](docs/integration
 The Spot+Scrub header offers a saved-map menu when the matching integration provides its Map select with at least two valid map options. With only one map, the switch button is hidden. This currently requires the [map-switching integration development branch](https://github.com/FutuRazor/ha-dyson-spot-scrub/tree/feat/map-switching); upstream v2.2.0 alone does not expose it. The [map lifecycle notes](docs/spot-scrub-maps.md) describe the interface, captured commands and live findings. Map creation, deletion and editing remain in MyDyson. Deleted maps leave the menu; cleanup of their old room entities is a separate follow-up.
 
 The updated integration branch also supplies the camera-bounds correction, new-room discovery after mapping and descriptions/readiness handling for placement warnings 2509/2510. These companion fixes require updating the integration, not just this card. A newly selected map may briefly have an empty room list until its data arrives; cleaning settings remain unavailable until the robot reports them.
+
+Robot fault descriptions are displayed as supplied by the integration, including the English descriptions for 2509/2510. Fault-text localization remains a follow-up.
 
 In the generic HA mode, fan-capable vacuums additionally show one shared suction slider below the area tiles. Changes remain local until Start; the card sets an explicitly changed value before area cleaning and explains that it is a global robot preference which may persist. See the [optional suction behavior and live checklist](docs/home-assistant-rooms.md#optional-suction-power-and-start). This addition still needs its own live verification, including interactions with stored room profiles.
 
