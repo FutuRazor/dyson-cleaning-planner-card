@@ -125,6 +125,17 @@ try {
     assert.equal(await editor.locator('[data-include-map]').count(),3);
     assert.equal(await editor.locator(`[data-include-map="${b}"]`).isChecked(),false);
     assert.equal(await editor.locator('[data-key="map_selector_style"]').inputValue(),'chips');
+    assert.equal(await editor.locator('[data-map-rotation]').count(),3,'rotation controls include hidden maps');
+    await editor.locator('[data-key="camera_rotation"]').selectOption('180');
+    await editor.locator(`[data-map-rotation="${a}"]`).selectOption('90');
+    await editor.locator(`[data-map-rotation="${b}"]`).selectOption('0');
+    assert.deepEqual(await page.evaluate(()=>mapPrefs.editor.config.map_rotations),{[a]:90,[b]:0});
+    assert.equal(await page.evaluate(()=>mapPrefs.card.mapRotation),90);
+    await editor.locator(`[data-map-rotation="${a}"]`).selectOption('default');
+    assert.equal(await page.evaluate(()=>mapPrefs.card.mapRotation),180,'Default follows the global rotation');
+    assert.deepEqual(await page.evaluate(()=>mapPrefs.editor.config.map_rotations),{[b]:0});
+    await editor.locator(`[data-map-rotation="${a}"]`).selectOption('90');
+    assert.equal(await page.evaluate(()=>mapPrefs.calls.length),3,'rotation changes never send robot commands');
     assert.deepEqual(await editor.locator('[data-include-map]').evaluateAll(items=>items.map(el=>el.dataset.includeMap)),[b,a,d],
       'the editor orders the complete catalogue, including hidden maps and new IDs');
     assert.equal(await editor.locator(`[data-order-map="${b}"][data-direction="-1"]`).isDisabled(),true);
@@ -158,6 +169,7 @@ try {
     await editor.locator('[data-action="refresh-maps"]').click();
     await page.waitForFunction(reads=>mapPrefs.registryReads>reads&&!mapPrefs.editor._loadingRegistry,reads);
     assert.deepEqual(await page.evaluate(()=>mapPrefs.editor.config.map_order),[d,a,b],'refresh retains display order');
+    assert.deepEqual(await page.evaluate(()=>mapPrefs.editor.config.map_rotations),{[a]:90,[b]:0});
     assert.equal(await page.evaluate(()=>mapPrefs.calls.length),3,'editor refresh has no robot service side effects');
 
     for(const [language,title] of [['de','Gespeicherte Karten in dieser Ansicht'],['nl','Kaarten in deze weergave'],['fr','Cartes dans cette vue'],['en','Maps in this card']]) {
@@ -168,6 +180,7 @@ try {
       const f=mapPrefs;f.maps.splice(1);f.hass.states[f.mapSelect].attributes.options=f.maps.map(map=>map.option);f.report(a);
     },a);
     assert.equal(await editor.locator('.map-options').count(),0,'editor settings hide with only one known map');
+    assert.equal(await editor.locator('[data-map-rotation]').count(),1,'the remaining map rotation stays editable');
     assert.equal(await chips.count(),0);
     await page.evaluate(({b,d})=>{
       const f=mapPrefs;f.maps.push({map_id:b,name:'Renamed upper floor',option:'Renamed upper floor'},{map_id:d,name:'New floor',option:'New floor'});
@@ -175,6 +188,7 @@ try {
       f.editor.setConfig({...f.editor.config,integration:'ha_rooms'});
     },{b,d});
     assert.equal(await editor.locator('.map-options').count(),0,'unsupported adapters ignore map preferences');
+    assert.equal(await editor.locator('.map-rotation-options').count(),0);
     assert.deepEqual(await page.evaluate(()=>mapPrefs.editor.config.map_order),[d,a,b]);
     await page.evaluate(()=>{
       const f=mapPrefs,other='vacuum.second_dyson';
@@ -186,6 +200,7 @@ try {
     await editor.locator('[data-key="entity"]').selectOption('vacuum.second_dyson');
     assert.deepEqual(await page.evaluate(()=>mapPrefs.editor.config.excluded_maps),[]);
     assert.deepEqual(await page.evaluate(()=>mapPrefs.editor.config.map_order),[],'another robot starts with its own default order');
+    assert.deepEqual(await page.evaluate(()=>mapPrefs.editor.config.map_rotations),{});
     assert.equal(await page.evaluate(()=>mapPrefs.editor.config.map_selector_style),'chips');
     assert.equal(await editor.locator('.map-options').count(),0);
     assert.equal(await page.evaluate(()=>mapPrefs.calls.length),3);

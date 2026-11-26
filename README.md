@@ -146,7 +146,7 @@ With a supported integration and at least two known maps, the visual editor show
 
 You can switch directly with a local room draft. The card retains that draft while the request is pending, then resets the old map's local selection and unsaved settings after Home Assistant confirms the target map. Rejection or a timeout on the original map keeps the draft. A matching late confirmation resets an old-map draft while preserving newer edits already made on the target map. This sends no room-setting writes and does not change saved robot preferences.
 
-Visibility and order are saved by map ID, so renaming a map does not change either preference. `map_order` lists the IDs to show first; unlisted maps follow in the integration's existing order. Deleted/unknown IDs are ignored, duplicate IDs are removed, and new maps appear visible at the end by default. The editor retains the complete ordered list so hidden maps can be enabled again. **Refresh maps** rereads the data available in Home Assistant; catalogue discovery remains the integration's responsibility. Selecting a different robot in the editor resets its map exclusions and order.
+Visibility and order are saved by map ID, so renaming a map does not change either preference. `map_order` lists the IDs to show first; unlisted maps follow in the integration's existing order. Deleted/unknown IDs are ignored, duplicate IDs are removed, and new maps appear visible at the end by default. The editor retains the complete ordered list so hidden maps can be enabled again. **Refresh maps** rereads the data available in Home Assistant; catalogue discovery remains the integration's responsibility. Selecting a different robot in the editor resets its map exclusions, order and rotation overrides.
 
 The selector hides when only one visible map remains and that map is active. If MyDyson selects a hidden map, it is temporarily identified before the sorted visible alternatives. With every map hidden, a notice names the hidden active map when known. These preferences only affect the selector; rooms, schedules and the floor plan continue to follow the robot's actual map.
 
@@ -159,9 +159,15 @@ map_order:
   - "1784483068"
 excluded_maps:
   - "2222222222"
+camera_rotation: 0
+map_rotations:
+  "1784483068": 90
+  "1795646759": 0
 ```
 
-Copy the map IDs shown in the editor and quote them in YAML. Without these options, the existing header-menu layout, integration order and unfiltered map list are preserved; automatic draft reset applies to both styles. Integrations without saved-map selection ignore these display preferences.
+Copy the map IDs shown in the editor and quote them in YAML. Without these options, the existing header-menu layout, integration order and unfiltered map list are preserved; automatic draft reset applies to both styles. Integrations without saved-map selection keep the selector controls hidden.
+
+**Rotation per map** is available under **Cleaning map** in the editor when saved maps are known, including a single remaining map and hidden maps. Choose **Default** to use `camera_rotation`, or choose `0`, `90`, `180` or `270` degrees for that map. `map_rotations` overrides the default rather than adding to it; an explicit `0` keeps that map unrotated even if the default is `90`. The rotation follows the active map ID in both the cleaning-session image and Zone selection. Adapters without active map identity keep the general rotation. Deleted IDs have no effect, new maps use the default, and renaming a map preserves its angle. The editor preview follows the active map; editing another map's angle sends no map-switch command. These settings affect this card's display; MyDyson orientation and the integration's camera image remain separate.
 
 ### Plan rooms
 
@@ -276,7 +282,8 @@ These options belong in the individual card's code editor, not in `configuration
 | `camera_entity` | Optional same-device camera (Spot+Scrub) or image entity (hass-dyson) |
 | `header_icon_style` | `integration` (default robot illustration) or `home_assistant` (original icon) |
 | `zone_dimension_unit` | Dimension pill: `auto` (HA units, default), `cm`, `inch`, or `off` |
-| `camera_rotation` | `0`, `90`, `180`, or `270` degrees |
+| `camera_rotation` | Default map rotation: `0`, `90`, `180`, or `270` degrees; default: `0` |
+| `map_rotations` | Map of quoted saved-map IDs to `0`, `90`, `180`, or `270`; overrides `camera_rotation` for the active map. Default: `{}` |
 | `show_status_bar` | Show station indicators and battery; default: `true` |
 | `hidden_status_items` | Indicators to hide; configure through the visual editor; default: `[]` |
 | `show_battery_percentage` | Show the battery percentage beside the icon; default: `false` |

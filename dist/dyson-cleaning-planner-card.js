@@ -1,6 +1,11 @@
 /* Dyson Cleaning Planner Card v1.7.1 | MIT */
 // English messages are also stable translation keys. Never use translated labels in action payloads.
 const en = {
+  "Rotation per map": "Rotation per map",
+  "Per-map values override Map rotation. The preview shows the active map.": "Per-map values override Map rotation. The preview shows the active map.",
+  "Map rotation: {name}": "Map rotation: {name}",
+  "Default ({rotation}°)": "Default ({rotation}°)",
+  "map_rotations must map saved map IDs to 0, 90, 180 or 270.": "map_rotations must map saved map IDs to 0, 90, 180 or 270.",
   "Map selector style": "Map selector style",
   "Header button": "Header button",
   "Map chips": "Map chips",
@@ -361,6 +366,11 @@ const en = {
 
 // German display text. Entity names and protocol values are never rewritten.
 const de = {
+  "Rotation per map": "Drehung pro Karte",
+  "Per-map values override Map rotation. The preview shows the active map.": "Die Drehung pro Karte ersetzt die allgemeine Kartendrehung. Die Vorschau zeigt die aktive Karte.",
+  "Map rotation: {name}": "Kartendrehung: {name}",
+  "Default ({rotation}°)": "Standard ({rotation}°)",
+  "map_rotations must map saved map IDs to 0, 90, 180 or 270.": "map_rotations muss gespeicherten Karten-IDs einen Wert von 0, 90, 180 oder 270 zuordnen.",
   "Map selector style": "Darstellung der Kartenauswahl",
   "Header button": "Schaltfläche im Kopfbereich",
   "Map chips": "Karten-Chips",
@@ -721,6 +731,11 @@ const de = {
 
 // Dutch UI text. Protocol values and entity names remain unchanged.
 const nl = {
+  "Rotation per map": "Rotatie per kaart",
+  "Per-map values override Map rotation. The preview shows the active map.": "Waarden per kaart vervangen de algemene kaartrotatie. Het voorbeeld toont de actieve kaart.",
+  "Map rotation: {name}": "Kaartrotatie: {name}",
+  "Default ({rotation}°)": "Standaard ({rotation}°)",
+  "map_rotations must map saved map IDs to 0, 90, 180 or 270.": "map_rotations moet opgeslagen kaart-ID's koppelen aan 0, 90, 180 of 270.",
   "Map selector style": "Weergave van kaartkeuze",
   "Header button": "Knop in de kop",
   "Map chips": "Kaartknoppen",
@@ -1081,6 +1096,11 @@ const nl = {
 
 // French UI translations. Dyson terminology is referenced in docs/translations.md.
 const fr = {
+  "Rotation per map": "Rotation par carte",
+  "Per-map values override Map rotation. The preview shows the active map.": "Les valeurs par carte remplacent la rotation générale. L’aperçu montre la carte active.",
+  "Map rotation: {name}": "Rotation de la carte : {name}",
+  "Default ({rotation}°)": "Par défaut ({rotation}°)",
+  "map_rotations must map saved map IDs to 0, 90, 180 or 270.": "map_rotations doit associer les identifiants de cartes enregistrées à 0, 90, 180 ou 270.",
   "Map selector style": "Présentation du sélecteur de carte",
   "Header button": "Bouton dans l’en-tête",
   "Map chips": "Boutons de carte",
@@ -1471,6 +1491,11 @@ const ROOM_COLORS = ['#18c5d9', '#e9b85b', '#b99ae4', '#79b9a5', '#e49baf'];
 // selection keys for rooms which have no HA entity of their own.
 const roomKey = room => room.key ?? room.entity ?? '';
 const isSavedMapId = value => typeof value === 'string' && /^[1-9]\d*$/.test(value) && Number.isSafeInteger(Number(value));
+function mapRotation(config = {}, mapId) {
+  const id = mapId == null ? null : String(mapId);
+  return isSavedMapId(id) && Object.hasOwn(config.map_rotations ?? {}, id)
+    ? config.map_rotations[id] : config.camera_rotation ?? 0;
+}
 const available = state => !!state && !['unavailable', 'unknown'].includes(state.state) && !state.attributes?.restored;
 
 function switchSettingConfirmed(hass, registry, field, request) {
@@ -1505,6 +1530,8 @@ function normalizeConfig(config) {
   for (const key of ['excluded_maps', 'map_order']) {
     if (config[key] !== undefined && (!Array.isArray(config[key]) || config[key].some(value => !isSavedMapId(value)))) throw new UiError(`${key} must be a list of saved map IDs (strings).`);
   }
+  if (config.map_rotations !== undefined && (Object.prototype.toString.call(config.map_rotations) !== '[object Object]'
+    || Object.entries(config.map_rotations).some(([id, rotation]) => !isSavedMapId(id) || ![0,90,180,270].includes(rotation)))) throw new UiError('map_rotations must map saved map IDs to 0, 90, 180 or 270.');
   if (config.room_entities !== undefined && (!config.room_entities || typeof config.room_entities !== 'object' || Array.isArray(config.room_entities) || Object.values(config.room_entities).some(x => typeof x !== 'string' || !x.startsWith('switch.')))) throw new UiError('room_entities must map room names to switch entities.');
   if (config.show_battery_percentage !== undefined && typeof config.show_battery_percentage !== 'boolean') throw new UiError('show_battery_percentage must be true or false.');
   if (config.show_status_bar !== undefined && typeof config.show_status_bar !== 'boolean') throw new UiError('show_status_bar must be true or false.');
@@ -1517,7 +1544,7 @@ function normalizeConfig(config) {
   if (config.camera_entity && mapDomain && !config.camera_entity.startsWith(`${mapDomain}.`)) throw new UiError('Map entity must use the {domain} domain for this integration.', { domain:mapDomain });
   if (config.zone_dimension_unit !== undefined && !['off','auto','cm','inch'].includes(config.zone_dimension_unit)) throw new UiError('Invalid zone dimension unit.');
   if (config.header_icon_style !== undefined && !['home_assistant','integration'].includes(config.header_icon_style)) throw new UiError('Invalid header icon style.');
-  return { ...config, header_icon_style: config.header_icon_style ?? 'integration', zone_dimension_unit: config.zone_dimension_unit ?? 'auto', language: config.language ?? 'auto', theme: config.theme ?? 'modern', show_battery_percentage: config.show_battery_percentage ?? false, show_status_bar: config.show_status_bar ?? true, hidden_status_items: config.hidden_status_items ?? [], title: config.title ?? '', always_show_all_settings: config.always_show_all_settings ?? false, unsupported_settings: 'hidden', excluded_rooms: config.excluded_rooms ?? [], room_order: config.room_order ?? [], map_selector_style: config.map_selector_style ?? 'menu', excluded_maps: [...new Set(config.excluded_maps ?? [])], map_order: [...new Set(config.map_order ?? [])], show_camera: config.show_camera ?? true, camera_rotation: config.camera_rotation ?? 0 };
+  return { ...config, header_icon_style: config.header_icon_style ?? 'integration', zone_dimension_unit: config.zone_dimension_unit ?? 'auto', language: config.language ?? 'auto', theme: config.theme ?? 'modern', show_battery_percentage: config.show_battery_percentage ?? false, show_status_bar: config.show_status_bar ?? true, hidden_status_items: config.hidden_status_items ?? [], title: config.title ?? '', always_show_all_settings: config.always_show_all_settings ?? false, unsupported_settings: 'hidden', excluded_rooms: config.excluded_rooms ?? [], room_order: config.room_order ?? [], map_selector_style: config.map_selector_style ?? 'menu', excluded_maps: [...new Set(config.excluded_maps ?? [])], map_order: [...new Set(config.map_order ?? [])], map_rotations: {...config.map_rotations}, show_camera: config.show_camera ?? true, camera_rotation: config.camera_rotation ?? 0 };
 }
 
 function fitMap(width, height, boxWidth, rotation) {
@@ -5441,7 +5468,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       button.disabled = !!this._previewDialog || this.busy || this.controlBusy || !supported;
       button.title = supported ? '' : this.t('This action is not available in the current robot state.');
     }
-    root.querySelector('dyson-planner-map')?.setOptions(this._hass, this.model.cameraEntity, this.config.camera_rotation, view.live, this.language, this.adapter);
+    root.querySelector('dyson-planner-map')?.setOptions(this._hass, this.model.cameraEntity, this.mapRotation, view.live, this.language, this.adapter);
   }
   positionModernPointer() {
     if (this.config?.theme !== 'modern') return;
@@ -5504,6 +5531,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     this.update();
   }
   get supportsZone() { return this.adapter.supportsZoneDevice(this.registry, this.devices, this.config.entity); }
+  get mapRotation() { return mapRotation(this.config, this.adapter.mapId(this._hass, this.config.entity)); }
   planningTabsHtml() {
     const schedules = this.getScheduleState();
     const tabs = [['rooms','Rooms'], ...(this.supportsZone ? [['zones','Zone']] : []), ...(schedules.supported ? [['schedules','Schedules']] : [])];
@@ -5524,7 +5552,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     const camera = this.model.cameraEntity;
     const trusted = this.adapter.trustedCamera(this.registry, this.config.entity, camera);
     this.shadowRoot.querySelector('dyson-planner-zone').setOptions({ hass:this._hass, vacuum:this.config.entity,
-      adapter:this.adapter, camera, trusted, dimensionUnit:this.config.zone_dimension_unit, supported:this.supportsZone, capabilities:this.adapter.zoneDeviceOptions(this.model.rooms), draft:this.zoneDraft, theme:this.config.theme, rotation:this.config.camera_rotation, language:this.language, preview:!!this._previewDialog });
+      adapter:this.adapter, camera, trusted, dimensionUnit:this.config.zone_dimension_unit, supported:this.supportsZone, capabilities:this.adapter.zoneDeviceOptions(this.model.rooms), draft:this.zoneDraft, theme:this.config.theme, rotation:this.mapRotation, language:this.language, preview:!!this._previewDialog });
   }
   render() {
     if (!this.model) return;
@@ -5602,7 +5630,7 @@ class DysonCleaningPlannerEditor extends DysonRegistryElement {
       const el = event.target.closest('input, select, button');
       if (!el) return;
       if (el.dataset.key === 'zone_dimension_unit') { this.setSessionPreview(false, true); return; }
-      if (['show_camera', 'camera_entity', 'camera_rotation'].includes(el.dataset.key)) this.setSessionPreview(true);
+      if (['show_camera', 'camera_entity', 'camera_rotation'].includes(el.dataset.key) || el.dataset.mapRotation) this.setSessionPreview(true);
       else if (['unsupported_settings', 'always_show_all_settings'].includes(el.dataset.key)
         || el.dataset.key === 'map_selector_style' || el.dataset.includeMap || el.dataset.orderMap || el.dataset.include || el.dataset.order
         || ['refresh','refresh-maps'].includes(el.dataset.action)) this.setSessionPreview(false);
@@ -5628,8 +5656,12 @@ class DysonCleaningPlannerEditor extends DysonRegistryElement {
         if (el.dataset.key === 'entity' || el.dataset.key === 'integration') {
           delete next.mode_entity; delete next.start_entity; delete next.room_entities; delete next.camera_entity;
           next.excluded_rooms = []; next.room_order = [];
-          if (next.entity !== this.config.entity) { next.excluded_maps = []; next.map_order = []; }
+          if (next.entity !== this.config.entity) { next.excluded_maps = []; next.map_order = []; next.map_rotations = {}; }
         }
+      } else if (el.dataset.mapRotation) {
+        next.map_rotations = {...next.map_rotations};
+        if (el.value === 'default') delete next.map_rotations[el.dataset.mapRotation];
+        else next.map_rotations[el.dataset.mapRotation] = Number(el.value);
       } else if (el.dataset.statusItem) {
         const hidden = new Set(next.hidden_status_items ?? []);
         if (el.checked) hidden.delete(el.dataset.statusItem);
@@ -5692,6 +5724,8 @@ class DysonCleaningPlannerEditor extends DysonRegistryElement {
     this.model = config.entity ? this.adapter.discover(this._hass, this.registry, config) : { rooms: [], issues: [] };
     const mapState = this.adapter.mapSelectionState?.(this._hass,this.registry,config.entity);
     this.maps = orderedSavedMaps(mapState?.maps ?? [], config.map_order);
+    const mapRotations = mapState?.supported && this.maps.length ? `<section class="map-rotation-options"><h3>${this.ht('Rotation per map')}</h3><p class="notice">${this.ht('Per-map values override Map rotation. The preview shows the active map.')}</p>
+      ${this.maps.map(map => `<label><span>${h(map.option)}<small class="map-editor-id">${map.map_id}</small></span><select data-map-rotation="${map.map_id}" data-focus="map-rotation-${map.map_id}" aria-label="${this.ht('Map rotation: {name}',{name:map.option})}"><option value="default" ${!Object.hasOwn(config.map_rotations ?? {}, map.map_id) ? 'selected' : ''}>${this.ht('Default ({rotation}°)',{rotation:config.camera_rotation ?? 0})}</option>${[0,90,180,270].map(rotation => `<option value="${rotation}" ${config.map_rotations?.[map.map_id] === rotation ? 'selected' : ''}>${rotation}°</option>`).join('')}</select></label>`).join('')}</section>` : '';
     // Use the complete catalogue so every hidden map can be enabled again.
     const mapsEditor = mapState?.supported && mapState.maps.length >= 2 ? `<section class="map-options"><h3>${this.ht('Maps in this card')}</h3>
       <label>${this.ht('Map selector style')}<select data-key="map_selector_style" data-focus="map-selector-style"><option value="menu" ${(config.map_selector_style ?? 'menu') === 'menu' ? 'selected' : ''}>${this.ht('Header button')}</option><option value="chips" ${config.map_selector_style === 'chips' ? 'selected' : ''}>${this.ht('Map chips')}</option></select></label>
@@ -5720,7 +5754,7 @@ class DysonCleaningPlannerEditor extends DysonRegistryElement {
       ${this.adapter.supportsSessionMap !== false ? `<h3>${this.ht("Cleaning map")}</h3><div class="entry"><label><input type="checkbox" data-key="show_camera" data-focus="show-camera" ${config.show_camera !== false ? 'checked' : ''}>${this.ht("Show camera during a cleaning session")}</label></div>
       <p class="notice">${this.ht("Turning this off removes the map and stops image requests from this card.")}</p>
       ${field('camera_entity', this.ht(this.adapter.mapEntityLabel ?? 'Map camera'), 'camera')}
-      <label>${this.ht("Map rotation")}<select data-key="camera_rotation" data-focus="camera-rotation">${[0, 90, 180, 270].map(deg => `<option value="${deg}" ${(config.camera_rotation ?? 0) === deg ? 'selected' : ''}>${deg}°</option>`).join('')}</select></label>` : ''}
+      <label>${this.ht("Map rotation")}<select data-key="camera_rotation" data-focus="camera-rotation">${[0, 90, 180, 270].map(deg => `<option value="${deg}" ${(config.camera_rotation ?? 0) === deg ? 'selected' : ''}>${deg}°</option>`).join('')}</select></label>${mapRotations}` : ''}
       ${this.adapter.supportsZoneEditor !== false ? `<h3>${this.ht("Zone cleaning")}</h3>
       <label>${this.ht("Dimension display")}<select data-key="zone_dimension_unit" data-focus="zone-dimension-unit">${[['auto','Automatic'],['cm','Centimeters'],['inch','Inches'],['off','Off']].map(([value,label]) => `<option value="${value}" ${(config.zone_dimension_unit ?? 'auto') === value ? 'selected' : ''}>${this.ht(label)}</option>`).join('')}</select></label>` : ''}
       ${mapsEditor}

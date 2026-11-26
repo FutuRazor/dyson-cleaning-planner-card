@@ -1,5 +1,10 @@
 // German display text. Entity names and protocol values are never rewritten.
 export const de = {
+  "Rotation per map": "Drehung pro Karte",
+  "Per-map values override Map rotation. The preview shows the active map.": "Die Drehung pro Karte ersetzt die allgemeine Kartendrehung. Die Vorschau zeigt die aktive Karte.",
+  "Map rotation: {name}": "Kartendrehung: {name}",
+  "Default ({rotation}°)": "Standard ({rotation}°)",
+  "map_rotations must map saved map IDs to 0, 90, 180 or 270.": "map_rotations muss gespeicherten Karten-IDs einen Wert von 0, 90, 180 oder 270 zuordnen.",
   "Map selector style": "Darstellung der Kartenauswahl",
   "Header button": "Schaltfläche im Kopfbereich",
   "Map chips": "Karten-Chips",

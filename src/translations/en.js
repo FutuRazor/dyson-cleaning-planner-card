@@ -1,5 +1,10 @@
 // English messages are also stable translation keys. Never use translated labels in action payloads.
 export const en = {
+  "Rotation per map": "Rotation per map",
+  "Per-map values override Map rotation. The preview shows the active map.": "Per-map values override Map rotation. The preview shows the active map.",
+  "Map rotation: {name}": "Map rotation: {name}",
+  "Default ({rotation}°)": "Default ({rotation}°)",
+  "map_rotations must map saved map IDs to 0, 90, 180 or 270.": "map_rotations must map saved map IDs to 0, 90, 180 or 270.",
   "Map selector style": "Map selector style",
   "Header button": "Header button",
   "Map chips": "Map chips",

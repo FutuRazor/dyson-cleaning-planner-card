@@ -1,8 +1,8 @@
 # Testing v1.7.1
 
-## Current validation status - 26 November 2026
+## Current validation status - 27 November 2026
 
-Current card version is **1.7.1**. Latest full card checks: **192 unit tests**, rebuilt bundle and smoke check. The unchanged companion integration's latest full suite passed **449 tests**. Browser coverage and maintainer observations are recorded separately below.
+Current card version is **1.7.1**. Latest full card checks: **195 unit tests**, rebuilt bundle and smoke check. The unchanged companion integration's latest full suite passed **449 tests**. Browser coverage and maintainer observations are recorded separately below.
 
 | Area | Current evidence/status |
 | --- | --- |
@@ -15,6 +15,7 @@ Current card version is **1.7.1**. Latest full card checks: **192 unit tests**, 
 | v1.7.1 map visibility, chips and editor | Unit/browser checks passed; maintainer live acceptance pending |
 | Compact map chips without draft reminders | Maintainer confirmed appearance and operation in a live test |
 | Saved-map display order and editor arrows | Unit/browser checks passed; maintainer live acceptance pending |
+| Per-map rotation in session images and Zone selection | Unit/browser checks passed; initial maintainer live checks successful, full acceptance pending |
 | Automatic old-map room-draft reset | Unit/browser checks passed; maintainer live acceptance pending |
 | PR #40 review corrections | Unit/browser checks passed; initial maintainer live check reported no new errors |
 | Robot fault-text localization | Integration descriptions are passed through; English texts for 2509/2510 remain a deferred follow-up |
@@ -23,6 +24,16 @@ Current card version is **1.7.1**. Latest full card checks: **192 unit tests**, 
 | Stationless cleaning → Pause → Home search | Known Dyson behavior also observed in MyDyson; pause and manual docking recovery confirmed |
 
 Additional integration/map checks are listed in [the map notes](docs/spot-scrub-maps.md#remaining-live-checks). Entries below are chronological records and retain their original versions/test counts; an old pending statement does not supersede a later confirmation.
+
+## Initial per-map rotation live checks - 27 November 2026
+
+After the per-map rotation update, the maintainer reported that the first live checks were successful. This records initial live confirmation of the feature. Individual angles, map transitions and zone-clean execution were not separately described, so comprehensive live acceptance remains pending. Version remains **1.7.1**; the automated validation recorded below is unchanged.
+
+## Per-map display rotation - 26 November 2026
+
+`map_rotations` stores numeric quarter turns by stable map ID. Overrides replace `camera_rotation`, including explicit 0°, and both the session image and Zone editor use the active adapter map's effective angle. Unknown IDs use the global rotation; unknown/deleted entries do not affect other maps. The editor includes hidden maps and a single remaining map, offers Default to remove an override, and clears overrides for another robot. Preview interactions remain local and follow the active map. No integration change is needed, and the raw camera image/MyDyson orientation are unaffected.
+
+Validation passed: `npm run check` with **195 unit tests**, rebuilt v1.7.1 bundle and smoke check. `map-preferences-browser` covers editing, default removal, explicit 0°, refresh, hidden/single maps and robot/adapter changes in Modern/Classic at 375/900 px. `zone-map-switching-browser` covers both selector styles, both themes and widths, opposite native aspect ratios with independent rotations in Zone/session views, late calibration and retained tab/component behavior. `zone-browser` passes all four overrides and independently checks the submitted rectangle's inverse 270° transform, alongside existing image/hash/readiness guards. `editor-session-preview-browser` verifies active/inactive overrides, global fallback and zero robot commands in both dialog wrappers. Browser actions use simulated HA only; maintainer live acceptance is pending. Version remains **1.7.1**.
 
 ## Saved-map display order - 26 November 2026
 

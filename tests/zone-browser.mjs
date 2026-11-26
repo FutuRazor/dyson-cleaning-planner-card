@@ -40,10 +40,11 @@ try {
   await page.locator('#card input[data-room]').first().check();
   const selection=await page.evaluate(() => [...demo.card.selected]);
   for (const rotation of [0,90,180,270]) {
-    await page.evaluate(rotation => { demo.card.config.camera_rotation=rotation; demo.card.render(); },rotation);
+    await page.evaluate(rotation => { demo.card.config.camera_rotation=90;demo.card.config.map_rotations={'123':rotation};demo.card.render(); },rotation);
     await page.locator('[data-action="zones"]').click();
     const zone=page.locator('dyson-planner-zone');
     await zone.locator('.area').waitFor({state:'visible'});
+    assert.equal(await zone.evaluate(el=>el.rotation),rotation,'zone geometry uses the override rather than the global angle');
     assert.equal(await zone.locator('[data-do="add"]').count(),0);
     assert.equal(await zone.locator('[data-do="remove"]').count(),0);
     assert.equal(await zone.locator('[data-do="start"]').isEnabled(),true);
@@ -174,6 +175,11 @@ try {
   assert.ok(Math.abs(layout.left-layout.right)<1);
   assert.ok(Math.abs(layout.reloadHeight-layout.startHeight)<1);
   const originalRect=await zone.evaluate(el=>[...el.rect]);
+  // Independent 270-degree inverse: (u,v) -> (1-v,u), then calibration.
+  const expectedRectangle=[
+    -1+((1-originalRect[3])*800-40)/80,2-(originalRect[2]*400-40)/80,
+    -1+((1-originalRect[1])*800-40)/80,2-(originalRect[0]*400-40)/80
+  ];
   const callsBefore=await page.evaluate(()=>demo.calls.length);
   await zone.locator('[data-do="settings"]').click();
   await zone.locator('.zone-power').fill('1');
@@ -221,6 +227,7 @@ try {
   assert.equal(calls[0].data.mop_passes,2); assert.equal(calls[0].data.dry_passes,1);
   assert.equal(calls[0].data.cleaning_strategy,'boost'); assert.equal(calls.length,1); assert.equal(calls[0].data.map_id,'123'); assert.equal(calls[0].data.rectangle.length,4);
   assert.equal(calls[0].data.entity_id,await page.evaluate(()=>demo.entity));
+  calls[0].data.rectangle.forEach((value,index)=>assert.ok(Math.abs(value-expectedRectangle[index])<1e-8,'zone payload reverses the effective map rotation'));
   // Simulate session completion, then reject a stale calibration and map switch.
   await page.evaluate(()=>{demo.card.clearPendingStart(); demo.card.update();});
   await page.locator('[data-action="zones"]').click(); await zone.locator('.area').waitFor({state:'visible'});

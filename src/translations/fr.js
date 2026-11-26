@@ -1,5 +1,10 @@
 // French UI translations. Dyson terminology is referenced in docs/translations.md.
 export const fr = {
+  "Rotation per map": "Rotation par carte",
+  "Per-map values override Map rotation. The preview shows the active map.": "Les valeurs par carte remplacent la rotation générale. L’aperçu montre la carte active.",
+  "Map rotation: {name}": "Rotation de la carte : {name}",
+  "Default ({rotation}°)": "Par défaut ({rotation}°)",
+  "map_rotations must map saved map IDs to 0, 90, 180 or 270.": "map_rotations doit associer les identifiants de cartes enregistrées à 0, 90, 180 ou 270.",
   "Map selector style": "Présentation du sélecteur de carte",
   "Header button": "Bouton dans l’en-tête",
   "Map chips": "Boutons de carte",

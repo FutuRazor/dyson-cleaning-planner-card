@@ -327,6 +327,10 @@ A local room draft does not disable map selection. The old selection/settings re
 
 `map_order` uses the same ID format and defaults to `[]`. Configured IDs appear first, followed by unlisted maps in the integration's existing order. Unknown/deleted IDs are ignored and duplicates are deduplicated during normalization. Both selector styles and the editor use this order without mutating the authoritative catalogue. If the active map is hidden, its temporary identifying entry precedes the sorted visible return targets. Reordering sends no robot action.
 
+`map_rotations` maps the same stable IDs to numeric quarter turns (`0`, `90`, `180`, `270`). The active vacuum map ID selects an override for both session images and the frozen Zone editor; missing/unknown IDs fall back to `camera_rotation`. Overrides replace the default, including explicit `0`, and do not alter the camera image, calibration or stored map data. Zone commands reverse the effective display rotation before using the existing pixel-to-robot transform. A changed angle invalidates a draft created under the previous transform. The current companion renderer draws native coordinates without applying the map's `orientation`; MyDyson display rotation is not synchronized by this card.
+
+The editor's **Rotation per map** section is shown under **Cleaning map** with at least one known saved map, includes hidden maps and offers **Default** to remove an override. Its preview continues to follow the active map; setting another map's angle does not select it. Deleted IDs are ignored, renames preserve rotation, new maps use the default, and another robot resets these overrides. Adapters without active map identity retain the global rotation.
+
 | Visible maps and current selection | Card presentation |
 | --- | --- |
 | Two or more visible maps | The chosen selector style |
@@ -334,7 +338,7 @@ A local room draft does not disable map selection. The old selection/settings re
 | A hidden active map and at least one visible alternative | Temporarily identify the active map and offer visible return targets |
 | No visible maps | No selector; a notice identifies the hidden active map when known |
 
-The visual editor exposes style/visibility/order controls only when the adapter supplies at least two known maps, counting the complete catalogue. Hidden maps remain in that editor list and up/down arrows reorder the list. Normal HA updates refresh names/options; the refresh button rereads available HA data and registry metadata, without a direct Dyson request. Selecting another robot resets map exclusions and order; presentation style remains a per-card preference. Unsupported adapters ignore these options. Existing YAML without them retains the menu, integration order and unfiltered list.
+The visual editor exposes style/visibility/order controls only when the adapter supplies at least two known maps, counting the complete catalogue. Hidden maps remain in that editor list and up/down arrows reorder the list. Normal HA updates refresh names/options; the refresh button rereads available HA data and registry metadata, without a direct Dyson request. Selecting another robot resets map exclusions, order and rotation overrides; presentation style remains a per-card preference. Unsupported adapters ignore these options. Existing YAML without them retains the menu, integration order and unfiltered list.
 
 ## Direct versus paused Home, placement faults and fresh rooms (L4)
 

@@ -15,7 +15,7 @@ try {
     await page.goto(`http://127.0.0.1:${server.address().port}`);
     await card.locator('.room').first().waitFor();
     const images=await page.evaluate(()=>Object.fromEntries([
-      ['1784483068',800,400,'#257595'],['1795646759',600,600,'#95652c']
+      ['1784483068',800,400,'#257595'],['1795646759',400,800,'#95652c']
     ].map(([id,width,height,color])=>{
       const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;
       const ctx=canvas.getContext('2d');ctx.fillStyle=color;ctx.fillRect(0,0,width,height);
@@ -43,13 +43,15 @@ try {
       f.hass.services.dyson_spot_scrub.clean_zone={};
       f.hass.states[f.entity].attributes.ready_to_start=true;
       f.hass.states[f.camera].attributes.map_calibration=calibrations[a];
-      f.card.setConfig({...demo.card.config,theme,map_selector_style:style,language:'en',show_camera:false});f.card.hass=f.hass;
+      f.card.setConfig({...demo.card.config,theme,map_selector_style:style,language:'en',show_camera:true,camera_rotation:180,
+        map_rotations:{[a]:90,'1795646759':0}});f.card.hass=f.hass;
       f.hass.callService=async(domain,service,data)=>{f.calls.push({domain,service,data});};
     },{theme,style,calibrations,a});
     await card.locator('[data-action="zones"]').click();
     await zone.locator('.area').waitFor({state:'visible'});
     await page.waitForFunction(()=>!zoneDemo.card.shadowRoot.querySelector('dyson-planner-zone').controller);
     assert.equal(await zone.locator('[data-do="start"]').isEnabled(),true);
+    assert.deepEqual(await zone.evaluate(el=>[el.rotation,el.width,el.height]),[90,400,800]);
     const edited=[.12,.16,.56,.82];
     await zone.evaluate((el,rect)=>{el.rect=rect;el.draw();window.originalMapZone=el;},edited);
     const beforeMenu=requests;
@@ -82,7 +84,7 @@ try {
     await zone.locator('.area').waitFor({state:'visible'});
     await page.waitForFunction(()=>!zoneDemo.card.shadowRoot.querySelector('dyson-planner-zone').controller);
     assert.equal(await zone.evaluate(el=>el.calibration.map_id),b);
-    assert.deepEqual(await zone.evaluate(el=>[el.width,el.height]),[600,600]);
+    assert.deepEqual(await zone.evaluate(el=>[el.rotation,el.width,el.height]),[0,400,800]);
     assert.deepEqual(await zone.evaluate(el=>el.rect),[.3,.3,.7,.7]);
     assert.equal(await zone.locator('[data-do="start"]').isEnabled(),true);
     assert.equal(await card.locator('.header-notice').isHidden(),true);
@@ -102,6 +104,7 @@ try {
       await page.waitForFunction(()=>!zoneDemo.card.shadowRoot.querySelector('dyson-planner-zone').controller);
       assert.equal(await card.locator('[data-action="zones"]').getAttribute('aria-selected'),'true');
       assert.equal(await zone.evaluate(el=>el.calibration.map_id),a);
+      assert.deepEqual(await zone.evaluate(el=>[el.rotation,el.width,el.height]),[90,400,800]);
       assert.deepEqual(await zone.evaluate(el=>el.rect),[.3,.3,.7,.7]);
       imageMap=b;
       await page.evaluate(b=>{
@@ -110,9 +113,24 @@ try {
       await page.waitForFunction(b=>{
         const el=zoneDemo.card.shadowRoot.querySelector('dyson-planner-zone');return el.calibration?.map_id===b&&!el.controller;
       },b);
+      assert.deepEqual(await zone.evaluate(el=>[el.rotation,el.width,el.height]),[0,400,800]);
     }
     assert.equal(await zone.locator('[data-do="start"]').isEnabled(),true);
+    // Each session image uses the same effective map-specific angle as zones.
+    for(const [id,rotation] of [[a,90],[b,0]]) {
+      imageMap=id;
+      await page.evaluate(id=>{
+        const f=zoneDemo;f.applyMap(id);f.hass.states[f.camera].attributes.map_calibration=f.calibrations[id];
+        f.hass.states[f.entity].state='cleaning';f.card.hass={...f.hass};
+      },id);
+      const liveMap=card.locator('dyson-planner-map');
+      await liveMap.waitFor();
+      assert.equal(await liveMap.evaluate(el=>el.rotation),rotation);
+      assert.match(await liveMap.locator('img').getAttribute('style'),new RegExp(`rotate\\(${rotation}deg\\)`));
+      await page.evaluate(()=>{zoneDemo.hass.states[zoneDemo.entity].state='idle';zoneDemo.card.hass={...zoneDemo.hass};});
+      await zone.locator('.area').waitFor({state:'visible'});
+    }
     assert.deepEqual(errors,[]);await page.close();
   }
-  console.log('Zone map-switch checks passed: menu/chips, both themes, 375/900 px, retained tab/component, fresh PNG/calibration, cleared geometry, late readback and app/session transitions.');
+  console.log('Zone map-switch checks passed: per-map zone/session rotation, menu/chips, both themes, 375/900 px, retained tab/component, fresh PNG/calibration, cleared geometry, late readback and app/session transitions.');
 } finally {await browser.close();await new Promise(resolve=>server.close(resolve));}

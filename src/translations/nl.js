@@ -1,5 +1,10 @@
 // Dutch UI text. Protocol values and entity names remain unchanged.
 export const nl = {
+  "Rotation per map": "Rotatie per kaart",
+  "Per-map values override Map rotation. The preview shows the active map.": "Waarden per kaart vervangen de algemene kaartrotatie. Het voorbeeld toont de actieve kaart.",
+  "Map rotation: {name}": "Kaartrotatie: {name}",
+  "Default ({rotation}°)": "Standaard ({rotation}°)",
+  "map_rotations must map saved map IDs to 0, 90, 180 or 270.": "map_rotations moet opgeslagen kaart-ID's koppelen aan 0, 90, 180 of 270.",
   "Map selector style": "Weergave van kaartkeuze",
   "Header button": "Knop in de kop",
   "Map chips": "Kaartknoppen",

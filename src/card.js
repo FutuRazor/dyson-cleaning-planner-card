@@ -1,7 +1,7 @@
 import { zoneDimensionText } from './zone-geometry.js';
 import { resolveLanguage, translate, uiMessage, UiError } from './localize.js';
 import { STATUS_BAR_ITEMS, available, escapeHtml, normalizeConfig } from './core.js';
-import { roomKey, switchSettingConfirmed } from './shared.js';
+import { roomKey, switchSettingConfirmed, mapRotation } from './shared.js';
 import { getIntegrationAdapter, integrationVacuumEntries, defaultIntegrationEntity } from './integration.js';
 import { scheduleStyles, scheduleCardMethods } from './schedules.js';
 import { mapSelectionStyles, mapSelectionCardMethods } from './map-selection.js';
@@ -1130,7 +1130,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       button.disabled = !!this._previewDialog || this.busy || this.controlBusy || !supported;
       button.title = supported ? '' : this.t('This action is not available in the current robot state.');
     }
-    root.querySelector('dyson-planner-map')?.setOptions(this._hass, this.model.cameraEntity, this.config.camera_rotation, view.live, this.language, this.adapter);
+    root.querySelector('dyson-planner-map')?.setOptions(this._hass, this.model.cameraEntity, this.mapRotation, view.live, this.language, this.adapter);
   }
   positionModernPointer() {
     if (this.config?.theme !== 'modern') return;
@@ -1193,6 +1193,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     this.update();
   }
   get supportsZone() { return this.adapter.supportsZoneDevice(this.registry, this.devices, this.config.entity); }
+  get mapRotation() { return mapRotation(this.config, this.adapter.mapId(this._hass, this.config.entity)); }
   planningTabsHtml() {
     const schedules = this.getScheduleState();
     const tabs = [['rooms','Rooms'], ...(this.supportsZone ? [['zones','Zone']] : []), ...(schedules.supported ? [['schedules','Schedules']] : [])];
@@ -1213,7 +1214,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     const camera = this.model.cameraEntity;
     const trusted = this.adapter.trustedCamera(this.registry, this.config.entity, camera);
     this.shadowRoot.querySelector('dyson-planner-zone').setOptions({ hass:this._hass, vacuum:this.config.entity,
-      adapter:this.adapter, camera, trusted, dimensionUnit:this.config.zone_dimension_unit, supported:this.supportsZone, capabilities:this.adapter.zoneDeviceOptions(this.model.rooms), draft:this.zoneDraft, theme:this.config.theme, rotation:this.config.camera_rotation, language:this.language, preview:!!this._previewDialog });
+      adapter:this.adapter, camera, trusted, dimensionUnit:this.config.zone_dimension_unit, supported:this.supportsZone, capabilities:this.adapter.zoneDeviceOptions(this.model.rooms), draft:this.zoneDraft, theme:this.config.theme, rotation:this.mapRotation, language:this.language, preview:!!this._previewDialog });
   }
   render() {
     if (!this.model) return;
