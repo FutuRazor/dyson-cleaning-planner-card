@@ -334,5 +334,11 @@ export const en = {
   "Map frozen for selection. Room settings remain unchanged.": "Map frozen for selection. Room settings remain unchanged.",
   "Sending zone start …": "Sending zone start …",
   "Zone start failed. Check the robot before retrying.": "Zone start failed. Check the robot before retrying.",
-  "Mop repetitions": "Mop repetitions"
+  "Mop repetitions": "Mop repetitions",
+  "Switch map": "Switch map",
+  "Switch map: {name}": "Switch map: {name}",
+  "Saved maps": "Saved maps",
+  "Discard local room changes before switching maps.": "Discard local room changes before switching maps.",
+  "Map switching is unavailable. Refresh the map list and check the robot.": "Map switching is unavailable. Refresh the map list and check the robot.",
+  "The map switch has not been confirmed. Check the selected map before trying again.": "The map switch has not been confirmed. Check the selected map before trying again."
 };

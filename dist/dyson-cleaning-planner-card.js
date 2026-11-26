@@ -335,7 +335,13 @@ const en = {
   "Map frozen for selection. Room settings remain unchanged.": "Map frozen for selection. Room settings remain unchanged.",
   "Sending zone start …": "Sending zone start …",
   "Zone start failed. Check the robot before retrying.": "Zone start failed. Check the robot before retrying.",
-  "Mop repetitions": "Mop repetitions"
+  "Mop repetitions": "Mop repetitions",
+  "Switch map": "Switch map",
+  "Switch map: {name}": "Switch map: {name}",
+  "Saved maps": "Saved maps",
+  "Discard local room changes before switching maps.": "Discard local room changes before switching maps.",
+  "Map switching is unavailable. Refresh the map list and check the robot.": "Map switching is unavailable. Refresh the map list and check the robot.",
+  "The map switch has not been confirmed. Check the selected map before trying again.": "The map switch has not been confirmed. Check the selected map before trying again."
 };
 
 // German display text. Entity names and protocol values are never rewritten.
@@ -674,7 +680,13 @@ const de = {
   "Map frozen for selection. Room settings remain unchanged.": "Kartenbild für die Auswahl fixiert. Raumeinstellungen bleiben unverändert.",
   "Sending zone start …": "Zonenstart wird gesendet …",
   "Zone start failed. Check the robot before retrying.": "Zonenstart fehlgeschlagen. Vor einem erneuten Versuch den Roboter prüfen.",
-  "Mop repetitions": "Wischdurchgänge"
+  "Mop repetitions": "Wischdurchgänge",
+  "Switch map": "Karte wechseln",
+  "Switch map: {name}": "Karte wechseln: {name}",
+  "Saved maps": "Gespeicherte Karten",
+  "Discard local room changes before switching maps.": "Lokale Raumänderungen vor dem Kartenwechsel verwerfen.",
+  "Map switching is unavailable. Refresh the map list and check the robot.": "Kartenwechsel nicht verfügbar. Kartenliste aktualisieren und Roboter prüfen.",
+  "The map switch has not been confirmed. Check the selected map before trying again.": "Der Kartenwechsel wurde nicht bestätigt. Vor einem erneuten Versuch die ausgewählte Karte prüfen."
 };
 
 // Dutch UI text. Protocol values and entity names remain unchanged.
@@ -1014,6 +1026,12 @@ const nl = {
   "Zone start failed. Check the robot before retrying.": "Zonestart mislukt. Controleer de robot voordat je het opnieuw probeert.",
   "Mop repetitions": "Aantal dweilbeurten",
   "language must be auto, en, de, nl or fr.": "language moet auto, en, de, nl of fr zijn.",
+  "Switch map": "Kaart wisselen",
+  "Switch map: {name}": "Kaart wisselen: {name}",
+  "Saved maps": "Opgeslagen kaarten",
+  "Discard local room changes before switching maps.": "Verwerp lokale kamerwijzigingen voordat je van kaart wisselt.",
+  "Map switching is unavailable. Refresh the map list and check the robot.": "Kaart wisselen is niet beschikbaar. Vernieuw de kaartenlijst en controleer de robot.",
+  "The map switch has not been confirmed. Check the selected map before trying again.": "De kaartwissel is niet bevestigd. Controleer de geselecteerde kaart voordat je het opnieuw probeert."
 };
 
 // French UI translations. Dyson terminology is referenced in docs/translations.md.
@@ -1352,7 +1370,13 @@ const fr = {
   "Map frozen for selection. Room settings remain unchanged.": "Image figée pour la sélection. Les réglages des pièces restent inchangés.",
   "Sending zone start …": "Envoi de la demande de nettoyage ciblé …",
   "Zone start failed. Check the robot before retrying.": "Échec du démarrage de zone. Vérifiez le robot avant de réessayer.",
-  "Mop repetitions": "Passages de lavage"
+  "Mop repetitions": "Passages de lavage",
+  "Switch map": "Changer de carte",
+  "Switch map: {name}": "Changer de carte : {name}",
+  "Saved maps": "Cartes enregistrées",
+  "Discard local room changes before switching maps.": "Abandonnez les modifications locales des pièces avant de changer de carte.",
+  "Map switching is unavailable. Refresh the map list and check the robot.": "Le changement de carte est indisponible. Actualisez la liste des cartes et vérifiez le robot.",
+  "The map switch has not been confirmed. Check the selected map before trying again.": "Le changement de carte n’a pas été confirmé. Vérifiez la carte sélectionnée avant de réessayer."
 };
 
 
@@ -1438,6 +1462,155 @@ function fitMap(width, height, boxWidth, rotation) {
   return { width: width * scale, height: height * scale, frameHeight: (sideways ? width : height) * scale };
 }
 
+
+
+const savedMapId = value => typeof value === 'string' && /^[1-9]\d*$/.test(value) && Number.isSafeInteger(Number(value));
+
+function mapSelectionState(hass, registry, vacuum) {
+  const robot = registry.find(row => row.entity_id === vacuum && row.platform === 'dyson_spot_scrub' && !row.disabled_by);
+  const serial = String(robot?.unique_id ?? '').replace(/_vacuum$/, '');
+  const entries = robot?.device_id ? registry.filter(row => row.platform === robot.platform && row.device_id === robot.device_id
+    && !row.disabled_by && row.entity_id.startsWith('select.') && row.unique_id === `${serial}_active_map`) : [];
+  const entry = entries.length === 1 ? entries[0] : null, source = hass?.states?.[entry?.entity_id], attrs = source?.attributes ?? {};
+  const raw = attrs.maps, options = attrs.options;
+  const valid = Array.isArray(raw) && Array.isArray(options) && raw.length === options.length
+    && raw.every(item => item && savedMapId(item.map_id) && typeof item.name === 'string' && !!item.name.trim()
+      && typeof item.option === 'string' && !!item.option.trim() && options.includes(item.option))
+    && new Set(raw.map(item => item.map_id)).size === raw.length && new Set(raw.map(item => item.option)).size === raw.length;
+  const maps = valid ? raw.map(item => ({...item})) : [];
+  const current = maps.find(item => item.map_id === attrs.map_id && item.option === source?.state);
+  const live = !!entry && valid && hass?.connected !== false && available(source) && available(hass?.states?.[vacuum]);
+  return {supported:!!entry,entity:entry?.entity_id,uniqueId:entry?.unique_id,deviceId:entry?.device_id,maps,
+    currentId:current?.map_id ?? null,available:live,
+    canChange:live && !!current && String(hass.states[vacuum].attributes?.map_id) === current.map_id
+      && attrs.can_change === true && attrs.switching !== true && !!hass?.services?.select?.select_option};
+}
+
+function selectMap(hass, registry, vacuum, identity) {
+  const state = mapSelectionState(hass, registry, vacuum), map = state.maps.find(item => item.map_id === identity);
+  if (!state.canChange || !map) throw new UiError('Map switching is unavailable. Refresh the map list and check the robot.');
+  if (state.currentId === identity) return Promise.resolve();
+  return hass.callService('select','select_option',{entity_id:state.entity,option:map.option});
+}
+
+function mapSelectionConfirmed(hass, registry, vacuum, request) {
+  const state = mapSelectionState(hass, registry, vacuum);
+  return state.available && state.entity === request.entity && state.uniqueId === request.uniqueId && state.deviceId === request.deviceId
+    && state.currentId === request.mapId && String(hass?.states?.[vacuum]?.attributes?.map_id) === request.mapId;
+}
+
+const mapSelectionStyles = `
+.map-picker{position:relative}.map-toggle{display:flex;align-items:center;justify-content:center;min-height:32px;padding:3px 10px;background:transparent;color:var(--dp-muted)}.map-toggle ha-icon{--mdc-icon-size:20px}.map-toggle.pending ha-icon{visibility:hidden}
+.map-toggle.pending:after{content:"";position:absolute;width:18px;height:18px;border:2px solid var(--dp-line);border-top-color:var(--dp-accent);border-radius:50%;animation:schedule-spin .7s linear infinite}
+.map-menu{position:absolute;z-index:4;inset-inline-end:0;top:calc(100% + 6px);width:min(260px,calc(100vw - 64px));max-height:320px;overflow-y:auto;padding:8px;background:var(--dp-bg);border:1px solid var(--dp-line);border-radius:12px;box-shadow:0 6px 24px #0003}
+.map-menu-label{margin:4px 8px 8px;color:var(--dp-muted);font-size:12px}.map-menu button{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-height:42px;padding:9px 10px;border:0;border-radius:8px;background:transparent;color:var(--primary-text-color);text-align:start;overflow-wrap:anywhere;font-size:14px}
+.map-menu button[aria-checked=true]{background:var(--dp-soft);color:var(--dp-accent)}.map-menu button span{min-width:0}.map-menu-note{font-size:12px;line-height:1.5;margin:6px 8px;color:var(--dp-muted)}
+:host([map-switching]) :is(.rooms,.planning-settings,.planning-tabs,footer,dyson-planner-zone){opacity:.55}
+@media(prefers-reduced-motion:reduce){.map-toggle.pending:after{animation:none}}
+`;
+
+const mapSelectionCardMethods = {
+  getMapSelection() { return this.adapter.mapSelectionState?.(this._hass,this.registry,this.config.entity) ?? {supported:false,maps:[]}; },
+  mapPickerHtml() {
+    const state = this.getMapSelection();
+    if (!state.supported) return '';
+    const current = state.maps.find(item => item.map_id === state.currentId), pending = !!this._mapRequest;
+    const locked = this._previewDialog || this.busy || this.controlBusy || this.stationBusy || this.scheduleSending || this.scheduleDialog
+      || this.view.active || pending || this.shadowRoot.querySelector('dyson-planner-zone')?.sending;
+    const label = current ? this.t('Switch map: {name}',{name:current.option}) : this.t('Switch map');
+    const note = this.dirty ? 'Discard local room changes before switching maps.' : !state.canChange
+      ? 'Map switching is unavailable. Refresh the map list and check the robot.' : null;
+    return `<div class="map-picker"><button class="map-toggle ${pending ? 'pending' : ''}" data-action="maps" data-focus="maps" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}" aria-haspopup="menu" aria-controls="saved-map-menu" aria-expanded="${!!this.mapMenuOpen}" ${pending ? 'aria-busy="true"' : ''} ${locked ? 'disabled' : ''}><ha-icon icon="mdi:map-marker-path" aria-hidden="true"></ha-icon></button>${this.mapMenuOpen ? `<div class="map-menu" id="saved-map-menu" role="menu" aria-label="${this.ht('Saved maps')}"><p class="map-menu-label">${this.ht('Saved maps')}</p>${state.maps.map(map => `<button role="menuitemradio" aria-checked="${map.map_id === state.currentId}" data-map-id="${map.map_id}" data-focus="map-${map.map_id}" ${locked || !state.canChange || this.dirty || map.map_id === state.currentId ? 'disabled' : ''}><span>${escapeHtml(map.option)}</span>${map.map_id === state.currentId ? '<ha-icon icon="mdi:check" aria-hidden="true"></ha-icon>' : ''}</button>`).join('')}${note ? `<p class="map-menu-note">${this.ht(note)}</p>` : ''}</div>` : ''}</div>`;
+  },
+  mapClick(event) {
+    if (this.mapMenuOpen && !event.target.closest('.map-picker')) { this.mapMenuOpen = false; this.render(); }
+    const button = event.target.closest('button');
+    if (button?.dataset.action === 'maps') {
+      if (!button.disabled) {
+        this.mapMenuOpen = !this.mapMenuOpen; this.render();
+        if (this.mapMenuOpen) this.shadowRoot.querySelector('.map-menu button:not(:disabled)')?.focus({preventScroll:true});
+      }
+      return true;
+    }
+    if (button?.dataset.mapId !== undefined) {
+      if (!button.disabled) this.switchSavedMap(button.dataset.mapId);
+      return true;
+    }
+    return false;
+  },
+  mapKeydown(event) {
+    if (!this.mapMenuOpen) return false;
+    if (event.key === 'Escape') {
+      event.preventDefault(); event.stopPropagation(); this.mapMenuOpen = false; this.render();
+      this.shadowRoot.querySelector('.map-toggle')?.focus({preventScroll:true}); return true;
+    }
+    if (event.target.closest('.map-menu') && ['ArrowDown','ArrowUp','Home','End'].includes(event.key)) {
+      event.preventDefault();
+      const buttons = [...this.shadowRoot.querySelectorAll('.map-menu button:not(:disabled)')], index = buttons.indexOf(event.target);
+      const next = event.key === 'Home' ? 0 : event.key === 'End' ? buttons.length - 1
+        : (index + (event.key === 'ArrowDown' ? 1 : -1) + buttons.length) % buttons.length;
+      buttons[next]?.focus({preventScroll:true}); return true;
+    }
+    return false;
+  },
+  mapRequestCurrent(request) { return this.config === request.config && this.isConnected && this._detachRevision === request.detach; },
+  cancelMapSwitch() {
+    this._mapRequest?.complete?.('cancelled'); this._mapRequest = null; this._unconfirmedMapSwitch = null; this.mapMenuOpen = false;
+  },
+  reconcileMapSwitch() {
+    const request = this._mapRequest;
+    if (request && this.mapRequestCurrent(request)
+        && mapSelectionConfirmed(this._hass,this.registry,this.config.entity,request)) request.complete?.('confirmed');
+    const late = this._unconfirmedMapSwitch;
+    if (late && this.message === late.notice && this.mapRequestCurrent(late.request)
+        && mapSelectionConfirmed(this._hass,this.registry,this.config.entity,late.request)) {
+      this.message = ''; this.error = false; this._unconfirmedMapSwitch = null;
+    }
+    if (!this.getMapSelection().supported) this.mapMenuOpen = false;
+  },
+  applyMapLock() {
+    const locked = !!this._mapRequest;
+    this.toggleAttribute('map-switching',locked);
+    this.shadowRoot.querySelectorAll('.rooms,.planning-settings,.planning-tabs,.planner-content>footer,dyson-planner-zone')
+      .forEach(element => { element.inert = locked; });
+  },
+  async switchSavedMap(identity) {
+    if (this._previewDialog || !this.isConnected || this._mapRequest || this.busy || this.controlBusy || this.stationBusy
+        || this.scheduleSending || this.scheduleDialog || this.view.active || this.shadowRoot.querySelector('dyson-planner-zone')?.sending) return;
+    if (this.dirty) { this.error = true; this.message = 'Discard local room changes before switching maps.'; this.render(); return; }
+    const state = this.getMapSelection();
+    if (!state.canChange || !state.maps.some(item => item.map_id === identity) || state.currentId === identity) return;
+    const request = {...state,mapId:identity,config:this.config,detach:this._detachRevision};
+    this._mapRequest = request; this.mapMenuOpen = false; this._unconfirmedMapSwitch = null; this.message = ''; this.error = false; this.render();
+    try {
+      await this.adapter.selectMap(this._hass,this.registry,this.config.entity,identity);
+      if (!this.mapRequestCurrent(request)) return;
+      let result = 'confirmed';
+      if (!mapSelectionConfirmed(this._hass,this.registry,this.config.entity,request)) {
+        result = await new Promise(resolve => {
+          const timer = setTimeout(() => request.complete?.('timeout'),10000);
+          request.complete = value => { clearTimeout(timer); request.complete = null; resolve(value); };
+        });
+      }
+      if (!this.mapRequestCurrent(request) || result === 'cancelled') return;
+      if (result !== 'confirmed') {
+        const notice = uiMessage('The map switch has not been confirmed. Check the selected map before trying again.');
+        this.message = notice; this.error = true; this._unconfirmedMapSwitch = {request,notice};
+      } else { this.zoneDraft = null; this.expanded.clear(); }
+    } catch (error) {
+      if (this.mapRequestCurrent(request)
+          && !mapSelectionConfirmed(this._hass,this.registry,this.config.entity,request)) {
+        this.error = true; this.message = error;
+        this._unconfirmedMapSwitch = {request,notice:error};
+      }
+    } finally {
+      if (this._mapRequest === request) {
+        this._mapRequest = null;
+        if (this.mapRequestCurrent(request)) { this.update(); this.shadowRoot.querySelector('.map-toggle')?.focus({preventScroll:true}); }
+      }
+    }
+  }
+};
 
 // Geometry is expressed in the displayed, rotated image's normalised coordinates.
 function validZoneCalibration(c) {
@@ -2148,7 +2321,7 @@ return Object.freeze({ id: DOMAIN, label:'Dyson Spot+Scrub', shortLabel:'Spot+Sc
   editorHint:'Per-room settings are detected automatically. Saving and starting use the Dyson integration batch actions.',
   roomStartMessage:'Sending room settings and start request …',
   roomPlanningState, roomPresentation:dysonRoomPresentation, roomContext, discover, batteryStatus, sendRoomDraft, dockBusy, dockBlocksStart, startBlockReason, activityStatus, cleaningView, dryingRemainingTime, dryingRemainingPercent, canControl, controlCleaning, CONSUMABLES, consumableStatus, ROBOT_FIELDS, robotSettings, changeRobotSetting, STATION_FIELDS, STATION_ACTIONS, stationActions, pressStationAction, stationSettings, changeStationSetting, supportsZoneDevice, ZONE_CHOICES, zoneDeviceOptions, vacuumEntries, cameraEntries, defaultEntity, roomSelectionState, hasRoomList, roomActionAvailable, mapId, mapPicture, mapCalibration, trustedCamera, robotTelemetry, dockActivity, zoneReady, startZone, zoneSettingsPayload,
-  scheduleState, scheduleRoomOptions, setSchedule, deleteSchedule,
+  scheduleState, scheduleRoomOptions, setSchedule, deleteSchedule, mapSelectionState, selectMap,
   mapPictureAllowed:picture => typeof picture === 'string' && picture.startsWith('/api/camera_proxy/'),
 });
 })();
@@ -4005,6 +4178,7 @@ function stationIndicator(field, refillStatus, language = 'en') {
 
 const styles = `
 ${scheduleStyles}
+${mapSelectionStyles}
 .planning-tabs{display:flex;margin:0 var(--dp-padding) 14px;border-bottom:1px solid var(--dp-line)}.planning-tabs button{flex:1;min-width:0;border:0;border-bottom:3px solid transparent;border-radius:0;background:transparent;color:var(--dp-muted);padding:9px 8px;min-height:42px;white-space:nowrap}.planning-tabs button[aria-selected=true]{color:var(--primary-text-color);border-bottom-color:var(--dp-accent)}
 .planning-tab-label{position:relative;display:inline-block;white-space:nowrap}
 #planning-tab-schedules .planning-tab-label:has(.schedule-count){transform:translateX(-8px)}
@@ -4316,6 +4490,9 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     super(); this.selected = []; this.settingDraft = {}; this.planningDraft = {}; this.dirty = false; this.busy = false; this.expanded = new Set(); this.message = '';
     this._headerFaultKey = ''; this._headerFaultDismissed = false;
     this.controlBusy = false; this.pendingStart = false; this.requestedPlan = null; this.zoneView = false;
+    this._mapOutside = event => {
+      if (this.mapMenuOpen && !event.composedPath().includes(this)) { this.mapMenuOpen = false; this.render(); }
+    };
 
     this.shadowRoot.addEventListener('planner-notice', () => this.updateHeaderNotice());
     this.shadowRoot.addEventListener('zone-started', event => this.zoneStarted(event.detail));
@@ -4323,6 +4500,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     this.shadowRoot.addEventListener('input', event => this.scheduleInput(event));
     this.shadowRoot.addEventListener('click', event => this.onClick(event));
     this.shadowRoot.addEventListener('keydown', event => {
+      if (this.mapKeydown(event)) return;
       if (this.scheduleKeydown(event)) return;
       if (!this.consumablesOpen && event.target.matches('.planning-tabs [role="tab"]')
           && ['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
@@ -4373,6 +4551,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     }
     this.consumablesOpen = false; this.stationMessage = ''; this.stationError = false;
     this.cancelSettingSwitch();
+    this.cancelMapSwitch();
     this.robotMessage = ''; this._robotMessageContext = {};
     this.zoneView = false; this.zoneDraft = null;
     this.cancelScheduleFeedback();
@@ -4388,6 +4567,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
   }
   connectedCallback() {
     this._previewDialog = cardEditorDialog(this, true);
+    document.addEventListener('pointerdown',this._mapOutside);
     this._previewChanged ??= () => this.update();
     this._previewDialog?.addEventListener(previewViewChanged, this._previewChanged);
     super.connectedCallback();
@@ -4404,6 +4584,8 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
   }
   disconnectedCallback() {
     this._detachRevision = (this._detachRevision ?? 0) + 1;
+    document.removeEventListener('pointerdown',this._mapOutside);
+    this.cancelMapSwitch();
     this.cancelSettingSwitch();
     this.cancelScheduleFeedback();
     this.scheduleDialog = null;
@@ -4482,9 +4664,11 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     }
     this.reconcileScheduleConfirmation();
     this.reconcileSettingSwitch();
+    this.reconcileMapSwitch();
     this.render();
   }
   onChange(event) {
+    if (this._mapRequest) return;
     if (event.target.dataset.scheduleToggle !== undefined) {
       this.submitSchedule(Number(event.target.dataset.scheduleToggle), event.target.checked); return;
     }
@@ -4529,6 +4713,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     this.updateDirty(); this.message = ''; this.error = false; this.render();
   }
   onClick(event) {
+    if (this.mapClick(event) || this._mapRequest) return;
     if (this.scheduleClick(event)) return;
     if (event.target.classList?.contains("consumables-overlay")) { this.toggleConsumables(false); return; }
     const el = event.target.closest('button, ha-button');
@@ -4587,6 +4772,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     this.render();
   }
   async start() {
+    if (this._mapRequest) return;
     if (this._previewDialog || this.busy || this.view.active || !this.isConnected) return;
     this.clearSessionEnd();
     this.busy = true; this.error = false;
@@ -4640,6 +4826,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     } finally { this.busy = false; this.render(); }
   }
   async save() {
+    if (this._mapRequest) return;
     if (this._previewDialog || this.busy || this.view.active || !this.isConnected) return;
     const config = this.config, context = this.draftContext, draft = structuredClone(this.settingDraft);
     this.busy = true; this.saving = true; this.error = false;
@@ -4803,6 +4990,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     }
   }
   async setRobotSetting(key, value) {
+    if (this._mapRequest) return;
     if (this._previewDialog || this.stationBusy || this.busy || this.controlBusy || !this.consumablesOpen) return;
     const field = this.adapter.robotSettings(this._hass, this.registry, this.config.entity).find(field => field.key === key);
     if (field?.domain === 'switch' && field.available && field.enabled !== false && typeof value === 'boolean') {
@@ -4833,6 +5021,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     message.textContent = this.t(this.robotMessage || ''); message.hidden = !this.robotMessage;
   }
   async setStationSetting(key, value, action = false) {
+    if (this._mapRequest) return;
     if (this._previewDialog || this.stationBusy || this.busy || this.controlBusy || !this.consumablesOpen) return;
     const field = !action && this.adapter.stationSettings(this._hass, this.registry, this.config.entity).find(field => field.key === key);
     if (field?.domain === 'switch' && field.available && typeof value === 'boolean') {
@@ -4892,7 +5081,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     const name = this.adapter.robotTelemetry(this._hass, this.config.entity, undefined, this.registry).name;
     const subtitle = typeof name === 'string' && name.trim() ? name : this.config.entity;
     const illustrated = this.config.header_icon_style === 'integration' && this.adapter.supportsIntegrationIcon !== false;
-    return `<header><div class="station-status-bar"><div class="station-indicators"></div><div class="battery" role="img"><svg viewBox="0 0 32 20" aria-hidden="true"><rect x="1" y="3" width="26" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="29" y="7" width="3" height="6" rx="1" fill="currentColor"/><rect class="battery-fill" x="4" y="6" width="0" height="8" rx="1" fill="currentColor"/><path class="battery-bolt" d="M17 1 9 11h6l-2 8L23 8h-7Z" fill="var(--dp-bg)" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" hidden/></svg><span class="battery-value" aria-hidden="true" hidden></span></div></div><div class="header-main"><div class="robot ${illustrated ? 'robot-integration' : ''}">${illustrated ? `<svg class="robot-illustration" viewBox="0 0 50 50" aria-hidden="true"><defs><radialGradient id="robot-beam-gradient" gradientUnits="userSpaceOnUse" cx="25" cy="25" r="46"><stop offset=".40" stop-color="#39ff14" stop-opacity=".75"/><stop offset=".62" stop-color="#65ff39" stop-opacity=".42"/><stop offset=".85" stop-color="#65ff39" stop-opacity=".12"/><stop offset="1" stop-color="#65ff39" stop-opacity="0"/></radialGradient><filter id="robot-beam-soft" x="-35%" y="-20%" width="170%" height="150%"><feGaussianBlur stdDeviation="1.2"/></filter></defs><path class="robot-beam" d="M25 25 L2 -15 Q25 -27 48 -15 Z" fill="url(#robot-beam-gradient)" filter="url(#robot-beam-soft)" hidden/><circle cx="25" cy="26" r="22" fill="#000" opacity=".18"/><circle cx="25" cy="25" r="21" fill="#3a3a40" stroke="#e7e9ed" stroke-width="1.5"/><circle cx="25" cy="25" r="18" fill="#45454e"/><path class="robot-bumper" d="M6.8 14.5 A21 21 0 0 1 43.2 14.5" fill="none" stroke="#64646d" stroke-width="4"/><circle cx="25" cy="17" r="6" fill="#c8c8cd"/><circle cx="25" cy="17" r="2.6" fill="#39ff14"/><rect class="robot-dock" x="9" y="44" width="32" height="7" rx="2.5" fill="#3a3a40" stroke="#c8c8cd" stroke-width="1.2" hidden/></svg>` : '<ha-icon icon="mdi:robot-vacuum"></ha-icon>'}${this.config.theme === 'modern' ? `<button class="robot-warning" data-action="open-fault" aria-label="${this.ht('Show robot error')}" hidden><ha-icon icon="mdi:alert" aria-hidden="true"></ha-icon></button>` : ''}</div><div class="header-title"><h2>${escapeHtml(this.config.title || this.t('Plan a clean'))}</h2><p>${escapeHtml(subtitle)}</p></div><div class="header-buttons"><button class="consumables-info" data-action="consumables" data-focus="consumables-info" aria-label="${this.ht("Consumables")}" aria-haspopup="dialog" aria-expanded="false" title="${this.ht("Consumables")}">${this.ht("Info")}</button></div>${this.config.theme === 'modern' ? `<section class="header-fault" aria-label="${this.ht('Robot needs attention')}" hidden><div class="header-fault-copy" tabindex="0" role="status"><strong>${this.ht('Robot needs attention')}</strong><p class="header-fault-detail"></p></div><button class="header-fault-close" data-action="dismiss-fault" aria-label="${this.ht('Dismiss error message')}"><ha-icon icon="mdi:close" aria-hidden="true"></ha-icon></button></section>` : ''}<section class="header-notice" hidden><div class="header-notice-copy" role="status" aria-live="polite"></div><button class="header-fault-close" data-action="dismiss-notice" aria-label="${this.ht('Close')}"><ha-icon icon="mdi:close" aria-hidden="true"></ha-icon></button></section></div></header>`;
+    return `<header><div class="station-status-bar"><div class="station-indicators"></div><div class="battery" role="img"><svg viewBox="0 0 32 20" aria-hidden="true"><rect x="1" y="3" width="26" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="29" y="7" width="3" height="6" rx="1" fill="currentColor"/><rect class="battery-fill" x="4" y="6" width="0" height="8" rx="1" fill="currentColor"/><path class="battery-bolt" d="M17 1 9 11h6l-2 8L23 8h-7Z" fill="var(--dp-bg)" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" hidden/></svg><span class="battery-value" aria-hidden="true" hidden></span></div></div><div class="header-main"><div class="robot ${illustrated ? 'robot-integration' : ''}">${illustrated ? `<svg class="robot-illustration" viewBox="0 0 50 50" aria-hidden="true"><defs><radialGradient id="robot-beam-gradient" gradientUnits="userSpaceOnUse" cx="25" cy="25" r="46"><stop offset=".40" stop-color="#39ff14" stop-opacity=".75"/><stop offset=".62" stop-color="#65ff39" stop-opacity=".42"/><stop offset=".85" stop-color="#65ff39" stop-opacity=".12"/><stop offset="1" stop-color="#65ff39" stop-opacity="0"/></radialGradient><filter id="robot-beam-soft" x="-35%" y="-20%" width="170%" height="150%"><feGaussianBlur stdDeviation="1.2"/></filter></defs><path class="robot-beam" d="M25 25 L2 -15 Q25 -27 48 -15 Z" fill="url(#robot-beam-gradient)" filter="url(#robot-beam-soft)" hidden/><circle cx="25" cy="26" r="22" fill="#000" opacity=".18"/><circle cx="25" cy="25" r="21" fill="#3a3a40" stroke="#e7e9ed" stroke-width="1.5"/><circle cx="25" cy="25" r="18" fill="#45454e"/><path class="robot-bumper" d="M6.8 14.5 A21 21 0 0 1 43.2 14.5" fill="none" stroke="#64646d" stroke-width="4"/><circle cx="25" cy="17" r="6" fill="#c8c8cd"/><circle cx="25" cy="17" r="2.6" fill="#39ff14"/><rect class="robot-dock" x="9" y="44" width="32" height="7" rx="2.5" fill="#3a3a40" stroke="#c8c8cd" stroke-width="1.2" hidden/></svg>` : '<ha-icon icon="mdi:robot-vacuum"></ha-icon>'}${this.config.theme === 'modern' ? `<button class="robot-warning" data-action="open-fault" aria-label="${this.ht('Show robot error')}" hidden><ha-icon icon="mdi:alert" aria-hidden="true"></ha-icon></button>` : ''}</div><div class="header-title"><h2>${escapeHtml(this.config.title || this.t('Plan a clean'))}</h2><p>${escapeHtml(subtitle)}</p></div><div class="header-buttons">${this.mapPickerHtml()}<button class="consumables-info" data-action="consumables" data-focus="consumables-info" aria-label="${this.ht("Consumables")}" aria-haspopup="dialog" aria-expanded="false" title="${this.ht("Consumables")}">${this.ht("Info")}</button></div>${this.config.theme === 'modern' ? `<section class="header-fault" aria-label="${this.ht('Robot needs attention')}" hidden><div class="header-fault-copy" tabindex="0" role="status"><strong>${this.ht('Robot needs attention')}</strong><p class="header-fault-detail"></p></div><button class="header-fault-close" data-action="dismiss-fault" aria-label="${this.ht('Dismiss error message')}"><ha-icon icon="mdi:close" aria-hidden="true"></ha-icon></button></section>` : ''}<section class="header-notice" hidden><div class="header-notice-copy" role="status" aria-live="polite"></div><button class="header-fault-close" data-action="dismiss-notice" aria-label="${this.ht('Close')}"><ha-icon icon="mdi:close" aria-hidden="true"></ha-icon></button></section></div></header>`;
   }
   updateBattery() {
     const vacuum = this.adapter.robotTelemetry(this._hass, this.config.entity, this.model.cameraEntity, this.registry);
@@ -4947,6 +5136,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     }
   }
   updateStatus(plannerNotice = this._plannerNotice ?? '') {
+    this.applyMapLock();
     this._plannerNotice = plannerNotice;
     let status = this.adapter.activityStatus(this._hass, this.config.entity, (this.busy && !this.saving) || this.pendingStart, this.registry);
     const modern = this.config.theme === 'modern';
@@ -5193,7 +5383,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
   }
 }
 
-Object.assign(DysonCleaningPlannerCard.prototype, scheduleCardMethods);
+Object.assign(DysonCleaningPlannerCard.prototype, scheduleCardMethods, mapSelectionCardMethods);
 
 if (!customElements.get('dyson-cleaning-planner-card')) customElements.define('dyson-cleaning-planner-card', DysonCleaningPlannerCard);
 window.customCards = window.customCards || [];

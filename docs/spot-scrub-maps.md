@@ -1,6 +1,6 @@
 # Spot+Scrub maps and map switching
 
-This document collects the map-lifecycle findings from maintainer tests on 25/26 November 2026, the captured commands, and the proposed Home Assistant map-selection interface. Spot+Scrub is the priority adapter for this work. A map selector or map-switch icon has not been implemented.
+This document collects the map-lifecycle findings from maintainer tests on 25/26 November 2026, the captured commands, and the initial Home Assistant map-selection implementation. Spot+Scrub is the priority adapter for this work. The implementation targets the maintainer's [integration development branch](https://github.com/FutuRazor/ha-dyson-spot-scrub/tree/feat/map-switching); live validation of the new HA/card controls is still required.
 
 ## Intended feature scope
 
@@ -27,8 +27,9 @@ Implementation order:
 | --- | --- | --- |
 | L1 | `home-assistant_dyson_spot_scrub_2026-11-25T23-11-32.051Z.log` | Mapping B, renaming, repeated A/B switches, cleaning, rejected inactive-map Kitchen requests, and the final Kitchen start on A |
 | L2 | `home-assistant_dyson_spot_scrub_2026-11-26T00-01-47.187Z.log` | Selecting B and deleting it while selected, followed by automatic fallback to A |
+| L3 | `home-assistant_dyson_spot_scrub_2026-11-26T01-46-41.347Z.log` | Live map-select errors followed by successful switches/room starts, and Home from B without a station |
 
-All times in this document use the logs' explicit **UTC+01:00** offset. In L1, 23:xx is 25 November and 00:xx is 26 November. L2's relevant events occur at 01:xx on 26 November. The filenames use UTC.
+All times in this document use the logs' explicit **UTC+01:00** offset. In L1, 23:xx is 25 November and 00:xx is 26 November. L2's relevant events occur at 01:xx and L3's at 02:xx on 26 November. The filenames use UTC.
 
 The installed integration version and HA state/registry snapshots were not supplied. Protocol messages are log evidence; frontend behavior and entity availability are identified separately as maintainer observations. Raw exports remain outside the repository.
 
@@ -262,7 +263,35 @@ The maintainer confirms that MyDyson automatically displays A, A's room entities
 
 In a separate follow-up without a supplied trace, starting with B selected while the robot was physically at A's station led to location searching and then an extended station search after Return. Pausing and manually placing the robot on the dock restored normal app, integration and card behavior while B remained selected. This distinguishes selected-map identity from physical location; changing Dyson navigation behavior is outside this work.
 
-## Existing integration and card interfaces
+### Live readback delay and return without a station
+
+In L3, A is still `1784483068`, while B is a different saved map, `1795654677`, named `Karte1`. Its room is Wohnzimmer `10`; A also contains Wohnzimmer, with native ID `11`. The maintainer reports successful room cleaning after the selected map eventually updates. The capture shows starts targeting A/Küche `13` and B/Wohnzimmer `10` and subsequent running states. This provides live evidence for a shared room name across maps, while exact HA entity/registry identities and unsaved-setting isolation still need separate snapshots.
+
+| Local time | Observation | L3 line |
+| --- | --- | --- |
+| 02:37:49.458 | Select A request | 119 |
+| 02:37:49.659 | Successful acknowledgement/result | 120 |
+| 02:37:49.980 | Immediate legacy state reply still reports B | 125 |
+| 02:37:50.204 | `prop.post.current_map_id` reports A | 126 |
+| 02:38:04.665 | HA select action reports confirmation timeout | 142 |
+| 02:38:09.660 | Legacy `CURRENT-STATE` finally reports A | 148 |
+| 02:41:04.040 / .721 | Select B request / actual JDM map report | 439 / 446 |
+| 02:41:19.239 / 27.704 | Confirmation timeout / delayed legacy map report | 451 / 458 |
+
+The first implementation only completed map-change handling on legacy state messages. The fresh JDM property arrived within a second, but the legacy map report followed roughly 20-24 seconds after the request, exceeding the 15-second telemetry deadline. The correction normalizes valid RB05 `current_map_id` reports from `prop.post` and successful/partial `prop.get` replies into the same canonical map field and refresh/confirmation path as legacy telemetry. It does not infer a map change from acknowledgement alone or retry the command. The card also clears an earlier service-error notice if later matching select/vacuum readback confirms the requested map.
+
+For the stationless B return, the sequence is:
+
+- At 02:42:44.729 the integration logs `RETURN_TO_BASE`; the card's Home path is `vacuum.return_to_base`.
+- Legacy `ABORT` at 02:42:44.771 is followed by `service.start_recharge` at 02:42:44.847 (lines 596-598).
+- At 02:42:55.428, `prop.post` reports map ID `0`. The map list later marks **both maps `cur:false`**, and legacy state also reports `"0"` (lines 611, 621, 642).
+- No request to select A is recorded in that return interval. The next explicit A selection is at 02:45:05.416 (line 843).
+
+The maintainer saw A's floor plan during that interval. The previous API helper selected the first saved map whenever no entry was marked current; that code provides a fallback explanation, although REST metadata response bodies are not included in this export. The correction removes arbitrary first-map fallback and binds static camera fetches to the robot's reported map ID when map selection is enabled. Unknown ID `0` cannot load A, and a known B ID cannot load A even if REST current-map flags lag.
+
+Home/return commands and robot navigation are unchanged. The integration's separate Stop path sends `STOP`; no MyDyson cancellation `STOP` or normal stationless completion is captured in L3. The maintainer reports that those app/completion flows return to the placement point. A separate app-abort/completion trace is needed before equating that behavior with the card's Home action.
+
+## Baseline integration and card interfaces
 
 The reviewed integration already provides `get_map_metadata()` for `GET /v2/app/<serial>/persistent-map-metadata`. It returns saved-map entries including `id`, `name`, `isCurrentMap` and `zones`. The [API implementation](https://github.com/UNsync3D/ha-dyson-spot-scrub/blob/580ba28146fe315e5772277f5179a43aa85e15c0/custom_components/dyson_spot_scrub/dyson_api.py) and [coordinator](https://github.com/UNsync3D/ha-dyson-spot-scrub/blob/580ba28146fe315e5772277f5179a43aa85e15c0/custom_components/dyson_spot_scrub/coordinator.py) use it to refresh room inventories after active-map changes, including the first report after connecting.
 
@@ -272,26 +301,30 @@ At the reviewed commit, [`services.yaml`](https://github.com/UNsync3D/ha-dyson-s
 
 The current [Spot+Scrub adapter](../src/adapters/spot-scrub.js) discovers rooms from the vacuum's active room-name list. An available retained switch alone does not establish active-map membership. The draft context includes `map_id`; [existing regressions](../tests/room-identity.test.mjs) reject an old-map draft even when native room IDs are reused. These checks are automated evidence, distinct from the live tests.
 
-## Proposed map-selection interface
+## Implemented map-selection interface
 
-This is a proposal, not an implemented capability:
+The initial implementation adds these interfaces without changing either release version:
 
-1. Expose the current saved-map list and selected map through a device-bound HA interface, for example a `select` entity. Map IDs identify options internally; labels show names and distinguish duplicate map names if needed.
-2. Selecting an option asks the integration to send the existing map-switch command. The reported active map confirms the change. The card can expose this through a header icon and a small map menu.
-3. Refresh the list on connection, after a confirmed switch, and after mapping, rename or delete activity observed from MyDyson. Add a periodic reconciliation so changes to an inactive map or changes made while HA was disconnected are also discovered.
-4. Replace selector options from a successful current full-list query: add new IDs, update names for retained IDs and remove absent IDs. A failed fetch must not be interpreted as an empty map list. Old observed commands must not resurrect a deleted option.
-5. Preserve the existing room-update path and retained entity identities during normal switches. For a confirmed map deletion in MyDyson, preferably remove entities and registry entries belonging exclusively to the deleted map and reconcile its cached data. Removing a selector option and cleaning up entities are separate tasks; a switch alone must not trigger entity deletion.
+1. The RB05 integration exposes a `select` with unique ID `<serial>_active_map`. Its `maps` attribute contains objects with string `map_id`, `name` and `option`; `map_id` identifies the currently reported map. `can_change` and `switching` describe action readiness. Duplicate names receive distinct ID-based options.
+2. The card detects that select on the configured robot and adds a header map icon with a menu. It sends one standard `select.select_option` request using the current option for the chosen map ID. A switch is confirmed only when both select state and vacuum `map_id` agree; no cleaning start is sent. Without the select, existing installations keep their previous layout.
+3. The integration queries `service.get_map_list` at setup/reconnect, after reported map changes or observed MyDyson mapping/rename/delete activity, and every 60 seconds.
+4. A valid current full-list reply replaces selector options. Failed/malformed replies preserve the last list, a valid empty list clears it, and older correlated replies cannot replace a newer applied list.
+5. Normal switches retain existing room entities and use the tested active-room update path. Deleted IDs disappear from the selector; deleting their old room entities/registry entries remains a separate follow-up requiring verified ownership across reused room IDs and shared names.
 6. Expose map display/selection only. Mapping, deletion, renaming and editing remain in MyDyson, with their results reflected back into HA and the card.
 
-Both the captured JDM `get_map_list` and existing REST metadata provide a list source. Their timing and any temporary disagreement still need validation when choosing the implementation path. Deleting selected B changes the active ID in the capture. Deleting an inactive map while keeping A selected is not an available test through the observed MyDyson UI. Periodic reconciliation still covers changes missed while HA was disconnected and inventory changes that do not otherwise trigger an active-map update.
+The implementation uses the captured JDM list for the selector and leaves the existing REST room-inventory path intact. Selecting a map waits for an acknowledgement/result and matching robot telemetry, each with a 15-second deadline. Both valid JDM map-property reports and legacy map reports complete the same confirmation path. No optimistic map state or automatic retry is used. Existing readiness and start locks prevent a new clean from racing the switch. The card also locks its planner during a pending switch and requires local room drafts to be discarded first.
+
+Deleting selected B changes the active ID in the capture. Deleting an inactive map while keeping A selected is not an available test through the observed MyDyson UI. Periodic reconciliation covers changes missed while HA was disconnected and inventory changes that do not otherwise trigger an active-map update.
 
 ## Remaining live checks
 
+- Install the integration development branch and updated card, then switch A/B repeatedly from both the HA select and the card. Check actual selected-map readback and existing room cleaning afterward.
 - Delete the last saved map in MyDyson and inspect map identity, room list and selector behavior.
-- Use the same room name on A and B, initially with different native room IDs: A/Küche `13` and B/Küche `10`.
+- Extend the shared-name observation in L3 (Wohnzimmer `11` on A / `10` on B) with HA entity/registry snapshots and settings-isolation checks.
 - Switch maps with an unsaved local room selection/settings draft, and verify the existing stale-draft handling.
 - Observe map creation/rename/deletion in MyDyson while HA is disconnected and verify reconciliation after reconnect.
 - Capture HA `map_id`, `rooms`, per-room `room_id`/availability and registry entries across these transitions. Establish how to remove entities exclusive to a deleted map while preserving other maps' entities, including reused room IDs and shared names.
 - Verify schedule behavior across maps separately; these map tests do not establish it.
+- Retest map selection with the JDM-readback correction, and capture a stationless MyDyson cancellation/normal completion separately from Home.
 
-This reference is a documentation-only change. Card source, generated bundle and release version are unchanged. The chronological validation index is [TESTING.md](../TESTING.md).
+The historical captures establish protocol behavior; automated checks of the new controls use simulated HA/MQTT and do not establish live acceptance. Card source and generated bundle are kept together; release versions remain unchanged. The chronological validation index is [TESTING.md](../TESTING.md).

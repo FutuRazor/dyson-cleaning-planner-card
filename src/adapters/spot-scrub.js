@@ -2,6 +2,7 @@ import { UiError } from '../localize.js';
 import { ROOM_FIELDS, available, roomKey } from '../shared.js';
 import { dysonRoomPresentation } from './dyson-planning.js';
 import { validZoneCalibration, zoneRobotRectangle } from '../zone-geometry.js';
+import { mapSelectionState, selectMap } from '../map-selection.js';
 
 // Keep backend identities, telemetry and action policy inside this adapter.
 // The local scope also isolates implementation names in the dependency-free bundle.
@@ -601,7 +602,7 @@ return Object.freeze({ id: DOMAIN, label:'Dyson Spot+Scrub', shortLabel:'Spot+Sc
   editorHint:'Per-room settings are detected automatically. Saving and starting use the Dyson integration batch actions.',
   roomStartMessage:'Sending room settings and start request …',
   roomPlanningState, roomPresentation:dysonRoomPresentation, roomContext, discover, batteryStatus, sendRoomDraft, dockBusy, dockBlocksStart, startBlockReason, activityStatus, cleaningView, dryingRemainingTime, dryingRemainingPercent, canControl, controlCleaning, CONSUMABLES, consumableStatus, ROBOT_FIELDS, robotSettings, changeRobotSetting, STATION_FIELDS, STATION_ACTIONS, stationActions, pressStationAction, stationSettings, changeStationSetting, supportsZoneDevice, ZONE_CHOICES, zoneDeviceOptions, vacuumEntries, cameraEntries, defaultEntity, roomSelectionState, hasRoomList, roomActionAvailable, mapId, mapPicture, mapCalibration, trustedCamera, robotTelemetry, dockActivity, zoneReady, startZone, zoneSettingsPayload,
-  scheduleState, scheduleRoomOptions, setSchedule, deleteSchedule,
+  scheduleState, scheduleRoomOptions, setSchedule, deleteSchedule, mapSelectionState, selectMap,
   mapPictureAllowed:picture => typeof picture === 'string' && picture.startsWith('/api/camera_proxy/'),
 });
 })();

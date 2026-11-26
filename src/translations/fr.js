@@ -334,5 +334,11 @@ export const fr = {
   "Map frozen for selection. Room settings remain unchanged.": "Image figée pour la sélection. Les réglages des pièces restent inchangés.",
   "Sending zone start …": "Envoi de la demande de nettoyage ciblé …",
   "Zone start failed. Check the robot before retrying.": "Échec du démarrage de zone. Vérifiez le robot avant de réessayer.",
-  "Mop repetitions": "Passages de lavage"
+  "Mop repetitions": "Passages de lavage",
+  "Switch map": "Changer de carte",
+  "Switch map: {name}": "Changer de carte : {name}",
+  "Saved maps": "Cartes enregistrées",
+  "Discard local room changes before switching maps.": "Abandonnez les modifications locales des pièces avant de changer de carte.",
+  "Map switching is unavailable. Refresh the map list and check the robot.": "Le changement de carte est indisponible. Actualisez la liste des cartes et vérifiez le robot.",
+  "The map switch has not been confirmed. Check the selected map before trying again.": "Le changement de carte n’a pas été confirmé. Vérifiez la carte sélectionnée avant de réessayer."
 };

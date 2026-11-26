@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Clear an earlier saved-map switch error once matching late HA telemetry confirms the requested map. Record the integration corrections for immediate JDM map reports and static-map images when the active map is unknown.
+
+- Add an optional saved-map menu to the Spot+Scrub header, using the matching integration map select on the same robot. Confirm switches through HA readback, retain the existing room updates, and keep map creation, editing and deletion in MyDyson. The feature requires the map-switching integration development branch; upstream v2.2.0 alone does not expose this select.
+
 - Show a local spinner on Station and Robot switches until the requested state is reflected by the same Home Assistant entity. Keep preference writes locked during confirmation, report missing readback after ten seconds without retries, clear warnings on late confirmation, and cancel obsolete feedback after reconfiguration or removal.
 - Add an offline Dreame v2.0.3 contract prototype, source-shaped fixtures and an executable delayed-save-rejection demonstration. Validate map-qualified room identity, exact native profile values and companion-value preservation; do not equate optimistic HA updates or service completion with robot confirmation. The prototype is not bundled or exposed as a supported adapter.
 - Exclude Spot+Scrub's known cleaning-mode options from the generic suction slider: its fan-speed API selects vacuum/mop modes rather than suction intensity. Document hass-dyson's missing standard fan capability and retain area-only starts for these devices.

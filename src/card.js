@@ -4,6 +4,7 @@ import { STATUS_BAR_ITEMS, available, escapeHtml, normalizeConfig } from './core
 import { roomKey, switchSettingConfirmed } from './shared.js';
 import { getIntegrationAdapter, integrationVacuumEntries, defaultIntegrationEntity } from './integration.js';
 import { scheduleStyles, scheduleCardMethods } from './schedules.js';
+import { mapSelectionStyles, mapSelectionCardMethods } from './map-selection.js';
 import { ROOM_COLORS } from './shared.js';
 
 function stationIndicator(field, refillStatus, language = 'en') {
@@ -47,6 +48,7 @@ function stationIndicator(field, refillStatus, language = 'en') {
 
 const styles = `
 ${scheduleStyles}
+${mapSelectionStyles}
 .planning-tabs{display:flex;margin:0 var(--dp-padding) 14px;border-bottom:1px solid var(--dp-line)}.planning-tabs button{flex:1;min-width:0;border:0;border-bottom:3px solid transparent;border-radius:0;background:transparent;color:var(--dp-muted);padding:9px 8px;min-height:42px;white-space:nowrap}.planning-tabs button[aria-selected=true]{color:var(--primary-text-color);border-bottom-color:var(--dp-accent)}
 .planning-tab-label{position:relative;display:inline-block;white-space:nowrap}
 #planning-tab-schedules .planning-tab-label:has(.schedule-count){transform:translateX(-8px)}
@@ -358,6 +360,9 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     super(); this.selected = []; this.settingDraft = {}; this.planningDraft = {}; this.dirty = false; this.busy = false; this.expanded = new Set(); this.message = '';
     this._headerFaultKey = ''; this._headerFaultDismissed = false;
     this.controlBusy = false; this.pendingStart = false; this.requestedPlan = null; this.zoneView = false;
+    this._mapOutside = event => {
+      if (this.mapMenuOpen && !event.composedPath().includes(this)) { this.mapMenuOpen = false; this.render(); }
+    };
 
     this.shadowRoot.addEventListener('planner-notice', () => this.updateHeaderNotice());
     this.shadowRoot.addEventListener('zone-started', event => this.zoneStarted(event.detail));
@@ -365,6 +370,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     this.shadowRoot.addEventListener('input', event => this.scheduleInput(event));
     this.shadowRoot.addEventListener('click', event => this.onClick(event));
     this.shadowRoot.addEventListener('keydown', event => {
+      if (this.mapKeydown(event)) return;
       if (this.scheduleKeydown(event)) return;
       if (!this.consumablesOpen && event.target.matches('.planning-tabs [role="tab"]')
           && ['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
@@ -415,6 +421,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     }
     this.consumablesOpen = false; this.stationMessage = ''; this.stationError = false;
     this.cancelSettingSwitch();
+    this.cancelMapSwitch();
     this.robotMessage = ''; this._robotMessageContext = {};
     this.zoneView = false; this.zoneDraft = null;
     this.cancelScheduleFeedback();
@@ -430,6 +437,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
   }
   connectedCallback() {
     this._previewDialog = cardEditorDialog(this, true);
+    document.addEventListener('pointerdown',this._mapOutside);
     this._previewChanged ??= () => this.update();
     this._previewDialog?.addEventListener(previewViewChanged, this._previewChanged);
     super.connectedCallback();
@@ -446,6 +454,8 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
   }
   disconnectedCallback() {
     this._detachRevision = (this._detachRevision ?? 0) + 1;
+    document.removeEventListener('pointerdown',this._mapOutside);
+    this.cancelMapSwitch();
     this.cancelSettingSwitch();
     this.cancelScheduleFeedback();
     this.scheduleDialog = null;
@@ -524,9 +534,11 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     }
     this.reconcileScheduleConfirmation();
     this.reconcileSettingSwitch();
+    this.reconcileMapSwitch();
     this.render();
   }
   onChange(event) {
+    if (this._mapRequest) return;
     if (event.target.dataset.scheduleToggle !== undefined) {
       this.submitSchedule(Number(event.target.dataset.scheduleToggle), event.target.checked); return;
     }
@@ -571,6 +583,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     this.updateDirty(); this.message = ''; this.error = false; this.render();
   }
   onClick(event) {
+    if (this.mapClick(event) || this._mapRequest) return;
     if (this.scheduleClick(event)) return;
     if (event.target.classList?.contains("consumables-overlay")) { this.toggleConsumables(false); return; }
     const el = event.target.closest('button, ha-button');
@@ -629,6 +642,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     this.render();
   }
   async start() {
+    if (this._mapRequest) return;
     if (this._previewDialog || this.busy || this.view.active || !this.isConnected) return;
     this.clearSessionEnd();
     this.busy = true; this.error = false;
@@ -682,6 +696,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     } finally { this.busy = false; this.render(); }
   }
   async save() {
+    if (this._mapRequest) return;
     if (this._previewDialog || this.busy || this.view.active || !this.isConnected) return;
     const config = this.config, context = this.draftContext, draft = structuredClone(this.settingDraft);
     this.busy = true; this.saving = true; this.error = false;
@@ -845,6 +860,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     }
   }
   async setRobotSetting(key, value) {
+    if (this._mapRequest) return;
     if (this._previewDialog || this.stationBusy || this.busy || this.controlBusy || !this.consumablesOpen) return;
     const field = this.adapter.robotSettings(this._hass, this.registry, this.config.entity).find(field => field.key === key);
     if (field?.domain === 'switch' && field.available && field.enabled !== false && typeof value === 'boolean') {
@@ -875,6 +891,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     message.textContent = this.t(this.robotMessage || ''); message.hidden = !this.robotMessage;
   }
   async setStationSetting(key, value, action = false) {
+    if (this._mapRequest) return;
     if (this._previewDialog || this.stationBusy || this.busy || this.controlBusy || !this.consumablesOpen) return;
     const field = !action && this.adapter.stationSettings(this._hass, this.registry, this.config.entity).find(field => field.key === key);
     if (field?.domain === 'switch' && field.available && typeof value === 'boolean') {
@@ -934,7 +951,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     const name = this.adapter.robotTelemetry(this._hass, this.config.entity, undefined, this.registry).name;
     const subtitle = typeof name === 'string' && name.trim() ? name : this.config.entity;
     const illustrated = this.config.header_icon_style === 'integration' && this.adapter.supportsIntegrationIcon !== false;
-    return `<header><div class="station-status-bar"><div class="station-indicators"></div><div class="battery" role="img"><svg viewBox="0 0 32 20" aria-hidden="true"><rect x="1" y="3" width="26" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="29" y="7" width="3" height="6" rx="1" fill="currentColor"/><rect class="battery-fill" x="4" y="6" width="0" height="8" rx="1" fill="currentColor"/><path class="battery-bolt" d="M17 1 9 11h6l-2 8L23 8h-7Z" fill="var(--dp-bg)" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" hidden/></svg><span class="battery-value" aria-hidden="true" hidden></span></div></div><div class="header-main"><div class="robot ${illustrated ? 'robot-integration' : ''}">${illustrated ? `<svg class="robot-illustration" viewBox="0 0 50 50" aria-hidden="true"><defs><radialGradient id="robot-beam-gradient" gradientUnits="userSpaceOnUse" cx="25" cy="25" r="46"><stop offset=".40" stop-color="#39ff14" stop-opacity=".75"/><stop offset=".62" stop-color="#65ff39" stop-opacity=".42"/><stop offset=".85" stop-color="#65ff39" stop-opacity=".12"/><stop offset="1" stop-color="#65ff39" stop-opacity="0"/></radialGradient><filter id="robot-beam-soft" x="-35%" y="-20%" width="170%" height="150%"><feGaussianBlur stdDeviation="1.2"/></filter></defs><path class="robot-beam" d="M25 25 L2 -15 Q25 -27 48 -15 Z" fill="url(#robot-beam-gradient)" filter="url(#robot-beam-soft)" hidden/><circle cx="25" cy="26" r="22" fill="#000" opacity=".18"/><circle cx="25" cy="25" r="21" fill="#3a3a40" stroke="#e7e9ed" stroke-width="1.5"/><circle cx="25" cy="25" r="18" fill="#45454e"/><path class="robot-bumper" d="M6.8 14.5 A21 21 0 0 1 43.2 14.5" fill="none" stroke="#64646d" stroke-width="4"/><circle cx="25" cy="17" r="6" fill="#c8c8cd"/><circle cx="25" cy="17" r="2.6" fill="#39ff14"/><rect class="robot-dock" x="9" y="44" width="32" height="7" rx="2.5" fill="#3a3a40" stroke="#c8c8cd" stroke-width="1.2" hidden/></svg>` : '<ha-icon icon="mdi:robot-vacuum"></ha-icon>'}${this.config.theme === 'modern' ? `<button class="robot-warning" data-action="open-fault" aria-label="${this.ht('Show robot error')}" hidden><ha-icon icon="mdi:alert" aria-hidden="true"></ha-icon></button>` : ''}</div><div class="header-title"><h2>${escapeHtml(this.config.title || this.t('Plan a clean'))}</h2><p>${escapeHtml(subtitle)}</p></div><div class="header-buttons"><button class="consumables-info" data-action="consumables" data-focus="consumables-info" aria-label="${this.ht("Consumables")}" aria-haspopup="dialog" aria-expanded="false" title="${this.ht("Consumables")}">${this.ht("Info")}</button></div>${this.config.theme === 'modern' ? `<section class="header-fault" aria-label="${this.ht('Robot needs attention')}" hidden><div class="header-fault-copy" tabindex="0" role="status"><strong>${this.ht('Robot needs attention')}</strong><p class="header-fault-detail"></p></div><button class="header-fault-close" data-action="dismiss-fault" aria-label="${this.ht('Dismiss error message')}"><ha-icon icon="mdi:close" aria-hidden="true"></ha-icon></button></section>` : ''}<section class="header-notice" hidden><div class="header-notice-copy" role="status" aria-live="polite"></div><button class="header-fault-close" data-action="dismiss-notice" aria-label="${this.ht('Close')}"><ha-icon icon="mdi:close" aria-hidden="true"></ha-icon></button></section></div></header>`;
+    return `<header><div class="station-status-bar"><div class="station-indicators"></div><div class="battery" role="img"><svg viewBox="0 0 32 20" aria-hidden="true"><rect x="1" y="3" width="26" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><rect x="29" y="7" width="3" height="6" rx="1" fill="currentColor"/><rect class="battery-fill" x="4" y="6" width="0" height="8" rx="1" fill="currentColor"/><path class="battery-bolt" d="M17 1 9 11h6l-2 8L23 8h-7Z" fill="var(--dp-bg)" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" hidden/></svg><span class="battery-value" aria-hidden="true" hidden></span></div></div><div class="header-main"><div class="robot ${illustrated ? 'robot-integration' : ''}">${illustrated ? `<svg class="robot-illustration" viewBox="0 0 50 50" aria-hidden="true"><defs><radialGradient id="robot-beam-gradient" gradientUnits="userSpaceOnUse" cx="25" cy="25" r="46"><stop offset=".40" stop-color="#39ff14" stop-opacity=".75"/><stop offset=".62" stop-color="#65ff39" stop-opacity=".42"/><stop offset=".85" stop-color="#65ff39" stop-opacity=".12"/><stop offset="1" stop-color="#65ff39" stop-opacity="0"/></radialGradient><filter id="robot-beam-soft" x="-35%" y="-20%" width="170%" height="150%"><feGaussianBlur stdDeviation="1.2"/></filter></defs><path class="robot-beam" d="M25 25 L2 -15 Q25 -27 48 -15 Z" fill="url(#robot-beam-gradient)" filter="url(#robot-beam-soft)" hidden/><circle cx="25" cy="26" r="22" fill="#000" opacity=".18"/><circle cx="25" cy="25" r="21" fill="#3a3a40" stroke="#e7e9ed" stroke-width="1.5"/><circle cx="25" cy="25" r="18" fill="#45454e"/><path class="robot-bumper" d="M6.8 14.5 A21 21 0 0 1 43.2 14.5" fill="none" stroke="#64646d" stroke-width="4"/><circle cx="25" cy="17" r="6" fill="#c8c8cd"/><circle cx="25" cy="17" r="2.6" fill="#39ff14"/><rect class="robot-dock" x="9" y="44" width="32" height="7" rx="2.5" fill="#3a3a40" stroke="#c8c8cd" stroke-width="1.2" hidden/></svg>` : '<ha-icon icon="mdi:robot-vacuum"></ha-icon>'}${this.config.theme === 'modern' ? `<button class="robot-warning" data-action="open-fault" aria-label="${this.ht('Show robot error')}" hidden><ha-icon icon="mdi:alert" aria-hidden="true"></ha-icon></button>` : ''}</div><div class="header-title"><h2>${escapeHtml(this.config.title || this.t('Plan a clean'))}</h2><p>${escapeHtml(subtitle)}</p></div><div class="header-buttons">${this.mapPickerHtml()}<button class="consumables-info" data-action="consumables" data-focus="consumables-info" aria-label="${this.ht("Consumables")}" aria-haspopup="dialog" aria-expanded="false" title="${this.ht("Consumables")}">${this.ht("Info")}</button></div>${this.config.theme === 'modern' ? `<section class="header-fault" aria-label="${this.ht('Robot needs attention')}" hidden><div class="header-fault-copy" tabindex="0" role="status"><strong>${this.ht('Robot needs attention')}</strong><p class="header-fault-detail"></p></div><button class="header-fault-close" data-action="dismiss-fault" aria-label="${this.ht('Dismiss error message')}"><ha-icon icon="mdi:close" aria-hidden="true"></ha-icon></button></section>` : ''}<section class="header-notice" hidden><div class="header-notice-copy" role="status" aria-live="polite"></div><button class="header-fault-close" data-action="dismiss-notice" aria-label="${this.ht('Close')}"><ha-icon icon="mdi:close" aria-hidden="true"></ha-icon></button></section></div></header>`;
   }
   updateBattery() {
     const vacuum = this.adapter.robotTelemetry(this._hass, this.config.entity, this.model.cameraEntity, this.registry);
@@ -989,6 +1006,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     }
   }
   updateStatus(plannerNotice = this._plannerNotice ?? '') {
+    this.applyMapLock();
     this._plannerNotice = plannerNotice;
     let status = this.adapter.activityStatus(this._hass, this.config.entity, (this.busy && !this.saving) || this.pendingStart, this.registry);
     const modern = this.config.theme === 'modern';
@@ -1235,7 +1253,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
   }
 }
 
-Object.assign(DysonCleaningPlannerCard.prototype, scheduleCardMethods);
+Object.assign(DysonCleaningPlannerCard.prototype, scheduleCardMethods, mapSelectionCardMethods);
 
 if (!customElements.get('dyson-cleaning-planner-card')) customElements.define('dyson-cleaning-planner-card', DysonCleaningPlannerCard);
 window.customCards = window.customCards || [];
