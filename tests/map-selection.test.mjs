@@ -57,19 +57,50 @@ test('deleted options and old integrations expose no callable target',()=>{
 
 test('map configuration defaults preserve the header menu and use stable string IDs',()=>{
   const f=mapSelectionFixture(), config=normalizeConfig(f.config);
-  assert.equal(config.map_selector_style,'menu');assert.deepEqual(config.excluded_maps,[]);
+  assert.equal(config.map_selector_style,'menu');assert.deepEqual(config.excluded_maps,[]);assert.deepEqual(config.map_order,[]);
   const ids=['1795646759','999999999','1795646759'];
-  const next=normalizeConfig({...f.config,map_selector_style:'chips',excluded_maps:ids});
+  const next=normalizeConfig({...f.config,map_selector_style:'chips',excluded_maps:ids,map_order:ids});
   assert.equal(next.map_selector_style,'chips');assert.deepEqual(next.excluded_maps,['1795646759','999999999']);
+  assert.deepEqual(next.map_order,['1795646759','999999999']);
   assert.deepEqual(ids,['1795646759','999999999','1795646759'],'normalization does not mutate the input');
 });
 
-test('invalid map styles and noncanonical/nonstring exclusion IDs are rejected',()=>{
+test('invalid map styles and noncanonical/nonstring visibility and order IDs are rejected',()=>{
   const config={entity:'vacuum.robot'};
   for(const style of ['tabs',true,null,42])assert.throws(()=>normalizeConfig({...config,map_selector_style:style}),/map_selector_style/);
   for(const value of [null,{},'123',[123],['0'],['01'],['-1'],['1.5'],[''],['Dachboden'],['9007199254740992'],[true]]) {
-    assert.throws(()=>normalizeConfig({...config,excluded_maps:value}),/excluded_maps/);
+    for(const key of ['excluded_maps','map_order'])assert.throws(()=>normalizeConfig({...config,[key]:value}),new RegExp(key));
   }
+});
+
+test('map order is local, stable and partial, with unknown and repeated IDs ignored',async()=>{
+  const f=mapSelectionFixture(),a=f.maps[0].map_id,b=f.maps[1].map_id,c='2222222222',d='3333333333';
+  f.maps.push({map_id:c,name:'Cellar',option:'Cellar'},{map_id:d,name:'Garage',option:'Garage'});
+  f.hass.states[f.mapSelect].attributes.options=f.maps.map(map=>map.option);
+  const state=mapSelectionState(f.hass,f.registry,f.entity),catalogue=JSON.stringify(state.maps);
+  const order=[b,'999999999',b],config={map_order:order};
+  const ids=config=>mapSelectionPresentation(state,config).displayMaps.map(map=>map.map_id);
+  assert.deepEqual(ids({}),[a,b,c,d],'omitting the option preserves integration order');
+  assert.deepEqual(ids(config),[b,a,c,d],'unlisted maps retain their integration order at the end');
+  assert.deepEqual(ids({...config,excluded_maps:[a]}),[a,b,c,d],'a hidden active map remains an identified return path');
+  assert.deepEqual(ids({...config,excluded_maps:[b]}),[a,c,d],'visibility still wins over sorting');
+  assert.equal(JSON.stringify(state.maps),catalogue,'sorting never mutates the authoritative catalogue');
+  assert.deepEqual(f.maps.map(map=>map.map_id),[a,b,c,d]);
+  assert.deepEqual(order,[b,'999999999',b]);
+  await selectMap(f.hass,f.registry,f.entity,b);
+  assert.deepEqual(f.calls,[{domain:'select',service:'select_option',data:{entity_id:f.mapSelect,option:'Dachboden'}}]);
+});
+
+test('map order survives renames and deletion while new maps append after configured IDs',()=>{
+  const f=mapSelectionFixture(),a=f.maps[0].map_id,b=f.maps[1].map_id,c='2222222222';
+  const config={map_order:[b,a]},present=()=>mapSelectionPresentation(mapSelectionState(f.hass,f.registry,f.entity),config);
+  f.maps[1].name=f.maps[1].option='Renamed';f.hass.states[f.mapSelect].attributes.options[1]='Renamed';
+  assert.deepEqual(present().displayMaps.map(map=>map.option),['Renamed','Wohnung']);
+  f.maps.splice(1,1);f.hass.states[f.mapSelect].attributes.options.splice(1,1);
+  assert.equal(present().showSelector,false);
+  f.maps.push({map_id:c,name:'New floor',option:'New floor'});f.hass.states[f.mapSelect].attributes.options.push('New floor');
+  assert.deepEqual(present().displayMaps.map(map=>map.map_id),[a,c]);
+  assert.deepEqual(config.map_order,[b,a],'unknown IDs do not rewrite YAML');
 });
 
 test('filtering hides a single visible current map and retains a hidden current map as a return path',()=>{
@@ -104,7 +135,7 @@ test('renames, deletion and new maps keep visibility bound to IDs without changi
 
 test('unsupported adapters expose no map presentation regardless of stored preferences',()=>{
   const f=mapSelectionFixture(), state=mapSelectionState(f.hass,f.registry,f.entity);
-  const shown=mapSelectionPresentation({...state,supported:false},{map_selector_style:'chips',excluded_maps:['1784483068']});
+  const shown=mapSelectionPresentation({...state,supported:false},{map_selector_style:'chips',excluded_maps:['1784483068'],map_order:['1795646759']});
   assert.equal(shown.showSelector,false);assert.equal(shown.hiddenCurrent,null);assert.deepEqual(shown.displayMaps,[]);
 });
 

@@ -2,7 +2,7 @@
 
 ## Current validation status - 26 November 2026
 
-Current card version is **1.7.1**. Latest full card checks: **190 unit tests**, rebuilt bundle and smoke check. The unchanged companion integration's latest full suite passed **449 tests**. Browser coverage and maintainer observations are recorded separately below.
+Current card version is **1.7.1**. Latest full card checks: **192 unit tests**, rebuilt bundle and smoke check. The unchanged companion integration's latest full suite passed **449 tests**. Browser coverage and maintainer observations are recorded separately below.
 
 | Area | Current evidence/status |
 | --- | --- |
@@ -13,6 +13,8 @@ Current card version is **1.7.1**. Latest full card checks: **190 unit tests**, 
 | Map-switch notice in the header | Unit/browser checks passed; separate live confirmation was not reported |
 | Zone tab and automatic floor-plan loading on map changes | Unit/browser checks passed; maintainer live acceptance confirmed |
 | v1.7.1 map visibility, chips and editor | Unit/browser checks passed; maintainer live acceptance pending |
+| Compact map chips without draft reminders | Maintainer confirmed appearance and operation in a live test |
+| Saved-map display order and editor arrows | Unit/browser checks passed; maintainer live acceptance pending |
 | Automatic old-map room-draft reset | Unit/browser checks passed; maintainer live acceptance pending |
 | PR #40 review corrections | Unit/browser checks passed; initial maintainer live check reported no new errors |
 | Robot fault-text localization | Integration descriptions are passed through; English texts for 2509/2510 remain a deferred follow-up |
@@ -22,11 +24,19 @@ Current card version is **1.7.1**. Latest full card checks: **190 unit tests**, 
 
 Additional integration/map checks are listed in [the map notes](docs/spot-scrub-maps.md#remaining-live-checks). Entries below are chronological records and retain their original versions/test counts; an old pending statement does not supersede a later confirmation.
 
+## Saved-map display order - 26 November 2026
+
+`map_order` stores stable map IDs and affects both chips and the header menu. Listed maps appear first; unlisted maps retain integration order at the end. Renames retain ordering, deleted/unknown IDs are ignored, duplicate IDs are normalized, and hidden-map handling remains unchanged. The editor orders the complete catalogue, offers up/down arrows, retains ordering on refresh and clears it for another robot. Labels and validation are translated in all four languages. Reordering sends no robot commands and does not mutate HA catalogue data.
+
+Validation passed: `npm run check` with **192 unit tests**, rebuilt v1.7.1 bundle and smoke check. `map-preferences-browser` passed in Modern/Classic at 375/900 px, including YAML order, editor moves, disabled boundary arrows, hidden/new maps, identical menu order, refresh, robot/adapter changes and zero service calls from reordering. `editor-session-preview-browser` also passed. Browser actions use simulated HA only; live acceptance of map ordering is pending.
+
 ## Compact map chips - 26 November 2026
 
 Map chips keep their 13 px label size, with vertical padding reduced from 7 to 5 px and minimum height from 36 to 32 px. Both states omit the checkmark slot. The target's pending spinner is centered over its retained label space to prevent layout shifts. Validation passed: `npm run check` with **190 unit tests**, rebuilt bundle and smoke check, plus `map-preferences-browser` in Modern/Classic at 375/900 px. Version remains **1.7.1**.
 
 The draft-discard reminder was subsequently removed from both chips and the header menu, including its unused translations. Automatic draft reset still occurs only after confirmed switching. `npm run check` (**190 unit tests**, rebuilt bundle and smoke check), `map-selection-browser` and `map-preferences-browser` passed; the browser checks now assert that local edits show no reminder and retain coverage for hidden-map notices and switching behavior.
+
+The maintainer subsequently confirmed that the flatter chips and layout without the reminder look good and work in a live test.
 
 ## Automatic room-draft reset on card map changes - 26 November 2026
 

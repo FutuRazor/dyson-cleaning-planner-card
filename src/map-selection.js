@@ -21,11 +21,16 @@ export function mapSelectionState(hass, registry, vacuum) {
       && attrs.can_change === true && attrs.switching !== true && !!hass?.services?.select?.select_option};
 }
 
-// Visibility is local presentation. Keep the complete catalogue authoritative
+export function orderedSavedMaps(maps, order = []) {
+  const ranks = new Map([...new Set(order)].map((id, index) => [id, index]));
+  return [...maps].sort((a, b) => (ranks.get(a.map_id) ?? ranks.size) - (ranks.get(b.map_id) ?? ranks.size));
+}
+
+// Visibility and order are local presentation. Keep the complete catalogue authoritative
 // for identity, readiness and confirmation, including a hidden active map.
 export function mapSelectionPresentation(state, config = {}) {
   if (!state.supported) return {current:null,visibleMaps:[],hiddenCurrent:null,showSelector:false,displayMaps:[]};
-  const maps = state.maps ?? [], excluded = new Set(config.excluded_maps ?? []);
+  const maps = orderedSavedMaps(state.maps ?? [], config.map_order), excluded = new Set(config.excluded_maps ?? []);
   const current = maps.find(map => map.map_id === state.currentId) ?? null;
   const visibleMaps = maps.filter(map => !excluded.has(map.map_id));
   const hiddenCurrent = current && excluded.has(current.map_id) ? current : null;

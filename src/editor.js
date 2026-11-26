@@ -1,4 +1,5 @@
 import { roomKey } from './shared.js';
+import { orderedSavedMaps } from './map-selection.js';
 import { integrationAdapters } from './integration.js';
 // Bundled after card.js; uses the same registry connection and identity matching.
 class DysonCleaningPlannerEditor extends DysonRegistryElement {
@@ -15,7 +16,7 @@ class DysonCleaningPlannerEditor extends DysonRegistryElement {
       if (el.dataset.key === 'zone_dimension_unit') { this.setSessionPreview(false, true); return; }
       if (['show_camera', 'camera_entity', 'camera_rotation'].includes(el.dataset.key)) this.setSessionPreview(true);
       else if (['unsupported_settings', 'always_show_all_settings'].includes(el.dataset.key)
-        || el.dataset.key === 'map_selector_style' || el.dataset.includeMap || el.dataset.include || el.dataset.order
+        || el.dataset.key === 'map_selector_style' || el.dataset.includeMap || el.dataset.orderMap || el.dataset.include || el.dataset.order
         || ['refresh','refresh-maps'].includes(el.dataset.action)) this.setSessionPreview(false);
     };
     for (const type of ['pointerdown', 'click', 'change', 'keydown']) {
@@ -39,7 +40,7 @@ class DysonCleaningPlannerEditor extends DysonRegistryElement {
         if (el.dataset.key === 'entity' || el.dataset.key === 'integration') {
           delete next.mode_entity; delete next.start_entity; delete next.room_entities; delete next.camera_entity;
           next.excluded_rooms = []; next.room_order = [];
-          if (next.entity !== this.config.entity) next.excluded_maps = [];
+          if (next.entity !== this.config.entity) { next.excluded_maps = []; next.map_order = []; }
         }
       } else if (el.dataset.statusItem) {
         const hidden = new Set(next.hidden_status_items ?? []);
@@ -60,12 +61,13 @@ class DysonCleaningPlannerEditor extends DysonRegistryElement {
     this.shadowRoot.addEventListener('click', event => {
       const el = event.target.closest('button');
       if (['refresh','refresh-maps'].includes(el?.dataset.action)) { this.loadRegistry(true); return; }
-      if (!el?.dataset.order) return;
-      const ids = this.model.rooms.map(roomKey).filter(Boolean);
-      const i = ids.indexOf(el.dataset.order), j = i + Number(el.dataset.direction);
+      if (!el?.dataset.order && !el?.dataset.orderMap) return;
+      const maps = !!el.dataset.orderMap;
+      const ids = maps ? this.maps.map(map => map.map_id) : this.model.rooms.map(roomKey).filter(Boolean);
+      const i = ids.indexOf(el.dataset.orderMap ?? el.dataset.order), j = i + Number(el.dataset.direction);
       if (i >= 0 && j >= 0 && j < ids.length) {
         [ids[i], ids[j]] = [ids[j], ids[i]];
-        this.commit({ ...this.config, room_order: ids });
+        this.commit({ ...this.config, [maps ? 'map_order' : 'room_order']: ids });
       }
     });
   }
@@ -101,12 +103,13 @@ class DysonCleaningPlannerEditor extends DysonRegistryElement {
     const config = { ...this.config, excluded_rooms: this.config.excluded_rooms ?? [], room_order: this.config.room_order ?? [] };
     this.model = config.entity ? this.adapter.discover(this._hass, this.registry, config) : { rooms: [], issues: [] };
     const mapState = this.adapter.mapSelectionState?.(this._hass,this.registry,config.entity);
+    this.maps = orderedSavedMaps(mapState?.maps ?? [], config.map_order);
     // Use the complete catalogue so every hidden map can be enabled again.
     const mapsEditor = mapState?.supported && mapState.maps.length >= 2 ? `<section class="map-options"><h3>${this.ht('Maps in this card')}</h3>
       <label>${this.ht('Map selector style')}<select data-key="map_selector_style" data-focus="map-selector-style"><option value="menu" ${(config.map_selector_style ?? 'menu') === 'menu' ? 'selected' : ''}>${this.ht('Header button')}</option><option value="chips" ${config.map_selector_style === 'chips' ? 'selected' : ''}>${this.ht('Map chips')}</option></select></label>
-      <p>${this.ht('Choose which saved maps to show. Hidden maps remain available in MyDyson.')}</p>
-      ${mapState.maps.map(map => `<div class="entry"><label><input type="checkbox" data-include-map="${map.map_id}" data-focus="include-map-${map.map_id}" ${!config.excluded_maps?.includes(map.map_id) ? 'checked' : ''}><span>${h(map.option)}<small class="map-editor-id">${map.map_id}</small></span></label></div>`).join('')}
-      <button data-action="refresh-maps" data-focus="refresh-maps">${this.ht('Refresh maps')}</button><p class="notice">${this.ht('New maps appear automatically. Visibility is stored by map ID.')}</p></section>` : '';
+      <p>${this.ht('Choose which saved maps to show. Hidden maps remain available in MyDyson.')} ${this.ht('Use the arrows to change the display order.')}</p>
+      ${this.maps.map((map, i) => `<div class="entry"><label><input type="checkbox" data-include-map="${map.map_id}" data-focus="include-map-${map.map_id}" ${!config.excluded_maps?.includes(map.map_id) ? 'checked' : ''}><span>${h(map.option)}<small class="map-editor-id">${map.map_id}</small></span></label><button data-order-map="${map.map_id}" data-direction="-1" data-focus="map-up-${map.map_id}" ${i === 0 ? 'disabled' : ''} aria-label="${this.ht('Move {name} up', {name:map.option})}">↑</button><button data-order-map="${map.map_id}" data-direction="1" data-focus="map-down-${map.map_id}" ${i === this.maps.length - 1 ? 'disabled' : ''} aria-label="${this.ht('Move {name} down', {name:map.option})}">↓</button></div>`).join('')}
+      <button data-action="refresh-maps" data-focus="refresh-maps">${this.ht('Refresh maps')}</button><p class="notice">${this.ht('New maps appear automatically. Visibility and order are stored by map ID.')}</p></section>` : '';
     const field = (key, label) => {
       const entries = this.adapter.cameraEntries(this.registry, config.entity);
       return `<label>${label}<select data-focus="${key}" data-key="${key}"><option value="">${this.ht("Auto-detect")}</option>${entries.map(e => `<option value="${h(e.entity_id)}" ${config[key] === e.entity_id ? 'selected' : ''}>${h(e.name || e.original_name || e.entity_id)}</option>`).join('')}</select></label>`;

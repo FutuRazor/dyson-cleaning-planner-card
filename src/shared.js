@@ -36,7 +36,9 @@ export function normalizeConfig(config) {
     if (config[key] !== undefined && (!Array.isArray(config[key]) || config[key].some(x => typeof x !== 'string'))) throw new UiError('{key} must be a list of entity IDs.', { key });
   }
   if (config.map_selector_style !== undefined && !['menu','chips'].includes(config.map_selector_style)) throw new UiError('map_selector_style must be menu or chips.');
-  if (config.excluded_maps !== undefined && (!Array.isArray(config.excluded_maps) || config.excluded_maps.some(value => !isSavedMapId(value)))) throw new UiError('excluded_maps must be a list of saved map IDs (strings).');
+  for (const key of ['excluded_maps', 'map_order']) {
+    if (config[key] !== undefined && (!Array.isArray(config[key]) || config[key].some(value => !isSavedMapId(value)))) throw new UiError(`${key} must be a list of saved map IDs (strings).`);
+  }
   if (config.room_entities !== undefined && (!config.room_entities || typeof config.room_entities !== 'object' || Array.isArray(config.room_entities) || Object.values(config.room_entities).some(x => typeof x !== 'string' || !x.startsWith('switch.')))) throw new UiError('room_entities must map room names to switch entities.');
   if (config.show_battery_percentage !== undefined && typeof config.show_battery_percentage !== 'boolean') throw new UiError('show_battery_percentage must be true or false.');
   if (config.show_status_bar !== undefined && typeof config.show_status_bar !== 'boolean') throw new UiError('show_status_bar must be true or false.');
@@ -49,7 +51,7 @@ export function normalizeConfig(config) {
   if (config.camera_entity && mapDomain && !config.camera_entity.startsWith(`${mapDomain}.`)) throw new UiError('Map entity must use the {domain} domain for this integration.', { domain:mapDomain });
   if (config.zone_dimension_unit !== undefined && !['off','auto','cm','inch'].includes(config.zone_dimension_unit)) throw new UiError('Invalid zone dimension unit.');
   if (config.header_icon_style !== undefined && !['home_assistant','integration'].includes(config.header_icon_style)) throw new UiError('Invalid header icon style.');
-  return { ...config, header_icon_style: config.header_icon_style ?? 'integration', zone_dimension_unit: config.zone_dimension_unit ?? 'auto', language: config.language ?? 'auto', theme: config.theme ?? 'modern', show_battery_percentage: config.show_battery_percentage ?? false, show_status_bar: config.show_status_bar ?? true, hidden_status_items: config.hidden_status_items ?? [], title: config.title ?? '', always_show_all_settings: config.always_show_all_settings ?? false, unsupported_settings: 'hidden', excluded_rooms: config.excluded_rooms ?? [], room_order: config.room_order ?? [], map_selector_style: config.map_selector_style ?? 'menu', excluded_maps: [...new Set(config.excluded_maps ?? [])], show_camera: config.show_camera ?? true, camera_rotation: config.camera_rotation ?? 0 };
+  return { ...config, header_icon_style: config.header_icon_style ?? 'integration', zone_dimension_unit: config.zone_dimension_unit ?? 'auto', language: config.language ?? 'auto', theme: config.theme ?? 'modern', show_battery_percentage: config.show_battery_percentage ?? false, show_status_bar: config.show_status_bar ?? true, hidden_status_items: config.hidden_status_items ?? [], title: config.title ?? '', always_show_all_settings: config.always_show_all_settings ?? false, unsupported_settings: 'hidden', excluded_rooms: config.excluded_rooms ?? [], room_order: config.room_order ?? [], map_selector_style: config.map_selector_style ?? 'menu', excluded_maps: [...new Set(config.excluded_maps ?? [])], map_order: [...new Set(config.map_order ?? [])], show_camera: config.show_camera ?? true, camera_rotation: config.camera_rotation ?? 0 };
 }
 
 export function fitMap(width, height, boxWidth, rotation) {

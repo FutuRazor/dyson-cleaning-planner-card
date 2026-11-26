@@ -7,12 +7,14 @@ const en = {
   "Maps in this card": "Maps in this card",
   "Choose which saved maps to show. Hidden maps remain available in MyDyson.": "Choose which saved maps to show. Hidden maps remain available in MyDyson.",
   "Refresh maps": "Refresh maps",
-  "New maps appear automatically. Visibility is stored by map ID.": "New maps appear automatically. Visibility is stored by map ID.",
+  "Use the arrows to change the display order.": "Use the arrows to change the display order.",
+  "New maps appear automatically. Visibility and order are stored by map ID.": "New maps appear automatically. Visibility and order are stored by map ID.",
   "Hidden in this card": "Hidden in this card",
   "Active map: {name} (hidden in this card).": "Active map: {name} (hidden in this card).",
   "Switching map: {name}": "Switching map: {name}",
   "map_selector_style must be menu or chips.": "map_selector_style must be menu or chips.",
   "excluded_maps must be a list of saved map IDs (strings).": "excluded_maps must be a list of saved map IDs (strings).",
+  "map_order must be a list of saved map IDs (strings).": "map_order must be a list of saved map IDs (strings).",
   "Updating setting …": "Updating setting …",
   "The setting change has not been confirmed by Home Assistant. Check the robot before trying again.": "The setting change has not been confirmed by Home Assistant. Check the robot before trying again.",
   "Suction power · all selected rooms": "Suction power · all selected rooms",
@@ -365,12 +367,14 @@ const de = {
   "Maps in this card": "Gespeicherte Karten in dieser Ansicht",
   "Choose which saved maps to show. Hidden maps remain available in MyDyson.": "Wähle die anzuzeigenden Karten. Ausgeblendete Karten bleiben in MyDyson verfügbar.",
   "Refresh maps": "Karten aktualisieren",
-  "New maps appear automatically. Visibility is stored by map ID.": "Neue Karten erscheinen automatisch. Die Sichtbarkeit wird über die Karten-ID gespeichert.",
+  "Use the arrows to change the display order.": "Mit den Pfeilen änderst du die Anzeigereihenfolge.",
+  "New maps appear automatically. Visibility and order are stored by map ID.": "Neue Karten erscheinen automatisch. Sichtbarkeit und Reihenfolge werden über die Karten-ID gespeichert.",
   "Hidden in this card": "In dieser Ansicht ausgeblendet",
   "Active map: {name} (hidden in this card).": "Aktive Karte: {name} (in dieser Ansicht ausgeblendet).",
   "Switching map: {name}": "Kartenwechsel: {name}",
   "map_selector_style must be menu or chips.": "map_selector_style muss menu oder chips sein.",
   "excluded_maps must be a list of saved map IDs (strings).": "excluded_maps muss eine Liste gespeicherter Karten-IDs als Zeichenfolgen sein.",
+  "map_order must be a list of saved map IDs (strings).": "map_order muss eine Liste gespeicherter Karten-IDs als Zeichenfolgen sein.",
   "Updating setting …": "Einstellung wird geändert …",
   "The setting change has not been confirmed by Home Assistant. Check the robot before trying again.": "Home Assistant hat die Einstellungsänderung noch nicht bestätigt. Prüfe den Roboter vor einem erneuten Versuch.",
   "Suction power · all selected rooms": "Saugkraft · alle ausgewählten Räume",
@@ -723,12 +727,14 @@ const nl = {
   "Maps in this card": "Kaarten in deze weergave",
   "Choose which saved maps to show. Hidden maps remain available in MyDyson.": "Kies welke opgeslagen kaarten je wilt tonen. Verborgen kaarten blijven beschikbaar in MyDyson.",
   "Refresh maps": "Kaarten vernieuwen",
-  "New maps appear automatically. Visibility is stored by map ID.": "Nieuwe kaarten verschijnen automatisch. De zichtbaarheid wordt per kaart-ID opgeslagen.",
+  "Use the arrows to change the display order.": "Gebruik de pijlen om de weergavevolgorde te wijzigen.",
+  "New maps appear automatically. Visibility and order are stored by map ID.": "Nieuwe kaarten verschijnen automatisch. Zichtbaarheid en volgorde worden per kaart-ID opgeslagen.",
   "Hidden in this card": "Verborgen in deze weergave",
   "Active map: {name} (hidden in this card).": "Actieve kaart: {name} (verborgen in deze weergave).",
   "Switching map: {name}": "Kaart wisselen: {name}",
   "map_selector_style must be menu or chips.": "map_selector_style moet menu of chips zijn.",
   "excluded_maps must be a list of saved map IDs (strings).": "excluded_maps moet een lijst met opgeslagen kaart-ID's als tekst zijn.",
+  "map_order must be a list of saved map IDs (strings).": "map_order moet een lijst met opgeslagen kaart-ID's als tekst zijn.",
   "Updating setting …": "Instelling wijzigen …",
   "The setting change has not been confirmed by Home Assistant. Check the robot before trying again.": "Home Assistant heeft de gewijzigde instelling nog niet bevestigd. Controleer de robot voordat je het opnieuw probeert.",
   "Suction power · all selected rooms": "Zuigkracht · alle geselecteerde kamers",
@@ -1081,12 +1087,14 @@ const fr = {
   "Maps in this card": "Cartes dans cette vue",
   "Choose which saved maps to show. Hidden maps remain available in MyDyson.": "Choisissez les cartes enregistrées à afficher. Les cartes masquées restent disponibles dans MyDyson.",
   "Refresh maps": "Actualiser les cartes",
-  "New maps appear automatically. Visibility is stored by map ID.": "Les nouvelles cartes apparaissent automatiquement. La visibilité est enregistrée par identifiant de carte.",
+  "Use the arrows to change the display order.": "Utilisez les flèches pour modifier l’ordre d’affichage.",
+  "New maps appear automatically. Visibility and order are stored by map ID.": "Les nouvelles cartes apparaissent automatiquement. La visibilité et l’ordre sont enregistrés par identifiant de carte.",
   "Hidden in this card": "Masquée dans cette vue",
   "Active map: {name} (hidden in this card).": "Carte active : {name} (masquée dans cette vue).",
   "Switching map: {name}": "Changement de carte : {name}",
   "map_selector_style must be menu or chips.": "map_selector_style doit être menu ou chips.",
   "excluded_maps must be a list of saved map IDs (strings).": "excluded_maps doit être une liste d’identifiants de cartes enregistrées sous forme de chaînes.",
+  "map_order must be a list of saved map IDs (strings).": "map_order doit être une liste d’identifiants de cartes enregistrées sous forme de chaînes.",
   "Updating setting …": "Modification du réglage …",
   "The setting change has not been confirmed by Home Assistant. Check the robot before trying again.": "Home Assistant n'a pas confirmé la modification du réglage. Vérifiez le robot avant de réessayer.",
   "Suction power · all selected rooms": "Aspiration · toutes les pièces sélectionnées",
@@ -1494,7 +1502,9 @@ function normalizeConfig(config) {
     if (config[key] !== undefined && (!Array.isArray(config[key]) || config[key].some(x => typeof x !== 'string'))) throw new UiError('{key} must be a list of entity IDs.', { key });
   }
   if (config.map_selector_style !== undefined && !['menu','chips'].includes(config.map_selector_style)) throw new UiError('map_selector_style must be menu or chips.');
-  if (config.excluded_maps !== undefined && (!Array.isArray(config.excluded_maps) || config.excluded_maps.some(value => !isSavedMapId(value)))) throw new UiError('excluded_maps must be a list of saved map IDs (strings).');
+  for (const key of ['excluded_maps', 'map_order']) {
+    if (config[key] !== undefined && (!Array.isArray(config[key]) || config[key].some(value => !isSavedMapId(value)))) throw new UiError(`${key} must be a list of saved map IDs (strings).`);
+  }
   if (config.room_entities !== undefined && (!config.room_entities || typeof config.room_entities !== 'object' || Array.isArray(config.room_entities) || Object.values(config.room_entities).some(x => typeof x !== 'string' || !x.startsWith('switch.')))) throw new UiError('room_entities must map room names to switch entities.');
   if (config.show_battery_percentage !== undefined && typeof config.show_battery_percentage !== 'boolean') throw new UiError('show_battery_percentage must be true or false.');
   if (config.show_status_bar !== undefined && typeof config.show_status_bar !== 'boolean') throw new UiError('show_status_bar must be true or false.');
@@ -1507,7 +1517,7 @@ function normalizeConfig(config) {
   if (config.camera_entity && mapDomain && !config.camera_entity.startsWith(`${mapDomain}.`)) throw new UiError('Map entity must use the {domain} domain for this integration.', { domain:mapDomain });
   if (config.zone_dimension_unit !== undefined && !['off','auto','cm','inch'].includes(config.zone_dimension_unit)) throw new UiError('Invalid zone dimension unit.');
   if (config.header_icon_style !== undefined && !['home_assistant','integration'].includes(config.header_icon_style)) throw new UiError('Invalid header icon style.');
-  return { ...config, header_icon_style: config.header_icon_style ?? 'integration', zone_dimension_unit: config.zone_dimension_unit ?? 'auto', language: config.language ?? 'auto', theme: config.theme ?? 'modern', show_battery_percentage: config.show_battery_percentage ?? false, show_status_bar: config.show_status_bar ?? true, hidden_status_items: config.hidden_status_items ?? [], title: config.title ?? '', always_show_all_settings: config.always_show_all_settings ?? false, unsupported_settings: 'hidden', excluded_rooms: config.excluded_rooms ?? [], room_order: config.room_order ?? [], map_selector_style: config.map_selector_style ?? 'menu', excluded_maps: [...new Set(config.excluded_maps ?? [])], show_camera: config.show_camera ?? true, camera_rotation: config.camera_rotation ?? 0 };
+  return { ...config, header_icon_style: config.header_icon_style ?? 'integration', zone_dimension_unit: config.zone_dimension_unit ?? 'auto', language: config.language ?? 'auto', theme: config.theme ?? 'modern', show_battery_percentage: config.show_battery_percentage ?? false, show_status_bar: config.show_status_bar ?? true, hidden_status_items: config.hidden_status_items ?? [], title: config.title ?? '', always_show_all_settings: config.always_show_all_settings ?? false, unsupported_settings: 'hidden', excluded_rooms: config.excluded_rooms ?? [], room_order: config.room_order ?? [], map_selector_style: config.map_selector_style ?? 'menu', excluded_maps: [...new Set(config.excluded_maps ?? [])], map_order: [...new Set(config.map_order ?? [])], show_camera: config.show_camera ?? true, camera_rotation: config.camera_rotation ?? 0 };
 }
 
 function fitMap(width, height, boxWidth, rotation) {
@@ -1539,11 +1549,16 @@ function mapSelectionState(hass, registry, vacuum) {
       && attrs.can_change === true && attrs.switching !== true && !!hass?.services?.select?.select_option};
 }
 
-// Visibility is local presentation. Keep the complete catalogue authoritative
+function orderedSavedMaps(maps, order = []) {
+  const ranks = new Map([...new Set(order)].map((id, index) => [id, index]));
+  return [...maps].sort((a, b) => (ranks.get(a.map_id) ?? ranks.size) - (ranks.get(b.map_id) ?? ranks.size));
+}
+
+// Visibility and order are local presentation. Keep the complete catalogue authoritative
 // for identity, readiness and confirmation, including a hidden active map.
 function mapSelectionPresentation(state, config = {}) {
   if (!state.supported) return {current:null,visibleMaps:[],hiddenCurrent:null,showSelector:false,displayMaps:[]};
-  const maps = state.maps ?? [], excluded = new Set(config.excluded_maps ?? []);
+  const maps = orderedSavedMaps(state.maps ?? [], config.map_order), excluded = new Set(config.excluded_maps ?? []);
   const current = maps.find(map => map.map_id === state.currentId) ?? null;
   const visibleMaps = maps.filter(map => !excluded.has(map.map_id));
   const hiddenCurrent = current && excluded.has(current.map_id) ? current : null;
@@ -5589,7 +5604,7 @@ class DysonCleaningPlannerEditor extends DysonRegistryElement {
       if (el.dataset.key === 'zone_dimension_unit') { this.setSessionPreview(false, true); return; }
       if (['show_camera', 'camera_entity', 'camera_rotation'].includes(el.dataset.key)) this.setSessionPreview(true);
       else if (['unsupported_settings', 'always_show_all_settings'].includes(el.dataset.key)
-        || el.dataset.key === 'map_selector_style' || el.dataset.includeMap || el.dataset.include || el.dataset.order
+        || el.dataset.key === 'map_selector_style' || el.dataset.includeMap || el.dataset.orderMap || el.dataset.include || el.dataset.order
         || ['refresh','refresh-maps'].includes(el.dataset.action)) this.setSessionPreview(false);
     };
     for (const type of ['pointerdown', 'click', 'change', 'keydown']) {
@@ -5613,7 +5628,7 @@ class DysonCleaningPlannerEditor extends DysonRegistryElement {
         if (el.dataset.key === 'entity' || el.dataset.key === 'integration') {
           delete next.mode_entity; delete next.start_entity; delete next.room_entities; delete next.camera_entity;
           next.excluded_rooms = []; next.room_order = [];
-          if (next.entity !== this.config.entity) next.excluded_maps = [];
+          if (next.entity !== this.config.entity) { next.excluded_maps = []; next.map_order = []; }
         }
       } else if (el.dataset.statusItem) {
         const hidden = new Set(next.hidden_status_items ?? []);
@@ -5634,12 +5649,13 @@ class DysonCleaningPlannerEditor extends DysonRegistryElement {
     this.shadowRoot.addEventListener('click', event => {
       const el = event.target.closest('button');
       if (['refresh','refresh-maps'].includes(el?.dataset.action)) { this.loadRegistry(true); return; }
-      if (!el?.dataset.order) return;
-      const ids = this.model.rooms.map(roomKey).filter(Boolean);
-      const i = ids.indexOf(el.dataset.order), j = i + Number(el.dataset.direction);
+      if (!el?.dataset.order && !el?.dataset.orderMap) return;
+      const maps = !!el.dataset.orderMap;
+      const ids = maps ? this.maps.map(map => map.map_id) : this.model.rooms.map(roomKey).filter(Boolean);
+      const i = ids.indexOf(el.dataset.orderMap ?? el.dataset.order), j = i + Number(el.dataset.direction);
       if (i >= 0 && j >= 0 && j < ids.length) {
         [ids[i], ids[j]] = [ids[j], ids[i]];
-        this.commit({ ...this.config, room_order: ids });
+        this.commit({ ...this.config, [maps ? 'map_order' : 'room_order']: ids });
       }
     });
   }
@@ -5675,12 +5691,13 @@ class DysonCleaningPlannerEditor extends DysonRegistryElement {
     const config = { ...this.config, excluded_rooms: this.config.excluded_rooms ?? [], room_order: this.config.room_order ?? [] };
     this.model = config.entity ? this.adapter.discover(this._hass, this.registry, config) : { rooms: [], issues: [] };
     const mapState = this.adapter.mapSelectionState?.(this._hass,this.registry,config.entity);
+    this.maps = orderedSavedMaps(mapState?.maps ?? [], config.map_order);
     // Use the complete catalogue so every hidden map can be enabled again.
     const mapsEditor = mapState?.supported && mapState.maps.length >= 2 ? `<section class="map-options"><h3>${this.ht('Maps in this card')}</h3>
       <label>${this.ht('Map selector style')}<select data-key="map_selector_style" data-focus="map-selector-style"><option value="menu" ${(config.map_selector_style ?? 'menu') === 'menu' ? 'selected' : ''}>${this.ht('Header button')}</option><option value="chips" ${config.map_selector_style === 'chips' ? 'selected' : ''}>${this.ht('Map chips')}</option></select></label>
-      <p>${this.ht('Choose which saved maps to show. Hidden maps remain available in MyDyson.')}</p>
-      ${mapState.maps.map(map => `<div class="entry"><label><input type="checkbox" data-include-map="${map.map_id}" data-focus="include-map-${map.map_id}" ${!config.excluded_maps?.includes(map.map_id) ? 'checked' : ''}><span>${h(map.option)}<small class="map-editor-id">${map.map_id}</small></span></label></div>`).join('')}
-      <button data-action="refresh-maps" data-focus="refresh-maps">${this.ht('Refresh maps')}</button><p class="notice">${this.ht('New maps appear automatically. Visibility is stored by map ID.')}</p></section>` : '';
+      <p>${this.ht('Choose which saved maps to show. Hidden maps remain available in MyDyson.')} ${this.ht('Use the arrows to change the display order.')}</p>
+      ${this.maps.map((map, i) => `<div class="entry"><label><input type="checkbox" data-include-map="${map.map_id}" data-focus="include-map-${map.map_id}" ${!config.excluded_maps?.includes(map.map_id) ? 'checked' : ''}><span>${h(map.option)}<small class="map-editor-id">${map.map_id}</small></span></label><button data-order-map="${map.map_id}" data-direction="-1" data-focus="map-up-${map.map_id}" ${i === 0 ? 'disabled' : ''} aria-label="${this.ht('Move {name} up', {name:map.option})}">↑</button><button data-order-map="${map.map_id}" data-direction="1" data-focus="map-down-${map.map_id}" ${i === this.maps.length - 1 ? 'disabled' : ''} aria-label="${this.ht('Move {name} down', {name:map.option})}">↓</button></div>`).join('')}
+      <button data-action="refresh-maps" data-focus="refresh-maps">${this.ht('Refresh maps')}</button><p class="notice">${this.ht('New maps appear automatically. Visibility and order are stored by map ID.')}</p></section>` : '';
     const field = (key, label) => {
       const entries = this.adapter.cameraEntries(this.registry, config.entity);
       return `<label>${label}<select data-focus="${key}" data-key="${key}"><option value="">${this.ht("Auto-detect")}</option>${entries.map(e => `<option value="${h(e.entity_id)}" ${config[key] === e.entity_id ? 'selected' : ''}>${h(e.name || e.original_name || e.entity_id)}</option>`).join('')}</select></label>`;

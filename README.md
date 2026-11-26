@@ -142,23 +142,26 @@ Update through Marketplace (or HACS on older Home Assistant versions), or replac
 
 ### Saved maps
 
-With a supported integration and at least two known maps, the visual editor shows **Maps in this card**. Choose **Header button** (the default) or **Map chips**, then check the maps to display. Chips wrap above Rooms, Zone and Schedules and highlight the reported active map. A pending switch shows a spinner in the target chip and locks the other controls until confirmation.
+With a supported integration and at least two known maps, the visual editor shows **Maps in this card**. Choose **Header button** (the default) or **Map chips**, then check the maps to display. Use the up/down arrows to change their display order in both styles. Chips wrap above Rooms, Zone and Schedules and highlight the reported active map. A pending switch shows a spinner in the target chip and locks the other controls until confirmation.
 
 You can switch directly with a local room draft. The card retains that draft while the request is pending, then resets the old map's local selection and unsaved settings after Home Assistant confirms the target map. Rejection or a timeout on the original map keeps the draft. A matching late confirmation resets an old-map draft while preserving newer edits already made on the target map. This sends no room-setting writes and does not change saved robot preferences.
 
-Visibility is saved by map ID, so renaming a map does not change its visibility. Deleted IDs are ignored and new maps appear visible by default. The editor retains the complete list so hidden maps can be enabled again. **Refresh maps** rereads the data available in Home Assistant; catalogue discovery remains the integration's responsibility. Selecting a different robot in the editor resets its map exclusions.
+Visibility and order are saved by map ID, so renaming a map does not change either preference. `map_order` lists the IDs to show first; unlisted maps follow in the integration's existing order. Deleted/unknown IDs are ignored, duplicate IDs are removed, and new maps appear visible at the end by default. The editor retains the complete ordered list so hidden maps can be enabled again. **Refresh maps** rereads the data available in Home Assistant; catalogue discovery remains the integration's responsibility. Selecting a different robot in the editor resets its map exclusions and order.
 
-The selector hides when only one visible map remains and that map is active. If MyDyson selects a hidden map, it is temporarily identified and visible alternatives remain selectable. With every map hidden, a notice names the hidden active map when known. These preferences only filter the selector; rooms, schedules and the floor plan continue to follow the robot's actual map.
+The selector hides when only one visible map remains and that map is active. If MyDyson selects a hidden map, it is temporarily identified before the sorted visible alternatives. With every map hidden, a notice names the hidden active map when known. These preferences only affect the selector; rooms, schedules and the floor plan continue to follow the robot's actual map.
 
 ```yaml
 type: custom:dyson-cleaning-planner-card
 entity: vacuum.your_robot
 map_selector_style: chips
-excluded_maps:
+map_order:
   - "1795646759"
+  - "1784483068"
+excluded_maps:
+  - "2222222222"
 ```
 
-Copy the map IDs shown in the editor and quote them in YAML. Without these options, the existing header-menu layout and unfiltered map list are preserved; automatic draft reset applies to both styles. Integrations without saved-map selection ignore these display preferences.
+Copy the map IDs shown in the editor and quote them in YAML. Without these options, the existing header-menu layout, integration order and unfiltered map list are preserved; automatic draft reset applies to both styles. Integrations without saved-map selection ignore these display preferences.
 
 ### Plan rooms
 
@@ -267,6 +270,7 @@ These options belong in the individual card's code editor, not in `configuration
 | `room_order` | Those room entity IDs in display order |
 | `map_selector_style` | Saved-map selector: `menu` (default header button) or `chips` (wrapping buttons above the planning tabs) |
 | `excluded_maps` | Saved map IDs to hide in this card, as quoted strings; default: `[]`. A hidden active map remains identifiable. |
+| `map_order` | Saved map IDs in display order, as quoted strings; default: `[]`. Unlisted maps follow in integration order. Applies to chips and the header menu. |
 | `room_entities` | Optional mapping from room names to switch entity IDs |
 | `show_camera` | Show the map during cleaning; default: `true` |
 | `camera_entity` | Optional same-device camera (Spot+Scrub) or image entity (hass-dyson) |

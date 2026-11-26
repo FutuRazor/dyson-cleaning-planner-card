@@ -317,13 +317,15 @@ The implementation uses the captured JDM list for the selector and leaves the ex
 
 Deleting selected B changes the active ID in the capture. Deleting an inactive map while keeping A selected is not an available test through the observed MyDyson UI. Periodic reconciliation covers changes missed while HA was disconnected and inventory changes that do not otherwise trigger an active-map update.
 
-## Per-card map visibility and chips (v1.7.1)
+## Per-card map visibility, order and chips (v1.7.1)
 
 The card's `map_selector_style` accepts `menu` (the existing header button, default) or `chips` (wrapping buttons directly above the planning tabs). Both share `switchSavedMap`, the same registry identity/readback confirmation, lifecycle checks, automatic draft reset, error handling and command lock. Chips show the target's pending spinner without optimistically activating it; Zone and Schedules retain their selected planning view. Chips are shown in planning views, not the live cleaning-session view.
 
 A local room draft does not disable map selection. The old selection/settings remain in memory while the request is pending and are discarded only after the target map is confirmed by both HA entities. Rejection or an unchanged-map timeout preserves them. Matching late telemetry can still discard an old-map draft, independently of notice ownership; newer feedback and drafts already created on the target map remain intact. The reset is applied once per request, including readback arriving before transport completion, and never writes room preferences or starts cleaning.
 
 `excluded_maps` contains canonical positive decimal map IDs as strings. Filtering is local to each card and never changes the integration's catalogue, selected map, room membership, schedules or entity availability. The complete catalogue remains authoritative for confirmation. Renames keep their exclusion, unknown/deleted IDs are ignored without rewriting configuration, and new IDs are visible by default.
+
+`map_order` uses the same ID format and defaults to `[]`. Configured IDs appear first, followed by unlisted maps in the integration's existing order. Unknown/deleted IDs are ignored and duplicates are deduplicated during normalization. Both selector styles and the editor use this order without mutating the authoritative catalogue. If the active map is hidden, its temporary identifying entry precedes the sorted visible return targets. Reordering sends no robot action.
 
 | Visible maps and current selection | Card presentation |
 | --- | --- |
@@ -332,7 +334,7 @@ A local room draft does not disable map selection. The old selection/settings re
 | A hidden active map and at least one visible alternative | Temporarily identify the active map and offer visible return targets |
 | No visible maps | No selector; a notice identifies the hidden active map when known |
 
-The visual editor exposes style/visibility controls only when the adapter supplies at least two known maps, counting the complete catalogue. Hidden maps remain in that editor list. Normal HA updates refresh names/options; the refresh button rereads available HA data and registry metadata, without a direct Dyson request. Selecting another robot resets map exclusions; presentation style remains a per-card preference. Unsupported adapters ignore these options. Existing YAML without them retains the menu and unfiltered list.
+The visual editor exposes style/visibility/order controls only when the adapter supplies at least two known maps, counting the complete catalogue. Hidden maps remain in that editor list and up/down arrows reorder the list. Normal HA updates refresh names/options; the refresh button rereads available HA data and registry metadata, without a direct Dyson request. Selecting another robot resets map exclusions and order; presentation style remains a per-card preference. Unsupported adapters ignore these options. Existing YAML without them retains the menu, integration order and unfiltered list.
 
 ## Direct versus paused Home, placement faults and fresh rooms (L4)
 

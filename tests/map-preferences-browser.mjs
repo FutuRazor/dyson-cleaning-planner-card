@@ -1,4 +1,4 @@
-// Local map visibility and chips, using simulated HA only.
+// Local map visibility, ordering and chips, using simulated HA only.
 import {createRequire} from 'node:module';
 import assert from 'node:assert/strict';
 import {mkdir} from 'node:fs/promises';
@@ -42,11 +42,12 @@ try {
         source.state=String(orders.length);f.card.hass={...f.hass};
         if(f.editor?.isConnected)f.editor.hass={...f.hass};
       };
-      f.card.setConfig({...f.config,theme,language:'en',show_camera:false,map_selector_style:'chips',excluded_maps:[c]});
+      f.card.setConfig({...f.config,theme,language:'en',show_camera:false,map_selector_style:'chips',excluded_maps:[c],map_order:[b,a,'999999999']});
       f.report(a);
     },{theme,a,b,c});
     const chips=card.locator('.map-chip');await chips.first().waitFor();
     assert.equal(await chips.count(),2);assert.equal(await card.locator('.map-toggle').count(),0);
+    assert.deepEqual(await chips.evaluateAll(items=>items.map(el=>el.dataset.mapId)),[b,a],'YAML order applies to the chips');
     assert.equal(await card.locator(`[data-map-id="${a}"]`).getAttribute('aria-pressed'),'true');
     const bar=await card.locator('.map-chips').boundingBox(),tabs=await card.locator('.planning-tabs').boundingBox();
     assert.ok(bar.y+bar.height<=tabs.y+1,'map chips are above the mode tabs');
@@ -124,6 +125,25 @@ try {
     assert.equal(await editor.locator('[data-include-map]').count(),3);
     assert.equal(await editor.locator(`[data-include-map="${b}"]`).isChecked(),false);
     assert.equal(await editor.locator('[data-key="map_selector_style"]').inputValue(),'chips');
+    assert.deepEqual(await editor.locator('[data-include-map]').evaluateAll(items=>items.map(el=>el.dataset.includeMap)),[b,a,d],
+      'the editor orders the complete catalogue, including hidden maps and new IDs');
+    assert.equal(await editor.locator(`[data-order-map="${b}"][data-direction="-1"]`).isDisabled(),true);
+    assert.equal(await editor.locator(`[data-order-map="${d}"][data-direction="1"]`).isDisabled(),true);
+    await editor.locator(`[data-order-map="${a}"][data-direction="-1"]`).click();
+    await editor.locator(`[data-order-map="${d}"][data-direction="-1"]`).click();
+    await editor.locator(`[data-order-map="${d}"][data-direction="-1"]`).click();
+    assert.deepEqual(await page.evaluate(()=>mapPrefs.editor.config.map_order),[d,a,b]);
+    assert.deepEqual(await chips.evaluateAll(items=>items.map(el=>el.dataset.mapId)),[d,a]);
+    assert.deepEqual(await page.evaluate(()=>mapPrefs.maps.map(map=>map.map_id)),[a,b,d],'editor sorting never reorders HA data');
+    await editor.locator('[data-key="map_selector_style"]').selectOption('menu');
+    await card.locator('.map-toggle').click();
+    assert.deepEqual(await card.locator('.map-menu button').evaluateAll(items=>items.map(el=>el.dataset.mapId)),[d,a],
+      'the header menu uses the same configured order');
+    await page.keyboard.press('Escape');
+    await editor.locator('[data-key="map_selector_style"]').selectOption('chips');
+    assert.equal(await page.evaluate(()=>mapPrefs.calls.length),3,'reordering never selects a map or starts a clean');
+    assert.ok(await editor.locator('.map-options').evaluate(el=>el.scrollWidth<=el.clientWidth),'map labels and arrows fit the editor');
+    await editor.screenshot({path:`artifacts/map-preferences/editor-order-${theme}-${width}.png`});
     for(const id of [a,b,d])await editor.locator(`[data-include-map="${id}"]`).uncheck();
     assert.equal(await editor.locator('[data-include-map]').count(),3,'all maps can still be enabled after excluding every map');
     assert.equal(await chips.count(),0);assert.match(await card.locator('.map-visibility-note').textContent(),/hidden in this card/);
@@ -137,6 +157,7 @@ try {
     const reads=await page.evaluate(()=>mapPrefs.registryReads);
     await editor.locator('[data-action="refresh-maps"]').click();
     await page.waitForFunction(reads=>mapPrefs.registryReads>reads&&!mapPrefs.editor._loadingRegistry,reads);
+    assert.deepEqual(await page.evaluate(()=>mapPrefs.editor.config.map_order),[d,a,b],'refresh retains display order');
     assert.equal(await page.evaluate(()=>mapPrefs.calls.length),3,'editor refresh has no robot service side effects');
 
     for(const [language,title] of [['de','Gespeicherte Karten in dieser Ansicht'],['nl','Kaarten in deze weergave'],['fr','Cartes dans cette vue'],['en','Maps in this card']]) {
@@ -154,6 +175,7 @@ try {
       f.editor.setConfig({...f.editor.config,integration:'ha_rooms'});
     },{b,d});
     assert.equal(await editor.locator('.map-options').count(),0,'unsupported adapters ignore map preferences');
+    assert.deepEqual(await page.evaluate(()=>mapPrefs.editor.config.map_order),[d,a,b]);
     await page.evaluate(()=>{
       const f=mapPrefs,other='vacuum.second_dyson';
       f.registry.push({...f.registry.find(row=>row.entity_id===f.entity),entity_id:other,unique_id:'OTHER_vacuum',device_id:'other-device'});
@@ -163,6 +185,7 @@ try {
     await page.evaluate(()=>window.mapPreferencesEditorRefresh);
     await editor.locator('[data-key="entity"]').selectOption('vacuum.second_dyson');
     assert.deepEqual(await page.evaluate(()=>mapPrefs.editor.config.excluded_maps),[]);
+    assert.deepEqual(await page.evaluate(()=>mapPrefs.editor.config.map_order),[],'another robot starts with its own default order');
     assert.equal(await page.evaluate(()=>mapPrefs.editor.config.map_selector_style),'chips');
     assert.equal(await editor.locator('.map-options').count(),0);
     assert.equal(await page.evaluate(()=>mapPrefs.calls.length),3);
@@ -193,5 +216,5 @@ try {
     assert.equal(await page.evaluate(()=>mapPrefs.calls.length),callsBefore+2,'timeout and rejection do not retry');
     assert.deepEqual(errors,[]);await page.close();
   }
-  console.log('Map preferences passed: chips, confirmation, locks, filtering, hidden active return path, rename/deletion/new maps, schedules, editor, refresh, robot/adapter changes, timeout/rejection/late readback, four languages and both themes at 375/900 px.');
+  console.log('Map preferences passed: chips/menu order, editor arrows, confirmation, locks, filtering, hidden active return path, rename/deletion/new maps, schedules, refresh, robot/adapter changes, timeout/rejection/late readback, four languages and both themes at 375/900 px.');
 } finally {await browser.close();await new Promise(resolve=>server.close(resolve));}
