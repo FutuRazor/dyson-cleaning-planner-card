@@ -299,21 +299,32 @@ class DysonRegistryElement extends HTMLElement {
     const previous = this.shadowRoot.querySelector('.planner-content');
     const keepPlanner = view === 'planner' && this._paintedView === 'planner' && previous;
     const keepSchedules = view === 'schedules' && this._paintedView === 'schedules' && previous;
-    const scrollTop = keepPlanner ? previous.scrollTop : 0;
+    const keptZone = view === 'zone' && this._paintedView === 'zone' && previous?.querySelector('dyson-planner-zone');
+    const scrollTop = keepPlanner || keptZone ? previous.scrollTop : 0;
     const active = this.shadowRoot.activeElement;
     const focused = active?.dataset.focus;
     const selection = active?.tagName === 'INPUT' && active.type === 'text' ? [active.selectionStart, active.selectionEnd, active.selectionDirection] : null;
     this._html = html;
     this._paintedView = view;
     this._paintedScheduleDialog = dialog;
-    if (keepPlanner || keepSchedules) {
-      // Retain HA's mounted card/slot for local planner and schedule updates.
+    if (keepPlanner || keepSchedules || keptZone) {
+      // Retain HA's mounted card/slot for local planning updates.
       // Recreating its asynchronous Lit slot briefly removes all measurable
       // content and makes schedule menu positioning close a just-opened menu.
       const template = document.createElement('template');
       template.innerHTML = html;
       const incoming = template.content.querySelector('.planner-content');
-      previous.replaceChildren(...incoming.childNodes);
+      if (keptZone) {
+        // Header/menu updates must not disconnect the frozen zone component.
+        // Keep it in place and replace only its surrounding siblings.
+        for (const node of [...previous.childNodes]) if (node !== keptZone) node.remove();
+        let beforeZone = true;
+        for (const node of [...incoming.childNodes]) {
+          if (node.nodeName === 'DYSON-PLANNER-ZONE') { beforeZone = false; continue; }
+          if (beforeZone) previous.insertBefore(node,keptZone);
+          else previous.append(node);
+        }
+      } else previous.replaceChildren(...incoming.childNodes);
       const overlay = this.shadowRoot.querySelector('.consumables-overlay');
       const incomingOverlay = template.content.querySelector('.consumables-overlay');
       if (overlay && incomingOverlay) overlay.replaceWith(incomingOverlay);
@@ -333,14 +344,14 @@ class DysonRegistryElement extends HTMLElement {
     }
     if (focused) {
       const next = Array.from(this.shadowRoot.querySelectorAll('[data-focus]')).find(e => e.dataset.focus === focused);
-      if (keepPlanner || view === 'schedules') next?.focus({ preventScroll: true });
+      if (keepPlanner || keptZone || view === 'schedules') next?.focus({ preventScroll: true });
       else next?.focus();
       if (selection) next?.setSelectionRange(...selection);
     }
-    if (keepPlanner) {
+    if (keepPlanner || keptZone) {
       previous.scrollTop = scrollTop;
       this._plannerScrollFrame = requestAnimationFrame(() => {
-        if (previous.isConnected && this._paintedView === 'planner') previous.scrollTop = scrollTop;
+        if (previous.isConnected && this._paintedView === view) previous.scrollTop = scrollTop;
       });
     }
     this.updateScheduleDialog?.();
@@ -513,6 +524,9 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     if (!this.config || !this._hass) return;
     const previous = this.model;
     this.model = this.getModel();
+    if (this.zoneDraft?.calibration && String(this.adapter.mapId(this._hass,this.config.entity)) !== String(this.zoneDraft.calibration.map_id)) {
+      this.zoneDraft = null;
+    }
     // Preserve a local selection across entity renames using the robot's room ID.
     if (this.dirty && previous && this.draftContext === this.adapter.roomContext(this._hass, this.config.entity, this.registry)) this.selected = this.selected.map(entity => {
       const id = previous.rooms.find(r => roomKey(r) === entity)?.roomId;
@@ -1205,7 +1219,9 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     const view = this.view;
     if (this._previewDialog && zonePreviewOwners.has(this._previewDialog) && this.supportsZone) { this.renderZone(); return; }
     if (view.active && ((!this.zoneView && !this.schedulesView) || view.live)) {
-      if (view.live) { this.zoneView = false; this.zoneDraft = null; }
+      // Session status temporarily overrides the selected tab, as for Schedules.
+      // A local zone start explicitly leaves the editor in zoneStarted().
+      if (view.live) this.zoneDraft = null;
       this.renderSession(view); return;
     }
     if (this.zoneView) { this.renderZone(); return; }

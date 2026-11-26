@@ -10,6 +10,8 @@
 
 This candidate combines the adapter work developed under v1.6.1 with saved-map selection and schedules per map. Maintainer live tests confirmed map switching and schedule availability in the integration and Lovelace card.
 
+- Keep the Zone tab selected across saved-map changes and automatically load the new calibrated floor plan. Discard the old rectangle, handle delayed camera calibration without manual Reload, and preserve the loaded zone component when the header/map menu updates.
+
 - Document the companion integration updates for stationless camera bounds, fresh-room discovery, explicit empty room lists and retained placement warnings 2509/2510. These require the updated integration branch; card readiness checks remain unchanged.
 - Add troubleshooting for the known Dyson stationless cleaning -> Pause -> Home search, also observed in MyDyson, with confirmed recovery by pausing and manually placing the robot on its station.
 

@@ -159,6 +159,8 @@ The button beside Reload shows the current cleaning mode. Open it to choose **Va
 
 Switching between **Rooms** and **Zone** keeps your local plans. Reload fetches a fresh map and preserves the rectangle when the map and its coordinates are unchanged. Map rotation also applies to zone selection. One rectangular zone is supported at a time; zone cleaning has been hardware-tested on the Spot+Scrub AI, while other models still need confirmation.
 
+Switching the saved map in the card or MyDyson keeps **Zone** selected and automatically loads the new floor plan. The previous rectangle is discarded. Start becomes available only after the new map image and calibration have been verified and the robot reports readiness.
+
 Zone dimensions follow Home Assistant's unit system by default, using **cm** or whole **inches**. In the editor, choose **Automatic**, **cm**, **inch**, or **Off**. Off hides only the selection badge; dimensions shown during a cleaning session still use Home Assistant's units.
 
 ### Robot schedules

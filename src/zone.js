@@ -131,7 +131,8 @@ class DysonPlannerZone extends HTMLElement {
   }
   connectedCallback() { this.observer = new ResizeObserver(() => this.draw()); this.observer.observe(this); }
   disconnectedCallback() {
-    this.controller?.abort(); this.observer?.disconnect(); this.drag = null;
+    this.controller?.abort(); this.controller = null; this.attempted = false;
+    this.observer?.disconnect(); this.drag = null;
     if (this.objectUrl) URL.revokeObjectURL(this.objectUrl);
     this.objectUrl = null; this.calibration = null;
   }
@@ -141,8 +142,13 @@ class DysonPlannerZone extends HTMLElement {
     const { adapter, ...viewOptions } = options;
     this.integrationAdapter = adapter;
     Object.assign(this, viewOptions);
+    const rawMapId = this.adapter.mapId(this.hass,this.vacuum);
+    const mapId = rawMapId == null ? null : String(rawMapId);
+    const mapChanged = this._activeMapId !== undefined && this._activeMapId !== mapId;
+    this._activeMapId = mapId;
     if (changed) {
-      this.controller?.abort(); this.attempted = false; this.clear();
+      this.controller?.abort(); this.controller = null; this.attempted = false; this.clear();
+      this._mapRefreshPending = true; this._mapRefreshSignature = null;
       const saved=options.draft;
       this.restoreDraft=saved?.vacuum===this.vacuum && saved?.camera===this.camera && saved?.rotation===this.rotation ? saved : null;
       this.strategy=this.restoreDraft?.strategy || 'auto';
@@ -150,15 +156,26 @@ class DysonPlannerZone extends HTMLElement {
       this.shadowRoot.querySelector('.zone-power').value=['auto','boost','quiet','quick'].indexOf(this.strategy);
       this._labelsLanguage=null;
     }
-    if (this.calibration && String(this.adapter.mapId(this.hass, this.vacuum)) !== this.calibration.map_id) {
-      this.controller?.abort(); this.clear(); this.note = 'The active map changed. Reload the map and select a new zone.';
+    if (mapChanged) {
+      this.controller?.abort(); this.controller = null; this.attempted = false;
+      this.clear(); this.restoreDraft = null; this.dialog.hidden = true;
+      this._mapRefreshPending = true; this._mapRefreshSignature = null;
+      this.note = 'Loading calibrated map …';
     }
     const capabilitiesKey = JSON.stringify(this.capabilities);
     if (this._labelsLanguage !== this.language || this._capabilitiesKey !== capabilitiesKey) {
       this.labels(); this._labelsLanguage = this.language; this._capabilitiesKey = capabilitiesKey;
     }
     this.draw();
-    if (!this.attempted && this.trusted && this.camera) this.load();
+    const calibration = this.adapter.mapCalibration(this.hass,this.camera);
+    const signature = validZoneCalibration(calibration) && String(calibration.map_id) === mapId
+      ? JSON.stringify(calibration) : null;
+    const freshReadback = this._mapRefreshPending && signature && signature !== this._mapRefreshSignature;
+    if ((!this.attempted || freshReadback) && !this.controller && this.trusted && this.camera
+        && /^\d+$/.test(mapId) && Number(mapId) > 0) {
+      this._mapRefreshSignature = signature;
+      this.load();
+    }
   }
   t(key) { return translate(this.language, key); }
   labels() {
@@ -265,7 +282,7 @@ class DysonPlannerZone extends HTMLElement {
             const sameTransform = previous?.calibration && previous.rect && ['version','map_id','units','image_width','image_height','pixels_per_metre','padding','min_x','max_y']
               .every(key => String(previous.calibration[key]) === String(c[key]));
             this.rect = fitZoneMinimum(sameTransform ? previous.rect : [.3,.3,.7,.7], this.calibration, this.rotation);
-            this.note = ''; return;
+            this._mapRefreshPending = false; this.note = ''; return;
           }
           await new Promise(resolve => setTimeout(resolve, 150));
         }

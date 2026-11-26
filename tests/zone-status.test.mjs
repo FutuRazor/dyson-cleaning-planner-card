@@ -42,7 +42,7 @@ test('zone draft survives non-live statuses and clears on a reported live sessio
   card._hass.states['vacuum.robot'].state = 'cleaning';
   card.render();
   assert.equal(card.rendered, 'session');
-  assert.equal(card.zoneView, false);
+  assert.equal(card.zoneView, true);
   assert.equal(card.zoneDraft, null);
 });
 
@@ -54,6 +54,15 @@ test('active statuses retain session rendering when the zone editor is closed', 
     assert.equal(card.rendered, 'session', state);
     assert.equal(card.zoneView, false, state);
     assert.equal(card.zoneDraft, card.sessionView.live ? null : draft, state);
+  }
+});
+
+test('session overrides keep the zone tab selected for the ready state',()=>{
+  for(const state of ['cleaning','paused','returning','error']) {
+    const card=fixture();card._hass.states['vacuum.robot'].state=state;card.render();
+    assert.equal(card.rendered,'session');assert.equal(card.zoneView,true);assert.equal(card.zoneDraft,null);
+    card._hass.states['vacuum.robot'].state='idle';card.render();
+    assert.equal(card.rendered,'zone');
   }
 });
 

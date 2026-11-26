@@ -3249,7 +3249,8 @@ class DysonPlannerZone extends HTMLElement {
   }
   connectedCallback() { this.observer = new ResizeObserver(() => this.draw()); this.observer.observe(this); }
   disconnectedCallback() {
-    this.controller?.abort(); this.observer?.disconnect(); this.drag = null;
+    this.controller?.abort(); this.controller = null; this.attempted = false;
+    this.observer?.disconnect(); this.drag = null;
     if (this.objectUrl) URL.revokeObjectURL(this.objectUrl);
     this.objectUrl = null; this.calibration = null;
   }
@@ -3259,8 +3260,13 @@ class DysonPlannerZone extends HTMLElement {
     const { adapter, ...viewOptions } = options;
     this.integrationAdapter = adapter;
     Object.assign(this, viewOptions);
+    const rawMapId = this.adapter.mapId(this.hass,this.vacuum);
+    const mapId = rawMapId == null ? null : String(rawMapId);
+    const mapChanged = this._activeMapId !== undefined && this._activeMapId !== mapId;
+    this._activeMapId = mapId;
     if (changed) {
-      this.controller?.abort(); this.attempted = false; this.clear();
+      this.controller?.abort(); this.controller = null; this.attempted = false; this.clear();
+      this._mapRefreshPending = true; this._mapRefreshSignature = null;
       const saved=options.draft;
       this.restoreDraft=saved?.vacuum===this.vacuum && saved?.camera===this.camera && saved?.rotation===this.rotation ? saved : null;
       this.strategy=this.restoreDraft?.strategy || 'auto';
@@ -3268,15 +3274,26 @@ class DysonPlannerZone extends HTMLElement {
       this.shadowRoot.querySelector('.zone-power').value=['auto','boost','quiet','quick'].indexOf(this.strategy);
       this._labelsLanguage=null;
     }
-    if (this.calibration && String(this.adapter.mapId(this.hass, this.vacuum)) !== this.calibration.map_id) {
-      this.controller?.abort(); this.clear(); this.note = 'The active map changed. Reload the map and select a new zone.';
+    if (mapChanged) {
+      this.controller?.abort(); this.controller = null; this.attempted = false;
+      this.clear(); this.restoreDraft = null; this.dialog.hidden = true;
+      this._mapRefreshPending = true; this._mapRefreshSignature = null;
+      this.note = 'Loading calibrated map …';
     }
     const capabilitiesKey = JSON.stringify(this.capabilities);
     if (this._labelsLanguage !== this.language || this._capabilitiesKey !== capabilitiesKey) {
       this.labels(); this._labelsLanguage = this.language; this._capabilitiesKey = capabilitiesKey;
     }
     this.draw();
-    if (!this.attempted && this.trusted && this.camera) this.load();
+    const calibration = this.adapter.mapCalibration(this.hass,this.camera);
+    const signature = validZoneCalibration(calibration) && String(calibration.map_id) === mapId
+      ? JSON.stringify(calibration) : null;
+    const freshReadback = this._mapRefreshPending && signature && signature !== this._mapRefreshSignature;
+    if ((!this.attempted || freshReadback) && !this.controller && this.trusted && this.camera
+        && /^\d+$/.test(mapId) && Number(mapId) > 0) {
+      this._mapRefreshSignature = signature;
+      this.load();
+    }
   }
   t(key) { return translate(this.language, key); }
   labels() {
@@ -3383,7 +3400,7 @@ class DysonPlannerZone extends HTMLElement {
             const sameTransform = previous?.calibration && previous.rect && ['version','map_id','units','image_width','image_height','pixels_per_metre','padding','min_x','max_y']
               .every(key => String(previous.calibration[key]) === String(c[key]));
             this.rect = fitZoneMinimum(sameTransform ? previous.rect : [.3,.3,.7,.7], this.calibration, this.rotation);
-            this.note = ''; return;
+            this._mapRefreshPending = false; this.note = ''; return;
           }
           await new Promise(resolve => setTimeout(resolve, 150));
         }
@@ -4462,21 +4479,32 @@ class DysonRegistryElement extends HTMLElement {
     const previous = this.shadowRoot.querySelector('.planner-content');
     const keepPlanner = view === 'planner' && this._paintedView === 'planner' && previous;
     const keepSchedules = view === 'schedules' && this._paintedView === 'schedules' && previous;
-    const scrollTop = keepPlanner ? previous.scrollTop : 0;
+    const keptZone = view === 'zone' && this._paintedView === 'zone' && previous?.querySelector('dyson-planner-zone');
+    const scrollTop = keepPlanner || keptZone ? previous.scrollTop : 0;
     const active = this.shadowRoot.activeElement;
     const focused = active?.dataset.focus;
     const selection = active?.tagName === 'INPUT' && active.type === 'text' ? [active.selectionStart, active.selectionEnd, active.selectionDirection] : null;
     this._html = html;
     this._paintedView = view;
     this._paintedScheduleDialog = dialog;
-    if (keepPlanner || keepSchedules) {
-      // Retain HA's mounted card/slot for local planner and schedule updates.
+    if (keepPlanner || keepSchedules || keptZone) {
+      // Retain HA's mounted card/slot for local planning updates.
       // Recreating its asynchronous Lit slot briefly removes all measurable
       // content and makes schedule menu positioning close a just-opened menu.
       const template = document.createElement('template');
       template.innerHTML = html;
       const incoming = template.content.querySelector('.planner-content');
-      previous.replaceChildren(...incoming.childNodes);
+      if (keptZone) {
+        // Header/menu updates must not disconnect the frozen zone component.
+        // Keep it in place and replace only its surrounding siblings.
+        for (const node of [...previous.childNodes]) if (node !== keptZone) node.remove();
+        let beforeZone = true;
+        for (const node of [...incoming.childNodes]) {
+          if (node.nodeName === 'DYSON-PLANNER-ZONE') { beforeZone = false; continue; }
+          if (beforeZone) previous.insertBefore(node,keptZone);
+          else previous.append(node);
+        }
+      } else previous.replaceChildren(...incoming.childNodes);
       const overlay = this.shadowRoot.querySelector('.consumables-overlay');
       const incomingOverlay = template.content.querySelector('.consumables-overlay');
       if (overlay && incomingOverlay) overlay.replaceWith(incomingOverlay);
@@ -4496,14 +4524,14 @@ class DysonRegistryElement extends HTMLElement {
     }
     if (focused) {
       const next = Array.from(this.shadowRoot.querySelectorAll('[data-focus]')).find(e => e.dataset.focus === focused);
-      if (keepPlanner || view === 'schedules') next?.focus({ preventScroll: true });
+      if (keepPlanner || keptZone || view === 'schedules') next?.focus({ preventScroll: true });
       else next?.focus();
       if (selection) next?.setSelectionRange(...selection);
     }
-    if (keepPlanner) {
+    if (keepPlanner || keptZone) {
       previous.scrollTop = scrollTop;
       this._plannerScrollFrame = requestAnimationFrame(() => {
-        if (previous.isConnected && this._paintedView === 'planner') previous.scrollTop = scrollTop;
+        if (previous.isConnected && this._paintedView === view) previous.scrollTop = scrollTop;
       });
     }
     this.updateScheduleDialog?.();
@@ -4676,6 +4704,9 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     if (!this.config || !this._hass) return;
     const previous = this.model;
     this.model = this.getModel();
+    if (this.zoneDraft?.calibration && String(this.adapter.mapId(this._hass,this.config.entity)) !== String(this.zoneDraft.calibration.map_id)) {
+      this.zoneDraft = null;
+    }
     // Preserve a local selection across entity renames using the robot's room ID.
     if (this.dirty && previous && this.draftContext === this.adapter.roomContext(this._hass, this.config.entity, this.registry)) this.selected = this.selected.map(entity => {
       const id = previous.rooms.find(r => roomKey(r) === entity)?.roomId;
@@ -5368,7 +5399,9 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     const view = this.view;
     if (this._previewDialog && zonePreviewOwners.has(this._previewDialog) && this.supportsZone) { this.renderZone(); return; }
     if (view.active && ((!this.zoneView && !this.schedulesView) || view.live)) {
-      if (view.live) { this.zoneView = false; this.zoneDraft = null; }
+      // Session status temporarily overrides the selected tab, as for Schedules.
+      // A local zone start explicitly leaves the editor in zoneStarted().
+      if (view.live) this.zoneDraft = null;
       this.renderSession(view); return;
     }
     if (this.zoneView) { this.renderZone(); return; }

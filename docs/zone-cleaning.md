@@ -22,6 +22,13 @@ and preserves the rectangle only if its map and transform still match. The camer
 if the session camera display is hidden. Its configured 0/90/180/270° rotation
 also applies to zone selection. The camera must belong to the selected robot.
 
+Changing the saved map in the card or MyDyson keeps **Zone** selected. The old
+rectangle is discarded and the new floor plan loads automatically. Start stays
+disabled until the image and calibration match the new active map and the robot
+is ready. Session status temporarily overrides the selected tab, as for Schedules;
+once ready, the card returns to Zone. Starting a zone clean from this card still
+leaves the editor and opens the normal session view.
+
 ## Image and action contract
 
 The card freezes the image and its calibration for the duration of selection.
@@ -64,6 +71,9 @@ successful transport still requires robot telemetry to confirm the start.
   touch move/resize, keyboard resize, narrow layout, room-draft retention,
   readiness, map changes, checksum mismatch and the service payload.
 - `node tests/scroll-browser.mjs`: existing planner/session scroll regression.
+- `node tests/zone-map-switching-browser.mjs`: card/app map changes in both
+  themes at 375/900 px, retained tab/component, cleared old rectangle, new PNG
+  dimensions, delayed calibration, bounded reads and temporary session states.
 
 The offline preview's usual SVG map is not calibrated and cannot start a zone.
 The browser test supplies its own calibrated PNG. These checks send no robot
