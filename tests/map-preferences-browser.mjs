@@ -75,7 +75,7 @@ try {
     await card.locator('input[data-room]').first().check();
     assert.equal(await page.evaluate(()=>mapPrefs.card.dirty),true);
     assert.equal(await card.locator('.map-chip:disabled').count(),0);
-    assert.match(await card.locator('.map-visibility-note').textContent(),/discarded after.*confirmed/);
+    assert.equal(await card.locator('.map-visibility-note').count(),0,'local edits do not add a draft-discard reminder');
     assert.equal(await page.evaluate(()=>mapPrefs.calls.length),1);
     await card.locator('[data-action="reset"]').click();
     assert.equal(await card.locator('.map-chip:disabled').count(),0);

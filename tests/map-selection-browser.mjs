@@ -89,7 +89,7 @@ try {
     assert.equal(await card.locator('.map-toggle').count(),1,'adding a second map restores the button');
     assert.equal(await card.locator('.map-menu').count(),0,'a previously open menu is not reopened');
     await card.locator('.map-toggle').click();
-    assert.match(await card.locator('.map-menu-note').textContent(),/discarded after.*confirmed/);
+    assert.equal(await card.locator('.map-menu-note').count(),0,'local edits do not add a draft-discard reminder');
     assert.equal(await card.locator('[data-map-id="1795646759"]').isDisabled(),false);
     await page.keyboard.press('Escape');
 

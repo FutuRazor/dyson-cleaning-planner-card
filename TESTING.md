@@ -22,6 +22,12 @@ Current card version is **1.7.1**. Latest full card checks: **190 unit tests**, 
 
 Additional integration/map checks are listed in [the map notes](docs/spot-scrub-maps.md#remaining-live-checks). Entries below are chronological records and retain their original versions/test counts; an old pending statement does not supersede a later confirmation.
 
+## Compact map chips - 26 November 2026
+
+Map chips keep their 13 px label size, with vertical padding reduced from 7 to 5 px and minimum height from 36 to 32 px. Both states omit the checkmark slot. The target's pending spinner is centered over its retained label space to prevent layout shifts. Validation passed: `npm run check` with **190 unit tests**, rebuilt bundle and smoke check, plus `map-preferences-browser` in Modern/Classic at 375/900 px. Version remains **1.7.1**.
+
+The draft-discard reminder was subsequently removed from both chips and the header menu, including its unused translations. Automatic draft reset still occurs only after confirmed switching. `npm run check` (**190 unit tests**, rebuilt bundle and smoke check), `map-selection-browser` and `map-preferences-browser` passed; the browser checks now assert that local edits show no reminder and retain coverage for hidden-map notices and switching behavior.
+
 ## Automatic room-draft reset on card map changes - 26 November 2026
 
 The maintainer requested direct map selection without first discarding local room edits. Both menu and chips now keep that draft while a request is pending, then reset only the old map's local selection/settings after matching select/vacuum readback confirms the target. The reset uses a fresh room model and runs once per request. Rejection or a timeout on the original map retains the draft. Late confirmation respects newer target-map drafts and newer feedback. Existing request locks and backend/context validation remain; no preference Save or cleaning Start is sent.

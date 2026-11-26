@@ -8,6 +8,8 @@
 ## v1.7.1
 
 - Add optional wrapping map chips above Rooms, Zone and Schedules through `map_selector_style: chips`; keep the header menu as the default.
+- Make map chips slightly flatter without changing label size. Remove checkmarks and their reserved space; center the pending spinner without changing chip dimensions.
+- Remove draft-discard reminders from map chips and the header menu while retaining the automatic reset after confirmed switching.
 - Add `excluded_maps` using stable string IDs. Ignore deleted IDs, preserve exclusions after renames and show new maps by default. Hide unnecessary selectors while retaining a return path from an app-selected hidden map, or a notice when all maps are hidden.
 - Add visual-editor style and visibility controls using the complete map list, refresh support and map IDs. Reset exclusions when selecting another robot and translate controls, hints and validation in English, German, Dutch and French.
 - Allow map switching directly with a local room draft. Retain it until matching select/vacuum readback confirms the target, then automatically reset the old map's selection and unsaved settings. Rejection/timeouts on the original map preserve the draft; late confirmation preserves newer target-map edits and newer feedback. No room settings are saved automatically.

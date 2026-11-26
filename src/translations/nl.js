@@ -352,7 +352,6 @@ export const nl = {
   "Switch map": "Kaart wisselen",
   "Switch map: {name}": "Kaart wisselen: {name}",
   "Saved maps": "Opgeslagen kaarten",
-  "Local room changes are discarded after the map switch is confirmed.": "Lokale kamerwijzigingen worden na bevestiging van de kaartwissel verworpen.",
   "Map switching is unavailable. Refresh the map list and check the robot.": "Kaart wisselen is niet beschikbaar. Vernieuw de kaartenlijst en controleer de robot.",
   "The map switch has not been confirmed. Check the selected map before trying again.": "De kaartwissel is niet bevestigd. Controleer de geselecteerde kaart voordat je het opnieuw probeert."
 };

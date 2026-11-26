@@ -352,7 +352,6 @@ export const de = {
   "Switch map": "Karte wechseln",
   "Switch map: {name}": "Karte wechseln: {name}",
   "Saved maps": "Gespeicherte Karten",
-  "Local room changes are discarded after the map switch is confirmed.": "Lokale Raumänderungen werden nach dem bestätigten Kartenwechsel verworfen.",
   "Map switching is unavailable. Refresh the map list and check the robot.": "Kartenwechsel nicht verfügbar. Kartenliste aktualisieren und Roboter prüfen.",
   "The map switch has not been confirmed. Check the selected map before trying again.": "Der Kartenwechsel wurde nicht bestätigt. Vor einem erneuten Versuch die ausgewählte Karte prüfen."
 };

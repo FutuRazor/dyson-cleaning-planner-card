@@ -58,10 +58,10 @@ export const mapSelectionStyles = `
 .map-options .entry label,.map-options .entry label>span{min-width:0;overflow-wrap:anywhere}
 .map-visibility-note{margin:0 var(--dp-padding,20px) 12px;font-size:12px;line-height:1.5;color:var(--dp-muted);overflow-wrap:anywhere}
 .map-chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 var(--dp-padding,20px) 14px;min-width:0}
-.map-chip{display:flex;align-items:center;gap:6px;min-width:0;max-width:100%;min-height:36px;padding:7px 11px;border:1px solid var(--dp-line);border-radius:18px;background:var(--dp-modern-surface,var(--dp-bg));color:var(--primary-text-color);font:inherit;font-size:13px;line-height:1.35;text-align:start;white-space:normal}
+.map-chip{position:relative;display:flex;align-items:center;justify-content:center;min-width:0;max-width:100%;min-height:32px;padding:5px 11px;border:1px solid var(--dp-line);border-radius:18px;background:var(--dp-modern-surface,var(--dp-bg));color:var(--primary-text-color);font:inherit;font-size:13px;line-height:1.35;text-align:start;white-space:normal}
 .map-chip[aria-pressed=true]{border-color:var(--dp-accent);background:var(--dp-soft);color:var(--dp-accent)}
-.map-chip-copy{min-width:0;overflow-wrap:anywhere}.map-chip-icon{display:flex;align-items:center;justify-content:center;flex:0 0 16px;width:16px;min-height:16px}.map-chip-icon ha-icon{width:16px;height:16px;--mdc-icon-size:16px}
-.map-chip-spinner{width:14px;height:14px;border:2px solid var(--dp-line);border-top-color:var(--dp-accent);border-radius:50%;animation:schedule-spin .7s linear infinite}.map-chip[aria-busy=true]{opacity:1}
+.map-chip-copy{min-width:0;overflow-wrap:anywhere}.map-chip[aria-busy=true] .map-chip-copy{visibility:hidden}
+.map-chip-spinner{position:absolute;inset:0;margin:auto;width:14px;height:14px;border:2px solid var(--dp-line);border-top-color:var(--dp-accent);border-radius:50%;animation:schedule-spin .7s linear infinite}.map-chip[aria-busy=true]{opacity:1}
 :host([map-switching]) :is(.rooms,.planning-settings,.planning-tabs,footer,dyson-planner-zone){opacity:.55}
 @media(prefers-reduced-motion:reduce){.map-toggle.pending:after,.map-chip-spinner{animation:none}}
 `;
@@ -83,7 +83,7 @@ export const mapSelectionCardMethods = {
     const {current,displayMaps,hiddenCurrent} = presentation, pending = !!this._mapRequest;
     const locked = this.mapControlsLocked();
     const label = current ? this.t('Switch map: {name}',{name:current.option}) : this.t('Switch map');
-    const note = this.dirty ? 'Local room changes are discarded after the map switch is confirmed.' : !state.canChange
+    const note = !state.canChange
       ? 'Map switching is unavailable. Refresh the map list and check the robot.' : null;
     return `<div class="map-picker"><button class="map-toggle ${pending ? 'pending' : ''}" data-action="maps" data-focus="maps" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}" aria-haspopup="menu" aria-controls="saved-map-menu" aria-expanded="${!!this.mapMenuOpen}" ${pending ? 'aria-busy="true"' : ''} ${locked ? 'disabled' : ''}><ha-icon icon="mdi:map-marker-path" aria-hidden="true"></ha-icon></button>${this.mapMenuOpen ? `<div class="map-menu" id="saved-map-menu" role="menu" aria-label="${this.ht('Saved maps')}"><p class="map-menu-label">${this.ht('Saved maps')}</p>${displayMaps.map(map => `<button role="menuitemradio" aria-checked="${map.map_id === current?.map_id}" data-map-id="${map.map_id}" data-focus="map-${map.map_id}" ${locked || !state.canChange || map.map_id === current?.map_id ? 'disabled' : ''}><span>${escapeHtml(map.option)}${map.map_id === hiddenCurrent?.map_id ? `<small class="map-hidden-label">${this.ht('Hidden in this card')}</small>` : ''}</span>${map.map_id === current?.map_id ? '<ha-icon icon="mdi:check" aria-hidden="true"></ha-icon>' : ''}</button>`).join('')}${note ? `<p class="map-menu-note">${this.ht(note)}</p>` : ''}</div>` : ''}</div>`;
   },
@@ -93,8 +93,8 @@ export const mapSelectionCardMethods = {
       const locked = this.mapControlsLocked() || !state.canChange;
       return `<div class="map-chips" role="group" aria-label="${this.ht('Saved maps')}">${displayMaps.map(map => {
         const active = map.map_id === current?.map_id, pending = map.map_id === this._mapRequest?.mapId;
-        return `<button class="map-chip" data-map-id="${map.map_id}" data-focus="map-chip-${map.map_id}" aria-pressed="${active}" ${pending ? 'aria-busy="true"' : ''} aria-label="${this.ht(pending ? 'Switching map: {name}' : 'Switch map: {name}',{name:map.option})}${map.map_id === hiddenCurrent?.map_id ? ` · ${this.ht('Hidden in this card')}` : ''}" ${locked ? 'disabled' : ''}><span class="map-chip-icon" aria-hidden="true">${pending ? '<span class="map-chip-spinner"></span>' : active ? '<ha-icon icon="mdi:check"></ha-icon>' : ''}</span><span class="map-chip-copy">${escapeHtml(map.option)}${map.map_id === hiddenCurrent?.map_id ? `<small class="map-hidden-label">${this.ht('Hidden in this card')}</small>` : ''}</span></button>`;
-      }).join('')}</div>${this.dirty ? `<p class="map-visibility-note">${this.ht('Local room changes are discarded after the map switch is confirmed.')}</p>` : ''}`;
+        return `<button class="map-chip" data-map-id="${map.map_id}" data-focus="map-chip-${map.map_id}" aria-pressed="${active}" ${pending ? 'aria-busy="true"' : ''} aria-label="${this.ht(pending ? 'Switching map: {name}' : 'Switch map: {name}',{name:map.option})}${map.map_id === hiddenCurrent?.map_id ? ` · ${this.ht('Hidden in this card')}` : ''}" ${locked ? 'disabled' : ''}><span class="map-chip-copy">${escapeHtml(map.option)}${map.map_id === hiddenCurrent?.map_id ? `<small class="map-hidden-label">${this.ht('Hidden in this card')}</small>` : ''}</span>${pending ? '<span class="map-chip-spinner" aria-hidden="true"></span>' : ''}</button>`;
+      }).join('')}</div>`;
     }
     return hiddenCurrent ? `<p class="map-visibility-note" role="status">${this.ht('Active map: {name} (hidden in this card).',{name:hiddenCurrent.option})}</p>` : '';
   },
