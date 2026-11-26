@@ -17,9 +17,11 @@ try {
     await card.locator(`[data-schedule-${action}="${id}"]`).click();
   };
   assert.equal(await card.locator('[data-action="schedules"]').count(),0,'legacy integration stays unchanged');
+  await page.evaluate(()=>{window.spotFixtureLoading=import('/tests/spot-schedules-fixture.mjs')
+    .then(module=>{window.spotFixtureFactory=module.spotSchedulesFixture;});});
+  await page.waitForFunction(()=>typeof window.spotFixtureFactory==='function');
   await page.evaluate(async()=>{
-    const {spotSchedulesFixture}=await import('/tests/spot-schedules-fixture.mjs');
-    window.spot=spotSchedulesFixture();
+    window.spot=window.spotFixtureFactory();
     demo.card.setConfig({...spot.config,language:'en',show_camera:false});demo.card.hass={...spot.hass};await demo.card.loadRegistry();
   });
   const chooseSetting=async(id,key,value)=>{
@@ -149,12 +151,10 @@ try {
   assert.equal(await card.locator('[data-schedule-action="confirm"]').isDisabled(),true);
   await page.keyboard.press('Escape');
   assert.equal(await page.evaluate(()=>spot.calls.length),count);
-  await page.evaluate(()=>{spot.hass.states[spot.entity].attributes.map_id='999';demo.card.hass={...spot.hass};});
   await scheduleAction(103,'edit');
-  assert.match(await card.locator('.schedule-dialog .schedule-warning').innerText(),/schedule map to be active/);
-  assert.equal(await card.locator('[data-schedule-room-toggle]').first().isDisabled(),true);
-  assert.equal(await card.locator('[data-schedule-action="confirm"]').isDisabled(),false,'time edit remains available');
-  await page.keyboard.press('Escape');
+  await page.evaluate(()=>{spot.hass.states[spot.entity].attributes.map_id='999';demo.card.hass={...spot.hass};});
+  assert.equal(await card.locator('.schedule-dialog').count(),0,'map changes close obsolete editors');
+  assert.equal(await card.locator('.schedule-row').count(),0,'schedules from A are not shown on another map');
   await page.evaluate(()=>{spot.hass.states[spot.entity].attributes.map_id='123';demo.card.hass={...spot.hass};});
   // Partial readback preserves missing fields and values not offered by live selects.
   await page.evaluate(()=>{

@@ -22,6 +22,7 @@ const en = {
   "Next cleaning in {duration}": "Next cleaning in {duration}",
   "Next known cleaning in {duration}": "Next known cleaning in {duration}",
   "No active schedules": "No active schedules",
+  "No schedules for this map.": "No schedules for this map.",
   "Next cleaning unknown": "Next cleaning unknown",
   "Next cleaning unavailable": "Next cleaning unavailable",
   "The Home Assistant time zone is unavailable.": "The Home Assistant time zone is unavailable.",
@@ -367,6 +368,7 @@ const de = {
   "Next cleaning in {duration}": "Nächste Reinigung in {duration}",
   "Next known cleaning in {duration}": "Nächste bekannte Reinigung in {duration}",
   "No active schedules": "Keine aktiven Zeitpläne",
+  "No schedules for this map.": "Keine Zeitpläne für diese Karte.",
   "Next cleaning unknown": "Nächste Reinigung unbekannt",
   "Next cleaning unavailable": "Nächste Reinigung nicht verfügbar",
   "The Home Assistant time zone is unavailable.": "Die Home-Assistant-Zeitzone ist nicht verfügbar.",
@@ -712,6 +714,7 @@ const nl = {
   "Next cleaning in {duration}": "Volgende reiniging over {duration}",
   "Next known cleaning in {duration}": "Volgende bekende reiniging over {duration}",
   "No active schedules": "Geen actieve schema's",
+  "No schedules for this map.": "Geen schema's voor deze kaart.",
   "Next cleaning unknown": "Volgende reiniging onbekend",
   "Next cleaning unavailable": "Volgende reiniging niet beschikbaar",
   "The Home Assistant time zone is unavailable.": "De tijdzone van Home Assistant is niet beschikbaar.",
@@ -1057,6 +1060,7 @@ const fr = {
   "Next cleaning in {duration}": "Prochain nettoyage dans {duration}",
   "Next known cleaning in {duration}": "Prochain nettoyage connu dans {duration}",
   "No active schedules": "Aucune programmation active",
+  "No schedules for this map.": "Aucune programmation pour cette carte.",
   "Next cleaning unknown": "Prochain nettoyage inconnu",
   "Next cleaning unavailable": "Prochain nettoyage indisponible",
   "The Home Assistant time zone is unavailable.": "Le fuseau horaire de Home Assistant est indisponible.",
@@ -1571,7 +1575,7 @@ const mapSelectionCardMethods = {
   applyMapLock() {
     const locked = !!this._mapRequest;
     this.toggleAttribute('map-switching',locked);
-    this.shadowRoot.querySelectorAll('.rooms,.planning-settings,.planning-tabs,.planner-content>footer,dyson-planner-zone')
+    this.shadowRoot.querySelectorAll('.rooms,.schedules,.planning-settings,.planning-tabs,.planner-content>footer,dyson-planner-zone')
       .forEach(element => { element.inert = locked; });
   },
   async switchSavedMap(identity) {
@@ -2224,19 +2228,27 @@ function scheduleState(hass, registry, entity) {
     && Array.isArray(s.room_ids) && s.room_ids.length === s.rooms.length && s.room_ids.every(id => typeof id === 'string' && /^\d+$/.test(id))
     && new Set(s.room_ids).size === s.room_ids.length && (s.map_id === null || typeof s.map_id === 'string'))
     && new Set(raw.map(s => s.schedule_id)).size === raw.length;
-  const readable = !!sensor && hass?.connected !== false && available(state) && valid;
+  const activeMap = mapId(hass, entity) == null ? null : String(mapId(hass, entity));
+  const mapKnown = activeMap !== null && /^[1-9]\d*$/.test(activeMap);
+  const scoped = attrs.map_id != null;
+  const summaryMatches = mapKnown && (scoped ? String(attrs.map_id) === activeMap : valid && raw.every(s => s.map_id === activeMap));
+  const readable = !!sensor && hass?.connected !== false && available(state) && valid && mapKnown
+    && (!scoped || summaryMatches);
+  const schedules = readable ? raw.filter(s => s.map_id === activeMap) : [];
+  const inSync = summaryMatches ? attrs.in_sync : undefined;
   const canChange = attrs.can_change === true;
   const online = readable && available(hass?.states?.[entity]);
-  const activeMap = mapId(hass, entity);
-  return { supported:!!sensor, available:readable,
-    writable:online && canChange && !!hass?.services?.[DOMAIN]?.set_schedule,
+  const selection = mapSelectionState(hass,registry,entity);
+  const switching = selection.entity && hass?.states?.[selection.entity]?.attributes?.switching === true;
+  return { supported:!!sensor, available:readable, context:roomContext(hass,entity), mapId:activeMap,
+    writable:online && !switching && canChange && !!hass?.services?.[DOMAIN]?.set_schedule,
     createSupported:!!sensor && canChange && !!hass?.services?.[DOMAIN]?.set_schedule,
-    createReady:activeMap != null && /^\d+$/.test(String(activeMap)),
+    createReady:mapKnown && !switching,
     deleteSupported:!!sensor && canChange && !!hass?.services?.[DOMAIN]?.delete_schedule,
-    schedules:readable ? raw.map(s => ({id:s.schedule_id, enabled:s.enabled, days:[...s.days], time:s.time,
-      rooms:[...s.rooms], roomIds:[...s.room_ids], roomSettings:scheduleRoomSettings(s.room_settings,s.room_ids), mapId:s.map_id, repeat:s.repeat})) : [],
-    inSync:attrs.in_sync, robotTotal:readable && /^\d+$/.test(String(state.state)) ? Number(state.state) : null,
-    enabledCount:!readable ? null : attrs.in_sync === true ? raw.filter(schedule => schedule.enabled).length
+    schedules:schedules.map(s => ({id:s.schedule_id, enabled:s.enabled, days:[...s.days], time:s.time,
+      rooms:[...s.rooms], roomIds:[...s.room_ids], roomSettings:scheduleRoomSettings(s.room_settings,s.room_ids), mapId:s.map_id, repeat:s.repeat})),
+    inSync, robotTotal:readable && summaryMatches && /^\d+$/.test(String(state.state)) ? Number(state.state) : null,
+    enabledCount:!readable || !summaryMatches ? null : inSync === true ? schedules.filter(schedule => schedule.enabled).length
       : Number.isSafeInteger(attrs.on) && attrs.on >= 0 ? attrs.on : null,
     roomSelectionKnown:true, creationUsesSelectedRooms:true };
 }
@@ -3531,6 +3543,7 @@ function scheduleCountdownDuration(timestamp, now, language) {
 // A resolved service call is not yet a reflected HA state. Confirm only fields
 // the selected adapter exposes, and do not guess which of several new entries is ours.
 function scheduleRequestConfirmed(state, request) {
+  if (request.context !== undefined && request.context !== state.context) return false;
   if (!state.available) return false;
   if (request.kind === 'delete') return state.inSync !== false && !state.schedules.some(schedule => schedule.id === request.id);
   const matches = schedule => {
@@ -3884,7 +3897,7 @@ const scheduleCardMethods = {
     this.updateScheduleDialog();
   },
   openSchedule(id, mode = 'edit') {
-    if (this._previewDialog || this.busy || this.scheduleSending || this.view.active || !this.isConnected) return;
+    if (this._previewDialog || this.busy || this._mapRequest || this.scheduleSending || this.view.active || !this.isConnected) return;
     const state = this.getScheduleState(), schedule = state.schedules.find(s => s.id === id);
     if (!state.writable || (id !== undefined && !schedule) || (mode === 'delete' && (!schedule || !state.deleteSupported))) return;
     if (id === undefined && !this.scheduleCreationReady()) return;
@@ -4016,6 +4029,14 @@ const scheduleCardMethods = {
     this._scheduleConfirmation = null; this._scheduleUnconfirmed = null;
   },
   reconcileScheduleConfirmation() {
+    const state = this.getScheduleState();
+    const belongsHere = request => request.context === undefined || request.context === state.context;
+    if (this.scheduleSending && !belongsHere(this.scheduleSending.request)) this.cancelScheduleFeedback();
+    if (this.scheduleDialog && this.adapter.id === 'dyson_spot_scrub'
+        && this.scheduleDialog.context !== state.context) {
+      this.scheduleDialog = null; this.scheduleMenu = null;
+    }
+    if (this._scheduleUnconfirmed && !belongsHere(this._scheduleUnconfirmed.request)) this.cancelScheduleFeedback();
     const operation = this._scheduleConfirmation;
     if (operation && !operation.cancelled && scheduleRequestConfirmed(this.getScheduleState(),operation.request)) operation.confirm?.('confirmed');
     const late = this._scheduleUnconfirmed;
@@ -4038,13 +4059,14 @@ const scheduleCardMethods = {
     });
   },
   async submitSchedule(id, enabled) {
-    if (this._previewDialog || this.busy || this.scheduleSending || this.view.active || !this.isConnected) return;
+    if (this._previewDialog || this.busy || this._mapRequest || this.scheduleSending || this.view.active || !this.isConnected) return;
     const dialog = enabled === undefined ? this.scheduleDialog : null;
     if (!dialog && enabled === undefined) return;
     if (dialog?.mode !== 'delete' && (dialog?.timePicker || (dialog?.roomPlan && !dialog.roomPlan.roomIds.length))) return;
     if (dialog && dialog.config !== this.config) return;
     const config = this.config, detach = this._detachRevision, state = this.getScheduleState();
-    const request = {kind:!dialog ? 'toggle' : dialog.mode === 'delete' ? 'delete' : dialog.id === undefined ? 'create' : 'edit',id:dialog?.id ?? id};
+    const request = {kind:!dialog ? 'toggle' : dialog.mode === 'delete' ? 'delete' : dialog.id === undefined ? 'create' : 'edit',id:dialog?.id ?? id,
+      ...(state.context === undefined ? {} : {context:state.context})};
     if (!dialog) request.enabled = enabled;
     else if (request.kind !== 'delete') {
       request.days = [...dialog.days]; request.time = dialog.time;
@@ -4125,7 +4147,8 @@ const scheduleCardMethods = {
       ${state.inSync === false ? `<p class="schedule-note schedule-warning">${this.ht('The schedule list may be incomplete. Turn each schedule off and on in MyDyson while the integration is connected.')}</p>` : ''}
       <p class="schedule-countdown"></p>
       <div class="schedule-list" role="region" aria-label="${this.ht('Schedules')}" ${state.schedules.length > 4 ? 'tabindex="0"' : ''} style="max-height:${previousHeight}">${rows}</div>
-      ${!rows && state.available ? `<p class="schedule-note">${this.ht('No known schedules. Create one from the room planner, or turn existing schedules off and on in MyDyson.')}</p>` : ''}
+      ${!rows && state.available ? `<p class="schedule-note">${this.ht(state.mapId && state.inSync === true && state.robotTotal === 0
+        ? 'No schedules for this map.' : 'No known schedules. Create one from the room planner, or turn existing schedules off and on in MyDyson.')}</p>` : ''}
     </section></div>${this.consumablesHtml()}${menu}${this.scheduleOverlayHtml()}</ha-card>`, 'schedules');
     this.updateBattery(); this.updateConsumables(); this.updateStatus(''); this.updateScheduleDialog();
     this.updateScheduleCountdown();

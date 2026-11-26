@@ -161,6 +161,8 @@ Zone dimensions follow Home Assistant's unit system by default, using **cm** or 
 
 Choose **Schedules** beside Rooms and Zone to see your weekly plans. Each card shows its time, weekdays and known selected rooms. A small green badge on the tab counts enabled plans; grey means none are enabled. Four entries fit before the list becomes scrollable. Use the switch to enable or disable a plan, or the **three-dot menu** to edit or delete it. Deletion asks for confirmation.
 
+For Spot+Scrub, the list, enabled badge and countdown follow the reported active map. The [map-switching integration development branch](https://github.com/FutuRazor/ha-dyson-spot-scrub/tree/feat/map-switching) also keeps synchronization checks per map and makes other maps' schedule switches unavailable while retaining their saved state. Confirmed empty maps show an empty list without a synchronization instruction. See [saved-map schedule behavior](docs/spot-scrub-schedules.md#saved-map-schedule-behavior).
+
 A compact line above the list counts down to the next enabled weekly plan in Home Assistant's time zone. Hover over it for the scheduled date/time. It refreshes locally without robot commands and follows changes reported by Home Assistant. With incomplete metadata it shows the next **known** cleaning; missing dates for one-time plans or an unavailable time zone are not guessed. The countdown predicts the planned start, not confirmed robot execution.
 
 Enabling or disabling a plan recalculates the countdown as soon as Home Assistant reports the change. This behavior has been confirmed in live Home Assistant testing.

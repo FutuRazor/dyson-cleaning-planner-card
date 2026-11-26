@@ -148,6 +148,41 @@ test('Spot+Scrub schedule room edits reject stale maps, invalid selection and un
   assert.equal(adapter.scheduleRoomOptions(f.hass,f.registry,f.config,schedule).length,5);
   f.hass.states[f.entity].attributes.map_id='999';
   assert.equal(adapter.scheduleRoomOptions(f.hass,f.registry,f.config,schedule),null);
-  await adapter.setSchedule({...request(f),context:adapter.roomContext(f.hass,f.entity),id:101});
-  assert.equal(f.calls.length,1,'time-only editing works on a different active map');
+  await assert.rejects(adapter.setSchedule({...request(f),context:adapter.roomContext(f.hass,f.entity),id:101}));
+  assert.equal(f.calls.length,0,'time-only editing is also restricted to the active map');
+});
+
+test('Spot+Scrub filters schedules, counts and countdown inputs by map ID, including identical room names',()=>{
+  const f=spotSchedulesFixture(), attrs=f.hass.states[f.sensor].attributes;
+  attrs.schedules.push({...structuredClone(attrs.schedules[0]),schedule_id:201,map_id:'456',time:'07:00'});
+  attrs.map_id='123';
+  let state=adapter.scheduleState(f.hass,f.registry,f.entity);
+  assert.deepEqual(state.schedules.map(s=>s.id),[101,102]);assert.equal(state.enabledCount,1);
+  f.hass.states[f.entity].attributes.map_id='456';
+  state=adapter.scheduleState(f.hass,f.registry,f.entity);
+  assert.equal(state.available,false,'old scoped sensor readback cannot be used for the new map');
+  assert.deepEqual(state.schedules,[]);assert.equal(state.inSync,undefined);assert.equal(state.enabledCount,null);
+  attrs.map_id='456';attrs.in_sync=true;f.hass.states[f.sensor].state='1';attrs.on=1;
+  state=adapter.scheduleState(f.hass,f.registry,f.entity);
+  assert.deepEqual(state.schedules.map(s=>s.id),[201]);assert.equal(state.enabledCount,1);assert.equal(state.robotTotal,1);
+  attrs.schedules=attrs.schedules.filter(s=>s.map_id==='123');attrs.on=0;f.hass.states[f.sensor].state='0';
+  state=adapter.scheduleState(f.hass,f.registry,f.entity);
+  assert.deepEqual(state.schedules,[]);assert.equal(state.enabledCount,0);assert.equal(state.inSync,true);
+  f.hass.states[f.entity].attributes.map_id='123';attrs.map_id='123';
+  assert.deepEqual(adapter.scheduleState(f.hass,f.registry,f.entity).schedules.map(s=>s.id),[101,102]);
+});
+
+test('Spot+Scrub keeps genuine map-scoped sync warnings and rejects foreign-map actions',async()=>{
+  const f=spotSchedulesFixture(),attrs=f.hass.states[f.sensor].attributes;
+  attrs.map_id='123';attrs.in_sync=false;attrs.on=3;
+  assert.equal(adapter.scheduleState(f.hass,f.registry,f.entity).inSync,false);
+  assert.equal(adapter.scheduleState(f.hass,f.registry,f.entity).enabledCount,3);
+  f.hass.states[f.entity].attributes.map_id='456';attrs.map_id='456';attrs.on=0;attrs.in_sync=true;
+  await assert.rejects(adapter.setSchedule({...request(f),id:101,enabled:false}));
+  await assert.rejects(adapter.deleteSchedule({...request(f),id:101}));assert.deepEqual(f.calls,[]);
+  delete attrs.map_id;attrs.in_sync=false;
+  const legacy=adapter.scheduleState(f.hass,f.registry,f.entity);
+  assert.deepEqual(legacy.schedules,[]);assert.equal(legacy.inSync,undefined,'an old global warning cannot be attributed to B');
+  f.hass.states[f.entity].attributes.map_id='0';
+  assert.equal(adapter.scheduleState(f.hass,f.registry,f.entity).writable,false);
 });

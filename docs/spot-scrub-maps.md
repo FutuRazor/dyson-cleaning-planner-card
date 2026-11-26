@@ -318,13 +318,15 @@ Deleting selected B changes the active ID in the capture. Deleting an inactive m
 
 ## Remaining live checks
 
+The schedule follow-up now keeps integration counts/checksum baselines per map, retains inactive-map orders, makes their individual switches unavailable and restricts writes to the reported active map. The schedule sensor/calendar and Lovelace list/badge/countdown follow the active map. The L3 five-on-A / zero-on-B counts are covered by offline regressions; see [saved-map schedule behavior](spot-scrub-schedules.md#saved-map-schedule-behavior) for the interface, delayed-reply handling and remaining live checks.
+
 - Install the integration development branch and updated card, then switch A/B repeatedly from both the HA select and the card. Check actual selected-map readback and existing room cleaning afterward.
 - Delete the last saved map in MyDyson and inspect map identity, room list and selector behavior.
 - Extend the shared-name observation in L3 (Wohnzimmer `11` on A / `10` on B) with HA entity/registry snapshots and settings-isolation checks.
 - Switch maps with an unsaved local room selection/settings draft, and verify the existing stale-draft handling.
 - Observe map creation/rename/deletion in MyDyson while HA is disconnected and verify reconciliation after reconnect.
 - Capture HA `map_id`, `rooms`, per-room `room_id`/availability and registry entries across these transitions. Establish how to remove entities exclusive to a deleted map while preserving other maps' entities, including reused room IDs and shared names.
-- Verify schedule behavior across maps separately; these map tests do not establish it.
+- Schedule lists and availability across map changes passed maintainer live acceptance in the integration and Lovelace on 26 November 2026. Extend coverage with app edits, reconnect and actual scheduled execution.
 - Retest map selection with the JDM-readback correction, and capture a stationless MyDyson cancellation/normal completion separately from Home.
 
 The historical captures establish protocol behavior; automated checks of the new controls use simulated HA/MQTT and do not establish live acceptance. Card source and generated bundle are kept together; release versions remain unchanged. The chronological validation index is [TESTING.md](../TESTING.md).

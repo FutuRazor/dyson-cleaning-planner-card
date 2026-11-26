@@ -21,6 +21,7 @@ export const en = {
   "Next cleaning in {duration}": "Next cleaning in {duration}",
   "Next known cleaning in {duration}": "Next known cleaning in {duration}",
   "No active schedules": "No active schedules",
+  "No schedules for this map.": "No schedules for this map.",
   "Next cleaning unknown": "Next cleaning unknown",
   "Next cleaning unavailable": "Next cleaning unavailable",
   "The Home Assistant time zone is unavailable.": "The Home Assistant time zone is unavailable.",

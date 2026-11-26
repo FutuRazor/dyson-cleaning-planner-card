@@ -108,7 +108,7 @@ export const mapSelectionCardMethods = {
   applyMapLock() {
     const locked = !!this._mapRequest;
     this.toggleAttribute('map-switching',locked);
-    this.shadowRoot.querySelectorAll('.rooms,.planning-settings,.planning-tabs,.planner-content>footer,dyson-planner-zone')
+    this.shadowRoot.querySelectorAll('.rooms,.schedules,.planning-settings,.planning-tabs,.planner-content>footer,dyson-planner-zone')
       .forEach(element => { element.inert = locked; });
   },
   async switchSavedMap(identity) {

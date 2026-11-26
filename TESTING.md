@@ -1,5 +1,15 @@
 # Testing v1.6.1
 
+## Map-scoped schedules - 26 November 2026
+
+The maintainer confirmed clean bidirectional map switching between Lovelace and MyDyson, then reported A's schedules remaining visible on empty B with a misleading synchronization warning. The existing L3 capture records A reporting five schedules and B zero. The integration development branch now retains orders across maps but maintains each map's counts/checksum baseline independently. The active-map sensor/calendar, map-qualified switch availability/attributes and backend write checks share that scope. Old storage retains orders without assigning a global checksum to a map. Queries are correlated with the map revision, including late/reordered/expired replies, broker echoes and edits between request and response.
+
+The card filters list rows, enabled badge and countdown by persistent map ID, uses matching sensor summaries, shows confirmed empty maps without a sync instruction, and closes obsolete editors/feedback on app-driven changes. A row disappearing because another map was selected cannot confirm deletion. Existing genuine same-map sync warnings remain visible.
+
+Maintainer live acceptance passed on 26 November 2026 after installing the update: schedules and their availability follow map changes cleanly in both the integration and Lovelace card. The maintainer reports the observed behavior as fully correct. This confirms the map-switch display/availability flow; reconnect, further app edits and actual scheduled execution were not separately reported in this acceptance.
+
+Validation passed: **434 integration tests**; `npm run check` with **173 card unit tests**, generated v1.6.1 bundle and standalone smoke checks; the existing Spot+Scrub schedule and saved-map browser suites; and `tests/map-schedules-browser.mjs` in Modern/Classic at 375/900 px. The new browser suite covers shared names, empty B, A/B readback, counts/countdown, genuine warnings and an in-flight deletion crossing a map change. The empty Modern mobile view was visually checked. These automated tests send no real robot commands. The later maintainer live result is recorded above. Release versions are unchanged. Recording that result changed documentation only, so application tests were not repeated.
+
 ## Saved-map live readback and camera correction - 26 November 2026
 
 The maintainer supplied `home-assistant_dyson_spot_scrub_2026-11-26T01-46-41.347Z.log` after the first map-selection implementation. Select actions report errors at their 15-second deadline, although the robot has already reported the new map through JDM and later legacy telemetry changes the room list; the maintainer confirms successful cleaning afterward. The integration now normalizes actual RB05 `prop.post.current_map_id` and valid `prop.get` map reports into the shared confirmation and room-refresh path. It continues to require robot telemetry, not just transport/command acknowledgement.

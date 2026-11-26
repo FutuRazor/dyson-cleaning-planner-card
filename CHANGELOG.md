@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Keep Spot+Scrub schedule rows, enabled counts and countdowns on the reported active map. Use matching map-scoped integration summaries, show confirmed empty maps without a sync instruction, and cancel obsolete editors/action feedback when the map changes. Integration changes on the map-switching branch retain schedules and checksum baselines per map and make other maps' schedule switches unavailable.
+
 - Clear an earlier saved-map switch error once matching late HA telemetry confirms the requested map. Record the integration corrections for immediate JDM map reports and static-map images when the active map is unknown.
 
 - Add an optional saved-map menu to the Spot+Scrub header, using the matching integration map select on the same robot. Confirm switches through HA readback, retain the existing room updates, and keep map creation, editing and deletion in MyDyson. The feature requires the map-switching integration development branch; upstream v2.2.0 alone does not expose this select.

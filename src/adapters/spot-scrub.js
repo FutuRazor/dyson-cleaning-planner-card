@@ -505,19 +505,27 @@ function scheduleState(hass, registry, entity) {
     && Array.isArray(s.room_ids) && s.room_ids.length === s.rooms.length && s.room_ids.every(id => typeof id === 'string' && /^\d+$/.test(id))
     && new Set(s.room_ids).size === s.room_ids.length && (s.map_id === null || typeof s.map_id === 'string'))
     && new Set(raw.map(s => s.schedule_id)).size === raw.length;
-  const readable = !!sensor && hass?.connected !== false && available(state) && valid;
+  const activeMap = mapId(hass, entity) == null ? null : String(mapId(hass, entity));
+  const mapKnown = activeMap !== null && /^[1-9]\d*$/.test(activeMap);
+  const scoped = attrs.map_id != null;
+  const summaryMatches = mapKnown && (scoped ? String(attrs.map_id) === activeMap : valid && raw.every(s => s.map_id === activeMap));
+  const readable = !!sensor && hass?.connected !== false && available(state) && valid && mapKnown
+    && (!scoped || summaryMatches);
+  const schedules = readable ? raw.filter(s => s.map_id === activeMap) : [];
+  const inSync = summaryMatches ? attrs.in_sync : undefined;
   const canChange = attrs.can_change === true;
   const online = readable && available(hass?.states?.[entity]);
-  const activeMap = mapId(hass, entity);
-  return { supported:!!sensor, available:readable,
-    writable:online && canChange && !!hass?.services?.[DOMAIN]?.set_schedule,
+  const selection = mapSelectionState(hass,registry,entity);
+  const switching = selection.entity && hass?.states?.[selection.entity]?.attributes?.switching === true;
+  return { supported:!!sensor, available:readable, context:roomContext(hass,entity), mapId:activeMap,
+    writable:online && !switching && canChange && !!hass?.services?.[DOMAIN]?.set_schedule,
     createSupported:!!sensor && canChange && !!hass?.services?.[DOMAIN]?.set_schedule,
-    createReady:activeMap != null && /^\d+$/.test(String(activeMap)),
+    createReady:mapKnown && !switching,
     deleteSupported:!!sensor && canChange && !!hass?.services?.[DOMAIN]?.delete_schedule,
-    schedules:readable ? raw.map(s => ({id:s.schedule_id, enabled:s.enabled, days:[...s.days], time:s.time,
-      rooms:[...s.rooms], roomIds:[...s.room_ids], roomSettings:scheduleRoomSettings(s.room_settings,s.room_ids), mapId:s.map_id, repeat:s.repeat})) : [],
-    inSync:attrs.in_sync, robotTotal:readable && /^\d+$/.test(String(state.state)) ? Number(state.state) : null,
-    enabledCount:!readable ? null : attrs.in_sync === true ? raw.filter(schedule => schedule.enabled).length
+    schedules:schedules.map(s => ({id:s.schedule_id, enabled:s.enabled, days:[...s.days], time:s.time,
+      rooms:[...s.rooms], roomIds:[...s.room_ids], roomSettings:scheduleRoomSettings(s.room_settings,s.room_ids), mapId:s.map_id, repeat:s.repeat})),
+    inSync, robotTotal:readable && summaryMatches && /^\d+$/.test(String(state.state)) ? Number(state.state) : null,
+    enabledCount:!readable || !summaryMatches ? null : inSync === true ? schedules.filter(schedule => schedule.enabled).length
       : Number.isSafeInteger(attrs.on) && attrs.on >= 0 ? attrs.on : null,
     roomSelectionKnown:true, creationUsesSelectedRooms:true };
 }

@@ -21,6 +21,7 @@ export const nl = {
   "Next cleaning in {duration}": "Volgende reiniging over {duration}",
   "Next known cleaning in {duration}": "Volgende bekende reiniging over {duration}",
   "No active schedules": "Geen actieve schema's",
+  "No schedules for this map.": "Geen schema's voor deze kaart.",
   "Next cleaning unknown": "Volgende reiniging onbekend",
   "Next cleaning unavailable": "Volgende reiniging niet beschikbaar",
   "The Home Assistant time zone is unavailable.": "De tijdzone van Home Assistant is niet beschikbaar.",
