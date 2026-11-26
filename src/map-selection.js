@@ -59,8 +59,15 @@ export const mapSelectionCardMethods = {
       ? 'Map switching is unavailable. Refresh the map list and check the robot.' : null;
     return `<div class="map-picker"><button class="map-toggle ${pending ? 'pending' : ''}" data-action="maps" data-focus="maps" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}" aria-haspopup="menu" aria-controls="saved-map-menu" aria-expanded="${!!this.mapMenuOpen}" ${pending ? 'aria-busy="true"' : ''} ${locked ? 'disabled' : ''}><ha-icon icon="mdi:map-marker-path" aria-hidden="true"></ha-icon></button>${this.mapMenuOpen ? `<div class="map-menu" id="saved-map-menu" role="menu" aria-label="${this.ht('Saved maps')}"><p class="map-menu-label">${this.ht('Saved maps')}</p>${state.maps.map(map => `<button role="menuitemradio" aria-checked="${map.map_id === state.currentId}" data-map-id="${map.map_id}" data-focus="map-${map.map_id}" ${locked || !state.canChange || this.dirty || map.map_id === state.currentId ? 'disabled' : ''}><span>${escapeHtml(map.option)}</span>${map.map_id === state.currentId ? '<ha-icon icon="mdi:check" aria-hidden="true"></ha-icon>' : ''}</button>`).join('')}${note ? `<p class="map-menu-note">${this.ht(note)}</p>` : ''}</div>` : ''}</div>`;
   },
+  closeMapMenu() {
+    this.mapMenuOpen = false;
+    this.shadowRoot.querySelector('.map-menu')?.remove();
+    this.shadowRoot.querySelector('.map-toggle')?.setAttribute('aria-expanded','false');
+    // Invalidate the paint cache without replacing native controls mid-click.
+    this._html = null;
+  },
   mapClick(event) {
-    if (this.mapMenuOpen && !event.target.closest('.map-picker')) { this.mapMenuOpen = false; this.render(); }
+    if (this.mapMenuOpen && !event.target.closest('.map-picker')) this.closeMapMenu();
     const button = event.target.closest('button');
     if (button?.dataset.action === 'maps') {
       if (!button.disabled) {
@@ -78,7 +85,7 @@ export const mapSelectionCardMethods = {
   mapKeydown(event) {
     if (!this.mapMenuOpen) return false;
     if (event.key === 'Escape') {
-      event.preventDefault(); event.stopPropagation(); this.mapMenuOpen = false; this.render();
+      event.preventDefault(); event.stopPropagation(); this.closeMapMenu();
       this.shadowRoot.querySelector('.map-toggle')?.focus({preventScroll:true}); return true;
     }
     if (event.target.closest('.map-menu') && ['ArrowDown','ArrowUp','Home','End'].includes(event.key)) {

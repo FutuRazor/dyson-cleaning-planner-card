@@ -44,6 +44,17 @@ try {
     await card.locator('.map-toggle').click();
     await page.keyboard.press('Escape');assert.equal(await card.locator('.map-menu').count(),0);
     assert.equal(await card.locator('.map-toggle').evaluate(el=>el===el.getRootNode().activeElement),true);
+    // Dismissing the menu must preserve native checkbox/label activation.
+    await card.locator('.map-toggle').click();
+    const roomInput=card.locator('input[data-room]').first(),roomId=await roomInput.getAttribute('data-room');
+    await roomInput.click({force:true});
+    assert.deepEqual(await page.evaluate(()=>mapsDemo.card.selected),[roomId],'one checkbox click selects the room');
+    assert.equal(await card.locator('.map-menu').count(),0);
+    await card.locator('.map-toggle').click();
+    // The open popup can overlap the middle of a Classic room label.
+    await card.locator('.room .pick').first().click({position:{x:5,y:20}});
+    assert.deepEqual(await page.evaluate(()=>mapsDemo.card.selected),[],'one label click deselects the room');
+    assert.equal(await card.locator('.map-menu').count(),0);
     await card.locator('.map-toggle').click();await card.locator('[data-map-id="1795646759"]').click();
     await card.locator('.map-toggle.pending').waitFor();
     assert.equal(await card.locator('.rooms').getAttribute('inert'),'');

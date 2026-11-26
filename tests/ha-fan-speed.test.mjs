@@ -103,6 +103,29 @@ test('post-fan changes to lifecycle, readiness, mapping or option list prevent a
   }
 });
 
+test('a lifecycle change in the promise gap after room validation blocks the next robot command', async () => {
+  for(const phase of ['area-only','before-fan','after-fan']) for(const kind of ['detach','config','connection','busy']) {
+    const f=enableFanSpeed(haRoomsFixture()), r=request(f);
+    if(phase==='area-only')r.planningDraft={};
+    let active=true, config=f.config, validations=0;
+    r.getCurrent=()=>({hass:f.hass,registry:f.registry,config,active});
+    const room=r.model.rooms.find(room=>room.key===r.selected[0]), context=room.context;
+    // Queue the transition from the last baseline read in validateRooms(). It
+    // runs after validation returns, before sendRoomDraft resumes its await.
+    Object.defineProperty(room,'context',{get(){
+      if(++validations===(phase==='after-fan'?2:1))queueMicrotask(()=>{
+        if(kind==='detach')active=false;
+        if(kind==='config')config={...config};
+        if(kind==='connection')f.hass.connection={};
+        if(kind==='busy')f.hass.states[f.entity].state='cleaning';
+      });
+      return context;
+    }});
+    await assert.rejects(adapter.sendRoomDraft(r),phase==='after-fan' ? /suction power command.*not confirmed/ : /selection changed|only available/,`${phase}/${kind}`);
+    assert.deepEqual(f.calls.map(call=>call.service),phase==='after-fan'?['set_fan_speed']:[],`${phase}/${kind}`);
+  }
+});
+
 test('mapping revalidation before fan rejects stale selection without changing the robot setting', async () => {
   const f=enableFanSpeed(haRoomsFixture()), r=request(f), read=f.hass.callWS;
   f.hass.callWS=async message=>{

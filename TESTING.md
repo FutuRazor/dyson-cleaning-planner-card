@@ -2,7 +2,7 @@
 
 ## Current validation status - 26 November 2026
 
-Version remains **1.7.0**. Latest full checks: **175 card unit tests**, rebuilt bundle and smoke check, plus **449 integration tests**. Browser coverage and maintainer observations are recorded separately below.
+Version remains **1.7.0**. Latest full checks: **178 card unit tests**, rebuilt bundle and smoke check, plus **449 integration tests**. Browser coverage and maintainer observations are recorded separately below.
 
 | Area | Current evidence/status |
 | --- | --- |
@@ -12,12 +12,23 @@ Version remains **1.7.0**. Latest full checks: **175 card unit tests**, rebuilt 
 | Stationless camera bounds | Corrected camera looks good in maintainer live check; original raw dock value remains uncaptured |
 | Map-switch notice in the header | Unit/browser checks passed; separate live confirmation was not reported |
 | Zone tab and automatic floor-plan loading on map changes | Unit/browser checks passed; maintainer live acceptance confirmed |
+| PR #40 review corrections | Unit/browser checks passed; initial maintainer live check reported no new errors |
 | Robot fault-text localization | Integration descriptions are passed through; English texts for 2509/2510 remain a deferred follow-up |
 | Fresh-room discovery before a first clean | Integration regressions passed; live creation check pending |
 | Idle off-dock retry with retained placement faults 2509/2510 | Integration regressions passed; corrected HA/card retry still needs live acceptance |
 | Stationless cleaning → Pause → Home search | Known Dyson behavior also observed in MyDyson; pause and manual docking recovery confirmed |
 
 Additional integration/map checks are listed in [the map notes](docs/spot-scrub-maps.md#remaining-live-checks). Entries below are chronological records and retain their original versions/test counts; an old pending statement does not supersede a later confirmation.
+
+## PR #40 review corrections - 26 November 2026
+
+The [CodeRabbit review of PR #40](https://github.com/FutuRazor/dyson-cleaning-planner-card/pull/40) on `76d9892` contained four inline findings and one unverified offline-prototype finding. All five were verified against code, regressions and the prototype's pinned Dreame source. The original HA adapter also reproduces an obsolete command dispatch in each promise gap: before a fan write, before area-only cleaning and after the second validation following a fan write.
+
+The HA area adapter now checks its current lifecycle synchronously immediately before both service calls. Closing the saved-map menu removes only its popup and updates ARIA/cache state, preserving checkbox/label activation. Schedule requests retain ownership of their progress message; cancellation clears that message immediately only if newer feedback has not replaced it. The offline Dreame fixture publishes water changes to the active humidity select using its native option tokens, and the prototype derives its water-check/self-repair veto from published detail state/status. These Dreame changes remain outside the runtime bundle.
+
+Validation passed: `npm run check` with **178 unit tests**, rebuilt v1.7.0 bundle and smoke check; `npm run prototype:dreame` with zero dispatched commands; and six Chromium browser suites: `map-selection-browser`, `map-schedules-browser`, `ha-rooms-browser`, `ha-fan-speed-browser`, `schedules-feedback-browser` and `zone-map-switching-browser`. New coverage checks one-click checkbox/label activation in Modern/Classic at 375/900 px, immediate deletion-progress cancellation before transport completion, preservation of newer feedback, lifecycle changes queued after room validation, all water-control publication variants and published maintenance-state vetoes. The schedule-feedback browser fixture now retains its dynamic import and installs its fake clock after setup to avoid Chromium's collected-promise error. These checks use simulated HA and send no real robot commands. Version remains **1.7.0**.
+
+After installing the review corrections, the maintainer performed an initial live check and reported no newly observed errors. This is an initial smoke-check observation; individual timing/cancellation cases were not separately described, and it does not establish Dreame hardware support.
 
 ## v1.7.0 release documentation - 26 November 2026
 

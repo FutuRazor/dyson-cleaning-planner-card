@@ -68,6 +68,42 @@ test('water controls retain exact native variants, including 32-step wetness wit
   }
 });
 
+test('optimistic water publication updates the active volume, humidity or wetness control',()=>{
+  for(const variant of ['volume','humidity','wetness']) {
+    const f=variant==='volume'?dreameContractFixture():dreameWaterVariant(dreameContractFixture(),variant);
+    const key=variant==='wetness'?'wetness_level':'water_volume';
+    const field=variant==='humidity'?'mop_pad_humidity':key;
+    const values=variant==='wetness'?[17,32,1]:[3,2,1];
+    for(const value of values) {
+      const baseline=inspect(f), room=baseline.rooms[0];
+      const plan=prepareDreameSave({baseline,draft:{[room.key]:{[key]:value}}});
+      publishOptimisticDreameSave(f,plan);
+      const control=f.hass.states[f.fields['1'][field]];
+      const expected=variant==='humidity'?['','slightly_dry','moist','wet'][value]
+        :variant==='volume'?['','low','medium','high'][value]:String(value);
+      assert.equal(control.state,expected,`${variant}/${value}`);
+      if(variant!=='wetness')assert.equal(control.attributes.value,value);
+      assert.equal(inspect(f).rooms[0].native[key],value);
+      assert.equal(inspect(f).rooms[0].controls[key].available,true);
+    }
+  }
+});
+
+test('published water-check and self-repair states veto offline plans even when HA reports docked',()=>{
+  for(const detail of [{vacuum_state:'water_check'},{status:'water_check'},{status:'self_repair'}]) {
+    const f=dreameContractFixture(), baseline=inspect(f);
+    Object.assign(f.hass.states[f.entity].attributes,detail);
+    assert.equal(f.hass.states[f.entity].state,'docked');
+    assert.equal(f.hass.states[f.entity].attributes.started,false);
+    assert.equal(f.hass.states[f.entity].attributes.running,false);
+    const current=inspect(f), key=baseline.rooms[0].key;
+    assert.equal(current.ready,false);
+    assert.throws(()=>prepareDreameStart({baseline,current,selected:[key]}),hasCode('not_ready'));
+    assert.throws(()=>prepareDreameSave({baseline,current,draft:{[key]:{suction_level:2}}}),hasCode('not_ready'));
+  }
+  assert.equal(inspect(dreameContractFixture()).ready,true);
+});
+
 test('unknown companion baselines, uneditable fields and unsupported fourth cleaning mode block writes',()=>{
   for(const kind of ['missing','unavailable','mode3','unknownfield','range']) {
     const f=dreameContractFixture(), raw=f.hass.states[f.camera].attributes.rooms['1'];

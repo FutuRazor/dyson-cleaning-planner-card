@@ -12,7 +12,8 @@ export function dreameContractFixture() {
     maps:[{id:101,index:1,name:'Ground floor'},{id:202,index:2,name:'Upper floor'}],
     rooms:{'Ground floor':[{id:1,name:'Kitchen'},{id:2,name:'Hall'}],'Upper floor':[{id:1,name:'Bedroom'}]},
     capabilities:['map','customized_cleaning','custom_cleaning_mode'],
-    has_saved_map:true,has_temporary_map:false,started:false,running:false,customized_cleaning:true,cleangenius_cleaning:false};
+    has_saved_map:true,has_temporary_map:false,started:false,running:false,vacuum_state:'charging',status:'charging',
+    customized_cleaning:true,cleangenius_cleaning:false};
   states[entity]={state:'docked',attributes:attrs};
   const camera=row('camera.renamed_ground','map_1'), upperCamera=row('camera.renamed_upper','map_2');
   const native={
@@ -52,6 +53,7 @@ export function dreameWaterVariant(f,variant) {
   for(const roomId of ['1','2']) {
     const old=f.fields[roomId].water_volume;
     f.registry=f.registry.filter(row=>row.entity_id!==old);delete f.hass.states[old];
+    delete f.fields[roomId].water_volume;
     const suffix=variant==='wetness' ? 'wetness_level' : 'mop_pad_humidity';
     const domain=variant==='wetness' ? 'number' : 'select';
     const entity_id=`${domain}.obfuscated_${roomId}_${suffix}`;
@@ -72,6 +74,7 @@ export function dreameWaterVariant(f,variant) {
 export function publishOptimisticDreameSave(f,plan) {
   const data=plan.call.data;
   const names={suction_level:['quiet','standard','strong','turbo'],water_volume:['','low','medium','high'],
+    mop_pad_humidity:['','slightly_dry','moist','wet'],
     cleaning_mode:['sweeping','mopping','sweeping_and_mopping','mopping_after_sweeping']};
   const rawKeys={repeats:'cleaning_times'};
   data.segment_id.forEach((roomId,index)=>{
@@ -80,9 +83,10 @@ export function publishOptimisticDreameSave(f,plan) {
       if(!data[key])continue;
       const value=data[key][index], raw=rawKeys[key] ?? key;
       room[raw]=value;
-      const entity=f.fields[roomId][raw];
+      const field=raw==='water_volume' && f.fields[roomId].mop_pad_humidity?'mop_pad_humidity':raw;
+      const entity=f.fields[roomId][field];
       if(entity && f.hass.states[entity]) {
-        f.hass.states[entity].state=names[key]?.[value] ?? (key==='repeats' ? `${value}x` : String(value));
+        f.hass.states[entity].state=names[field]?.[value] ?? (key==='repeats' ? `${value}x` : String(value));
         if(f.hass.states[entity].attributes.value!==undefined)f.hass.states[entity].attributes.value=value;
       }
     }

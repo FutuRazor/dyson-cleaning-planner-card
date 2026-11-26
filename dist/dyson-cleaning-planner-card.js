@@ -1530,8 +1530,15 @@ const mapSelectionCardMethods = {
       ? 'Map switching is unavailable. Refresh the map list and check the robot.' : null;
     return `<div class="map-picker"><button class="map-toggle ${pending ? 'pending' : ''}" data-action="maps" data-focus="maps" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}" aria-haspopup="menu" aria-controls="saved-map-menu" aria-expanded="${!!this.mapMenuOpen}" ${pending ? 'aria-busy="true"' : ''} ${locked ? 'disabled' : ''}><ha-icon icon="mdi:map-marker-path" aria-hidden="true"></ha-icon></button>${this.mapMenuOpen ? `<div class="map-menu" id="saved-map-menu" role="menu" aria-label="${this.ht('Saved maps')}"><p class="map-menu-label">${this.ht('Saved maps')}</p>${state.maps.map(map => `<button role="menuitemradio" aria-checked="${map.map_id === state.currentId}" data-map-id="${map.map_id}" data-focus="map-${map.map_id}" ${locked || !state.canChange || this.dirty || map.map_id === state.currentId ? 'disabled' : ''}><span>${escapeHtml(map.option)}</span>${map.map_id === state.currentId ? '<ha-icon icon="mdi:check" aria-hidden="true"></ha-icon>' : ''}</button>`).join('')}${note ? `<p class="map-menu-note">${this.ht(note)}</p>` : ''}</div>` : ''}</div>`;
   },
+  closeMapMenu() {
+    this.mapMenuOpen = false;
+    this.shadowRoot.querySelector('.map-menu')?.remove();
+    this.shadowRoot.querySelector('.map-toggle')?.setAttribute('aria-expanded','false');
+    // Invalidate the paint cache without replacing native controls mid-click.
+    this._html = null;
+  },
   mapClick(event) {
-    if (this.mapMenuOpen && !event.target.closest('.map-picker')) { this.mapMenuOpen = false; this.render(); }
+    if (this.mapMenuOpen && !event.target.closest('.map-picker')) this.closeMapMenu();
     const button = event.target.closest('button');
     if (button?.dataset.action === 'maps') {
       if (!button.disabled) {
@@ -1549,7 +1556,7 @@ const mapSelectionCardMethods = {
   mapKeydown(event) {
     if (!this.mapMenuOpen) return false;
     if (event.key === 'Escape') {
-      event.preventDefault(); event.stopPropagation(); this.mapMenuOpen = false; this.render();
+      event.preventDefault(); event.stopPropagation(); this.closeMapMenu();
       this.shadowRoot.querySelector('.map-toggle')?.focus({preventScroll:true}); return true;
     }
     if (event.target.closest('.map-menu') && ['ArrowDown','ArrowUp','Home','End'].includes(event.key)) {
@@ -2855,6 +2862,7 @@ async function sendRoomDraft({hass, registry = [], config, model, selected = [],
   try {
     let rooms = await validateRooms();
     if (Object.hasOwn(planningDraft, 'fan_speed') && planningDraft.fan_speed !== hass.states[config.entity].attributes.fan_speed) {
+      current();
       await hass.callService('vacuum', 'set_fan_speed', {entity_id:config.entity, fan_speed:planningDraft.fan_speed});
       fanSent = true;
       // A setting write can publish new HA state or outlive this card. Recheck
@@ -2862,6 +2870,7 @@ async function sendRoomDraft({hass, registry = [], config, model, selected = [],
       current();
       rooms = await validateRooms();
     }
+    current();
     await hass.callService('vacuum', 'clean_area', {entity_id:config.entity, cleaning_area_id:rooms.map(room => room.areaId)});
     return {rooms:rooms.map(room => ({room_id:room.areaId,name:room.name})),settings:{},sent:true};
   } catch (error) {
@@ -4052,7 +4061,11 @@ const scheduleCardMethods = {
   cancelScheduleFeedback() {
     this.clearScheduleNotice(true);
     const operation = this.scheduleSending;
-    if (operation) { operation.cancelled = true; operation.confirm?.('cancelled'); }
+    if (operation) {
+      operation.cancelled = true;
+      if (operation.progress && this.message === operation.progress) { this.message = ''; this.error = false; }
+      operation.confirm?.('cancelled');
+    }
     this._scheduleConfirmation = null; this._scheduleUnconfirmed = null;
   },
   reconcileScheduleConfirmation() {
@@ -4104,9 +4117,10 @@ const scheduleCardMethods = {
       }
     }
     this.clearScheduleNotice(); this._scheduleUnconfirmed = null;
-    const operation = {request,config,detach}; this.scheduleSending = operation;
+    const progress = dialog ? uiMessage(request.kind === 'delete' ? 'Deleting schedule …' : 'Saving schedule …') : null;
+    const operation = {request,config,detach,progress}; this.scheduleSending = operation;
     const current = () => this.config === config && this._detachRevision === detach && this.isConnected && !operation.cancelled;
-    this.message = dialog ? uiMessage(request.kind === 'delete' ? 'Deleting schedule …' : 'Saving schedule …') : ''; this.error = false;
+    this.message = progress ?? ''; this.error = false;
     this._dismissedNotice = '';
     if (dialog) dialog.error = '';
     this.render();
@@ -4552,7 +4566,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     this._headerFaultKey = ''; this._headerFaultDismissed = false;
     this.controlBusy = false; this.pendingStart = false; this.requestedPlan = null; this.zoneView = false;
     this._mapOutside = event => {
-      if (this.mapMenuOpen && !event.composedPath().includes(this)) { this.mapMenuOpen = false; this.render(); }
+      if (this.mapMenuOpen && !event.composedPath().includes(this)) this.closeMapMenu();
     };
 
     this.shadowRoot.addEventListener('planner-notice', () => this.updateHeaderNotice());

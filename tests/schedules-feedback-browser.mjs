@@ -10,11 +10,15 @@ try {
   for(const backend of ['spot','hass']) {
     const page=await browser.newPage({viewport:{width:900,height:1200}}),errors=[];
     page.on('pageerror',error=>errors.push(error.message));
-    await page.clock.install();
     await page.goto(`http://127.0.0.1:${server.address().port}`);
-    await page.evaluate(async backend=>{
-      const module=await import(backend==='spot'?'/tests/spot-schedules-fixture.mjs':'/tests/schedules-fixture.mjs');
-      window.sched=backend==='spot'?module.spotSchedulesFixture():module.schedulesFixture();
+    await page.locator('#card .room').first().waitFor();
+    await page.evaluate(backend=>{
+      window.scheduleFeedbackLoading=import(backend==='spot'?'/tests/spot-schedules-fixture.mjs':'/tests/schedules-fixture.mjs')
+        .then(module=>{window.scheduleFeedbackFactory=backend==='spot'?module.spotSchedulesFixture:module.schedulesFixture;});
+    },backend);
+    await page.waitForFunction(()=>typeof window.scheduleFeedbackFactory==='function');
+    await page.evaluate(()=>{
+      window.sched=window.scheduleFeedbackFactory();
       const original=sched.hass.callService;
       window.delayedCall=async(...args)=>{
         const before=structuredClone(sched.hass.states[sched.sensor]);
@@ -24,8 +28,11 @@ try {
       };
       window.applyPending=()=>{sched.hass.states[sched.sensor]=pendingState;demo.card.hass={...sched.hass};};
       sched.hass.callService=delayedCall;
-      demo.card.setConfig({...sched.config,language:'en',show_camera:false});demo.card.hass={...sched.hass};await demo.card.loadRegistry();
-    },backend);
+      demo.card.setConfig({...sched.config,language:'en',show_camera:false});demo.card.hass={...sched.hass};
+      window.scheduleFeedbackRegistry=demo.card.loadRegistry();
+    });
+    await page.evaluate(()=>window.scheduleFeedbackRegistry);
+    await page.clock.install();
     const card=page.locator('#card'),header=card.locator('.header-notice');
     const idle=()=>page.waitForFunction(()=>!demo.card.scheduleSending);
     const waiting=()=>page.waitForFunction(()=>!!demo.card._scheduleConfirmation);

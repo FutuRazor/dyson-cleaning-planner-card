@@ -129,6 +129,7 @@ async function sendRoomDraft({hass, registry = [], config, model, selected = [],
   try {
     let rooms = await validateRooms();
     if (Object.hasOwn(planningDraft, 'fan_speed') && planningDraft.fan_speed !== hass.states[config.entity].attributes.fan_speed) {
+      current();
       await hass.callService('vacuum', 'set_fan_speed', {entity_id:config.entity, fan_speed:planningDraft.fan_speed});
       fanSent = true;
       // A setting write can publish new HA state or outlive this card. Recheck
@@ -136,6 +137,7 @@ async function sendRoomDraft({hass, registry = [], config, model, selected = [],
       current();
       rooms = await validateRooms();
     }
+    current();
     await hass.callService('vacuum', 'clean_area', {entity_id:config.entity, cleaning_area_id:rooms.map(room => room.areaId)});
     return {rooms:rooms.map(room => ({room_id:room.areaId,name:room.name})),settings:{},sent:true};
   } catch (error) {

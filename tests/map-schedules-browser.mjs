@@ -81,15 +81,27 @@ try {
         await new Promise(resolve=>{window.releaseScheduleTransport=resolve;});};
       f.card.hass={...f.hass};
     });
-    await card.locator('[data-schedule-menu="101"]').click();await card.locator('[data-schedule-delete="101"]').click();
-    await card.locator('[data-schedule-action="confirm"]').click();
-    await page.waitForFunction(()=>typeof window.releaseScheduleTransport==='function');
-    await page.evaluate(()=>mapSchedules.applyScheduleMap('456',[]));
-    await page.evaluate(()=>window.releaseScheduleTransport());
-    await page.waitForFunction(()=>!mapSchedules.card.scheduleSending);
-    assert.doesNotMatch(await card.locator('.header-notice-copy').textContent(),/Schedule deleted/,
-      'filtering A away must not confirm deletion of an A schedule');
-    assert.equal(await page.evaluate(()=>mapSchedules.calls.length),1,'no retries on a map transition');
+    for(const newerNotice of [false,true]) {
+      await page.evaluate(()=>{mapSchedules.applyScheduleMap('123',mapSchedules.aSchedules);window.releaseScheduleTransport=null;});
+      const callsBefore=await page.evaluate(()=>mapSchedules.calls.length);
+      await card.locator('[data-schedule-menu="101"]').click();await card.locator('[data-schedule-delete="101"]').click();
+      await card.locator('[data-schedule-action="confirm"]').click();
+      await page.waitForFunction(()=>typeof window.releaseScheduleTransport==='function');
+      assert.match(await card.locator('.header-notice-copy').textContent(),/Deleting schedule/);
+      await page.evaluate(newerNotice=>{
+        if(newerNotice){mapSchedules.card.message='A newer robot notice';mapSchedules.card.error=true;}
+        mapSchedules.applyScheduleMap('456',[]);
+      },newerNotice);
+      assert.equal(await page.evaluate(()=>mapSchedules.card.message),newerNotice?'A newer robot notice':'',
+        'cancellation clears only its own progress, immediately before transport completes');
+      if(newerNotice)assert.equal(await page.evaluate(()=>mapSchedules.card.error),true);
+      else assert.equal(await card.locator('.header-notice').isVisible(),false);
+      await page.evaluate(()=>window.releaseScheduleTransport());
+      await page.waitForFunction(()=>!mapSchedules.card.scheduleSending);
+      assert.doesNotMatch(await card.locator('.header-notice-copy').textContent(),/Schedule deleted|Deleting schedule/,
+        'filtering A away must not confirm deletion or retain its progress');
+      assert.equal(await page.evaluate(()=>mapSchedules.calls.length),callsBefore+1,'no retries on a map transition');
+    }
     assert.deepEqual(errors,[]);await page.close();
   }
   console.log('Map-scoped schedules: both themes at 375/900 px, empty B, shared names, A/B readback, counts/countdown, genuine warnings and in-flight context changes passed.');

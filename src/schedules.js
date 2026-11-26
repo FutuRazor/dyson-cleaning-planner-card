@@ -539,7 +539,11 @@ export const scheduleCardMethods = {
   cancelScheduleFeedback() {
     this.clearScheduleNotice(true);
     const operation = this.scheduleSending;
-    if (operation) { operation.cancelled = true; operation.confirm?.('cancelled'); }
+    if (operation) {
+      operation.cancelled = true;
+      if (operation.progress && this.message === operation.progress) { this.message = ''; this.error = false; }
+      operation.confirm?.('cancelled');
+    }
     this._scheduleConfirmation = null; this._scheduleUnconfirmed = null;
   },
   reconcileScheduleConfirmation() {
@@ -591,9 +595,10 @@ export const scheduleCardMethods = {
       }
     }
     this.clearScheduleNotice(); this._scheduleUnconfirmed = null;
-    const operation = {request,config,detach}; this.scheduleSending = operation;
+    const progress = dialog ? uiMessage(request.kind === 'delete' ? 'Deleting schedule …' : 'Saving schedule …') : null;
+    const operation = {request,config,detach,progress}; this.scheduleSending = operation;
     const current = () => this.config === config && this._detachRevision === detach && this.isConnected && !operation.cancelled;
-    this.message = dialog ? uiMessage(request.kind === 'delete' ? 'Deleting schedule …' : 'Saving schedule …') : ''; this.error = false;
+    this.message = progress ?? ''; this.error = false;
     this._dismissedNotice = '';
     if (dialog) dialog.error = '';
     this.render();

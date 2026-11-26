@@ -44,6 +44,8 @@ Room keys are serialized `[deviceId, mapId, nativeRoomId]`; native IDs are posit
 
 Writes additionally require connected, available, docked/idle state; an established saved map without a temporary map; `started:false`, `running:false`, `customized_cleaning:true`; the matching capability; and no CleanGenius, draining or self-repair veto. The prototype does not enable customized cleaning or switch maps automatically. These are conservative support policies, not assertions that upstream requires every condition in every command path.
 
+The pinned backend maps water checking to HA `docked`, while publishing `vacuum_state: water_check` and/or `status: water_check`; self-repair also appears as `status: self_repair`. The prototype rejects these published details before preparing Save or Start descriptors. It does not rely solely on a `self_repairing` Boolean, which the pinned backend does not publish. Ordinary docked/charging snapshots remain eligible when the other requirements hold.
+
 ## Read values and edit options
 
 Camera room metadata supplies map-qualified native baselines (`suction_level`, `cleaning_times`, `water_volume`, `wetness_level`, `cleaning_mode`). Matching select/number entities supply current availability and allowed edits. Their native numeric values must agree with the metadata before a field can be edited. Missing, duplicated, disabled or unavailable controls do not authorize guessed writes.

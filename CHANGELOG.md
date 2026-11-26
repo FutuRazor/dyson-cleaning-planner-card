@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Add an offline Dreame v2.0.3 contract prototype, source-shaped fixtures and an executable delayed-save-rejection demonstration. Validate map-qualified room identity, exact native profile values and companion-value preservation; do not equate optimistic HA updates or service completion with robot confirmation. The prototype is not bundled or exposed as a supported adapter.
+- Correct optimistic humidity-control publication in the offline Dreame fixture and derive its self-repair veto from published detailed state/status, including water checks reported as docked in HA. These corrections do not register or bundle the prototype.
 
 ## v1.7.0
 
@@ -11,6 +12,10 @@
 This release combines the adapter work developed under v1.6.1 with saved-map selection and schedules per map. Maintainer live tests confirmed map switching and schedule availability in the integration and Lovelace card, plus the Zone tab remaining selected and loading the new floor plan after a map change.
 
 Saved-map controls currently require the [map-switching integration development branch](https://github.com/FutuRazor/ha-dyson-spot-scrub/tree/feat/map-switching). Integrations without the matching map select keep these optional controls hidden; upstream v2.2.0 alone does not expose them. Integration-provided fault descriptions, including the new English texts for 2509/2510, retain their current language behavior; localization is a follow-up.
+
+- Revalidate the card lifecycle immediately before generic HA fan-speed and area-cleaning calls, closing the promise gap after asynchronous room validation.
+- Preserve native room checkbox/label activation when dismissing the saved-map menu, including single-click selection and deselection.
+- Clear a cancelled schedule request's own progress message immediately while preserving newer feedback, including app-driven map changes during deletion.
 
 - Keep the Zone tab selected across saved-map changes and automatically load the new calibrated floor plan. Discard the old rectangle, handle delayed camera calibration without manual Reload, and preserve the loaded zone component when the header/map menu updates.
 

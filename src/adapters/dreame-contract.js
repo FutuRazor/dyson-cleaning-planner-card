@@ -51,10 +51,12 @@ export function inspectDreameSnapshot({hass,registry,entity}) {
   const catalogue=attrs.rooms[map.name], nativeIds=catalogue.map(room=>id(room.id));
   if (nativeIds.some(value=>value===null) || new Set(nativeIds).size!==nativeIds.length) fail('room_identity','The selected map has invalid or duplicate native room IDs.');
   const capabilities=Array.isArray(attrs.capabilities) ? attrs.capabilities : [];
+  // The pinned backend publishes detailed state/status, not self_repairing.
+  const selfRepairing=attrs.vacuum_state==='water_check' || ['water_check','self_repair'].includes(attrs.status);
   const ready=hass?.connected!==false && live(state) && ['docked','idle'].includes(state.state)
     && attrs.has_saved_map===true && attrs.has_temporary_map===false
     && attrs.started===false && attrs.running===false && attrs.customized_cleaning===true
-    && attrs.cleangenius_cleaning!==true && attrs.draining!==true && attrs.self_repairing!==true
+    && attrs.cleangenius_cleaning!==true && attrs.draining!==true && attrs.self_repairing!==true && !selfRepairing
     && capabilities.includes('customized_cleaning');
   const context=JSON.stringify([entity,vacuum.device_id,vacuum.unique_id,mapId,mapIndex,[...nativeIds].sort((a,b)=>a-b)]);
   const rooms=catalogue.map(item=>{

@@ -372,7 +372,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     this._headerFaultKey = ''; this._headerFaultDismissed = false;
     this.controlBusy = false; this.pendingStart = false; this.requestedPlan = null; this.zoneView = false;
     this._mapOutside = event => {
-      if (this.mapMenuOpen && !event.composedPath().includes(this)) { this.mapMenuOpen = false; this.render(); }
+      if (this.mapMenuOpen && !event.composedPath().includes(this)) this.closeMapMenu();
     };
 
     this.shadowRoot.addEventListener('planner-notice', () => this.updateHeaderNotice());
