@@ -38,6 +38,8 @@ The [experimental hass-dyson adapter](docs/hass-dyson.md) supports rooms/setting
 
 For integration developers, the [complete integration contract](docs/integration-contract.md) documents required and optional entities, registry identities, attributes, action payloads and validation. 
 
+The [Spot+Scrub map lifecycle notes](docs/spot-scrub-maps.md) collect live findings on map creation, switching and deletion, captured commands, and the proposed map-selection interface.
+
 In the generic HA mode, fan-capable vacuums additionally show one shared suction slider below the area tiles. Changes remain local until Start; the card sets an explicitly changed value before area cleaning and explains that it is a global robot preference which may persist. See the [optional suction behavior and live checklist](docs/home-assistant-rooms.md#optional-suction-power-and-start). This addition still needs its own live verification, including interactions with stored room profiles.
 
 The [Home Assistant area-cleaning adapter](docs/home-assistant-rooms.md) adds basic room selection for other integrations whose vacuum entity reports `CLEAN_AREA`. First map the robot segments to HA areas in the vacuum entity settings, then choose **Integration → Home Assistant · Area cleaning** and the robot, or use Automatic. It starts selected areas through `vacuum.clean_area`, uses checkmarks instead of execution-order numbers, and offers standard session controls when supported. Per-room settings, maps/zones and native schedules require a specialized adapter. This generic path has passed simulated checks and a maintainer live test with a Dyson (multiple starts, Pause/Resume/Home, local room chips and battery display); live acceptance with a foreign robot is pending.

@@ -1,5 +1,15 @@
 # Testing v1.6.1
 
+## Spot+Scrub active-map deletion live evidence - 26 November 2026
+
+Deleting selected B in MyDyson automatically selected A. The log confirms the deletion, a map list containing only A and the coordinator's return to A's five rooms. The maintainer confirms the corresponding entity activation and Lovelace room-list change. See the [deletion timeline and command reference](docs/spot-scrub-maps.md#deleting-active-map-b) for both captures, exact payloads, evidence boundaries and remaining deletion tests.
+
+## Spot+Scrub multi-map live evidence - 25/26 November 2026
+
+Maintainer tests confirm repeated A/B switches with stable map IDs, smooth active-room-list updates and a successful card-originated Kitchen start after returning to A. Room ID 10 is reused across maps. The captured inactive-map Kitchen requests are rejected by the integration's legacy start path. See [Spot+Scrub maps and map switching](docs/spot-scrub-maps.md) for creation/discovery timing, names and IDs, captured commands and lifecycle messages, the source review, the proposed HA map selector and remaining checks.
+
+These evidence updates change documentation only. Application code, generated bundle and release version are unchanged; automated application suites were not rerun.
+
 ## Station and Robot switch feedback - 25 November 2026
 
 Validation passed: `npm run check` with **166 unit tests**, rebuilt bundle and standalone smoke checks. Six Edge browser suites passed: the new settings feedback tests, station controls, keyboard navigation, translations/layout, consumables and the existing schedule feedback flow. Pending-state screenshots were reviewed in Modern and Classic. No real robot commands were sent.
