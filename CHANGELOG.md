@@ -5,6 +5,13 @@
 - Add an offline Dreame v2.0.3 contract prototype, source-shaped fixtures and an executable delayed-save-rejection demonstration. Validate map-qualified room identity, exact native profile values and companion-value preservation; do not equate optimistic HA updates or service completion with robot confirmation. The prototype is not bundled or exposed as a supported adapter.
 - Correct optimistic humidity-control publication in the offline Dreame fixture and derive its self-repair veto from published detailed state/status, including water checks reported as docked in HA. These corrections do not register or bundle the prototype.
 
+## v1.7.1
+
+- Add optional wrapping map chips above Rooms, Zone and Schedules through `map_selector_style: chips`; keep the header menu as the default.
+- Add `excluded_maps` using stable string IDs. Ignore deleted IDs, preserve exclusions after renames and show new maps by default. Hide unnecessary selectors while retaining a return path from an app-selected hidden map, or a notice when all maps are hidden.
+- Add visual-editor style and visibility controls using the complete map list, refresh support and map IDs. Reset exclusions when selecting another robot and translate controls, hints and validation in English, German, Dutch and French.
+- Reuse existing map confirmation, lifecycle/draft locks and error handling for both presentations. Preserve Zone/Schedules selection and verified floor-plan loading. No companion integration changes are required for these display options.
+
 ## v1.7.0
 
 **Saved-map switching for Spot+Scrub**

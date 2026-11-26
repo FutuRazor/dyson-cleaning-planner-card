@@ -1,8 +1,8 @@
-# Testing v1.7.0
+# Testing v1.7.1
 
 ## Current validation status - 26 November 2026
 
-Version remains **1.7.0**. Latest full checks: **178 card unit tests**, rebuilt bundle and smoke check, plus **449 integration tests**. Browser coverage and maintainer observations are recorded separately below.
+Current card version is **1.7.1**. Latest full card checks: **184 unit tests**, rebuilt bundle and smoke check. The unchanged companion integration's latest full suite passed **449 tests**. Browser coverage and maintainer observations are recorded separately below.
 
 | Area | Current evidence/status |
 | --- | --- |
@@ -12,6 +12,7 @@ Version remains **1.7.0**. Latest full checks: **178 card unit tests**, rebuilt 
 | Stationless camera bounds | Corrected camera looks good in maintainer live check; original raw dock value remains uncaptured |
 | Map-switch notice in the header | Unit/browser checks passed; separate live confirmation was not reported |
 | Zone tab and automatic floor-plan loading on map changes | Unit/browser checks passed; maintainer live acceptance confirmed |
+| v1.7.1 map visibility, chips and editor | Unit/browser checks passed; maintainer live acceptance pending |
 | PR #40 review corrections | Unit/browser checks passed; initial maintainer live check reported no new errors |
 | Robot fault-text localization | Integration descriptions are passed through; English texts for 2509/2510 remain a deferred follow-up |
 | Fresh-room discovery before a first clean | Integration regressions passed; live creation check pending |
@@ -19,6 +20,14 @@ Version remains **1.7.0**. Latest full checks: **178 card unit tests**, rebuilt 
 | Stationless cleaning → Pause → Home search | Known Dyson behavior also observed in MyDyson; pause and manual docking recovery confirmed |
 
 Additional integration/map checks are listed in [the map notes](docs/spot-scrub-maps.md#remaining-live-checks). Entries below are chronological records and retain their original versions/test counts; an old pending statement does not supersede a later confirmation.
+
+## v1.7.1 map visibility and chips - 26 November 2026
+
+Implementation is on `fix/map-switching`, based on the pending v1.7.0 adapter branch. `map_selector_style` selects the existing header menu or optional wrapping chips. `excluded_maps` stores canonical string IDs and filters only display targets; the full catalogue remains authoritative for readiness and confirmation. A hidden active map retains a visible return path or an identifying notice if all maps are hidden. The editor uses the complete known list, handles rename/deletion/new IDs, allows every map to be re-enabled and resets exclusions for another robot. The controls, notes and validation are translated in all four languages. No companion integration changes are needed.
+
+Validation passed: `npm run check` with **184 unit tests**, generated v1.7.1 bundle and smoke check. Chromium browser suites `map-preferences-browser`, `map-selection-browser`, `zone-map-switching-browser`, `map-schedules-browser` and `editor-session-preview-browser` passed. Map preferences cover Modern/Classic at 375/900 px, long wrapping labels, keyboard switching, target-only progress, both select/vacuum readbacks, draft locks, hidden-active return paths, all-hidden notices, rename/deletion/new maps, four editor languages, refresh without service calls, unsupported adapters, robot changes, timeout/rejection and late readback. Zone map-switch coverage now runs both menu and chips in both themes/widths, including delayed calibration and temporary session states. Narrow Modern/Classic chip layouts were visually checked. Browser actions use simulated HA only; maintainer live acceptance of the new display options is pending.
+
+Package metadata, lockfile, README, current contract/adapter documentation, changelog/testing header and generated banner are aligned to **1.7.1**. Historical records below retain their original versions and test counts; the Dreame prototype remains outside the bundle.
 
 ## PR #40 review corrections - 26 November 2026
 

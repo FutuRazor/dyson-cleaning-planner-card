@@ -1196,9 +1196,10 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
   planningTabsHtml() {
     const schedules = this.getScheduleState();
     const tabs = [['rooms','Rooms'], ...(this.supportsZone ? [['zones','Zone']] : []), ...(schedules.supported ? [['schedules','Schedules']] : [])];
-    if (tabs.length === 1) return '';
+    const mapSelector = this.mapSelectorHtml();
+    if (tabs.length === 1) return mapSelector;
     const current = this.schedulesView ? 'schedules' : this.zoneView ? 'zones' : 'rooms';
-    return `<nav class="planning-tabs" role="tablist" aria-label="${this.ht('Cleaning selection')}">${tabs.map(([key,label]) => {
+    return `${mapSelector}<nav class="planning-tabs" role="tablist" aria-label="${this.ht('Cleaning selection')}">${tabs.map(([key,label]) => {
       const count = key === 'schedules' ? schedules.enabledCount : null;
       const counted = Number.isSafeInteger(count) && count >= 0;
       return `<button id="planning-tab-${key}" role="tab" data-action="${key}" aria-selected="${current === key}" aria-controls="planning-panel-${key}" tabindex="${current === key ? 0 : -1}" ${counted ? `aria-label="${this.ht('Schedules, active: {count}',{count})}" title="${this.ht('Active schedules: {count}',{count})}"` : ''}><span class="planning-tab-label">${this.ht(label)}${counted ? `<span class="schedule-count ${count === 0 ? 'is-zero' : ''} ${count > 99 ? 'capped' : ''}" aria-hidden="true">${count > 99 ? '99+' : count}</span>` : ''}</span></button>`;

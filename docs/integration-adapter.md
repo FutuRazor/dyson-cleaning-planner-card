@@ -1,6 +1,6 @@
 # Integration adapters
 
-Integration behavior is isolated behind internal adapters. The existing `dyson_spot_scrub` adapter passed the initial offline and maintainer live checks. Card **v1.7.0** supports the [experimental hass-dyson adapter](hass-dyson.md) as a second backend with integration selection, introduced in v1.5.0. Existing Spot+Scrub YAML and action payloads remain the compatibility baseline.
+Integration behavior is isolated behind internal adapters. The existing `dyson_spot_scrub` adapter passed the initial offline and maintainer live checks. Card **v1.7.1** supports the [experimental hass-dyson adapter](hass-dyson.md) as a second backend with integration selection, introduced in v1.5.0. Existing Spot+Scrub YAML and action payloads remain the compatibility baseline.
 
 ## Boundaries
 

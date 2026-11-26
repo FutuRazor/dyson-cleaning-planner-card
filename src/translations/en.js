@@ -1,5 +1,17 @@
 // English messages are also stable translation keys. Never use translated labels in action payloads.
 export const en = {
+  "Map selector style": "Map selector style",
+  "Header button": "Header button",
+  "Map chips": "Map chips",
+  "Maps in this card": "Maps in this card",
+  "Choose which saved maps to show. Hidden maps remain available in MyDyson.": "Choose which saved maps to show. Hidden maps remain available in MyDyson.",
+  "Refresh maps": "Refresh maps",
+  "New maps appear automatically. Visibility is stored by map ID.": "New maps appear automatically. Visibility is stored by map ID.",
+  "Hidden in this card": "Hidden in this card",
+  "Active map: {name} (hidden in this card).": "Active map: {name} (hidden in this card).",
+  "Switching map: {name}": "Switching map: {name}",
+  "map_selector_style must be menu or chips.": "map_selector_style must be menu or chips.",
+  "excluded_maps must be a list of saved map IDs (strings).": "excluded_maps must be a list of saved map IDs (strings).",
   "Updating setting …": "Updating setting …",
   "The setting change has not been confirmed by Home Assistant. Check the robot before trying again.": "The setting change has not been confirmed by Home Assistant. Check the robot before trying again.",
   "Suction power · all selected rooms": "Suction power · all selected rooms",

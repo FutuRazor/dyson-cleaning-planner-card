@@ -133,6 +133,23 @@ try {
     });
     assert.equal(await page.evaluate(()=>mapsDemo.card._mapRequest),null);
     assert.equal(await card.locator('.map-toggle.pending').count(),0);
+    // ID filtering is local; an app-selected hidden map remains a return path.
+    await page.evaluate(()=>{
+      const f=mapsDemo;f.applyMap('1784483068');
+      f.card.setConfig({...f.card.config,excluded_maps:['1795646759']});f.card.hass={...f.hass};
+    });
+    assert.equal(await card.locator('.map-toggle').count(),0);
+    await page.evaluate(()=>{mapsDemo.applyMap('1795646759');mapsDemo.card.hass={...mapsDemo.hass};});
+    await card.locator('.map-toggle').click();
+    assert.equal(await card.locator('.map-menu button').count(),2);
+    assert.equal(await card.locator('[data-map-id="1795646759"]').isDisabled(),true);
+    assert.match(await card.locator('.map-visibility-note').textContent(),/hidden in this card/);
+    await page.keyboard.press('Escape');
+    await page.evaluate(()=>{
+      const f=mapsDemo;f.card.setConfig({...f.card.config,excluded_maps:f.maps.map(map=>map.map_id)});
+    });
+    assert.equal(await card.locator('.map-toggle').count(),0);
+    assert.match(await card.locator('.map-visibility-note').textContent(),/Dachboden/);
     assert.deepEqual(errors,[]);
     await page.close();
   }

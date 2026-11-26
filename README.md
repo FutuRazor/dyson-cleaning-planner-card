@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/images/planner-banner.svg?v=1.7.0" alt="Dyson Cleaning Planner — a dashboard card for Home Assistant" width="1100">
+  <img src="docs/images/planner-banner.svg?v=1.7.1" alt="Dyson Cleaning Planner — a dashboard card for Home Assistant" width="1100">
 </p>
 
 <p align="center">
@@ -18,9 +18,9 @@
   Plan room or zone cleaning, manage weekly schedules, and follow your Dyson's progress in Home Assistant.
 </p>
 
-**Version 1.7.0**
+**Version 1.7.1**
 
-**Saved-map switching for Spot+Scrub.** This release includes map-specific schedules, the adapter refactor and the Home Assistant area-cleaning adapter. Saved-map controls require the integration development branch linked below; integrations without the matching map select keep these optional controls hidden.
+**Choose how to switch saved maps.** Use the existing header menu or wrapping map chips above the planning tabs, and hide individual maps on each card. Both use the same confirmed switching and draft protection. Saved-map controls require the integration development branch linked below; integrations without the matching map select keep these optional controls hidden.
 
 <p align="center">
   <a href="#installation">Installation</a> &middot;
@@ -40,7 +40,7 @@ The [experimental hass-dyson adapter](docs/hass-dyson.md) supports rooms/setting
 
 For integration developers, the [complete integration contract](docs/integration-contract.md) documents required and optional entities, registry identities, attributes, action payloads and validation. 
 
-The Spot+Scrub header offers a saved-map menu when the matching integration provides its Map select with at least two valid map options. With only one map, the switch button is hidden. This currently requires the [map-switching integration development branch](https://github.com/FutuRazor/ha-dyson-spot-scrub/tree/feat/map-switching); upstream v2.2.0 alone does not expose it. The [map lifecycle notes](docs/spot-scrub-maps.md) describe the interface, captured commands and live findings. Map creation, deletion and editing remain in MyDyson. Deleted maps leave the menu; cleanup of their old room entities is a separate follow-up.
+Spot+Scrub offers a saved-map selector when the matching integration provides its Map select. The header menu is the default; map chips and per-card visibility are optional, as described [below](#saved-maps). With only one visible map that is already active, the selector is hidden. This currently requires the [map-switching integration development branch](https://github.com/FutuRazor/ha-dyson-spot-scrub/tree/feat/map-switching); upstream v2.2.0 alone does not expose it. The [map lifecycle notes](docs/spot-scrub-maps.md) describe the interface, captured commands and live findings. Map creation, deletion and editing remain in MyDyson. Deleted maps leave the selector; cleanup of their old room entities is a separate follow-up.
 
 The updated integration branch also supplies the camera-bounds correction, new-room discovery after mapping and descriptions/readiness handling for placement warnings 2509/2510. These companion fixes require updating the integration, not just this card. A newly selected map may briefly have an empty room list until its data arrives; cleaning settings remain unavailable until the robot reports them.
 
@@ -140,6 +140,24 @@ Update through Marketplace (or HACS on older Home Assistant versions), or replac
 
 ## Using the card
 
+### Saved maps
+
+With a supported integration and at least two known maps, the visual editor shows **Maps in this card**. Choose **Header button** (the default) or **Map chips**, then check the maps to display. Chips wrap above Rooms, Zone and Schedules and highlight the reported active map. A pending switch shows a spinner in the target chip and locks the other controls until confirmation. Discard local room drafts before changing maps.
+
+Visibility is saved by map ID, so renaming a map does not change its visibility. Deleted IDs are ignored and new maps appear visible by default. The editor retains the complete list so hidden maps can be enabled again. **Refresh maps** rereads the data available in Home Assistant; catalogue discovery remains the integration's responsibility. Selecting a different robot in the editor resets its map exclusions.
+
+The selector hides when only one visible map remains and that map is active. If MyDyson selects a hidden map, it is temporarily identified and visible alternatives remain selectable. With every map hidden, a notice names the hidden active map when known. These preferences only filter the selector; rooms, schedules and the floor plan continue to follow the robot's actual map.
+
+```yaml
+type: custom:dyson-cleaning-planner-card
+entity: vacuum.your_robot
+map_selector_style: chips
+excluded_maps:
+  - "1795646759"
+```
+
+Copy the map IDs shown in the editor and quote them in YAML. Without these options, the existing header-menu behavior is preserved. Integrations without saved-map selection ignore these display preferences.
+
 ### Plan rooms
 
 In **Modern**, tap the circle to select a room; its number shows the selection order. Tap the room name, mode or arrow to open its settings without changing the selection. **Classic** remains available in the editor.
@@ -236,8 +254,8 @@ These options belong in the individual card's code editor, not in `configuration
 
 | Option | Description |
 |---|---|
-| `entity` | Required Dyson vacuum entity |
-| `integration` | `auto` (default), `dyson_spot_scrub`, or experimental `hass_dyson` |
+| `entity` | Required vacuum entity |
+| `integration` | `auto` (default), `dyson_spot_scrub`, experimental `hass_dyson`, or `ha_rooms` |
 | `title` | Custom planner title; empty or omitted uses the translated default |
 | `language` | `auto` (default), `en`, `de`, `nl`, or `fr`; applies to this card and its editor |
 | `theme` | `modern` (default) or `classic` |
@@ -245,6 +263,8 @@ These options belong in the individual card's code editor, not in `configuration
 | `unsupported_settings` | Legacy option; unsupported settings are now always hidden |
 | `excluded_rooms` | Room entity IDs to hide: switches for Spot+Scrub, room selects for hass-dyson |
 | `room_order` | Those room entity IDs in display order |
+| `map_selector_style` | Saved-map selector: `menu` (default header button) or `chips` (wrapping buttons above the planning tabs) |
+| `excluded_maps` | Saved map IDs to hide in this card, as quoted strings; default: `[]`. A hidden active map remains identifiable. |
 | `room_entities` | Optional mapping from room names to switch entity IDs |
 | `show_camera` | Show the map during cleaning; default: `true` |
 | `camera_entity` | Optional same-device camera (Spot+Scrub) or image entity (hass-dyson) |

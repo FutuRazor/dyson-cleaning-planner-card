@@ -1,6 +1,18 @@
-/* Dyson Cleaning Planner Card v1.7.0 | MIT */
+/* Dyson Cleaning Planner Card v1.7.1 | MIT */
 // English messages are also stable translation keys. Never use translated labels in action payloads.
 const en = {
+  "Map selector style": "Map selector style",
+  "Header button": "Header button",
+  "Map chips": "Map chips",
+  "Maps in this card": "Maps in this card",
+  "Choose which saved maps to show. Hidden maps remain available in MyDyson.": "Choose which saved maps to show. Hidden maps remain available in MyDyson.",
+  "Refresh maps": "Refresh maps",
+  "New maps appear automatically. Visibility is stored by map ID.": "New maps appear automatically. Visibility is stored by map ID.",
+  "Hidden in this card": "Hidden in this card",
+  "Active map: {name} (hidden in this card).": "Active map: {name} (hidden in this card).",
+  "Switching map: {name}": "Switching map: {name}",
+  "map_selector_style must be menu or chips.": "map_selector_style must be menu or chips.",
+  "excluded_maps must be a list of saved map IDs (strings).": "excluded_maps must be a list of saved map IDs (strings).",
   "Updating setting …": "Updating setting …",
   "The setting change has not been confirmed by Home Assistant. Check the robot before trying again.": "The setting change has not been confirmed by Home Assistant. Check the robot before trying again.",
   "Suction power · all selected rooms": "Suction power · all selected rooms",
@@ -348,6 +360,18 @@ const en = {
 
 // German display text. Entity names and protocol values are never rewritten.
 const de = {
+  "Map selector style": "Darstellung der Kartenauswahl",
+  "Header button": "Schaltfläche im Kopfbereich",
+  "Map chips": "Karten-Chips",
+  "Maps in this card": "Gespeicherte Karten in dieser Ansicht",
+  "Choose which saved maps to show. Hidden maps remain available in MyDyson.": "Wähle die anzuzeigenden Karten. Ausgeblendete Karten bleiben in MyDyson verfügbar.",
+  "Refresh maps": "Karten aktualisieren",
+  "New maps appear automatically. Visibility is stored by map ID.": "Neue Karten erscheinen automatisch. Die Sichtbarkeit wird über die Karten-ID gespeichert.",
+  "Hidden in this card": "In dieser Ansicht ausgeblendet",
+  "Active map: {name} (hidden in this card).": "Aktive Karte: {name} (in dieser Ansicht ausgeblendet).",
+  "Switching map: {name}": "Kartenwechsel: {name}",
+  "map_selector_style must be menu or chips.": "map_selector_style muss menu oder chips sein.",
+  "excluded_maps must be a list of saved map IDs (strings).": "excluded_maps muss eine Liste gespeicherter Karten-IDs als Zeichenfolgen sein.",
   "Updating setting …": "Einstellung wird geändert …",
   "The setting change has not been confirmed by Home Assistant. Check the robot before trying again.": "Home Assistant hat die Einstellungsänderung noch nicht bestätigt. Prüfe den Roboter vor einem erneuten Versuch.",
   "Suction power · all selected rooms": "Saugkraft · alle ausgewählten Räume",
@@ -695,6 +719,18 @@ const de = {
 
 // Dutch UI text. Protocol values and entity names remain unchanged.
 const nl = {
+  "Map selector style": "Weergave van kaartkeuze",
+  "Header button": "Knop in de kop",
+  "Map chips": "Kaartknoppen",
+  "Maps in this card": "Kaarten in deze weergave",
+  "Choose which saved maps to show. Hidden maps remain available in MyDyson.": "Kies welke opgeslagen kaarten je wilt tonen. Verborgen kaarten blijven beschikbaar in MyDyson.",
+  "Refresh maps": "Kaarten vernieuwen",
+  "New maps appear automatically. Visibility is stored by map ID.": "Nieuwe kaarten verschijnen automatisch. De zichtbaarheid wordt per kaart-ID opgeslagen.",
+  "Hidden in this card": "Verborgen in deze weergave",
+  "Active map: {name} (hidden in this card).": "Actieve kaart: {name} (verborgen in deze weergave).",
+  "Switching map: {name}": "Kaart wisselen: {name}",
+  "map_selector_style must be menu or chips.": "map_selector_style moet menu of chips zijn.",
+  "excluded_maps must be a list of saved map IDs (strings).": "excluded_maps moet een lijst met opgeslagen kaart-ID's als tekst zijn.",
   "Updating setting …": "Instelling wijzigen …",
   "The setting change has not been confirmed by Home Assistant. Check the robot before trying again.": "Home Assistant heeft de gewijzigde instelling nog niet bevestigd. Controleer de robot voordat je het opnieuw probeert.",
   "Suction power · all selected rooms": "Zuigkracht · alle geselecteerde kamers",
@@ -1042,6 +1078,18 @@ const nl = {
 
 // French UI translations. Dyson terminology is referenced in docs/translations.md.
 const fr = {
+  "Map selector style": "Présentation du sélecteur de carte",
+  "Header button": "Bouton dans l’en-tête",
+  "Map chips": "Boutons de carte",
+  "Maps in this card": "Cartes dans cette vue",
+  "Choose which saved maps to show. Hidden maps remain available in MyDyson.": "Choisissez les cartes enregistrées à afficher. Les cartes masquées restent disponibles dans MyDyson.",
+  "Refresh maps": "Actualiser les cartes",
+  "New maps appear automatically. Visibility is stored by map ID.": "Les nouvelles cartes apparaissent automatiquement. La visibilité est enregistrée par identifiant de carte.",
+  "Hidden in this card": "Masquée dans cette vue",
+  "Active map: {name} (hidden in this card).": "Carte active : {name} (masquée dans cette vue).",
+  "Switching map: {name}": "Changement de carte : {name}",
+  "map_selector_style must be menu or chips.": "map_selector_style doit être menu ou chips.",
+  "excluded_maps must be a list of saved map IDs (strings).": "excluded_maps doit être une liste d’identifiants de cartes enregistrées sous forme de chaînes.",
   "Updating setting …": "Modification du réglage …",
   "The setting change has not been confirmed by Home Assistant. Check the robot before trying again.": "Home Assistant n'a pas confirmé la modification du réglage. Vérifiez le robot avant de réessayer.",
   "Suction power · all selected rooms": "Aspiration · toutes les pièces sélectionnées",
@@ -1418,6 +1466,7 @@ const ROOM_COLORS = ['#18c5d9', '#e9b85b', '#b99ae4', '#79b9a5', '#e49baf'];
 // Preserve existing entity-based Dyson configuration while allowing opaque
 // selection keys for rooms which have no HA entity of their own.
 const roomKey = room => room.key ?? room.entity ?? '';
+const isSavedMapId = value => typeof value === 'string' && /^[1-9]\d*$/.test(value) && Number.isSafeInteger(Number(value));
 const available = state => !!state && !['unavailable', 'unknown'].includes(state.state) && !state.attributes?.restored;
 
 function switchSettingConfirmed(hass, registry, field, request) {
@@ -1448,6 +1497,8 @@ function normalizeConfig(config) {
   for (const key of ['excluded_rooms', 'room_order']) {
     if (config[key] !== undefined && (!Array.isArray(config[key]) || config[key].some(x => typeof x !== 'string'))) throw new UiError('{key} must be a list of entity IDs.', { key });
   }
+  if (config.map_selector_style !== undefined && !['menu','chips'].includes(config.map_selector_style)) throw new UiError('map_selector_style must be menu or chips.');
+  if (config.excluded_maps !== undefined && (!Array.isArray(config.excluded_maps) || config.excluded_maps.some(value => !isSavedMapId(value)))) throw new UiError('excluded_maps must be a list of saved map IDs (strings).');
   if (config.room_entities !== undefined && (!config.room_entities || typeof config.room_entities !== 'object' || Array.isArray(config.room_entities) || Object.values(config.room_entities).some(x => typeof x !== 'string' || !x.startsWith('switch.')))) throw new UiError('room_entities must map room names to switch entities.');
   if (config.show_battery_percentage !== undefined && typeof config.show_battery_percentage !== 'boolean') throw new UiError('show_battery_percentage must be true or false.');
   if (config.show_status_bar !== undefined && typeof config.show_status_bar !== 'boolean') throw new UiError('show_status_bar must be true or false.');
@@ -1460,7 +1511,7 @@ function normalizeConfig(config) {
   if (config.camera_entity && mapDomain && !config.camera_entity.startsWith(`${mapDomain}.`)) throw new UiError('Map entity must use the {domain} domain for this integration.', { domain:mapDomain });
   if (config.zone_dimension_unit !== undefined && !['off','auto','cm','inch'].includes(config.zone_dimension_unit)) throw new UiError('Invalid zone dimension unit.');
   if (config.header_icon_style !== undefined && !['home_assistant','integration'].includes(config.header_icon_style)) throw new UiError('Invalid header icon style.');
-  return { ...config, header_icon_style: config.header_icon_style ?? 'integration', zone_dimension_unit: config.zone_dimension_unit ?? 'auto', language: config.language ?? 'auto', theme: config.theme ?? 'modern', show_battery_percentage: config.show_battery_percentage ?? false, show_status_bar: config.show_status_bar ?? true, hidden_status_items: config.hidden_status_items ?? [], title: config.title ?? '', always_show_all_settings: config.always_show_all_settings ?? false, unsupported_settings: 'hidden', excluded_rooms: config.excluded_rooms ?? [], room_order: config.room_order ?? [], show_camera: config.show_camera ?? true, camera_rotation: config.camera_rotation ?? 0 };
+  return { ...config, header_icon_style: config.header_icon_style ?? 'integration', zone_dimension_unit: config.zone_dimension_unit ?? 'auto', language: config.language ?? 'auto', theme: config.theme ?? 'modern', show_battery_percentage: config.show_battery_percentage ?? false, show_status_bar: config.show_status_bar ?? true, hidden_status_items: config.hidden_status_items ?? [], title: config.title ?? '', always_show_all_settings: config.always_show_all_settings ?? false, unsupported_settings: 'hidden', excluded_rooms: config.excluded_rooms ?? [], room_order: config.room_order ?? [], map_selector_style: config.map_selector_style ?? 'menu', excluded_maps: [...new Set(config.excluded_maps ?? [])], show_camera: config.show_camera ?? true, camera_rotation: config.camera_rotation ?? 0 };
 }
 
 function fitMap(width, height, boxWidth, rotation) {
@@ -1472,8 +1523,6 @@ function fitMap(width, height, boxWidth, rotation) {
 
 
 
-const savedMapId = value => typeof value === 'string' && /^[1-9]\d*$/.test(value) && Number.isSafeInteger(Number(value));
-
 function mapSelectionState(hass, registry, vacuum) {
   const robot = registry.find(row => row.entity_id === vacuum && row.platform === 'dyson_spot_scrub' && !row.disabled_by);
   const serial = String(robot?.unique_id ?? '').replace(/_vacuum$/, '');
@@ -1482,7 +1531,7 @@ function mapSelectionState(hass, registry, vacuum) {
   const entry = entries.length === 1 ? entries[0] : null, source = hass?.states?.[entry?.entity_id], attrs = source?.attributes ?? {};
   const raw = attrs.maps, options = attrs.options;
   const valid = Array.isArray(raw) && Array.isArray(options) && raw.length === options.length
-    && raw.every(item => item && savedMapId(item.map_id) && typeof item.name === 'string' && !!item.name.trim()
+    && raw.every(item => item && isSavedMapId(item.map_id) && typeof item.name === 'string' && !!item.name.trim()
       && typeof item.option === 'string' && !!item.option.trim() && options.includes(item.option))
     && new Set(raw.map(item => item.map_id)).size === raw.length && new Set(raw.map(item => item.option)).size === raw.length;
   const maps = valid ? raw.map(item => ({...item})) : [];
@@ -1492,6 +1541,19 @@ function mapSelectionState(hass, registry, vacuum) {
     currentId:current?.map_id ?? null,available:live,
     canChange:live && !!current && String(hass.states[vacuum].attributes?.map_id) === current.map_id
       && attrs.can_change === true && attrs.switching !== true && !!hass?.services?.select?.select_option};
+}
+
+// Visibility is local presentation. Keep the complete catalogue authoritative
+// for identity, readiness and confirmation, including a hidden active map.
+function mapSelectionPresentation(state, config = {}) {
+  if (!state.supported) return {current:null,visibleMaps:[],hiddenCurrent:null,showSelector:false,displayMaps:[]};
+  const maps = state.maps ?? [], excluded = new Set(config.excluded_maps ?? []);
+  const current = maps.find(map => map.map_id === state.currentId) ?? null;
+  const visibleMaps = maps.filter(map => !excluded.has(map.map_id));
+  const hiddenCurrent = current && excluded.has(current.map_id) ? current : null;
+  const showSelector = !!state.supported && (visibleMaps.length > 1 || (!!hiddenCurrent && visibleMaps.length > 0));
+  return {current,visibleMaps,hiddenCurrent,showSelector,
+    displayMaps:showSelector ? hiddenCurrent ? [hiddenCurrent,...visibleMaps] : visibleMaps : []};
 }
 
 function selectMap(hass, registry, vacuum, identity) {
@@ -1513,22 +1575,50 @@ const mapSelectionStyles = `
 .map-menu{position:absolute;z-index:4;inset-inline-end:0;top:calc(100% + 6px);width:min(260px,calc(100vw - 64px));max-height:320px;overflow-y:auto;padding:8px;background:var(--dp-bg);border:1px solid var(--dp-line);border-radius:12px;box-shadow:0 6px 24px #0003}
 .map-menu-label{margin:4px 8px 8px;color:var(--dp-muted);font-size:12px}.map-menu button{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-height:42px;padding:9px 10px;border:0;border-radius:8px;background:transparent;color:var(--primary-text-color);text-align:start;overflow-wrap:anywhere;font-size:14px}
 .map-menu button[aria-checked=true]{background:var(--dp-soft);color:var(--dp-accent)}.map-menu button span{min-width:0}.map-menu-note{font-size:12px;line-height:1.5;margin:6px 8px;color:var(--dp-muted)}
+.map-hidden-label{display:block;font-size:11px;font-weight:400;line-height:1.4;color:var(--dp-muted)}
+.map-editor-id{display:block;font-size:11px;color:var(--dp-muted);overflow-wrap:anywhere}
+.map-options .entry label,.map-options .entry label>span{min-width:0;overflow-wrap:anywhere}
+.map-visibility-note{margin:0 var(--dp-padding,20px) 12px;font-size:12px;line-height:1.5;color:var(--dp-muted);overflow-wrap:anywhere}
+.map-chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 var(--dp-padding,20px) 14px;min-width:0}
+.map-chip{display:flex;align-items:center;gap:6px;min-width:0;max-width:100%;min-height:36px;padding:7px 11px;border:1px solid var(--dp-line);border-radius:18px;background:var(--dp-modern-surface,var(--dp-bg));color:var(--primary-text-color);font:inherit;font-size:13px;line-height:1.35;text-align:start;white-space:normal}
+.map-chip[aria-pressed=true]{border-color:var(--dp-accent);background:var(--dp-soft);color:var(--dp-accent)}
+.map-chip-copy{min-width:0;overflow-wrap:anywhere}.map-chip-icon{display:flex;align-items:center;justify-content:center;flex:0 0 16px;width:16px;min-height:16px}.map-chip-icon ha-icon{width:16px;height:16px;--mdc-icon-size:16px}
+.map-chip-spinner{width:14px;height:14px;border:2px solid var(--dp-line);border-top-color:var(--dp-accent);border-radius:50%;animation:schedule-spin .7s linear infinite}.map-chip[aria-busy=true]{opacity:1}
 :host([map-switching]) :is(.rooms,.planning-settings,.planning-tabs,footer,dyson-planner-zone){opacity:.55}
-@media(prefers-reduced-motion:reduce){.map-toggle.pending:after{animation:none}}
+@media(prefers-reduced-motion:reduce){.map-toggle.pending:after,.map-chip-spinner{animation:none}}
 `;
 
 const mapSelectionCardMethods = {
   getMapSelection() { return this.adapter.mapSelectionState?.(this._hass,this.registry,this.config.entity) ?? {supported:false,maps:[]}; },
+  getMapPresentation() {
+    const state = this.getMapSelection(), request = this._mapRequest;
+    const currentId = request && !mapSelectionConfirmed(this._hass,this.registry,this.config.entity,request) ? request.currentId : state.currentId;
+    return mapSelectionPresentation({...state,currentId},this.config);
+  },
+  mapControlsLocked() {
+    return !!(this._previewDialog || this.busy || this.controlBusy || this.stationBusy || this.scheduleSending || this.scheduleDialog
+      || this.view.active || this._mapRequest || this.shadowRoot.querySelector('dyson-planner-zone')?.sending);
+  },
   mapPickerHtml() {
-    const state = this.getMapSelection();
-    if (!state.supported || state.maps.length < 2) return '';
-    const current = state.maps.find(item => item.map_id === state.currentId), pending = !!this._mapRequest;
-    const locked = this._previewDialog || this.busy || this.controlBusy || this.stationBusy || this.scheduleSending || this.scheduleDialog
-      || this.view.active || pending || this.shadowRoot.querySelector('dyson-planner-zone')?.sending;
+    const state = this.getMapSelection(), presentation = this.getMapPresentation();
+    if (this.config.map_selector_style === 'chips' || !presentation.showSelector) return '';
+    const {current,displayMaps,hiddenCurrent} = presentation, pending = !!this._mapRequest;
+    const locked = this.mapControlsLocked();
     const label = current ? this.t('Switch map: {name}',{name:current.option}) : this.t('Switch map');
     const note = this.dirty ? 'Discard local room changes before switching maps.' : !state.canChange
       ? 'Map switching is unavailable. Refresh the map list and check the robot.' : null;
-    return `<div class="map-picker"><button class="map-toggle ${pending ? 'pending' : ''}" data-action="maps" data-focus="maps" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}" aria-haspopup="menu" aria-controls="saved-map-menu" aria-expanded="${!!this.mapMenuOpen}" ${pending ? 'aria-busy="true"' : ''} ${locked ? 'disabled' : ''}><ha-icon icon="mdi:map-marker-path" aria-hidden="true"></ha-icon></button>${this.mapMenuOpen ? `<div class="map-menu" id="saved-map-menu" role="menu" aria-label="${this.ht('Saved maps')}"><p class="map-menu-label">${this.ht('Saved maps')}</p>${state.maps.map(map => `<button role="menuitemradio" aria-checked="${map.map_id === state.currentId}" data-map-id="${map.map_id}" data-focus="map-${map.map_id}" ${locked || !state.canChange || this.dirty || map.map_id === state.currentId ? 'disabled' : ''}><span>${escapeHtml(map.option)}</span>${map.map_id === state.currentId ? '<ha-icon icon="mdi:check" aria-hidden="true"></ha-icon>' : ''}</button>`).join('')}${note ? `<p class="map-menu-note">${this.ht(note)}</p>` : ''}</div>` : ''}</div>`;
+    return `<div class="map-picker"><button class="map-toggle ${pending ? 'pending' : ''}" data-action="maps" data-focus="maps" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}" aria-haspopup="menu" aria-controls="saved-map-menu" aria-expanded="${!!this.mapMenuOpen}" ${pending ? 'aria-busy="true"' : ''} ${locked ? 'disabled' : ''}><ha-icon icon="mdi:map-marker-path" aria-hidden="true"></ha-icon></button>${this.mapMenuOpen ? `<div class="map-menu" id="saved-map-menu" role="menu" aria-label="${this.ht('Saved maps')}"><p class="map-menu-label">${this.ht('Saved maps')}</p>${displayMaps.map(map => `<button role="menuitemradio" aria-checked="${map.map_id === current?.map_id}" data-map-id="${map.map_id}" data-focus="map-${map.map_id}" ${locked || !state.canChange || this.dirty || map.map_id === current?.map_id ? 'disabled' : ''}><span>${escapeHtml(map.option)}${map.map_id === hiddenCurrent?.map_id ? `<small class="map-hidden-label">${this.ht('Hidden in this card')}</small>` : ''}</span>${map.map_id === current?.map_id ? '<ha-icon icon="mdi:check" aria-hidden="true"></ha-icon>' : ''}</button>`).join('')}${note ? `<p class="map-menu-note">${this.ht(note)}</p>` : ''}</div>` : ''}</div>`;
+  },
+  mapSelectorHtml() {
+    const state = this.getMapSelection(), {current,displayMaps,hiddenCurrent,showSelector} = this.getMapPresentation();
+    if (this.config.map_selector_style === 'chips' && showSelector) {
+      const locked = this.mapControlsLocked() || !state.canChange || this.dirty;
+      return `<div class="map-chips" role="group" aria-label="${this.ht('Saved maps')}">${displayMaps.map(map => {
+        const active = map.map_id === current?.map_id, pending = map.map_id === this._mapRequest?.mapId;
+        return `<button class="map-chip" data-map-id="${map.map_id}" data-focus="map-chip-${map.map_id}" aria-pressed="${active}" ${pending ? 'aria-busy="true"' : ''} aria-label="${this.ht(pending ? 'Switching map: {name}' : 'Switch map: {name}',{name:map.option})}${map.map_id === hiddenCurrent?.map_id ? ` · ${this.ht('Hidden in this card')}` : ''}" ${locked ? 'disabled' : ''}><span class="map-chip-icon" aria-hidden="true">${pending ? '<span class="map-chip-spinner"></span>' : active ? '<ha-icon icon="mdi:check"></ha-icon>' : ''}</span><span class="map-chip-copy">${escapeHtml(map.option)}${map.map_id === hiddenCurrent?.map_id ? `<small class="map-hidden-label">${this.ht('Hidden in this card')}</small>` : ''}</span></button>`;
+      }).join('')}</div>${this.dirty ? `<p class="map-visibility-note">${this.ht('Discard local room changes before switching maps.')}</p>` : ''}`;
+    }
+    return hiddenCurrent ? `<p class="map-visibility-note" role="status">${this.ht('Active map: {name} (hidden in this card).',{name:hiddenCurrent.option})}</p>` : '';
   },
   closeMapMenu() {
     this.mapMenuOpen = false;
@@ -1581,8 +1671,7 @@ const mapSelectionCardMethods = {
         && mapSelectionConfirmed(this._hass,this.registry,this.config.entity,late.request)) {
       this.message = ''; this.error = false; this._unconfirmedMapSwitch = null;
     }
-    const state = this.getMapSelection();
-    if (!state.supported || state.maps.length < 2) this.mapMenuOpen = false;
+    if (this.config.map_selector_style === 'chips' || !this.getMapPresentation().showSelector) this.mapMenuOpen = false;
   },
   applyMapLock() {
     const locked = !!this._mapRequest;
@@ -1595,7 +1684,7 @@ const mapSelectionCardMethods = {
         || this.scheduleSending || this.scheduleDialog || this.view.active || this.shadowRoot.querySelector('dyson-planner-zone')?.sending) return;
     if (this.dirty) { this.error = true; this.message = 'Discard local room changes before switching maps.'; this.render(); return; }
     const state = this.getMapSelection();
-    if (!state.canChange || !state.maps.some(item => item.map_id === identity) || state.currentId === identity) return;
+    if (!state.canChange || !mapSelectionPresentation(state,this.config).visibleMaps.some(item => item.map_id === identity) || state.currentId === identity) return;
     const request = {...state,mapId:identity,config:this.config,detach:this._detachRevision};
     this._mapRequest = request; this.mapMenuOpen = false; this._unconfirmedMapSwitch = null; this.message = ''; this.error = false; this.render();
     try {
@@ -1622,7 +1711,12 @@ const mapSelectionCardMethods = {
     } finally {
       if (this._mapRequest === request) {
         this._mapRequest = null;
-        if (this.mapRequestCurrent(request)) { this.update(); this.shadowRoot.querySelector('.map-toggle')?.focus({preventScroll:true}); }
+        if (this.mapRequestCurrent(request)) {
+          this.update();
+          const focus = this.config.map_selector_style === 'chips' ? `.map-chip[data-map-id="${identity}"]:not(:disabled)` : '.map-toggle';
+          (this.shadowRoot.querySelector(focus) ?? this.shadowRoot.querySelector('.planning-tabs [aria-selected="true"]')
+            ?? this.shadowRoot.querySelector('.consumables-info'))?.focus({preventScroll:true});
+        }
       }
     }
   }
@@ -5390,9 +5484,10 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
   planningTabsHtml() {
     const schedules = this.getScheduleState();
     const tabs = [['rooms','Rooms'], ...(this.supportsZone ? [['zones','Zone']] : []), ...(schedules.supported ? [['schedules','Schedules']] : [])];
-    if (tabs.length === 1) return '';
+    const mapSelector = this.mapSelectorHtml();
+    if (tabs.length === 1) return mapSelector;
     const current = this.schedulesView ? 'schedules' : this.zoneView ? 'zones' : 'rooms';
-    return `<nav class="planning-tabs" role="tablist" aria-label="${this.ht('Cleaning selection')}">${tabs.map(([key,label]) => {
+    return `${mapSelector}<nav class="planning-tabs" role="tablist" aria-label="${this.ht('Cleaning selection')}">${tabs.map(([key,label]) => {
       const count = key === 'schedules' ? schedules.enabledCount : null;
       const counted = Number.isSafeInteger(count) && count >= 0;
       return `<button id="planning-tab-${key}" role="tab" data-action="${key}" aria-selected="${current === key}" aria-controls="planning-panel-${key}" tabindex="${current === key ? 0 : -1}" ${counted ? `aria-label="${this.ht('Schedules, active: {count}',{count})}" title="${this.ht('Active schedules: {count}',{count})}"` : ''}><span class="planning-tab-label">${this.ht(label)}${counted ? `<span class="schedule-count ${count === 0 ? 'is-zero' : ''} ${count > 99 ? 'capped' : ''}" aria-hidden="true">${count > 99 ? '99+' : count}</span>` : ''}</span></button>`;
@@ -5486,7 +5581,8 @@ class DysonCleaningPlannerEditor extends DysonRegistryElement {
       if (el.dataset.key === 'zone_dimension_unit') { this.setSessionPreview(false, true); return; }
       if (['show_camera', 'camera_entity', 'camera_rotation'].includes(el.dataset.key)) this.setSessionPreview(true);
       else if (['unsupported_settings', 'always_show_all_settings'].includes(el.dataset.key)
-        || el.dataset.include || el.dataset.order || el.dataset.action === 'refresh') this.setSessionPreview(false);
+        || el.dataset.key === 'map_selector_style' || el.dataset.includeMap || el.dataset.include || el.dataset.order
+        || ['refresh','refresh-maps'].includes(el.dataset.action)) this.setSessionPreview(false);
     };
     for (const type of ['pointerdown', 'click', 'change', 'keydown']) {
       this.shadowRoot.addEventListener(type, event => {
@@ -5509,12 +5605,18 @@ class DysonCleaningPlannerEditor extends DysonRegistryElement {
         if (el.dataset.key === 'entity' || el.dataset.key === 'integration') {
           delete next.mode_entity; delete next.start_entity; delete next.room_entities; delete next.camera_entity;
           next.excluded_rooms = []; next.room_order = [];
+          if (next.entity !== this.config.entity) next.excluded_maps = [];
         }
       } else if (el.dataset.statusItem) {
         const hidden = new Set(next.hidden_status_items ?? []);
         if (el.checked) hidden.delete(el.dataset.statusItem);
         else hidden.add(el.dataset.statusItem);
         next.hidden_status_items = [...hidden];
+      } else if (el.dataset.includeMap) {
+        const excluded = new Set(next.excluded_maps ?? []);
+        if (el.checked) excluded.delete(el.dataset.includeMap);
+        else excluded.add(el.dataset.includeMap);
+        next.excluded_maps = [...excluded];
       } else if (el.dataset.include) {
         next.excluded_rooms = (next.excluded_rooms ?? []).filter(id => id !== el.dataset.include);
         if (!el.checked) next.excluded_rooms.push(el.dataset.include);
@@ -5523,7 +5625,7 @@ class DysonCleaningPlannerEditor extends DysonRegistryElement {
     });
     this.shadowRoot.addEventListener('click', event => {
       const el = event.target.closest('button');
-      if (el?.dataset.action === 'refresh') { this.loadRegistry(true); return; }
+      if (['refresh','refresh-maps'].includes(el?.dataset.action)) { this.loadRegistry(true); return; }
       if (!el?.dataset.order) return;
       const ids = this.model.rooms.map(roomKey).filter(Boolean);
       const i = ids.indexOf(el.dataset.order), j = i + Number(el.dataset.direction);
@@ -5564,6 +5666,13 @@ class DysonCleaningPlannerEditor extends DysonRegistryElement {
     const adapterLabel = entity => getIntegrationAdapter({ ...this.config, entity }, this.selectableRegistry, this._hass).shortLabel;
     const config = { ...this.config, excluded_rooms: this.config.excluded_rooms ?? [], room_order: this.config.room_order ?? [] };
     this.model = config.entity ? this.adapter.discover(this._hass, this.registry, config) : { rooms: [], issues: [] };
+    const mapState = this.adapter.mapSelectionState?.(this._hass,this.registry,config.entity);
+    // Use the complete catalogue so every hidden map can be enabled again.
+    const mapsEditor = mapState?.supported && mapState.maps.length >= 2 ? `<section class="map-options"><h3>${this.ht('Maps in this card')}</h3>
+      <label>${this.ht('Map selector style')}<select data-key="map_selector_style" data-focus="map-selector-style"><option value="menu" ${(config.map_selector_style ?? 'menu') === 'menu' ? 'selected' : ''}>${this.ht('Header button')}</option><option value="chips" ${config.map_selector_style === 'chips' ? 'selected' : ''}>${this.ht('Map chips')}</option></select></label>
+      <p>${this.ht('Choose which saved maps to show. Hidden maps remain available in MyDyson.')}</p>
+      ${mapState.maps.map(map => `<div class="entry"><label><input type="checkbox" data-include-map="${map.map_id}" data-focus="include-map-${map.map_id}" ${!config.excluded_maps?.includes(map.map_id) ? 'checked' : ''}><span>${h(map.option)}<small class="map-editor-id">${map.map_id}</small></span></label></div>`).join('')}
+      <button data-action="refresh-maps" data-focus="refresh-maps">${this.ht('Refresh maps')}</button><p class="notice">${this.ht('New maps appear automatically. Visibility is stored by map ID.')}</p></section>` : '';
     const field = (key, label) => {
       const entries = this.adapter.cameraEntries(this.registry, config.entity);
       return `<label>${label}<select data-focus="${key}" data-key="${key}"><option value="">${this.ht("Auto-detect")}</option>${entries.map(e => `<option value="${h(e.entity_id)}" ${config[key] === e.entity_id ? 'selected' : ''}>${h(e.name || e.original_name || e.entity_id)}</option>`).join('')}</select></label>`;
@@ -5589,6 +5698,7 @@ class DysonCleaningPlannerEditor extends DysonRegistryElement {
       <label>${this.ht("Map rotation")}<select data-key="camera_rotation" data-focus="camera-rotation">${[0, 90, 180, 270].map(deg => `<option value="${deg}" ${(config.camera_rotation ?? 0) === deg ? 'selected' : ''}>${deg}°</option>`).join('')}</select></label>` : ''}
       ${this.adapter.supportsZoneEditor !== false ? `<h3>${this.ht("Zone cleaning")}</h3>
       <label>${this.ht("Dimension display")}<select data-key="zone_dimension_unit" data-focus="zone-dimension-unit">${[['auto','Automatic'],['cm','Centimeters'],['inch','Inches'],['off','Off']].map(([value,label]) => `<option value="${value}" ${(config.zone_dimension_unit ?? 'auto') === value ? 'selected' : ''}>${this.ht(label)}</option>`).join('')}</select></label>` : ''}
+      ${mapsEditor}
       <h3>${this.ht("Rooms in this card")}</h3><p>${this.ht("Choose which rooms to show. Arrows change the display order, not the robot cleaning order.")}</p>
       ${this.model.rooms.map((r, i) => `<div class="entry"><label><input type="checkbox" data-focus="include-${i}" data-include="${h(roomKey(r))}" ${!r.excluded ? 'checked' : ''} ${!roomKey(r) ? 'disabled' : ''}>${h(r.name)}</label><button data-order="${h(roomKey(r))}" data-direction="-1" ${i === 0 ? 'disabled' : ''} aria-label="${this.ht('Move {name} up', { name: r.name })}">↑</button><button data-order="${h(roomKey(r))}" data-direction="1" ${i === this.model.rooms.length - 1 ? 'disabled' : ''} aria-label="${this.ht('Move {name} down', { name: r.name })}">↓</button></div>`).join('')}
       <button data-action="refresh" data-focus="refresh-rooms">${this.ht("Refresh rooms")}</button>

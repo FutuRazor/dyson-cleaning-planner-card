@@ -1,5 +1,17 @@
 // German display text. Entity names and protocol values are never rewritten.
 export const de = {
+  "Map selector style": "Darstellung der Kartenauswahl",
+  "Header button": "Schaltfläche im Kopfbereich",
+  "Map chips": "Karten-Chips",
+  "Maps in this card": "Gespeicherte Karten in dieser Ansicht",
+  "Choose which saved maps to show. Hidden maps remain available in MyDyson.": "Wähle die anzuzeigenden Karten. Ausgeblendete Karten bleiben in MyDyson verfügbar.",
+  "Refresh maps": "Karten aktualisieren",
+  "New maps appear automatically. Visibility is stored by map ID.": "Neue Karten erscheinen automatisch. Die Sichtbarkeit wird über die Karten-ID gespeichert.",
+  "Hidden in this card": "In dieser Ansicht ausgeblendet",
+  "Active map: {name} (hidden in this card).": "Aktive Karte: {name} (in dieser Ansicht ausgeblendet).",
+  "Switching map: {name}": "Kartenwechsel: {name}",
+  "map_selector_style must be menu or chips.": "map_selector_style muss menu oder chips sein.",
+  "excluded_maps must be a list of saved map IDs (strings).": "excluded_maps muss eine Liste gespeicherter Karten-IDs als Zeichenfolgen sein.",
   "Updating setting …": "Einstellung wird geändert …",
   "The setting change has not been confirmed by Home Assistant. Check the robot before trying again.": "Home Assistant hat die Einstellungsänderung noch nicht bestätigt. Prüfe den Roboter vor einem erneuten Versuch.",
   "Suction power · all selected rooms": "Saugkraft · alle ausgewählten Räume",

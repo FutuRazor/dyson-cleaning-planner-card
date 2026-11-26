@@ -317,6 +317,21 @@ The implementation uses the captured JDM list for the selector and leaves the ex
 
 Deleting selected B changes the active ID in the capture. Deleting an inactive map while keeping A selected is not an available test through the observed MyDyson UI. Periodic reconciliation covers changes missed while HA was disconnected and inventory changes that do not otherwise trigger an active-map update.
 
+## Per-card map visibility and chips (v1.7.1)
+
+The card's `map_selector_style` accepts `menu` (the existing header button, default) or `chips` (wrapping buttons directly above the planning tabs). Both share `switchSavedMap`, the same registry identity/readback confirmation, lifecycle checks, draft protection, error handling and command lock. Chips show the target's pending spinner without optimistically activating it; Zone and Schedules retain their selected planning view. Chips are shown in planning views, not the live cleaning-session view.
+
+`excluded_maps` contains canonical positive decimal map IDs as strings. Filtering is local to each card and never changes the integration's catalogue, selected map, room membership, schedules or entity availability. The complete catalogue remains authoritative for confirmation. Renames keep their exclusion, unknown/deleted IDs are ignored without rewriting configuration, and new IDs are visible by default.
+
+| Visible maps and current selection | Card presentation |
+| --- | --- |
+| Two or more visible maps | The chosen selector style |
+| One visible map that is active | No selector |
+| A hidden active map and at least one visible alternative | Temporarily identify the active map and offer visible return targets |
+| No visible maps | No selector; a notice identifies the hidden active map when known |
+
+The visual editor exposes style/visibility controls only when the adapter supplies at least two known maps, counting the complete catalogue. Hidden maps remain in that editor list. Normal HA updates refresh names/options; the refresh button rereads available HA data and registry metadata, without a direct Dyson request. Selecting another robot resets map exclusions; presentation style remains a per-card preference. Unsupported adapters ignore these options. Existing YAML without them retains the menu and unfiltered list.
+
 ## Direct versus paused Home, placement faults and fresh rooms (L4)
 
 The maintainer confirmed that deleting B leaves one integration option and hides the card's map button, and creating another map restores the button. New B in L4 is ID `1795665600`, with room Essbereich (`10`). L4 already contains that room's preference at 05:08:39.715, before the first START at 05:08:54.345; mapping and registry creation are not captured, so the reported delay until a first clean cannot be timed precisely from this export.
@@ -360,4 +375,4 @@ The remaining checks are:
 - Establish verified map ownership for cleanup of entities exclusive to deleted maps while preserving reused room IDs/shared names. Cleanup remains a separate follow-up.
 - Extend schedule coverage with app edits, reconnect and actual scheduled execution.
 
-Automated checks use simulated HA/MQTT; maintainer live observations above are recorded separately. The maintainer also confirmed the card's Zone tab remains selected and automatically loads the new floor plan after switching maps; browser coverage and live acceptance are recorded in [TESTING.md](../TESTING.md#zone-view-across-saved-map-changes---26-november-2026). Historical evidence sections retain their original context and test counts. Card source and generated bundle stay together, and the current card version remains v1.7.0. The chronological validation index is [TESTING.md](../TESTING.md).
+Automated checks use simulated HA/MQTT; maintainer live observations above are recorded separately. The maintainer also confirmed the card's Zone tab remains selected and automatically loads the new floor plan after switching maps; browser coverage and live acceptance are recorded in [TESTING.md](../TESTING.md#zone-view-across-saved-map-changes---26-november-2026). Historical evidence sections retain their original context and test counts. Card source and generated bundle stay together, and the current card version is v1.7.1. The chronological validation index is [TESTING.md](../TESTING.md).

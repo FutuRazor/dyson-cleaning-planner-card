@@ -1,4 +1,4 @@
-# Integration contract — card v1.7.0 (release candidate)
+# Integration contract — card v1.7.1
 
 This contract describes the **Spot+Scrub adapter**. The experimental `hass_dyson` adapter has a separate [entity/action contract and setup guide](hass-dyson.md). `integration: auto` selects the configured vacuum's registry platform; initial discovery prefers Spot+Scrub. Explicit adapter choices are available in the visual editor.
 
@@ -6,7 +6,7 @@ This document describes what the **current card actually reads and sends**, base
 
 Both Modern and Classic use this same contract. The documented minimum integration version is **UNsync3D Dyson Spot+Scrub v2.1.0**; schedule management requires **v2.2.0 or newer** and the corresponding optional entities/actions.
 
-Optional saved-map selection and synchronization per map require the companion [map-switching development branch](https://github.com/FutuRazor/ha-dyson-spot-scrub/tree/feat/map-switching). The header discovers the same robot's `<serial>_active_map` select and uses `select.select_option`, with matching select/vacuum readback. See the [map-selection interface](spot-scrub-maps.md#implemented-map-selection-interface) and [saved-map schedule contract](spot-scrub-schedules.md#saved-map-schedule-behavior).
+Optional saved-map selection and synchronization per map require the companion [map-switching development branch](https://github.com/FutuRazor/ha-dyson-spot-scrub/tree/feat/map-switching). The card discovers the same robot's `<serial>_active_map` select and uses `select.select_option`, with matching select/vacuum readback. The header menu and optional map chips share this contract. `excluded_maps` filters presentation by stable string ID while preserving the complete catalogue for readiness and confirmation, including a hidden current map. See the [map-selection interface](spot-scrub-maps.md#implemented-map-selection-interface) and [saved-map schedule contract](spot-scrub-schedules.md#saved-map-schedule-behavior).
 
 The core interface was reviewed on **21 November 2026**; the schedule contract was updated for integration v2.2.0 and card v1.6.0 on **24 November 2026**. This describes every integration-facing feature in the current source; it does not certify another integration or replace hardware verification. For a migration assessment, see [hass-dyson compatibility](hass-dyson-compatibility.md).
 
@@ -530,6 +530,8 @@ The Zone tab requires a supported device-registry model. Start also requires a t
 Zone option capabilities use the intersection of known labels across the discovered room selects for each field (including discovered excluded rooms). A field is available only if all its discovered selects are available. Known choices and protocol values are in `ZONE_CHOICES` in `src/adapters/spot-scrub.js`; the mapping is the one listed above. Missing/unknown option sets cannot be treated as evidence for unsupported protocol values. Without a capability contract, the card does not infer rectangle support from room-cleaning support.
 
 ## 16. Frontend-only configuration and source audit
+
+`map_selector_style` selects `menu` (default) or `chips`. `excluded_maps` defaults to `[]` and accepts only canonical positive decimal saved-map IDs as strings, within the frontend's safe integer range. These preferences filter selection controls without filtering the catalogue used by command validation or readback. A hidden active map is temporarily identified, with visible alternatives retained as return targets; if every map is hidden, a notice identifies the current map when known. The editor counts all known maps when deciding whether to show its settings, and resets exclusions when its selected robot changes. No new integration entities, attributes or actions are needed.
 
 `entity`, `camera_entity` and `room_entities` choose integration entities. The YAML `integration` setting selects `auto`, `dyson_spot_scrub` or `hass_dyson`; the registry routes to the corresponding adapter. `room_entities` overrides room-switch lookup for Spot+Scrub only; it cannot change platform, device, select identity or action names. For this Spot+Scrub contract, `excluded_rooms` and `room_order` contain room-switch entity IDs; hass-dyson uses its room-select IDs instead. YAML can select an adapter but cannot remap its service names, payload keys or option values. Explicit Spot+Scrub selection requires `camera_entity: camera.*`; explicit hass-dyson selection requires `image.*`. Automatic accepts either domain pending adapter discovery, which still restricts entities to the correct device/platform.
 

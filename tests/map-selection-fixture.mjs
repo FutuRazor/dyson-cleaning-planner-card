@@ -21,11 +21,11 @@ export function mapSelectionFixture() {
   f.hass.states[f.mapSelect] = {state:'Wohnung',attributes:{maps:f.maps,options:f.maps.map(map => map.option),map_id:f.maps[0].map_id,can_change:true,switching:false}};
   f.applyMap = identity => {
     const map = f.maps.find(item => item.map_id === identity);
+    const onB = identity === '1795646759';
     const source = f.hass.states[f.mapSelect];
     source.state = map.option; source.attributes.map_id = identity;
     f.hass.states[f.entity].attributes.map_id = identity;
-    f.hass.states[f.entity].attributes.rooms = identity === f.maps[1].map_id ? ['Büro'] : f.names;
-    const onB = identity === '1795646759';
+    f.hass.states[f.entity].attributes.rooms = onB ? ['Büro'] : f.names;
     for (const entity of originalFields) f.hass.states[entity] = {...originalStates[entity],state:onB?'unavailable':originalStates[entity].state};
     for (const [index,entity] of f.bFields.entries()) f.hass.states[entity].state = onB ? originalStates[Object.values(f.fields['10'])[index]].state : 'unavailable';
   };

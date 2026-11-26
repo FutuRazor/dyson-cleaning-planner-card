@@ -1,5 +1,17 @@
 // Dutch UI text. Protocol values and entity names remain unchanged.
 export const nl = {
+  "Map selector style": "Weergave van kaartkeuze",
+  "Header button": "Knop in de kop",
+  "Map chips": "Kaartknoppen",
+  "Maps in this card": "Kaarten in deze weergave",
+  "Choose which saved maps to show. Hidden maps remain available in MyDyson.": "Kies welke opgeslagen kaarten je wilt tonen. Verborgen kaarten blijven beschikbaar in MyDyson.",
+  "Refresh maps": "Kaarten vernieuwen",
+  "New maps appear automatically. Visibility is stored by map ID.": "Nieuwe kaarten verschijnen automatisch. De zichtbaarheid wordt per kaart-ID opgeslagen.",
+  "Hidden in this card": "Verborgen in deze weergave",
+  "Active map: {name} (hidden in this card).": "Actieve kaart: {name} (verborgen in deze weergave).",
+  "Switching map: {name}": "Kaart wisselen: {name}",
+  "map_selector_style must be menu or chips.": "map_selector_style moet menu of chips zijn.",
+  "excluded_maps must be a list of saved map IDs (strings).": "excluded_maps moet een lijst met opgeslagen kaart-ID's als tekst zijn.",
   "Updating setting …": "Instelling wijzigen …",
   "The setting change has not been confirmed by Home Assistant. Check the robot before trying again.": "Home Assistant heeft de gewijzigde instelling nog niet bevestigd. Controleer de robot voordat je het opnieuw probeert.",
   "Suction power · all selected rooms": "Zuigkracht · alle geselecteerde kamers",

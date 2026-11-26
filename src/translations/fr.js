@@ -1,5 +1,17 @@
 // French UI translations. Dyson terminology is referenced in docs/translations.md.
 export const fr = {
+  "Map selector style": "Présentation du sélecteur de carte",
+  "Header button": "Bouton dans l’en-tête",
+  "Map chips": "Boutons de carte",
+  "Maps in this card": "Cartes dans cette vue",
+  "Choose which saved maps to show. Hidden maps remain available in MyDyson.": "Choisissez les cartes enregistrées à afficher. Les cartes masquées restent disponibles dans MyDyson.",
+  "Refresh maps": "Actualiser les cartes",
+  "New maps appear automatically. Visibility is stored by map ID.": "Les nouvelles cartes apparaissent automatiquement. La visibilité est enregistrée par identifiant de carte.",
+  "Hidden in this card": "Masquée dans cette vue",
+  "Active map: {name} (hidden in this card).": "Carte active : {name} (masquée dans cette vue).",
+  "Switching map: {name}": "Changement de carte : {name}",
+  "map_selector_style must be menu or chips.": "map_selector_style doit être menu ou chips.",
+  "excluded_maps must be a list of saved map IDs (strings).": "excluded_maps doit être une liste d’identifiants de cartes enregistrées sous forme de chaînes.",
   "Updating setting …": "Modification du réglage …",
   "The setting change has not been confirmed by Home Assistant. Check the robot before trying again.": "Home Assistant n'a pas confirmé la modification du réglage. Vérifiez le robot avant de réessayer.",
   "Suction power · all selected rooms": "Aspiration · toutes les pièces sélectionnées",

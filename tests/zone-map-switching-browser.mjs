@@ -8,7 +8,7 @@ const server=previewServer();
 await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
 const browser=await chromium.launch({headless:true});
 try {
-  for(const theme of ['modern','classic']) for(const width of [375,900]) {
+  for(const style of ['menu','chips']) for(const theme of ['modern','classic']) for(const width of [375,900]) {
     const page=await browser.newPage({viewport:{width,height:1100}}),errors=[];
     page.on('pageerror',error=>errors.push(error.message));
     const card=page.locator('#card'),zone=card.locator('dyson-planner-zone');
@@ -37,15 +37,15 @@ try {
       window.zoneFixtureLoading=import('/tests/map-selection-fixture.mjs').then(m=>{window.zoneFixtureFactory=m.mapSelectionFixture;});
     });
     await page.waitForFunction(()=>typeof zoneFixtureFactory==='function');
-    await page.evaluate(({theme,calibrations,a})=>{
+    await page.evaluate(({theme,style,calibrations,a})=>{
       const f=zoneFixtureFactory();window.zoneDemo=f;f.card=demo.card;f.calibrations=calibrations;
       f.hass.hassUrl=path=>location.origin+path;
       f.hass.services.dyson_spot_scrub.clean_zone={};
       f.hass.states[f.entity].attributes.ready_to_start=true;
       f.hass.states[f.camera].attributes.map_calibration=calibrations[a];
-      f.card.setConfig({...demo.card.config,theme,language:'en',show_camera:false});f.card.hass=f.hass;
+      f.card.setConfig({...demo.card.config,theme,map_selector_style:style,language:'en',show_camera:false});f.card.hass=f.hass;
       f.hass.callService=async(domain,service,data)=>{f.calls.push({domain,service,data});};
-    },{theme,calibrations,a});
+    },{theme,style,calibrations,a});
     await card.locator('[data-action="zones"]').click();
     await zone.locator('.area').waitFor({state:'visible'});
     await page.waitForFunction(()=>!zoneDemo.card.shadowRoot.querySelector('dyson-planner-zone').controller);
@@ -53,12 +53,13 @@ try {
     const edited=[.12,.16,.56,.82];
     await zone.evaluate((el,rect)=>{el.rect=rect;el.draw();window.originalMapZone=el;},edited);
     const beforeMenu=requests;
-    await card.locator('.map-toggle').click();
-    assert.equal(await zone.evaluate(el=>el===originalMapZone),true,'opening the menu retains the loaded component');
+    if(style==='menu')await card.locator('.map-toggle').click();
+    assert.equal(await zone.evaluate(el=>el===originalMapZone),true,'map controls retain the loaded component');
     assert.deepEqual(await zone.evaluate(el=>el.rect),edited);
-    assert.equal(requests,beforeMenu,'header updates do not fetch the same map again');
+    assert.equal(requests,beforeMenu,'map controls do not fetch the same map again');
     await card.locator(`[data-map-id="${b}"]`).click();
-    await card.locator('.map-toggle.pending').waitFor();
+    await card.locator(style==='menu'?'.map-toggle.pending':'.map-chip[aria-busy="true"]').waitFor();
+    assert.equal(await zone.evaluate(el=>el===originalMapZone),true,'pending feedback retains the zone component');
     assert.equal(await zone.getAttribute('inert'),'');
     imageMap=b;
     await page.evaluate(b=>{const f=zoneDemo;f.applyMap(b);f.card.hass={...f.hass};},b);
@@ -113,5 +114,5 @@ try {
     assert.equal(await zone.locator('[data-do="start"]').isEnabled(),true);
     assert.deepEqual(errors,[]);await page.close();
   }
-  console.log('Zone map-switch checks passed: both themes, 375/900 px, retained tab/component, fresh PNG/calibration, cleared geometry, late readback and app/session transitions.');
+  console.log('Zone map-switch checks passed: menu/chips, both themes, 375/900 px, retained tab/component, fresh PNG/calibration, cleared geometry, late readback and app/session transitions.');
 } finally {await browser.close();await new Promise(resolve=>server.close(resolve));}
