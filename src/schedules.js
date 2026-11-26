@@ -1,4 +1,4 @@
-import { escapeHtml, ROOM_FIELDS, ROOM_COLORS } from './shared.js';
+import { escapeHtml, ROOM_FIELDS, ROOM_COLORS, roomKey } from './shared.js';
 import { uiMessage } from './localize.js';
 
 const weekdays = ['mon','tue','wed','thu','fri','sat','sun'];
@@ -57,6 +57,7 @@ export function scheduleCountdownDuration(timestamp, now, language) {
 // A resolved service call is not yet a reflected HA state. Confirm only fields
 // the selected adapter exposes, and do not guess which of several new entries is ours.
 export function scheduleRequestConfirmed(state, request) {
+  if (request.context !== undefined && request.context !== state.context) return false;
   if (!state.available) return false;
   if (request.kind === 'delete') return state.inSync !== false && !state.schedules.some(schedule => schedule.id === request.id);
   const matches = schedule => {
@@ -410,7 +411,7 @@ export const scheduleCardMethods = {
     this.updateScheduleDialog();
   },
   openSchedule(id, mode = 'edit') {
-    if (this._previewDialog || this.busy || this.scheduleSending || this.view.active || !this.isConnected) return;
+    if (this._previewDialog || this.busy || this._mapRequest || this.scheduleSending || this.view.active || !this.isConnected) return;
     const state = this.getScheduleState(), schedule = state.schedules.find(s => s.id === id);
     if (!state.writable || (id !== undefined && !schedule) || (mode === 'delete' && (!schedule || !state.deleteSupported))) return;
     if (id === undefined && !this.scheduleCreationReady()) return;
@@ -421,18 +422,18 @@ export const scheduleCardMethods = {
     }
     this.closeScheduleMenu();
     this.scheduleDialog = { id, mode, days:schedule ? [...schedule.days] : [], time:schedule?.time ?? '',
-      selected:[...this.selected], rooms:this.selected.map(entity => this.model.rooms.find(room => room.entity === entity)?.name ?? entity),
+      selected:[...this.selected], rooms:this.selected.map(entity => this.model.rooms.find(room => roomKey(room) === entity)?.name ?? entity),
       draft:structuredClone(this.settingDraft), context:id === undefined ? this.draftContext : context, config:this.config };
     if (schedule?.roomIds && this.adapter.scheduleRoomOptions) {
       Object.assign(this.scheduleDialog, {schedule:structuredClone(schedule), roomPlan:{roomIds:[...schedule.roomIds],settings:{}},
         roomNames:Object.fromEntries(schedule.roomIds.map((roomId,index) => [roomId,schedule.rooms[index]])), roomsChanged:false});
     } else if (id === undefined && state.creationUsesSelectedRooms && this.adapter.scheduleRoomOptions) {
       const rooms = this.model.rooms.filter(room => room.roomId);
-      const roomIds = this.selected.map(entity => rooms.find(room => room.entity === entity)?.roomId).filter(Boolean);
+      const roomIds = this.selected.map(entity => rooms.find(room => roomKey(room) === entity)?.roomId).filter(Boolean);
       Object.assign(this.scheduleDialog, {schedule:{roomIds:[...roomIds],mapId:String(this.adapter.mapId(this._hass,this.config.entity)),
         roomSettings:Object.fromEntries(rooms.map(room => [room.roomId,Object.fromEntries(Object.entries(room.settings).flatMap(([key,field]) => field.options.includes(field.value) ? [[key,field.value]] : []))]))},
         roomPlan:{roomIds,settings:structuredClone(this.settingDraft)},roomNames:Object.fromEntries(rooms.map(room => [room.roomId,room.name])),
-        roomEntities:Object.fromEntries(rooms.map(room => [room.roomId,room.entity])),roomsChanged:false});
+        roomEntities:Object.fromEntries(rooms.map(room => [room.roomId,roomKey(room)])),roomsChanged:false});
     }
     this.render();
     this.shadowRoot.querySelector(mode === 'delete' ? '[data-focus="schedule-cancel"]' : '[data-focus="schedule-mon"]')?.focus({preventScroll:true});
@@ -538,10 +539,22 @@ export const scheduleCardMethods = {
   cancelScheduleFeedback() {
     this.clearScheduleNotice(true);
     const operation = this.scheduleSending;
-    if (operation) { operation.cancelled = true; operation.confirm?.('cancelled'); }
+    if (operation) {
+      operation.cancelled = true;
+      if (operation.progress && this.message === operation.progress) { this.message = ''; this.error = false; }
+      operation.confirm?.('cancelled');
+    }
     this._scheduleConfirmation = null; this._scheduleUnconfirmed = null;
   },
   reconcileScheduleConfirmation() {
+    const state = this.getScheduleState();
+    const belongsHere = request => request.context === undefined || request.context === state.context;
+    if (this.scheduleSending && !belongsHere(this.scheduleSending.request)) this.cancelScheduleFeedback();
+    if (this.scheduleDialog && this.adapter.id === 'dyson_spot_scrub'
+        && this.scheduleDialog.context !== state.context) {
+      this.scheduleDialog = null; this.scheduleMenu = null;
+    }
+    if (this._scheduleUnconfirmed && !belongsHere(this._scheduleUnconfirmed.request)) this.cancelScheduleFeedback();
     const operation = this._scheduleConfirmation;
     if (operation && !operation.cancelled && scheduleRequestConfirmed(this.getScheduleState(),operation.request)) operation.confirm?.('confirmed');
     const late = this._scheduleUnconfirmed;
@@ -564,13 +577,14 @@ export const scheduleCardMethods = {
     });
   },
   async submitSchedule(id, enabled) {
-    if (this._previewDialog || this.busy || this.scheduleSending || this.view.active || !this.isConnected) return;
+    if (this._previewDialog || this.busy || this._mapRequest || this.scheduleSending || this.view.active || !this.isConnected) return;
     const dialog = enabled === undefined ? this.scheduleDialog : null;
     if (!dialog && enabled === undefined) return;
     if (dialog?.mode !== 'delete' && (dialog?.timePicker || (dialog?.roomPlan && !dialog.roomPlan.roomIds.length))) return;
     if (dialog && dialog.config !== this.config) return;
     const config = this.config, detach = this._detachRevision, state = this.getScheduleState();
-    const request = {kind:!dialog ? 'toggle' : dialog.mode === 'delete' ? 'delete' : dialog.id === undefined ? 'create' : 'edit',id:dialog?.id ?? id};
+    const request = {kind:!dialog ? 'toggle' : dialog.mode === 'delete' ? 'delete' : dialog.id === undefined ? 'create' : 'edit',id:dialog?.id ?? id,
+      ...(state.context === undefined ? {} : {context:state.context})};
     if (!dialog) request.enabled = enabled;
     else if (request.kind !== 'delete') {
       request.days = [...dialog.days]; request.time = dialog.time;
@@ -581,9 +595,10 @@ export const scheduleCardMethods = {
       }
     }
     this.clearScheduleNotice(); this._scheduleUnconfirmed = null;
-    const operation = {request,config,detach}; this.scheduleSending = operation;
+    const progress = dialog ? uiMessage(request.kind === 'delete' ? 'Deleting schedule …' : 'Saving schedule …') : null;
+    const operation = {request,config,detach,progress}; this.scheduleSending = operation;
     const current = () => this.config === config && this._detachRevision === detach && this.isConnected && !operation.cancelled;
-    this.message = dialog ? uiMessage(request.kind === 'delete' ? 'Deleting schedule …' : 'Saving schedule …') : ''; this.error = false;
+    this.message = progress ?? ''; this.error = false;
     this._dismissedNotice = '';
     if (dialog) dialog.error = '';
     this.render();
@@ -651,7 +666,8 @@ export const scheduleCardMethods = {
       ${state.inSync === false ? `<p class="schedule-note schedule-warning">${this.ht('The schedule list may be incomplete. Turn each schedule off and on in MyDyson while the integration is connected.')}</p>` : ''}
       <p class="schedule-countdown"></p>
       <div class="schedule-list" role="region" aria-label="${this.ht('Schedules')}" ${state.schedules.length > 4 ? 'tabindex="0"' : ''} style="max-height:${previousHeight}">${rows}</div>
-      ${!rows && state.available ? `<p class="schedule-note">${this.ht('No known schedules. Create one from the room planner, or turn existing schedules off and on in MyDyson.')}</p>` : ''}
+      ${!rows && state.available ? `<p class="schedule-note">${this.ht(state.mapId && state.inSync === true && state.robotTotal === 0
+        ? 'No schedules for this map.' : 'No known schedules. Create one from the room planner, or turn existing schedules off and on in MyDyson.')}</p>` : ''}
     </section></div>${this.consumablesHtml()}${menu}${this.scheduleOverlayHtml()}</ha-card>`, 'schedules');
     this.updateBattery(); this.updateConsumables(); this.updateStatus(''); this.updateScheduleDialog();
     this.updateScheduleCountdown();

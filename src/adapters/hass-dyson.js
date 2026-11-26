@@ -1,5 +1,6 @@
 import { UiError } from '../localize.js';
-import { available } from '../shared.js';
+import { available, roomKey } from '../shared.js';
+import { dysonRoomPresentation } from './dyson-planning.js';
 import { spotScrubAdapter } from './spot-scrub.js';
 
 // Experimental RB05 room adapter. No protocol commands or fabricated HA entities.
@@ -89,7 +90,7 @@ function discover(hass, registry, config, previousRooms = []) {
     const modeEntries = entries.filter(e => e.entity_id.startsWith('select.') && e.unique_id === `${serial}_room_${id}_cleaning_mode`);
     const entity = settings.cleaning_mode?.entity ?? (modeEntries.length === 1 ? modeEntries[0].entity_id : Object.values(settings)[0]?.entity) ?? '';
     const valid = ids.size === 1 && ids.has(id);
-    return { name:name || `Room ${id}`, entity, roomId:valid ? id : undefined, context, mapId:map, settings,
+    return { name:name || `Room ${id}`, key:entity, entity, roomId:valid ? id : undefined, context, mapId:map, settings,
       available:valid && !!entity && Object.values(settings).some(f => f.available), excluded:config.excluded_rooms?.includes(entity) ?? false };
   });
   const rank = id => { const i = config.room_order?.indexOf(id) ?? -1; return i < 0 ? Number.MAX_SAFE_INTEGER : i; };
@@ -136,16 +137,21 @@ function startBlockReason(hass, entity, registry = []) {
   // owns the transition; do not send an unverified cancel-drying command.
   if (!['IDLE','DRYING_MOP'].includes(dock)) return 'Waiting for the robot to be ready';
   const raw = state.attributes?.raw_state;
-  if (!['INACTIVE_CHARGED','INACTIVE_CHARGING','FULL_CLEAN_FINISHED'].includes(raw)) return 'Waiting for the robot to be ready';
-  return ['docked','idle','returning'].includes(state.state) ? null : 'Waiting for the robot to be ready';
+  // FULL_CLEAN_FINISHED means the job ended, not that the return trip ended.
+  // Require resting/charging telemetry and a compatible HA state together.
+  if (!['INACTIVE_CHARGED','INACTIVE_CHARGING'].includes(raw)) return 'Waiting for the robot to be ready';
+  return ['docked','idle'].includes(state.state) ? null : 'Waiting for the robot to be ready';
 }
 function cleaningView(hass, entity, pendingStart = false, registry = []) {
-  // FULL_CLEAN_FINISHED is mapped to returning upstream, but is explicitly a
-  // writable/finished state. Other returning states remain active sessions.
+  // A finished job can still be returning to the dock. Keep that session
+  // visible, but never use its old completion telemetry to confirm a new Start.
   const state = hass?.states?.[entity];
-  if (available(state) && hass?.connected !== false && (state.attributes?.raw_state === 'FULL_CLEAN_FINISHED' || !startBlockReason(hass, entity, registry))) return pendingStart
-    ? { active:true, title:'Starting clean', detail:'Waiting for the robot to report its status.', live:false }
-    : { active:false, live:false };
+  if (available(state) && hass?.connected !== false && (state.attributes?.raw_state === 'FULL_CLEAN_FINISHED' || !startBlockReason(hass, entity, registry))) {
+    if (pendingStart) return { active:true, title:'Starting clean', detail:'Waiting for the robot to report its status.', live:false };
+    return state.state === 'returning'
+      ? {...spotScrubAdapter.cleaningView(hass, entity), live:false}
+      : { active:false, live:false };
+  }
   if (available(state) && hass?.connected !== false && state.attributes?.raw_state === 'FULL_CLEAN_CHARGING') return { active:true, title:'Cleaning session active', detail:'', live:true };
   return spotScrubAdapter.cleaningView(hass, entity, pendingStart);
 }
@@ -183,7 +189,7 @@ async function sendRoomDraft({ hass, model, config, selected = [], draft = {}, s
     }
   }
   const rooms = start ? selected.map(entity => {
-    const room = live.rooms.find(r => r.entity === entity);
+    const room = live.rooms.find(r => roomKey(r) === entity);
     if (!room?.roomId) fail();
     return resolve(room.roomId);
   }) : [];
@@ -326,7 +332,24 @@ async function deleteSchedule({ hass, registry, config, id }) {
   try { await hass.callService(DOMAIN, 'delete_robot_schedule', {device_id:state.deviceId, schedule_id:id}); }
   finally { pending.delete(state.deviceId); }
 }
+function roomPlanningState(hass, registry, config, model, draft = {}) {
+  const saveAvailable = !!hass?.services?.[DOMAIN]?.set_room_cleaning_modes;
+  const startAvailable = !!hass?.services?.[DOMAIN]?.start_zone_clean;
+  const ready = hass?.connected !== false && available(hass?.states?.[config.entity])
+    && vacuumEntries(registry).some(entry => entry.entity_id === config.entity);
+  const blocked = model.startBlockReason || startBlockReason(hass, config.entity, registry);
+  return { supportsSave:true, supportsStart:true, ordered:false,
+    canSave:ready && saveAvailable,
+    canStart:ready && startAvailable && !blocked && (!Object.keys(draft).length || saveAvailable),
+    notice:model.startBlockReason || (!saveAvailable || !startAvailable
+      ? 'The updated Dyson integration actions are not available. Reload the integration and refresh this dashboard.' : null) };
+}
+
 return Object.freeze({ id:DOMAIN, infoTabs:['consumables'], mapEntityLabel:'Map image',
+  label:'hass-dyson (experimental)', shortLabel:'hass-dyson', deviceLabel:'Dyson device',
+  editorHint:'Room order is controlled by hass-dyson. Changed settings are saved before cleaning starts.',
+  roomStartMessage:'Sending room settings and start request …',
+  roomPlanningState, roomPresentation:dysonRoomPresentation,
   scheduleState, setSchedule, deleteSchedule,
   usesDockTimer:true, supportsDryingCancellation:false,
   planningHint:'Room order is controlled by hass-dyson. Changed settings are saved before cleaning starts.',

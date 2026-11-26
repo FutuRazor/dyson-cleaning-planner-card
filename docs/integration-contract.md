@@ -1,10 +1,12 @@
-# Integration contract — card v1.6.0
+# Integration contract — card v1.7.0 (release candidate)
 
 This contract describes the **Spot+Scrub adapter**. The experimental `hass_dyson` adapter has a separate [entity/action contract and setup guide](hass-dyson.md). `integration: auto` selects the configured vacuum's registry platform; initial discovery prefers Spot+Scrub. Explicit adapter choices are available in the visual editor.
 
-This document describes what the **current card actually reads and sends**, based on the Spot+Scrub adapter and its card/editor/map/zone consumers. Both adapters preserve their own contracts; see [adapter architecture](integration-adapter.md). It is a frontend contract, not a specification of Dyson's MQTT protocol or a guarantee about the integration's internal implementation.
+This document describes what the **current card actually reads and sends**, based on the Spot+Scrub adapter and its card/editor/map/zone consumers. The adapters preserve their own contracts; see [adapter architecture](integration-adapter.md). It is a frontend contract, not a specification of Dyson's MQTT protocol or a guarantee about the integration's internal implementation.
 
 Both Modern and Classic use this same contract. The documented minimum integration version is **UNsync3D Dyson Spot+Scrub v2.1.0**; schedule management requires **v2.2.0 or newer** and the corresponding optional entities/actions.
+
+Optional saved-map selection and synchronization per map require the companion [map-switching development branch](https://github.com/FutuRazor/ha-dyson-spot-scrub/tree/feat/map-switching). The header discovers the same robot's `<serial>_active_map` select and uses `select.select_option`, with matching select/vacuum readback. See the [map-selection interface](spot-scrub-maps.md#implemented-map-selection-interface) and [saved-map schedule contract](spot-scrub-schedules.md#saved-map-schedule-behavior).
 
 The core interface was reviewed on **21 November 2026**; the schedule contract was updated for integration v2.2.0 and card v1.6.0 on **24 November 2026**. This describes every integration-facing feature in the current source; it does not certify another integration or replace hardware verification. For a migration assessment, see [hass-dyson compatibility](hass-dyson-compatibility.md).
 
@@ -220,7 +222,7 @@ A local pending start or editor-only preview can temporarily override the view. 
 
 | Attribute | Type / recognized values | Purpose |
 |---|---|---|
-| `rooms` | Array of room-name strings | Discovery |
+| `rooms` | Array of room-name strings, including an explicit empty array | Discovery; `[]` clears the previous map's list while current data is unresolved |
 | `map_id` | Converted to string for room context; positive decimal ID for zone calibration | Separates drafts between active maps and validates rectangle commands |
 | `friendly_name` | String | Robot subtitle |
 | `supported_features` | Numeric bitmask | Session action availability |
@@ -246,9 +248,12 @@ Recognized `start_block_reason` values:
 | `mapping_or_navigation` | Mapping / navigation in progress |
 | `returning_or_finishing` | Returning to dock / finishing cleanup |
 | `cleaning_job_active` | A cleaning job is still active |
+| `map_switching` | Header notice to wait for the map switch before starting a clean |
 | `waiting_for_ready_state` | Waiting for the robot to be ready |
 
 Other reasons with `ready_to_start: false` show a generic not-ready message. String `"false"` is **not** a boolean veto. A reason alone does not veto Start. Literal `true` allows a new room job from `error` (a retained fault), but does not override washing/dust-collection restrictions or permit starts from other non-ready states.
+
+The updated integration branch uses this existing contract for retained placement faults 2509/2510 while confirmed idle off-dock. It supplies the descriptions and readiness decision; the card keeps the warning visible and does not decode fault codes or bypass the integration's checks. Fresh room names can be reported from map metadata before per-room settings are available. Missing settings are not synthesized.
 
 New room Start requires connected HA, an available vacuum in `docked`/`idle` (or `error` with literal `ready_to_start: true`), valid selected rooms and the custom Start action. Roller washing and dust collection block Start even without the optional readiness attributes. Drying alone does not block Start, but `ready_to_start: false` still does.
 
@@ -403,7 +408,7 @@ Cleaning solution displays Ready to use / Refill required; its Enabled/Disabled 
 - No global cleaning-mode select or original Vacuum Start button; there is no legacy start adapter fallback.
 - No separate docked/fault binary sensor, raw fault-code entity or room-area sensor is read by the current card.
 - No direct Dyson login, token storage, MQTT subscription, raw preference array or robot API call.
-- No standalone calendar rendering, map switching, cross-map room selection or estimated cleaning duration. Optional robot schedule management uses the [schedule contract](spot-scrub-schedules.md).
+- No standalone calendar rendering, cross-map room selection or estimated cleaning duration. Optional saved-map switching uses the [map-selection contract](spot-scrub-maps.md#implemented-map-selection-interface). Optional robot schedule management uses the [schedule contract](spot-scrub-schedules.md).
 - No confirmed per-room progress or integration-provided active-room list consumed for badges.
 - No background automation from the editor simulation. It only changes the current preview and suppresses action calls.
 
@@ -517,6 +522,8 @@ y = max_y - (py - padding) / pixels_per_metre
 The card reverses display rotation before transforming all four rectangle corners, then sends their minima/maxima. The rectangle must remain inside normalized image coordinates 0–1 and have positive width/height. The UI enforces at least **0.55 m per side**, a trial UI limit, not a confirmed firmware constraint. No obstacle/reachability validation occurs.
 
 Zone images require successful HTTP responses, PNG signature bytes, at most **20 MiB**, matching decoded dimensions and matching SHA-256. Unlike the session map, zone loading checks PNG bytes rather than requiring a PNG content-type header. Width/height URL parameters are removed. There is a 12-second load deadline, up to three image fetch attempts, and up to eight 150-ms calibration polls per image, to allow calibration to be published after an image request. These are read retries; cleaning actions are never automatically retried.
+
+An active-map ID change clears the old rectangle, cancels obsolete image reads and automatically loads the new map while retaining the Zone tab selection. Unknown/nonpositive map IDs wait for a valid identity. If the bounded reads finish before the camera publishes matching calibration, a changed valid calibration for that active map permits another load; unchanged telemetry does not start a retry loop. Normal same-map updates keep the frozen image and rectangle.
 
 The Zone tab requires a supported device-registry model. Start also requires a trusted same-platform/same-device camera, connected HA, non-preview mode, a verified image, available vacuum/camera states, and literal `ready_to_start: true`. Room readiness's fallback to `docked`/`idle` does not apply here. The zone readiness helper relies on that boolean rather than independently applying room-state/dock interlocks, so the integration must report it accurately and revalidate it at execution.
 

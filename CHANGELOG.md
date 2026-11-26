@@ -1,5 +1,51 @@
 # Changelog
 
+## Unreleased
+
+- Add an offline Dreame v2.0.3 contract prototype, source-shaped fixtures and an executable delayed-save-rejection demonstration. Validate map-qualified room identity, exact native profile values and companion-value preservation; do not equate optimistic HA updates or service completion with robot confirmation. The prototype is not bundled or exposed as a supported adapter.
+- Correct optimistic humidity-control publication in the offline Dreame fixture and derive its self-repair veto from published detailed state/status, including water checks reported as docked in HA. These corrections do not register or bundle the prototype.
+
+## v1.7.0
+
+**Saved-map switching for Spot+Scrub**
+
+This release combines the adapter work developed under v1.6.1 with saved-map selection and schedules per map. Maintainer live tests confirmed map switching and schedule availability in the integration and Lovelace card, plus the Zone tab remaining selected and loading the new floor plan after a map change.
+
+Saved-map controls currently require the [map-switching integration development branch](https://github.com/FutuRazor/ha-dyson-spot-scrub/tree/feat/map-switching). Integrations without the matching map select keep these optional controls hidden; upstream v2.2.0 alone does not expose them. Integration-provided fault descriptions, including the new English texts for 2509/2510, retain their current language behavior; localization is a follow-up.
+
+- Revalidate the card lifecycle immediately before generic HA fan-speed and area-cleaning calls, closing the promise gap after asynchronous room validation.
+- Preserve native room checkbox/label activation when dismissing the saved-map menu, including single-click selection and deselection.
+- Clear a cancelled schedule request's own progress message immediately while preserving newer feedback, including app-driven map changes during deletion.
+
+- Keep the Zone tab selected across saved-map changes and automatically load the new calibrated floor plan. Discard the old rectangle, handle delayed camera calibration without manual Reload, and preserve the loaded zone component when the header/map menu updates.
+
+- Document the companion integration updates for stationless camera bounds, fresh-room discovery, explicit empty room lists and retained placement warnings 2509/2510. These require the updated integration branch; card readiness checks remain unchanged.
+- Add troubleshooting for the known Dyson stationless cleaning -> Pause -> Home search, also observed in MyDyson, with confirmed recovery by pausing and manually placing the robot on its station.
+
+- Hide the saved-map switch button when fewer than two valid map options are available. Close an open menu when the list shrinks to one map, and restore the button when another map is reported.
+
+- Show the map-switch start interlock in the header across Rooms, Zone and Schedules. Keep actual dock/robot activity in the status row, including drying time, and avoid repeating the map notice there. Localize the notice in all four languages.
+
+- Keep Spot+Scrub schedule rows, enabled counts and countdowns on the reported active map. Use matching map-scoped integration summaries, show confirmed empty maps without a sync instruction, and cancel obsolete editors/action feedback when the map changes. Integration changes on the map-switching branch retain schedules and checksum baselines per map and make other maps' schedule switches unavailable.
+
+- Clear an earlier saved-map switch error once matching late HA telemetry confirms the requested map. Record the integration corrections for immediate JDM map reports and static-map images when the active map is unknown.
+
+- Add an optional saved-map menu to the Spot+Scrub header, using the matching integration map select on the same robot. Confirm switches through HA readback, retain the existing room updates, and keep map creation, editing and deletion in MyDyson. The feature requires the map-switching integration development branch; upstream v2.2.0 alone does not expose this select.
+
+- Show a local spinner on Station and Robot switches until the requested state is reflected by the same Home Assistant entity. Keep preference writes locked during confirmation, report missing readback after ten seconds without retries, clear warnings on late confirmation, and cancel obsolete feedback after reconfiguration or removal.
+- Exclude Spot+Scrub's known cleaning-mode options from the generic suction slider: its fan-speed API selects vacuum/mop modes rather than suction intensity. Document hass-dyson's missing standard fan capability and retain area-only starts for these devices.
+- Add an optional shared suction slider below HA area tiles when the exact vacuum exposes FAN_SPEED, native options and the set-fan-speed action. Keep edits local until Start, set only changed values, revalidate before area cleaning, and retain drafts with explicit partial-effect feedback instead of retrying or rolling back. Explain that suction is a global robot preference and may persist after the job.
+- Add a generic Home Assistant area-cleaning adapter (`ha_rooms`) for entities reporting CLEAN_AREA. Discover only the robot's mapped HA areas, preserve selection locally, revalidate persisted mappings before one targeted `vacuum.clean_area` call, and support standard session controls without promising room order.
+- Prefer specialized adapters in Automatic, deduplicate eligible robots and keep unknown platforms from falling back to Dyson. Localize setup/errors in four languages and hide unavailable room settings, map/zone, preference and info controls for the generic adapter. Foreign-robot live acceptance remains pending.
+- Record a successful maintainer live test of the generic HA mode with a Dyson: multiple area starts, Pause/Resume/Home, battery display and browser-local requested-room chips. Clarify that these chips are local request snapshots rather than shared robot telemetry.
+- Move room-planning capabilities, field presentation and editor metadata behind the existing Dyson adapters. Hide unsupported room actions/settings, gate dispatch with current adapter readiness, retain legacy entity-based YAML keys and allow room selection without a dedicated HA entity.
+- Show hass-dyson selections without execution-order numbers, since its integration controls room order. Preserve Spot+Scrub's numbered selection and existing action payloads.
+- Add room-capability regression tests and an entityless-room browser fixture. The maintainer reports successful live checks for both Dyson adapters; document a non-blocking cross-integration Resume exception when both integrations control the same robot.
+
+- Block hass-dyson room starts while returning after normal cleaning completion, matching the existing aborted-return interlock. Keep the return session visible and require resting/charging telemetry before a new job, including revalidation after Save. Preserve starts during drying once the robot is ready. The maintainer confirmed the return interlock in a live retest with the updated bundle.
+- Size the Modern drying progress track to the translated status and remaining-time text, ending at the time label with the cancel control alongside it. Keep the time readable on narrow cards by truncating the status label when necessary, and retain the fixed status-row height. The maintainer confirmed the resulting appearance.
+- Add compatibility regressions for existing Dyson YAML, native action payloads and adapter selection in mixed households. Record the Dyson-focused review and allow slower local preview navigation in the schedule browser test without changing interaction timeouts or application behavior.
+
 ## v1.6.0
 
 - Match the Info overlay's outer inset to the schedule room editor at 4 px.

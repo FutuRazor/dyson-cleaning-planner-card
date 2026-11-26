@@ -1,6 +1,8 @@
 import { UiError } from '../localize.js';
-import { ROOM_FIELDS, available } from '../shared.js';
+import { ROOM_FIELDS, available, roomKey } from '../shared.js';
+import { dysonRoomPresentation } from './dyson-planning.js';
 import { validZoneCalibration, zoneRobotRectangle } from '../zone-geometry.js';
+import { mapSelectionState, selectMap } from '../map-selection.js';
 
 // Keep backend identities, telemetry and action policy inside this adapter.
 // The local scope also isolates implementation names in the dependency-free bundle.
@@ -51,7 +53,7 @@ function discover(hass, registry, config, previousRooms = []) {
         available: hass.connected !== false && available(state) };
     }
     const roomId = roomIds.size === 1 ? [...roomIds][0] : undefined;
-    return [{ name, entity: entry.entity_id, context, roomId, settings, available: available(hass.states[entry.entity_id]), excluded: config.excluded_rooms.includes(entry.entity_id) }];
+    return [{ name, key:entry.entity_id, entity: entry.entity_id, context, roomId, settings, available: available(hass.states[entry.entity_id]), excluded: config.excluded_rooms.includes(entry.entity_id) }];
   });
   const ids = rooms.map(r => r.entity).filter(Boolean);
   if (new Set(ids).size !== ids.length) issues.push('Multiple rooms map to the same switch.');
@@ -114,7 +116,7 @@ async function sendRoomDraft({ hass, model, config, selected = [], draft = {}, s
     }
   }
   const rooms = start ? selected.map(entity => {
-    const room = model.rooms.find(r => r.entity === entity);
+    const room = model.rooms.find(r => roomKey(r) === entity);
     if (!room?.roomId) throw new UiError('A selected room has no stable room ID. Refresh rooms and check the integration.');
     return resolve(room.roomId);
   }) : [];
@@ -157,6 +159,7 @@ function startBlockReason(hass, entity) {
       mapping_or_navigation: 'Mapping / navigation in progress',
       returning_or_finishing: 'Returning to dock / finishing cleanup',
       cleaning_job_active: 'A cleaning job is still active',
+      map_switching: 'Wait for the map switch to finish before starting a clean.',
       waiting_for_ready_state: 'Waiting for the robot to be ready'
     }[attrs.start_block_reason] ?? 'The integration is not ready to start a new clean';
   }
@@ -167,7 +170,11 @@ function startBlockReason(hass, entity) {
 function activityStatus(hass, entity, pendingStart = false) {
   const state = hass?.states?.[entity];
   const view = cleaningView(hass, entity, pendingStart);
-  const result = (text, icon = 'mdi:robot-vacuum', drying = false) => ({ text, icon, drying });
+  const notice = available(state) && hass?.connected !== false && state.state !== 'error'
+    && state.attributes?.ready_to_start === false && state.attributes?.start_block_reason === 'map_switching'
+    ? startBlockReason(hass,entity) : null;
+  const result = (text, icon = 'mdi:robot-vacuum', drying = false) => ({ text, icon, drying,
+    ...(notice ? {notice} : {}) });
   if (!available(state) || hass?.connected === false) return result('Robot unavailable', 'mdi:alert-circle-outline');
   if (state.state === 'error') return result('Robot needs attention', 'mdi:alert-circle-outline');
   if (state.state === 'paused') return result('Paused', 'mdi:pause');
@@ -181,8 +188,8 @@ function activityStatus(hass, entity, pendingStart = false) {
   }
   if (state.state === 'returning') return result('Returning / mapping', 'mdi:home-import-outline');
   const blocked = startBlockReason(hass, entity);
-  if (blocked) return result(blocked, 'mdi:timer-sand');
-  return view.active ? result(view.title) : null;
+  if (blocked && blocked !== notice) return result(blocked, 'mdi:timer-sand');
+  return view.active ? result(view.title) : notice ? {notice} : null;
 }
 
 function cleaningView(hass, entity, pendingStart = false) {
@@ -422,6 +429,16 @@ function defaultEntity(hass) {
 function roomSelectionState(hass, entity) { return hass.states[entity]?.state; }
 function hasRoomList(hass, entity) { return Array.isArray(hass.states[entity]?.attributes?.rooms); }
 function roomActionAvailable(hass, start) { return !!hass?.services?.[DOMAIN]?.[start ? 'start_rooms_with_settings' : 'save_room_settings']; }
+function roomPlanningState(hass, registry, config, model) {
+  const saveAvailable = roomActionAvailable(hass, false), startAvailable = roomActionAvailable(hass, true);
+  const ready = hass?.connected !== false && available(hass?.states?.[config.entity])
+    && vacuumEntries(registry).some(entry => entry.entity_id === config.entity);
+  const blocked = model.startBlockReason || startBlockReason(hass, config.entity);
+  return { supportsSave:true, supportsStart:true, ordered:true,
+    canSave:ready && saveAvailable, canStart:ready && startAvailable && !blocked,
+    notice:model.startBlockReason || (!saveAvailable || !startAvailable
+      ? 'The updated Dyson integration actions are not available. Reload the integration and refresh this dashboard.' : null) };
+}
 function mapId(hass, entity) { return hass?.states?.[entity]?.attributes?.map_id; }
 function mapPicture(hass, entity) { return hass?.states?.[entity]?.attributes?.entity_picture; }
 function mapCalibration(hass, entity) { return hass?.states?.[entity]?.attributes?.map_calibration; }
@@ -493,19 +510,27 @@ function scheduleState(hass, registry, entity) {
     && Array.isArray(s.room_ids) && s.room_ids.length === s.rooms.length && s.room_ids.every(id => typeof id === 'string' && /^\d+$/.test(id))
     && new Set(s.room_ids).size === s.room_ids.length && (s.map_id === null || typeof s.map_id === 'string'))
     && new Set(raw.map(s => s.schedule_id)).size === raw.length;
-  const readable = !!sensor && hass?.connected !== false && available(state) && valid;
+  const activeMap = mapId(hass, entity) == null ? null : String(mapId(hass, entity));
+  const mapKnown = activeMap !== null && /^[1-9]\d*$/.test(activeMap);
+  const scoped = attrs.map_id != null;
+  const summaryMatches = mapKnown && (scoped ? String(attrs.map_id) === activeMap : valid && raw.every(s => s.map_id === activeMap));
+  const readable = !!sensor && hass?.connected !== false && available(state) && valid && mapKnown
+    && (!scoped || summaryMatches);
+  const schedules = readable ? raw.filter(s => s.map_id === activeMap) : [];
+  const inSync = summaryMatches ? attrs.in_sync : undefined;
   const canChange = attrs.can_change === true;
   const online = readable && available(hass?.states?.[entity]);
-  const activeMap = mapId(hass, entity);
-  return { supported:!!sensor, available:readable,
-    writable:online && canChange && !!hass?.services?.[DOMAIN]?.set_schedule,
+  const selection = mapSelectionState(hass,registry,entity);
+  const switching = selection.entity && hass?.states?.[selection.entity]?.attributes?.switching === true;
+  return { supported:!!sensor, available:readable, context:roomContext(hass,entity), mapId:activeMap,
+    writable:online && !switching && canChange && !!hass?.services?.[DOMAIN]?.set_schedule,
     createSupported:!!sensor && canChange && !!hass?.services?.[DOMAIN]?.set_schedule,
-    createReady:activeMap != null && /^\d+$/.test(String(activeMap)),
+    createReady:mapKnown && !switching,
     deleteSupported:!!sensor && canChange && !!hass?.services?.[DOMAIN]?.delete_schedule,
-    schedules:readable ? raw.map(s => ({id:s.schedule_id, enabled:s.enabled, days:[...s.days], time:s.time,
-      rooms:[...s.rooms], roomIds:[...s.room_ids], roomSettings:scheduleRoomSettings(s.room_settings,s.room_ids), mapId:s.map_id, repeat:s.repeat})) : [],
-    inSync:attrs.in_sync, robotTotal:readable && /^\d+$/.test(String(state.state)) ? Number(state.state) : null,
-    enabledCount:!readable ? null : attrs.in_sync === true ? raw.filter(schedule => schedule.enabled).length
+    schedules:schedules.map(s => ({id:s.schedule_id, enabled:s.enabled, days:[...s.days], time:s.time,
+      rooms:[...s.rooms], roomIds:[...s.room_ids], roomSettings:scheduleRoomSettings(s.room_settings,s.room_ids), mapId:s.map_id, repeat:s.repeat})),
+    inSync, robotTotal:readable && summaryMatches && /^\d+$/.test(String(state.state)) ? Number(state.state) : null,
+    enabledCount:!readable || !summaryMatches ? null : inSync === true ? schedules.filter(schedule => schedule.enabled).length
       : Number.isSafeInteger(attrs.on) && attrs.on >= 0 ? attrs.on : null,
     roomSelectionKnown:true, creationUsesSelectedRooms:true };
 }
@@ -586,8 +611,11 @@ async function deleteSchedule({ hass, registry, config, id }) {
   finally { draftRequests.delete(config.entity); }
 }
 
-return Object.freeze({ id: DOMAIN, roomContext, discover, batteryStatus, sendRoomDraft, dockBusy, dockBlocksStart, startBlockReason, activityStatus, cleaningView, dryingRemainingTime, dryingRemainingPercent, canControl, controlCleaning, CONSUMABLES, consumableStatus, ROBOT_FIELDS, robotSettings, changeRobotSetting, STATION_FIELDS, STATION_ACTIONS, stationActions, pressStationAction, stationSettings, changeStationSetting, supportsZoneDevice, ZONE_CHOICES, zoneDeviceOptions, vacuumEntries, cameraEntries, defaultEntity, roomSelectionState, hasRoomList, roomActionAvailable, mapId, mapPicture, mapCalibration, trustedCamera, robotTelemetry, dockActivity, zoneReady, startZone, zoneSettingsPayload,
-  scheduleState, scheduleRoomOptions, setSchedule, deleteSchedule,
+return Object.freeze({ id: DOMAIN, label:'Dyson Spot+Scrub', shortLabel:'Spot+Scrub', deviceLabel:'Dyson device',
+  editorHint:'Per-room settings are detected automatically. Saving and starting use the Dyson integration batch actions.',
+  roomStartMessage:'Sending room settings and start request …',
+  roomPlanningState, roomPresentation:dysonRoomPresentation, roomContext, discover, batteryStatus, sendRoomDraft, dockBusy, dockBlocksStart, startBlockReason, activityStatus, cleaningView, dryingRemainingTime, dryingRemainingPercent, canControl, controlCleaning, CONSUMABLES, consumableStatus, ROBOT_FIELDS, robotSettings, changeRobotSetting, STATION_FIELDS, STATION_ACTIONS, stationActions, pressStationAction, stationSettings, changeStationSetting, supportsZoneDevice, ZONE_CHOICES, zoneDeviceOptions, vacuumEntries, cameraEntries, defaultEntity, roomSelectionState, hasRoomList, roomActionAvailable, mapId, mapPicture, mapCalibration, trustedCamera, robotTelemetry, dockActivity, zoneReady, startZone, zoneSettingsPayload,
+  scheduleState, scheduleRoomOptions, setSchedule, deleteSchedule, mapSelectionState, selectMap,
   mapPictureAllowed:picture => typeof picture === 'string' && picture.startsWith('/api/camera_proxy/'),
 });
 })();

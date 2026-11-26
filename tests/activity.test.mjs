@@ -2,6 +2,26 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { activityStatus, dockBusy, cleaningView, sendRoomDraft, discover, normalizeConfig } from '../src/core.js';
 import { batchFixture } from './fixture.mjs';
+import { spotScrubAdapter } from '../src/adapters/spot-scrub.js';
+
+test('map switching is a header notice while actual activity and start rejection remain authoritative',async()=>{
+  const f=batchFixture(),vacuum=f.hass.states[f.entity];
+  Object.assign(vacuum.attributes,{ready_to_start:false,start_block_reason:'map_switching',dock_state:'IDLE'});
+  const message='Wait for the map switch to finish before starting a clean.';
+  assert.deepEqual(activityStatus(f.hass,f.entity),{notice:message});
+  assert.equal(spotScrubAdapter.startBlockReason(f.hass,f.entity),message);
+  vacuum.attributes.dock_state='DRYING_MOP';
+  const drying=activityStatus(f.hass,f.entity);
+  assert.equal(drying.text,'Drying mop roller');assert.equal(drying.drying,true);assert.equal(drying.notice,message);
+  vacuum.attributes.dock_state='IDLE';
+  const config=normalizeConfig(f.config),model=discover(f.hass,f.registry,config);
+  await assert.rejects(sendRoomDraft({hass:f.hass,model,config,selected:[f.ids[0]],draft:{},start:true}),/map switch/);
+  assert.deepEqual(f.calls,[]);
+  vacuum.attributes.ready_to_start=true;
+  assert.equal(activityStatus(f.hass,f.entity),null,'cleared readiness cannot retain a stale map notice');
+  vacuum.attributes.ready_to_start=false;vacuum.state='unavailable';
+  assert.equal(activityStatus(f.hass,f.entity).notice,undefined,'connection loss is not a map-change explanation');
+});
 
 test('live cleaning phase takes precedence over configured mode; missing telemetry stays generic', () => {
   const f = batchFixture(), vacuum = f.hass.states[f.entity];

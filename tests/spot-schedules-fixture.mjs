@@ -12,7 +12,7 @@ export function spotSchedulesFixture({reportedSettings=true}={}) {
   const preferences = Object.fromEntries(Object.entries(f.fields).map(([id,fields])=>[id,Object.fromEntries(Object.entries(fields).map(([key,entity])=>[key,f.hass.states[entity].state]))]));
   const plans=new Map([[101,{rooms:['10','11'],settings:structuredClone(preferences)}],[102,{rooms:['13'],settings:structuredClone(preferences)}]]);
   plans.get(101).settings['10'].cleaning_mode='Vacuum and Mop';
-  f.hass.states[sensor]={state:'2',attributes:{known:2,on:1,unknown:0,in_sync:true,can_change:true,schedules:[
+  f.hass.states[sensor]={state:'2',attributes:{map_id:'123',known:2,on:1,unknown:0,in_sync:true,can_change:true,schedules:[
     {schedule_id:101,enabled:true,days:['tue','thu','sat','sun'],time:'10:00',repeat:true,map_id:'123',room_ids:['10','11'],rooms:[f.names[0],f.names[1]]},
     {schedule_id:102,enabled:false,days:['mon','wed','fri'],time:'08:30',repeat:true,map_id:'123',room_ids:['13'],rooms:[f.names[3]]},
   ]}};

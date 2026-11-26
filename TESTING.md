@@ -1,4 +1,248 @@
-# Testing v1.6.0
+# Testing v1.7.0
+
+## Current validation status - 26 November 2026
+
+Version remains **1.7.0**. Latest full checks: **178 card unit tests**, rebuilt bundle and smoke check, plus **449 integration tests**. Browser coverage and maintainer observations are recorded separately below.
+
+| Area | Current evidence/status |
+| --- | --- |
+| Map selection in HA/Lovelace and MyDyson | Maintainer live confirmation in both directions |
+| Single-map button visibility | Deleting B hides the button; creating another map restores it, confirmed live |
+| Schedules and availability per map | Confirmed live in both integration and card |
+| Stationless camera bounds | Corrected camera looks good in maintainer live check; original raw dock value remains uncaptured |
+| Map-switch notice in the header | Unit/browser checks passed; separate live confirmation was not reported |
+| Zone tab and automatic floor-plan loading on map changes | Unit/browser checks passed; maintainer live acceptance confirmed |
+| PR #40 review corrections | Unit/browser checks passed; initial maintainer live check reported no new errors |
+| Robot fault-text localization | Integration descriptions are passed through; English texts for 2509/2510 remain a deferred follow-up |
+| Fresh-room discovery before a first clean | Integration regressions passed; live creation check pending |
+| Idle off-dock retry with retained placement faults 2509/2510 | Integration regressions passed; corrected HA/card retry still needs live acceptance |
+| Stationless cleaning → Pause → Home search | Known Dyson behavior also observed in MyDyson; pause and manual docking recovery confirmed |
+
+Additional integration/map checks are listed in [the map notes](docs/spot-scrub-maps.md#remaining-live-checks). Entries below are chronological records and retain their original versions/test counts; an old pending statement does not supersede a later confirmation.
+
+## PR #40 review corrections - 26 November 2026
+
+The [CodeRabbit review of PR #40](https://github.com/FutuRazor/dyson-cleaning-planner-card/pull/40) on `76d9892` contained four inline findings and one unverified offline-prototype finding. All five were verified against code, regressions and the prototype's pinned Dreame source. The original HA adapter also reproduces an obsolete command dispatch in each promise gap: before a fan write, before area-only cleaning and after the second validation following a fan write.
+
+The HA area adapter now checks its current lifecycle synchronously immediately before both service calls. Closing the saved-map menu removes only its popup and updates ARIA/cache state, preserving checkbox/label activation. Schedule requests retain ownership of their progress message; cancellation clears that message immediately only if newer feedback has not replaced it. The offline Dreame fixture publishes water changes to the active humidity select using its native option tokens, and the prototype derives its water-check/self-repair veto from published detail state/status. These Dreame changes remain outside the runtime bundle.
+
+Validation passed: `npm run check` with **178 unit tests**, rebuilt v1.7.0 bundle and smoke check; `npm run prototype:dreame` with zero dispatched commands; and six Chromium browser suites: `map-selection-browser`, `map-schedules-browser`, `ha-rooms-browser`, `ha-fan-speed-browser`, `schedules-feedback-browser` and `zone-map-switching-browser`. New coverage checks one-click checkbox/label activation in Modern/Classic at 375/900 px, immediate deletion-progress cancellation before transport completion, preservation of newer feedback, lifecycle changes queued after room validation, all water-control publication variants and published maintenance-state vetoes. The schedule-feedback browser fixture now retains its dynamic import and installs its fake clock after setup to avoid Chromium's collected-promise error. These checks use simulated HA and send no real robot commands. Version remains **1.7.0**.
+
+After installing the review corrections, the maintainer performed an initial live check and reported no newly observed errors. This is an initial smoke-check observation; individual timing/cancellation cases were not separately described, and it does not establish Dreame hardware support.
+
+## v1.7.0 release documentation - 26 November 2026
+
+The maintainer requested stable-release documentation for **v1.7.0** after confirming the Zone map-switch correction live. Current release-candidate labels are removed from the README, changelog and testing header. Release notes explicitly retain the dependency on the map-switching integration development branch and the hidden optional controls when an integration lacks the matching map select. Fault descriptions continue to be passed through from the integration; localization of the new English 2509/2510 texts remains deferred. Historical candidate-stage records below retain their original context.
+
+This preparation changes documentation only. Package/lockfile version and generated bundle remain at **1.7.0**. Documentation diffs and version consistency were checked; application tests were not repeated because application code and bundle are unchanged. This does not merge the branch or publish a release.
+
+## Zone view across saved-map changes - 26 November 2026
+
+The maintainer reported that changing maps retains Schedules but leaves Zone for Rooms. Session status now temporarily overrides the selected Zone tab as it does Schedules, retaining that choice for the next ready state. A map-ID change cancels obsolete image loading, drops the old rectangle and automatically verifies a new PNG/calibration pair. A late matching camera-calibration update can restart the bounded image reads after an earlier mismatch; identical telemetry does not cause a retry loop. Header/map-menu updates retain the mounted zone component and its frozen selection. Actual cleaning or a local zone start still opens the session view; a local zone start explicitly leaves the editor.
+
+Validation passed: `npm run check` with **175 unit tests**, regenerated v1.7.0 bundle and smoke checks. The new `tests/zone-map-switching-browser.mjs` passed in Chromium for Modern/Classic at 375/900 px, covering card/app changes, the selected tab, old-rectangle removal, changed image dimensions, delayed calibration and session-state transitions. Existing `tests/zone-browser.mjs` and `tests/map-selection-browser.mjs` also passed. All browser actions use simulated HA. Integration code and versions are unchanged. The maintainer subsequently confirmed the correction live: Zone remains selected and the new floor plan loads after a map change. This acceptance does not separately confirm every delayed-readback or temporary-session case covered by the browser tests.
+
+## Stationless Pause → Home troubleshooting - 26 November 2026
+
+The maintainer clarified that the stationless **cleaning → Pause → Home** search is also present in the original MyDyson app and should be documented as a known Dyson operating edge case, not pursued as an integration/card defect. Their confirmed recovery is to pause the robot and place it manually on the charging station. Troubleshooting in both READMEs and the map notes now records that sequence. This documentation-only clarification does not change commands, application code or release versions; application tests were not repeated.
+
+## Fresh rooms and stationless placement faults - 26 November 2026
+
+The maintainer confirmed the single-map button rule live: deleting B leaves one integration option and hides the Lovelace button; creating a new map restores it. They supplied `home-assistant_dyson_spot_scrub_2026-11-26T04-19-58.659Z.log` for four stationless runs (1/4 app, 2/3 Lovelace), new-room discovery and faults 2509/2510. All four Home actions use ABORT followed by `service.start_recharge`. Only runs 3/4 were paused first; those report temporary map ID `0` and the maintainer observed localization/station searching. Runs 1/2 parked at the placement point. The command logic remains unchanged.
+
+The log captures 2510 retained as USER_CONTINUE while INACTIVE_DISCHARGING and a subsequent successful MyDyson start. The integration previously allowed retained-continue retries only on the dock; it now allows the two known placement codes while confirmed idle off-dock, keeping their warning and normal active/fault/dock vetoes. Their messages and placement instructions are added to the integration dictionary. Existing card behavior opens the planner for an error with literal `ready_to_start: true`; no card-side code or readiness bypass is added.
+
+Room discovery now refreshes preferences and metadata after map lifecycle/catalogue changes, retries missing preferences on catalogue polls, and can create room entities from that map's metadata without inventing settings. An unresolved active list is explicitly empty instead of borrowing A's cached rooms. The log includes B's Essbereich preference at 05:08:39.715 before the first START at 05:08:54.345, but not mapping itself or an entity-registry snapshot, so the reported initial entity delay needs a new live creation check.
+
+Validation passed: all **449 integration tests**, including a sanitized four-run/fault fixture and nine new regressions for retained placement warnings, start readiness, normal backend room Start, metadata-only discovery, empty-map attributes and lifecycle refresh. The corrected readiness/discovery still need live acceptance. This changes the companion integration only; card source, bundle and v1.7.0 candidate version are unchanged.
+
+## Saved-map button visibility - 26 November 2026
+
+The header now offers map switching only when at least two validated map options are reported. A list reduced to one map closes an open menu and removes the button; adding another map restores the button without reopening that menu. The integration select and map/schedule handling remain available independently of this presentation rule. Release-candidate version 1.7.0 is unchanged.
+
+Validation passed: `npm run check`, **174 unit tests**, rebuilt bundle and standalone smoke checks. The saved-map browser suite passed in Modern/Classic at 375/900 px, including shrinking an open menu to one map, hiding the button and restoring it after a second option appears.
+
+## Map-switch header notice in Schedules - 26 November 2026
+
+The maintainer reported the brief map-switch start interlock appearing in the drying/return activity row while viewing Schedules. The shared Spot+Scrub status fallback treated the new `map_switching` reason as unknown readiness text; the schedule view did not supply the room planner's header notice. This was a shared status-routing issue rather than a schedule-action message.
+
+The adapter now recognizes `map_switching` and provides an optional header `notice` separately from actual activity text. All views use the existing dismissible header overlay for it. Drying and its remaining time stay in the activity row; idle Classic does not invent an activity row for the notice. Duplicate start-block text in that row is hidden, and actual readiness/start rejection remains unchanged. The notice is localized in English, German, Dutch and French. Other readiness fallbacks (waiting for ready state, a cleaning job still active, unknown integration reasons) keep their existing activity-row behavior. Schedule action feedback already uses the header; list availability/sync/empty-state notes and editor explanations remain within their schedule content/dialog.
+
+Validation passed: `npm run check`, **174 unit tests**, rebuilt v1.7.0 bundle and standalone smoke checks. Four browser suites passed: map-scoped schedules in Modern/Classic at 375/900 px, header notices, start readiness and Modern status. The new browser assertions cover header-only map notices, simultaneous drying, dismissal across unchanged telemetry and clearing when readiness returns. This card-only change retains release-candidate version 1.7.0.
+
+## Stationless camera bounds - 26 November 2026
+
+The maintainer supplied two screenshots showing a tiny floor in the bottom-left corner and a zone badge around 112,433 x 112,378 cm, then confirmed the issue affects only B without a station. The integration renderer admitted arbitrary dock positions into canvas bounds. A synthetic 4 x 3 m room with a dock at (10,000, 10,000) reproduced the visual failure; the raw dock value on B has not been captured, so the exact live trigger remains unconfirmed.
+
+The integration correction reuses its existing room-geometry/dock-reach check before including a dock in bounds or drawing. Invalid/remote points are omitted, valid static docks can survive invalid live reports, and valid zero/near-wall/translated-origin coordinates remain supported. The synthetic image changes from 4096 x 4096 at about 0.4 pixels/metre to 450 x 370 at 80 pixels/metre; the corrected output was visually checked. All **440 integration tests** passed, including six new synthetic bounds regressions. At that stage, live camera acceptance on B was still pending; the later maintainer confirmation is recorded below. This changes the companion integration only; card source, generated bundle and v1.7.0 version remain unchanged.
+
+The maintainer subsequently confirmed that the corrected camera looks good. This is live visual acceptance of the rendering correction; the original raw dock value remains uncaptured.
+
+## v1.7.0 release candidate alignment - 26 November 2026
+
+The maintainer assigned the current development work to **v1.7.0**, with release-candidate status. The release combines saved-map switching and schedules per map with the adapter refactor, the generic Home Assistant area-cleaning adapter, preference-switch feedback and the fixes developed under the unpublished v1.6.1 baseline. The offline Dreame prototype remains outside the bundled release and under Unreleased in the changelog.
+
+Package metadata, lockfile, README, current adapter/contract documentation and generated bundle now identify v1.7.0. Release-candidate status is documented in the README/changelog/testing header; the package version is `1.7.0`. The build derives its version banner from `package.json`; the UI intentionally has no version badge. Earlier test entries retain the version used at the time. The companion integration has its own version and remains unchanged by this card version alignment.
+
+Validation passed: `npm run check` (via `npm.cmd` on Windows), **173 unit tests**, regenerated v1.7.0 bundle and standalone smoke checks. This preparation changes release metadata/documentation and the generated version banner only; earlier browser and maintainer live results remain recorded below.
+
+## Map-scoped schedules - 26 November 2026
+
+The maintainer confirmed clean bidirectional map switching between Lovelace and MyDyson, then reported A's schedules remaining visible on empty B with a misleading synchronization warning. The existing L3 capture records A reporting five schedules and B zero. The integration development branch now retains orders across maps but maintains each map's counts/checksum baseline independently. The active-map sensor/calendar, map-qualified switch availability/attributes and backend write checks share that scope. Old storage retains orders without assigning a global checksum to a map. Queries are correlated with the map revision, including late/reordered/expired replies, broker echoes and edits between request and response.
+
+The card filters list rows, enabled badge and countdown by persistent map ID, uses matching sensor summaries, shows confirmed empty maps without a sync instruction, and closes obsolete editors/feedback on app-driven changes. A row disappearing because another map was selected cannot confirm deletion. Existing genuine same-map sync warnings remain visible.
+
+Maintainer live acceptance passed on 26 November 2026 after installing the update: schedules and their availability follow map changes cleanly in both the integration and Lovelace card. The maintainer reports the observed behavior as fully correct. This confirms the map-switch display/availability flow; reconnect, further app edits and actual scheduled execution were not separately reported in this acceptance.
+
+Validation passed: **434 integration tests**; `npm run check` with **173 card unit tests**, generated v1.6.1 bundle and standalone smoke checks; the existing Spot+Scrub schedule and saved-map browser suites; and `tests/map-schedules-browser.mjs` in Modern/Classic at 375/900 px. The new browser suite covers shared names, empty B, A/B readback, counts/countdown, genuine warnings and an in-flight deletion crossing a map change. The empty Modern mobile view was visually checked. These automated tests send no real robot commands. The later maintainer live result is recorded above. Release versions are unchanged. Recording that result changed documentation only, so application tests were not repeated.
+
+## Saved-map live readback and camera correction - 26 November 2026
+
+The maintainer supplied `home-assistant_dyson_spot_scrub_2026-11-26T01-46-41.347Z.log` after the first map-selection implementation. Select actions report errors at their 15-second deadline, although the robot has already reported the new map through JDM and later legacy telemetry changes the room list; the maintainer confirms successful cleaning afterward. The integration now normalizes actual RB05 `prop.post.current_map_id` and valid `prop.get` map reports into the shared confirmation and room-refresh path. It continues to require robot telemetry, not just transport/command acknowledgement.
+
+During Home from stationless B, the log shows `ABORT` followed by `service.start_recharge`, then map ID `0` and a list with no current entry. It does not show a request to select A in that interval. The static-map helper's first-map fallback could display A; it now requires an unambiguous current map or the explicitly reported map ID. With map selection enabled, camera fetches pass the reported identity, including unknown `0`, so an unrelated floor cannot be used. Home and Stop commands are unchanged; comparison with MyDyson cancellation/normal stationless completion remains a separate live trace. Full timelines and the new shared-room-name evidence are in [the map notes](docs/spot-scrub-maps.md#live-readback-delay-and-return-without-a-station).
+
+Validation passed: the complete integration offline suite with **419 tests**, including a sanitized L3 regression fixture and coverage for early JDM confirmation, partial/invalid properties, transient ID `0`, missing/ambiguous current-map metadata and camera ID binding. `npm run check` passed with **170 unit tests**, rebuilt bundle and standalone smoke checks. The saved-map browser suite passed in both themes at 375/900 px, including clearing a rejected-service notice after later matching readback. Versions remain unchanged. The corrected controls still need a live retest.
+
+## Saved-map selection implementation - 26 November 2026
+
+The Spot+Scrub adapter now detects the configured robot's integration select with unique ID `<serial>_active_map` and adds a header map menu. It resolves options by persistent ID, sends one `select.select_option` action, waits for matching select/vacuum readback and keeps the existing room-refresh behavior. Local room drafts must be discarded first. Pending switches lock planner writes without appearing as a pending cleaning start; timeout, late confirmation and configuration/detachment ownership are handled without automatic retries. Older integrations and the other adapters retain their existing layout.
+
+The integration implementation targets [FutuRazor's `feat/map-switching` branch](https://github.com/FutuRazor/ha-dyson-spot-scrub/tree/feat/map-switching), based on upstream commit `580ba28146fe315e5772277f5179a43aa85e15c0`. It adds the RB05 Map select, correlated full-list refreshes at connection/reconnection, map/lifecycle changes and 60-second intervals, and one acknowledged `set_cur_map` followed by telemetry confirmation. Existing cleaning/start locks cover the transition. Creation, deletion and editing stay in MyDyson; removed map IDs leave the selector, while cleanup of their old room entities remains a follow-up requiring verified ownership.
+
+Validation passed: `npm run check` (via `npm.cmd` on Windows), **170 unit tests**, regenerated v1.6.1 bundle and standalone smoke checks. The integration's complete offline suite passed with **411 tests** on Python 3.12 using `-X utf8`, including 11 new map tests and an identity snapshot changed only for the added Map select. Integration manifest version remains unchanged.
+
+Three browser suites passed in matching Playwright Chromium Headless Shell: `map-selection-browser`, `browser` and `hass-dyson-browser`. The new suite covers both themes at 375/900 px, current-map marking and menu bounds, keyboard dismissal/focus, the exact targeted action, delayed select/vacuum readback, active-room updates with retained entities, removal of an app-deleted map, local-draft blocking, planner locks, timeout without retry, late confirmation and reconfiguration during transport. Mobile and desktop screenshots were visually reviewed. The test setup retains its asynchronous fixture import explicitly; an initial unretained setup promise was garbage-collected by Chromium. Edge could not be used reliably in this environment.
+
+All new automated controls use simulated HA/MQTT and send no real robot commands. Install the integration development branch and updated card for live A/B switching, app rename/deletion, reconnect and subsequent room-cleaning checks. Full protocol evidence and scope are in [the map lifecycle notes](docs/spot-scrub-maps.md).
+
+## Spot+Scrub active-map deletion live evidence - 26 November 2026
+
+Deleting selected B in MyDyson automatically selected A. The log confirms the deletion, a map list containing only A and the coordinator's return to A's five rooms. The maintainer confirms the corresponding entity activation and Lovelace room-list change. A follow-up establishes that the tested MyDyson Delete control applies only to the selected map: B must be selected before it can be deleted through the app. See the [deletion timeline and command reference](docs/spot-scrub-maps.md#deleting-active-map-b) for both captures, exact payloads, evidence boundaries and remaining deletion tests.
+
+## Spot+Scrub multi-map live evidence - 25/26 November 2026
+
+Maintainer tests confirm repeated A/B switches with stable map IDs, smooth active-room-list updates and a successful card-originated Kitchen start after returning to A. Room ID 10 is reused across maps. The captured inactive-map Kitchen requests are rejected by the integration's legacy start path. See [Spot+Scrub maps and map switching](docs/spot-scrub-maps.md) for creation/discovery timing, names and IDs, captured commands and lifecycle messages, the source review, the proposed HA map selector and remaining checks.
+
+These evidence updates change documentation only. Application code, generated bundle and release version are unchanged; automated application suites were not rerun.
+
+The highest-priority next Spot+Scrub feature is [displaying and switching existing maps](docs/spot-scrub-maps.md#intended-feature-scope) in the integration and Lovelace card, supporting frequent floor changes. Preferred removal of HA entities belonging exclusively to map IDs deleted in MyDyson follows without delaying the primary map-switch feature. Map creation, deletion and editing remain app-only operations.
+
+## Station and Robot switch feedback - 25 November 2026
+
+Validation passed: `npm run check` with **166 unit tests**, rebuilt bundle and standalone smoke checks. Six Edge browser suites passed: the new settings feedback tests, station controls, keyboard navigation, translations/layout, consumables and the existing schedule feedback flow. Pending-state screenshots were reviewed in Modern and Classic. No real robot commands were sent.
+
+`tests/settings-confirmation.test.mjs` checks exact switch state, disconnected/restored data and registry identity isolation. `tests/settings-feedback-browser.mjs` exercises both themes with delayed action completion and HA readback, a single local spinner without row-height changes, all supported switches, preference locking, timeouts and late updates, service failures, no retries and cancellation after configuration/device changes or detachment. Existing selects, volume and time settings retain their action behavior. These automated checks use simulated HA only.
+
+The maintainer subsequently reported successful live testing of the new Station/Robot switch feedback on 25 November 2026.
+
+## v1.6.1 version alignment - 25 November 2026
+
+The maintainer assigned the latest Dyson fixes to **v1.6.1**: the hass-dyson return Start interlock and the translated Modern drying-track alignment. Both received maintainer live confirmation; the drying alignment was confirmed after the automated/visual checks below. Package metadata, README, current contract/adapter documentation and the generated bundle identify v1.6.1. The UI intentionally has no version badge.
+
+`npm run check` passes with **163 unit tests**, bundle generation and standalone smoke checks. Earlier entries retain the v1.6.0 label used when those checks were performed before this version assignment. Other adapter experiments remain under Unreleased in the changelog; this local version update does not merge or publish the experiment branch.
+
+## Modern drying track alignment - 25 November 2026
+
+The Spot+Scrub drying progress track now follows the intrinsic width of the translated status and remaining-time line instead of filling the available row. Its right edge aligns with the time label, with the cancel control alongside the text. Narrow cards retain the full time and truncate the status label when required; the Modern status slot remains 44 px tall.
+
+Validation: `npm run check` passed with **163 unit tests**, regenerated v1.6.0 bundle and standalone smoke checks. The `modern-status-browser`, `hass-dyson-browser` and `browser` Edge suites passed. Geometry checks cover English, German, Dutch and French in light/dark appearance at 320/375/450/900 px, including resize without HA updates, track/text edge alignment, readable time, bounded controls and unchanged status-slot height. German narrow/wide screenshots were visually reviewed in light/dark appearance. Existing Classic status and hass-dyson timer/no-progress behavior also passed.
+
+## hass-dyson return Start interlock - 25 November 2026
+
+The maintainer completed the mopping phase of a hass-dyson-started "Vacuum then Mop" job and could start a new Kitchen vacuuming request while the robot was returning to the station. After cancelling that new job, its return correctly blocked another request. This report applies to hass-dyson; it supersedes the earlier no-issue observation for the complete flow.
+
+Source review and fixtures reproduce the asymmetry: the card treated `FULL_CLEAN_FINISHED` plus HA `returning` as ready, while upstream [maps both normal completion and abort to return travel](https://github.com/cmgrayb/hass-dyson/blob/28e38e9f13cf0eb13593b5255bf7516dfefbd774/custom_components/hass_dyson/const.py#L714). The exact live attribute trace and installed integration version were not supplied. The adapter now requires `INACTIVE_CHARGED`/`INACTIVE_CHARGING` together with `docked`/`idle` and the existing dock/readiness checks. Normal-completion return stays in the session but does not confirm a pending new Start. Start is checked before any associated Save and again after Save; starts during drying remain supported once the robot is ready.
+
+`npm run check` passed with **163 unit tests**, a regenerated v1.6.0 bundle and standalone smoke checks. Regression assertions failed before the correction and now cover finished/aborted return, edited/unedited requests, explicit readiness, inconsistent state combinations, dock activity and return appearing after Save. Three headless Edge suites passed: `review-regressions-browser` (including both return paths in both themes and ready/drying recovery), `hass-dyson-browser` and `browser`.
+
+After installing the updated bundle, the maintainer reports that the return-trip retest passed: the cleaning-session view remains active and a new Start is blocked while returning. An earlier repeat that still allowed Start used the previous installed bundle and is not a failure of the updated code. The report does not separately confirm post-return Start during drying or uninterrupted full-cycle drying; those remain separate from this passed return interlock check.
+
+## Maintainer live follow-up - 25 November 2026
+
+Following the Dyson compatibility review, the maintainer reports:
+
+- Zone cleaning works with the map rotated.
+- Robot and station commands work.
+- Schedules can be displayed, edited, created, deleted and enabled/disabled.
+- Room cleaning initially appears to follow the chosen settings. This is a preliminary observation, not an individually confirmed result for every room setting.
+- In a subsequent check explicitly using hass-dyson, a "Vacuum then Mop" room clean was started and initially looked correct.
+- During roller preparation in that hass-dyson-started job, both native adapter cards retain the cleaning-session view and display status information correctly.
+- Mopping subsequently starts. The Spot+Scrub adapter's header icon also reflects the selected cleaning-path color. The subsequent report describes the return after mopping and the premature Start above; drying and uninterrupted full-cycle completion remain unconfirmed.
+
+These initial observations were followed by the hass-dyson return Start issue above. Installed integration versions were not specified. The later reports identify hass-dyson as the job's start path and confirm the preparation display in both native adapter cards; the initial checks were not assigned individually to an adapter. These results are recorded within that scope rather than as blanket acceptance of both integrations. Earlier live reports, including Pause/Resume/Home and the known cross-integration Resume exception, remain documented below.
+
+## Dyson compatibility review - 25 November 2026
+
+Development now prioritizes existing Dyson users. Dreame remains an offline prototype pending a real-device tester. This review changes tests and documentation only; application behavior and version **v1.6.0** are unchanged.
+
+- `npm run check` passed with **161 unit tests**, syntax validation, a rebuilt bundle and standalone smoke checks. The generated bundle is unchanged.
+- Twelve headless Edge browser suites passed against simulated HA: `browser`, `hass-dyson-browser`, `review-regressions-browser`, `room-identity-browser`, `batch-browser`, `start-readiness-browser`, `zone-browser`, `schedules-review-browser`, `spot-schedules-browser`, `schedules-browser`, `station-browser` and `languages-browser`.
+- The schedule review suite initially timed out while navigating to the local preview with a 15-second timeout, including an isolated retry. The complete suite passed with a 60-second navigation allowance; its 15-second interaction timeout remains unchanged. That allowance is now recorded in the test, without changing the application or its command timing.
+- Two new compatibility regressions exercise both Dyson integrations with legacy YAML (no integration key), Automatic and explicit native selection. A generic robot is first in the registry and both Dyson vacuums advertise generic area/fan features. Assertions retain the chosen robot while offline, explicit camera and room mappings, display order/exclusions, native controls and exact native Start payloads. Missing native actions send no fallback commands.
+
+No Dyson behavior regression was reproduced in this automated review. The subsequent maintainer live follow-up is recorded above, separately from the automated checks and earlier hardware reports. The known cross-integration Resume exception below remains separate evidence.
+
+## Offline Dreame contract prototype - 25 November 2026
+
+Version remains **v1.6.0** on `experiment/multi_adapter`. The [Dreame contract](docs/dreame-adapter-contract.md) is pinned to Tasshack/dreame-vacuum v2.0.3 and uses synthetic source-shaped fixtures. It is not registered, selectable or bundled as a runtime adapter, and no Dreame hardware support is claimed.
+
+- `npm run check` passed with **159 unit tests**, syntax validation, a rebuilt bundle and standalone smoke checks. The generated runtime bundle remains unchanged because the prototype is deliberately outside its import graph.
+- Eleven new contract tests cover map-qualified identities, native settings and companion-value preservation, water variants, readiness and stale contexts, native room starts, and optimistic HA publications followed by late backend rejection.
+- `npm run prototype:dreame` prints the proposed profile write and an unconfirmed/failing observation trace with **zero dispatched commands**. Neither matching HA values nor a resolved service authorizes automatic Start.
+- Browser suites were not rerun: there are no runtime UI or adapter-registration changes. Real model snapshots, robot acknowledgement/readback and live start behavior remain unverified; see the contract's live-evidence checklist before activation.
+
+## Dyson fan API clarification — 25 November 2026
+
+The maintainer reports no suction control on the selected Dyson entity and subsequently identified it as the **hass-dyson** vacuum: that entity offers HA area selection and is eligible for the generic card dropdown. The Spot+Scrub entity offers cleaning modes instead and is not offered by the generic filter in this installation. This matches current upstream source: no FAN_SPEED support in hass-dyson and a cleaning-mode selector exposed as fan speed in Spot+Scrub. A missing generic suction slider is therefore consistent with the reported setup. Exact installed versions and raw attributes were not supplied. The generic adapter now excludes Spot+Scrub's known mode options and rejects stale suction drafts containing them, while preserving area-only starts.
+
+Validation: `npm run check` passed with **148 unit tests**, rebuilt bundle and standalone smoke checks. A new regression covers both Spot+Scrub mode lists (with/without mop), blocked mode writes and permitted area-only cleaning. The fan browser suite also checks that mode options hide the slider and preserve area-only Start. Source references and version caveats are in the [generic adapter guide](docs/home-assistant-rooms.md#optional-suction-power-and-start).
+
+## Optional HA suction control — 25 November 2026
+
+Version remains **v1.6.0** on `experiment/multi_adapter`.
+
+- `npm run check`: **147 unit tests**, syntax checks, rebuilt bundle and standalone smoke validation passed.
+- Seven Edge browser suites passed: `ha-fan-speed-browser`, `ha-rooms-browser`, `browser`, `hass-dyson-browser`, `room-planning-browser`, `languages-browser` and `schedule-editor-browser`. The fan suite additionally checks keyboard focus after rendering and consecutive arrow-key changes.
+- Eight fan-specific unit tests cover exact feature/service/options detection, unknown/current values, untouched starts, changed native values, capability loss with retained intent, pre-write mapping validation, post-write lifecycle/readiness/map/option checks, locking, partial failures and no command retry or rollback.
+- The real-adapter fan browser suite covers one shared control outside the room tiles, local edits and Discard, language preservation, offline/unknown states, native option values, exact set-fan-speed → clean-area ordering, failed setting/start calls and explicit user retry. Layouts were checked in both themes/four languages at 375/900 px; narrow light/dark screenshots were inspected.
+
+Live verification of optional suction is **pending**. The previous successful generic Dyson test below predates this control. On a device exposing FAN_SPEED, a valid `fan_speed_list` and `vacuum.set_fan_speed`, verify: changing the slider sends nothing; Start uses the chosen global value; untouched starts retain the robot's setting; Discard restores the reported value. Check actual suction, persistence after the job and whether stored room profiles override the global setting. A failed set prevents Start; after a successful set and failed/withheld Start, review the robot before a manual retry.
+
+## Generic HA area adapter — 25 November 2026
+
+Branch: `experiment/multi_adapter`. Version remains **v1.6.0**. The new `ha_rooms` adapter follows HA Core **2026.11.3** registry options and area-cleaning action semantics. This stage adds generic area selection; it does not add manufacturer-specific settings or ordering guarantees.
+
+- `npm run check`: **139 unit tests**, rebuilt bundle and standalone smoke validation, including automatic generic discovery, passed.
+- Seven Edge browser suites passed: `ha-rooms-browser`, `browser`, `hass-dyson-browser`, `room-planning-browser`, `languages-browser`, `start-readiness-browser` and `schedule-editor-browser`.
+- New unit coverage includes exact capability detection, specialized priority/deduplication, missing and malformed mappings, native-segment versus HA-area IDs, one exact targeted action, invalid selections/settings, unavailable services/devices, fresh mapping/identity/area checks, lifecycle races, concurrent requests, failure handling and standard session features.
+- The real-adapter browser fixture covers the actual editor, area visibility/display order, two-area Start, Pause/Resume/Home, hidden unsupported UI, stale persisted mapping rejection with retained selection, and both themes at 375/900 px. Narrow screenshots were inspected. All requests target simulated HA fixtures.
+
+The maintainer reports a successful first **live test of the generic path with a Dyson** after explicitly selecting Home Assistant area cleaning in the card editor: multiple area-cleaning starts, Pause, Resume and Home worked; session room chips appeared for requests initiated in that browser instance; battery percentage was visible. The supplied screenshot shows five area tiles, checkmarks and no per-room controls, matching the intended initial scope. The maintainer later identified the underlying integration as hass-dyson; its installed version was not supplied. This validates the generic path on that Dyson setup, separately from the earlier native-adapter tests.
+
+Live acceptance with a **foreign robot is still pending**, as are generic-path checks not explicitly covered by this report. Follow the [setup and live checklist](docs/home-assistant-rooms.md). Do not infer additional model/integration support from this Dyson result.
+
+## Local multi-adapter preparation — 25 November 2026
+
+Branch: `experiment/multi_adapter`. Version remained **v1.6.0**. This preparation stage was an internal room-planning refactor; it did not yet enable an additional robot integration.
+
+- `npm run check`: **130 unit tests**, syntax checks, regenerated bundle and standalone smoke check passed.
+- Six Edge browser suites passed: `room-planning-browser`, `browser`, `hass-dyson-browser`, `room-identity-browser`, `schedule-editor-browser` and `zone-browser`.
+- The new room-planning tests cover independent Save/Start availability, offline and foreign-device gating, mode-dependent field descriptors, retained Dyson YAML keys, entityless room selection, hidden unsupported controls, unordered checkmarks, blocked dispatch and opaque selection keys. The browser fixture tests both themes at 375/900 px with a test-only adapter and sends no integration commands.
+
+The maintainer reports that live checks for this refactor **passed for both Dyson adapters**, with the cross-integration exception below. This is a maintainer-reported result, separate from the automated fixture checks and earlier release acceptance. The acceptance checklist is:
+
+1. Existing YAML, Automatic/manual integration selection, room exclusions and display order retain the same device and rooms. Check both themes, desktop/mobile and the editor. Spot+Scrub keeps selection numbers; hass-dyson uses checkmarks in Modern and no order numbers in Classic.
+2. Select rooms and edit settings without sending a command. Save updates only edited preferences and retains the local selection. Start one small room, then multiple rooms with edited preferences. Verify Spot+Scrub's combined action and hass-dyson's Save-then-Start behavior.
+3. Check Pause/Resume/Home, blocked starts during washing, permitted starts during drying and displayed faults. Disconnect/reconnect and confirm a draft survives; change maps and confirm an old draft is rejected without commands or automatic retries.
+4. Spot+Scrub: start a small rectangle and check rotation/draft retention. For both adapters, inspect existing schedules and confirm creation, edit/toggle/delete and draft isolation within their supported scope.
+5. Report adapter/integration version, robot model, theme and the observed result for each failed step before adding a third adapter. Do not interpret fixture checks as hardware verification.
+
+### Known cross-integration Resume exception
+
+With the same physical robot exposed through both integrations, the maintainer started a rectangle clean through Spot+Scrub, paused it, then pressed Resume through the hass-dyson card. Instead of continuing the rectangle, the robot started a new vacuuming job covering the entire hall. Use of stored/global settings was suspected but not confirmed. The maintainer does not classify this as a category-A defect or a blocker for the current refactor.
+
+Source inspection confirms that Resume calls `vacuum.start` on the selected adapter's vacuum entity without room, rectangle or settings parameters. It does not reconstruct the other integration's job. The precise integration/robot-side cause has not been established by a command trace. Cross-integration continuation of a job is not validated; the normal live acceptance applies to operation through each integration independently. No automatic retry, fallback or application-code workaround was added for this report.
 
 ## v1.6.0 release acceptance
 

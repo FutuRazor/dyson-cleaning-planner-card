@@ -6,6 +6,12 @@ const schedule={id:101,enabled:false,days:['mon','thu'],time:'11:30',roomIds:['1
   roomSettings:{'13':{cleaning_mode:'Mop',water_level:'High'},'11':{cleaning_mode:'Vacuum'}}};
 const state=()=>({available:true,schedules:[structuredClone(schedule)]});
 
+test('a different map cannot confirm a schedule action, including disappearance after filtering',()=>{
+  const request={kind:'delete',id:101,context:'map-a'};
+  assert.equal(scheduleRequestConfirmed({available:true,schedules:[],inSync:true,context:'map-b'},request),false);
+  assert.equal(scheduleRequestConfirmed({available:true,schedules:[],inSync:true,context:'map-a'},request),true);
+});
+
 test('schedule toggle/delete confirmation requires readable authoritative metadata',()=>{
   const s=state();
   assert.equal(scheduleRequestConfirmed(s,{kind:'toggle',id:101,enabled:false}),true);

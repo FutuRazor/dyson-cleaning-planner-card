@@ -1,7 +1,18 @@
 import { UiError } from './localize.js';
 export const ROOM_FIELDS = { cleaning_mode: 'Cleaning mode', cleaning_strategy: 'Vacuum Power', water_level: 'Water level', mop_repetitions: 'Clean repetitions' };
 export const ROOM_COLORS = ['#18c5d9', '#e9b85b', '#b99ae4', '#79b9a5', '#e49baf'];
+// Preserve existing entity-based Dyson configuration while allowing opaque
+// selection keys for rooms which have no HA entity of their own.
+export const roomKey = room => room.key ?? room.entity ?? '';
 export const available = state => !!state && !['unavailable', 'unknown'].includes(state.state) && !state.attributes?.restored;
+
+export function switchSettingConfirmed(hass, registry, field, request) {
+  const entry = registry.find(row => row.entity_id === request.entity);
+  return hass?.connected !== false && field?.domain === 'switch' && field.supported && field.entity === request.entity
+    && !!entry && !entry.disabled_by && !!request.uniqueId && !!request.deviceId
+    && entry.unique_id === request.uniqueId && entry.device_id === request.deviceId && entry.platform === request.platform
+    && available(hass?.states?.[request.entity]) && hass.states[request.entity].state === request.value;
+}
 export const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 export const STATUS_BAR_ITEMS = [
@@ -16,7 +27,7 @@ export const STATUS_BAR_ITEMS = [
 
 export function normalizeConfig(config) {
   if (!config || typeof config.entity !== 'string' || !config.entity.startsWith('vacuum.')) throw new UiError('Select a vacuum entity.');
-  if (config.integration !== undefined && !['auto', 'dyson_spot_scrub', 'hass_dyson'].includes(config.integration)) throw new UiError('Invalid integration selection.');
+  if (config.integration !== undefined && !['auto', 'dyson_spot_scrub', 'hass_dyson', 'ha_rooms'].includes(config.integration)) throw new UiError('Invalid integration selection.');
   if (config.language !== undefined && !['auto', 'en', 'de', 'nl', 'fr'].includes(config.language)) throw new UiError('language must be auto, en, de, nl or fr.');
   if (config.theme !== undefined && !['classic', 'modern'].includes(config.theme)) throw new UiError('theme must be classic or modern.');
   if (config.unsupported_settings && !['disabled', 'hidden'].includes(config.unsupported_settings)) throw new UiError('unsupported_settings must be disabled or hidden.');

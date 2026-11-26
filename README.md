@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/images/planner-banner.svg?v=1.6.0" alt="Dyson Cleaning Planner — a dashboard card for Home Assistant" width="1100">
+  <img src="docs/images/planner-banner.svg?v=1.7.0" alt="Dyson Cleaning Planner — a dashboard card for Home Assistant" width="1100">
 </p>
 
 <p align="center">
@@ -18,7 +18,9 @@
   Plan room or zone cleaning, manage weekly schedules, and follow your Dyson's progress in Home Assistant.
 </p>
 
-**Version 1.6.0**
+**Version 1.7.0**
+
+**Saved-map switching for Spot+Scrub.** This release includes map-specific schedules, the adapter refactor and the Home Assistant area-cleaning adapter. Saved-map controls require the integration development branch linked below; integrations without the matching map select keep these optional controls hidden.
 
 <p align="center">
   <a href="#installation">Installation</a> &middot;
@@ -30,13 +32,23 @@
 
 ## Requirements
 
-- A supported integration installed and configured in Home Assistant: [Dyson Spot+Scrub by UNsync3D](https://github.com/UNsync3D/ha-dyson-spot-scrub), **v2.1.0 or newer**, or [hass-dyson](https://github.com/cmgrayb/hass-dyson) with the experimental Spot+Scrub adapter described below.
+- A supported integration installed and configured in Home Assistant: [Dyson Spot+Scrub by UNsync3D](https://github.com/UNsync3D/ha-dyson-spot-scrub), **v2.1.0 or newer**, [hass-dyson](https://github.com/cmgrayb/hass-dyson) with the experimental Spot+Scrub adapter described below, or an entity supporting Home Assistant area cleaning for the basic room-selection adapter.
 - Schedule management requires **Spot+Scrub integration v2.2.0 or newer** with schedule entities enabled. Schedule writes are currently supported for Spot+Scrub AI / RB05; R1/R2 expose a read-only list. The experimental hass-dyson schedule interface was tested against **v0.40.0-beta.6** and has the limitations described [below](#robot-schedules).
 - **Home Assistant Marketplace** for the recommended installation method on Home Assistant **2026.11 or newer**. On older versions, use [HACS](https://www.hacs.xyz/). Manual installation is also supported.
 
 The [experimental hass-dyson adapter](docs/hass-dyson.md) supports rooms/settings, room starts, session controls, battery/consumables, dock status/countdown and the combined vacuum/mop coverage image. Maintainer live tests confirmed Save with entity readback, room starts, Pause/Resume/Home, battery percentage, separate vacuum/mop coverage, dock activity display, the drying countdown, blocked starts during roller washing, and new room starts during drying. Select **Integration → hass-dyson (experimental)** in the editor. Automatic initial discovery prefers the existing Spot+Scrub integration; an explicitly selected robot remains authoritative. Rectangle cleaning and station/robot preferences remain exclusive to the original Spot+Scrub adapter. hass-dyson currently requires one unambiguous known map; room execution order is controlled by the integration.
 
 For integration developers, the [complete integration contract](docs/integration-contract.md) documents required and optional entities, registry identities, attributes, action payloads and validation. 
+
+The Spot+Scrub header offers a saved-map menu when the matching integration provides its Map select with at least two valid map options. With only one map, the switch button is hidden. This currently requires the [map-switching integration development branch](https://github.com/FutuRazor/ha-dyson-spot-scrub/tree/feat/map-switching); upstream v2.2.0 alone does not expose it. The [map lifecycle notes](docs/spot-scrub-maps.md) describe the interface, captured commands and live findings. Map creation, deletion and editing remain in MyDyson. Deleted maps leave the menu; cleanup of their old room entities is a separate follow-up.
+
+The updated integration branch also supplies the camera-bounds correction, new-room discovery after mapping and descriptions/readiness handling for placement warnings 2509/2510. These companion fixes require updating the integration, not just this card. A newly selected map may briefly have an empty room list until its data arrives; cleaning settings remain unavailable until the robot reports them.
+
+Robot fault descriptions are displayed as supplied by the integration, including the English descriptions for 2509/2510. Fault-text localization remains a follow-up.
+
+In the generic HA mode, fan-capable vacuums additionally show one shared suction slider below the area tiles. Changes remain local until Start; the card sets an explicitly changed value before area cleaning and explains that it is a global robot preference which may persist. See the [optional suction behavior and live checklist](docs/home-assistant-rooms.md#optional-suction-power-and-start). This addition still needs its own live verification, including interactions with stored room profiles.
+
+The [Home Assistant area-cleaning adapter](docs/home-assistant-rooms.md) adds basic room selection for other integrations whose vacuum entity reports `CLEAN_AREA`. First map the robot segments to HA areas in the vacuum entity settings, then choose **Integration → Home Assistant · Area cleaning** and the robot, or use Automatic. It starts selected areas through `vacuum.clean_area`, uses checkmarks instead of execution-order numbers, and offers standard session controls when supported. Per-room settings, maps/zones and native schedules require a specialized adapter. This generic path has passed simulated checks and a maintainer live test with a Dyson (multiple starts, Pause/Resume/Home, local room chips and battery display); live acceptance with a foreign robot is pending.
 
 ## Screenshots
 
@@ -149,11 +161,15 @@ The button beside Reload shows the current cleaning mode. Open it to choose **Va
 
 Switching between **Rooms** and **Zone** keeps your local plans. Reload fetches a fresh map and preserves the rectangle when the map and its coordinates are unchanged. Map rotation also applies to zone selection. One rectangular zone is supported at a time; zone cleaning has been hardware-tested on the Spot+Scrub AI, while other models still need confirmation.
 
+Switching the saved map in the card or MyDyson keeps **Zone** selected and automatically loads the new floor plan. The previous rectangle is discarded. Start becomes available only after the new map image and calibration have been verified and the robot reports readiness.
+
 Zone dimensions follow Home Assistant's unit system by default, using **cm** or whole **inches**. In the editor, choose **Automatic**, **cm**, **inch**, or **Off**. Off hides only the selection badge; dimensions shown during a cleaning session still use Home Assistant's units.
 
 ### Robot schedules
 
 Choose **Schedules** beside Rooms and Zone to see your weekly plans. Each card shows its time, weekdays and known selected rooms. A small green badge on the tab counts enabled plans; grey means none are enabled. Four entries fit before the list becomes scrollable. Use the switch to enable or disable a plan, or the **three-dot menu** to edit or delete it. Deletion asks for confirmation.
+
+For Spot+Scrub, the list, enabled badge and countdown follow the reported active map. The [map-switching integration development branch](https://github.com/FutuRazor/ha-dyson-spot-scrub/tree/feat/map-switching) also keeps synchronization checks per map and makes other maps' schedule switches unavailable while retaining their saved state. Confirmed empty maps show an empty list without a synchronization instruction. See [saved-map schedule behavior](docs/spot-scrub-schedules.md#saved-map-schedule-behavior).
 
 A compact line above the list counts down to the next enabled weekly plan in Home Assistant's time zone. Hover over it for the scheduled date/time. It refreshes locally without robot commands and follows changes reported by Home Assistant. With incomplete metadata it shows the next **known** cleaning; missing dates for one-time plans or an unavailable time zone are not guessed. The countdown predicts the planned start, not confirmed robot execution.
 
@@ -186,6 +202,8 @@ The **Info** button opens three tabs:
 Only settings and consumables supported by the selected device and exposed by the integration are shown. This applies to room and zone settings as well as the Info tabs. Temporary unavailability or a busy robot disables existing controls rather than removing them.
 
 **Station and Robot settings take effect immediately** and are separate from the cleaning drafts. Consumable bars change from the theme accent to orange and red as their remaining life decreases. Both the Info button and Supplies tab highlight red when a consumable needs attention. Click outside the Info or zone-settings overlay to close it.
+
+Station and Robot switches show a loading indicator while the action is running and until Home Assistant reports the requested state. Other preference changes stay disabled during this wait. If HA has not reflected the change within ten seconds after the action returns, a message appears without retrying the command; a later matching update clears that message. The displayed switch always follows HA's reported state. This verifies HA readback, not a separate physical acknowledgement from the robot.
 
 ## Customization
 
@@ -246,6 +264,17 @@ These options belong in the individual card's code editor, not in `configuration
 - After changes to the robot's map, use **Refresh rooms** below the room order in the card editor if needed.
 - Zone selection requires **Dyson integration v2.1.0 or newer** and a calibrated camera image. If the image cannot be verified, Start stays disabled. Reload the map; if the problem persists, confirm the required integration version is installed and the selected camera belongs to the same robot.
 - If controls are unavailable, check the corresponding device and entities in Home Assistant and confirm that the required integration version is installed.
+
+### Search continues after Pause → Home on a map without a station
+
+On a saved map without a charging station, **cleaning → Pause → Home** can leave the robot repeatedly trying to locate itself or find a station. This is known Dyson behavior also observed in the original MyDyson app.
+
+To end the search:
+
+1. Pause the robot.
+2. Place it manually on the charging station.
+
+The maintainer confirmed that this ends the search. See the [stationless-map troubleshooting notes](docs/spot-scrub-maps.md#stationless-home-troubleshooting) for the tested sequence.
 
 
 

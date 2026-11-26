@@ -12,7 +12,9 @@ async function setup(backend,theme='modern',width=900) {
     constructor(){super();this.attachShadow({mode:'open'});}
     connectedCallback(){queueMicrotask(()=>{if(this.isConnected)this.shadowRoot.innerHTML='<slot></slot>';});}
   }));
-  await page.goto(`http://127.0.0.1:${server.address().port}`);
+  // Browser startup/navigation can exceed the interaction timeout on Windows.
+  // Keep the assertions' 15-second limit while allowing the preview to load.
+  await page.goto(`http://127.0.0.1:${server.address().port}`,{timeout:60000});
   await page.locator('#card .room').first().waitFor();
   await page.evaluate(async({backend,theme})=>{
     const module=await import(backend==='spot'?'/tests/spot-schedules-fixture.mjs':'/tests/schedules-fixture.mjs');
