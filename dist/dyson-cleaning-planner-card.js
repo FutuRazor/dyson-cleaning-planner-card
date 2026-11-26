@@ -1521,7 +1521,7 @@ const mapSelectionCardMethods = {
   getMapSelection() { return this.adapter.mapSelectionState?.(this._hass,this.registry,this.config.entity) ?? {supported:false,maps:[]}; },
   mapPickerHtml() {
     const state = this.getMapSelection();
-    if (!state.supported) return '';
+    if (!state.supported || state.maps.length < 2) return '';
     const current = state.maps.find(item => item.map_id === state.currentId), pending = !!this._mapRequest;
     const locked = this._previewDialog || this.busy || this.controlBusy || this.stationBusy || this.scheduleSending || this.scheduleDialog
       || this.view.active || pending || this.shadowRoot.querySelector('dyson-planner-zone')?.sending;
@@ -1574,7 +1574,8 @@ const mapSelectionCardMethods = {
         && mapSelectionConfirmed(this._hass,this.registry,this.config.entity,late.request)) {
       this.message = ''; this.error = false; this._unconfirmedMapSwitch = null;
     }
-    if (!this.getMapSelection().supported) this.mapMenuOpen = false;
+    const state = this.getMapSelection();
+    if (!state.supported || state.maps.length < 2) this.mapMenuOpen = false;
   },
   applyMapLock() {
     const locked = !!this._mapRequest;

@@ -61,18 +61,21 @@ try {
     assert.deepEqual(await page.evaluate(()=>mapsDemo.calls),[{domain:'select',service:'select_option',data:{entity_id:'select.renamed_saved_map',option:'Dachboden'}}]);
 
     // App deletion returns to A, removes B from the menu and retains A's room entities.
+    await card.locator('.map-toggle').click();
     await page.evaluate(()=>{
       const f=mapsDemo;f.applyMap('1784483068');f.maps.splice(1,1);
       f.hass.states[f.mapSelect].attributes.options=['Wohnung'];f.card.hass={...f.hass};
     });
-    await card.locator('.map-toggle').click();
-    assert.equal(await card.locator('.map-menu button').count(),1);
-    await page.keyboard.press('Escape');
+    assert.equal(await card.locator('.map-toggle').count(),0,'one saved map needs no switch button');
+    assert.equal(await card.locator('.map-menu').count(),0,'removing the second map closes an open menu');
+    assert.equal(await page.evaluate(()=>mapsDemo.card.mapMenuOpen),false);
     await page.evaluate(()=>{
       const f=mapsDemo;f.maps.push({map_id:'1795646759',name:'Dachboden',option:'Dachboden'});
       f.hass.states[f.mapSelect].attributes.options.push('Dachboden');
       f.card.selected=[f.ids[0]];f.card.updateDirty();f.card.render();
     });
+    assert.equal(await card.locator('.map-toggle').count(),1,'adding a second map restores the button');
+    assert.equal(await card.locator('.map-menu').count(),0,'a previously open menu is not reopened');
     await card.locator('.map-toggle').click();
     assert.match(await card.locator('.map-menu-note').textContent(),/Discard local room changes/);
     assert.equal(await card.locator('[data-map-id="1795646759"]').isDisabled(),true);

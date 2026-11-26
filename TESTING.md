@@ -1,5 +1,11 @@
 # Testing v1.7.0 — Release candidate
 
+## Saved-map button visibility - 26 November 2026
+
+The header now offers map switching only when at least two validated map options are reported. A list reduced to one map closes an open menu and removes the button; adding another map restores the button without reopening that menu. The integration select and map/schedule handling remain available independently of this presentation rule. Release-candidate version 1.7.0 is unchanged.
+
+Validation passed: `npm run check`, **174 unit tests**, rebuilt bundle and standalone smoke checks. The saved-map browser suite passed in Modern/Classic at 375/900 px, including shrinking an open menu to one map, hiding the button and restoring it after a second option appears.
+
 ## Map-switch header notice in Schedules - 26 November 2026
 
 The maintainer reported the brief map-switch start interlock appearing in the drying/return activity row while viewing Schedules. The shared Spot+Scrub status fallback treated the new `map_switching` reason as unknown readiness text; the schedule view did not supply the room planner's header notice. This was a shared status-routing issue rather than a schedule-action message.
