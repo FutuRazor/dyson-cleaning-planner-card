@@ -1,5 +1,22 @@
 # Testing v1.7.0 — Release candidate
 
+## Current validation status - 26 November 2026
+
+Version remains **1.7.0**. Latest full checks: **174 card unit tests**, rebuilt bundle and smoke check, plus **449 integration tests**. Browser coverage and maintainer observations are recorded separately below.
+
+| Area | Current evidence/status |
+| --- | --- |
+| Map selection in HA/Lovelace and MyDyson | Maintainer live confirmation in both directions |
+| Single-map button visibility | Deleting B hides the button; creating another map restores it, confirmed live |
+| Schedules and availability per map | Confirmed live in both integration and card |
+| Stationless camera bounds | Corrected camera looks good in maintainer live check; original raw dock value remains uncaptured |
+| Map-switch notice in the header | Unit/browser checks passed; separate live confirmation was not reported |
+| Fresh-room discovery before a first clean | Integration regressions passed; live creation check pending |
+| Idle off-dock retry with retained placement faults 2509/2510 | Integration regressions passed; corrected HA/card retry still needs live acceptance |
+| Stationless cleaning → Pause → Home search | Known Dyson behavior also observed in MyDyson; pause and manual docking recovery confirmed |
+
+The current pending checks are listed in [the map notes](docs/spot-scrub-maps.md#remaining-live-checks). Entries below are chronological records and retain their original versions/test counts; an old pending statement does not supersede a later confirmation. This documentation reconciliation changes no application code, bundle or release version, so application tests were not repeated.
+
 ## Stationless Pause → Home troubleshooting - 26 November 2026
 
 The maintainer clarified that the stationless **cleaning → Pause → Home** search is also present in the original MyDyson app and should be documented as a known Dyson operating edge case, not pursued as an integration/card defect. Their confirmed recovery is to pause the robot and place it manually on the charging station. Troubleshooting in both READMEs and the map notes now records that sequence. This documentation-only clarification does not change commands, application code or release versions; application tests were not repeated.

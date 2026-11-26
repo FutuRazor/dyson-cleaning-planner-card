@@ -8,11 +8,14 @@
 
 **Saved-map switching for Spot+Scrub**
 
+This candidate combines the adapter work developed under v1.6.1 with saved-map selection and schedules per map. Maintainer live tests confirmed map switching and schedule availability in the integration and Lovelace card.
+
+- Document the companion integration updates for stationless camera bounds, fresh-room discovery, explicit empty room lists and retained placement warnings 2509/2510. These require the updated integration branch; card readiness checks remain unchanged.
+- Add troubleshooting for the known Dyson stationless cleaning -> Pause -> Home search, also observed in MyDyson, with confirmed recovery by pausing and manually placing the robot on its station.
+
 - Hide the saved-map switch button when fewer than two valid map options are available. Close an open menu when the list shrinks to one map, and restore the button when another map is reported.
 
 - Show the map-switch start interlock in the header across Rooms, Zone and Schedules. Keep actual dock/robot activity in the status row, including drying time, and avoid repeating the map notice there. Localize the notice in all four languages.
-
-This candidate combines the adapter work developed under v1.6.1 with saved-map selection and schedules per map. Maintainer live tests confirmed map switching and schedule availability in the integration and Lovelace card.
 
 - Keep Spot+Scrub schedule rows, enabled counts and countdowns on the reported active map. Use matching map-scoped integration summaries, show confirmed empty maps without a sync instruction, and cancel obsolete editors/action feedback when the map changes. Integration changes on the map-switching branch retain schedules and checksum baselines per map and make other maps' schedule switches unavailable.
 

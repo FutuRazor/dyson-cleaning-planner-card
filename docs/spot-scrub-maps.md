@@ -30,7 +30,7 @@ Implementation order:
 | L3 | `home-assistant_dyson_spot_scrub_2026-11-26T01-46-41.347Z.log` | Live map-select errors followed by successful switches/room starts, and Home from B without a station |
 | L4 | `home-assistant_dyson_spot_scrub_2026-11-26T04-19-58.659Z.log` | Four stationless runs with direct versus paused Home, placement faults 2509/2510 and room discovery on a newly created B |
 
-All times in this document use the logs' explicit **UTC+01:00** offset. In L1, 23:xx is 25 November and 00:xx is 26 November. L2's relevant events occur at 01:xx and L3's at 02:xx on 26 November. The filenames use UTC.
+All times in this document use the logs' explicit **UTC+01:00** offset. In L1, 23:xx is 25 November and 00:xx is 26 November. L2's relevant events occur at 01:xx, L3's at 02:xx and L4's at 05:xx on 26 November. The filenames use UTC.
 
 The installed integration version and HA state/registry snapshots were not supplied. Protocol messages are log evidence; frontend behavior and entity availability are identified separately as maintainer observations. Raw exports remain outside the repository.
 
@@ -347,17 +347,17 @@ The maintainer confirmed that manual docking after pausing ends the search and r
 
 ## Remaining live checks
 
-The maintainer subsequently reported a tiny camera floor and kilometre-scale zone calibration only on stationless B. An arbitrary remote dock point can reproduce this in the integration renderer; its geometry-based dock validation now excludes such points from bounds/drawing. Six synthetic regressions and the complete 440-test integration suite pass. The exact raw B dock value is not captured, and the corrected camera still needs live acceptance. This correction does not change card geometry or Dyson navigation.
+Map selection in both directions, schedule lists/availability, the camera-bounds correction and the single-map button rule have passed maintainer live checks. The exact raw dock value behind the original oversized camera image remains uncaptured; this does not undo the confirmed visual correction. The known stationless Pause -> Home search and manual recovery are documented under [troubleshooting](#stationless-home-troubleshooting), rather than tracked as an integration/card navigation defect.
 
-The schedule follow-up now keeps integration counts/checksum baselines per map, retains inactive-map orders, makes their individual switches unavailable and restricts writes to the reported active map. The schedule sensor/calendar and Lovelace list/badge/countdown follow the active map. The L3 five-on-A / zero-on-B counts are covered by offline regressions; see [saved-map schedule behavior](spot-scrub-schedules.md#saved-map-schedule-behavior) for the interface, delayed-reply handling and remaining live checks.
+The remaining checks are:
 
-- Install the integration development branch and updated card, then switch A/B repeatedly from both the HA select and the card. Check actual selected-map readback and existing room cleaning afterward.
+- Create a new map and room in MyDyson without starting a clean. Check early entity discovery, an empty current-map list instead of A's old rooms while data is missing, and settings becoming usable only after reported readback.
+- After correcting placement and putting the robot down, verify retained USER_CONTINUE placement faults 2509/2510 allow the planner and a new HA/card start in the confirmed idle state while their warning remains visible.
+- Confirm the map-switch header notice live, including when drying is shown in the activity row.
 - Delete the last saved map in MyDyson and inspect map identity, room list and selector behavior.
-- Extend the shared-name observation in L3 (Wohnzimmer `11` on A / `10` on B) with HA entity/registry snapshots and settings-isolation checks.
-- Switch maps with an unsaved local room selection/settings draft, and verify the existing stale-draft handling.
-- Observe map creation/rename/deletion in MyDyson while HA is disconnected and verify reconciliation after reconnect.
-- Capture HA `map_id`, `rooms`, per-room `room_id`/availability and registry entries across these transitions. Establish how to remove entities exclusive to a deleted map while preserving other maps' entities, including reused room IDs and shared names.
-- Schedule lists and availability across map changes passed maintainer live acceptance in the integration and Lovelace on 26 November 2026. Extend coverage with app edits, reconnect and actual scheduled execution.
-- Retest map selection with the JDM-readback correction, and capture a stationless MyDyson cancellation/normal completion separately from Home.
+- Extend the shared-name observation in L3 (Wohnzimmer 11 on A / 10 on B) with HA entity/registry snapshots and settings-isolation checks.
+- Switch maps with an unsaved local room draft and verify stale-draft handling; observe app creation/rename/deletion while HA is disconnected and verify reconciliation after reconnect.
+- Establish verified map ownership for cleanup of entities exclusive to deleted maps while preserving reused room IDs/shared names. Cleanup remains a separate follow-up.
+- Extend schedule coverage with app edits, reconnect and actual scheduled execution.
 
-The historical captures establish protocol behavior; automated checks of the new controls use simulated HA/MQTT and do not establish live acceptance. Card source and generated bundle are kept together; release versions remain unchanged. The chronological validation index is [TESTING.md](../TESTING.md).
+Automated checks use simulated HA/MQTT; maintainer live observations above are recorded separately. Historical evidence sections retain their original context and test counts. Card source and generated bundle stay together, and the current card release candidate remains v1.7.0. The chronological validation index is [TESTING.md](../TESTING.md).

@@ -222,7 +222,7 @@ A local pending start or editor-only preview can temporarily override the view. 
 
 | Attribute | Type / recognized values | Purpose |
 |---|---|---|
-| `rooms` | Array of room-name strings | Discovery |
+| `rooms` | Array of room-name strings, including an explicit empty array | Discovery; `[]` clears the previous map's list while current data is unresolved |
 | `map_id` | Converted to string for room context; positive decimal ID for zone calibration | Separates drafts between active maps and validates rectangle commands |
 | `friendly_name` | String | Robot subtitle |
 | `supported_features` | Numeric bitmask | Session action availability |
@@ -248,9 +248,12 @@ Recognized `start_block_reason` values:
 | `mapping_or_navigation` | Mapping / navigation in progress |
 | `returning_or_finishing` | Returning to dock / finishing cleanup |
 | `cleaning_job_active` | A cleaning job is still active |
+| `map_switching` | Header notice to wait for the map switch before starting a clean |
 | `waiting_for_ready_state` | Waiting for the robot to be ready |
 
 Other reasons with `ready_to_start: false` show a generic not-ready message. String `"false"` is **not** a boolean veto. A reason alone does not veto Start. Literal `true` allows a new room job from `error` (a retained fault), but does not override washing/dust-collection restrictions or permit starts from other non-ready states.
+
+The updated integration branch uses this existing contract for retained placement faults 2509/2510 while confirmed idle off-dock. It supplies the descriptions and readiness decision; the card keeps the warning visible and does not decode fault codes or bypass the integration's checks. Fresh room names can be reported from map metadata before per-room settings are available. Missing settings are not synthesized.
 
 New room Start requires connected HA, an available vacuum in `docked`/`idle` (or `error` with literal `ready_to_start: true`), valid selected rooms and the custom Start action. Roller washing and dust collection block Start even without the optional readiness attributes. Drying alone does not block Start, but `ready_to_start: false` still does.
 
