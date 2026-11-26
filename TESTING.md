@@ -1,5 +1,11 @@
 # Testing v1.7.0 — Release candidate
 
+## Stationless camera bounds - 26 November 2026
+
+The maintainer supplied two screenshots showing a tiny floor in the bottom-left corner and a zone badge around 112,433 x 112,378 cm, then confirmed the issue affects only B without a station. The integration renderer admitted arbitrary dock positions into canvas bounds. A synthetic 4 x 3 m room with a dock at (10,000, 10,000) reproduced the visual failure; the raw dock value on B has not been captured, so the exact live trigger remains unconfirmed.
+
+The integration correction reuses its existing room-geometry/dock-reach check before including a dock in bounds or drawing. Invalid/remote points are omitted, valid static docks can survive invalid live reports, and valid zero/near-wall/translated-origin coordinates remain supported. The synthetic image changes from 4096 x 4096 at about 0.4 pixels/metre to 450 x 370 at 80 pixels/metre; the corrected output was visually checked. All **440 integration tests** passed, including six new synthetic bounds regressions. Live camera acceptance on B remains pending. This changes the companion integration only; card source, generated bundle and v1.7.0 version remain unchanged.
+
 ## v1.7.0 release candidate alignment - 26 November 2026
 
 The maintainer assigned the current development work to **v1.7.0**, with release-candidate status. The release combines saved-map switching and schedules per map with the adapter refactor, the generic Home Assistant area-cleaning adapter, preference-switch feedback and the fixes developed under the unpublished v1.6.1 baseline. The offline Dreame prototype remains outside the bundled release and under Unreleased in the changelog.

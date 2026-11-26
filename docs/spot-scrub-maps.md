@@ -318,6 +318,8 @@ Deleting selected B changes the active ID in the capture. Deleting an inactive m
 
 ## Remaining live checks
 
+The maintainer subsequently reported a tiny camera floor and kilometre-scale zone calibration only on stationless B. An arbitrary remote dock point can reproduce this in the integration renderer; its geometry-based dock validation now excludes such points from bounds/drawing. Six synthetic regressions and the complete 440-test integration suite pass. The exact raw B dock value is not captured, and the corrected camera still needs live acceptance. This correction does not change card geometry or Dyson navigation.
+
 The schedule follow-up now keeps integration counts/checksum baselines per map, retains inactive-map orders, makes their individual switches unavailable and restricts writes to the reported active map. The schedule sensor/calendar and Lovelace list/badge/countdown follow the active map. The L3 five-on-A / zero-on-B counts are covered by offline regressions; see [saved-map schedule behavior](spot-scrub-schedules.md#saved-map-schedule-behavior) for the interface, delayed-reply handling and remaining live checks.
 
 - Install the integration development branch and updated card, then switch A/B repeatedly from both the HA select and the card. Check actual selected-map readback and existing room cleaning afterward.
