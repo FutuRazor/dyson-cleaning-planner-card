@@ -83,34 +83,40 @@ try {
     await page.evaluate(()=>{
       const f=mapsDemo;f.maps.push({map_id:'1795646759',name:'Dachboden',option:'Dachboden'});
       f.hass.states[f.mapSelect].attributes.options.push('Dachboden');
-      f.card.selected=[f.ids[0]];f.card.updateDirty();f.card.render();
+      f.card.selected=[f.ids[0]];f.card.settingDraft={10:{cleaning_mode:'Mop'}};f.card.updateDirty();f.card.render();
+      window.mapDraftBeforeSwitch=JSON.stringify([f.card.selected,f.card.settingDraft,f.card.draftContext,f.card.baseline]);
     });
     assert.equal(await card.locator('.map-toggle').count(),1,'adding a second map restores the button');
     assert.equal(await card.locator('.map-menu').count(),0,'a previously open menu is not reopened');
     await card.locator('.map-toggle').click();
-    assert.match(await card.locator('.map-menu-note').textContent(),/Discard local room changes/);
-    assert.equal(await card.locator('[data-map-id="1795646759"]').isDisabled(),true);
+    assert.match(await card.locator('.map-menu-note').textContent(),/discarded after.*confirmed/);
+    assert.equal(await card.locator('[data-map-id="1795646759"]').isDisabled(),false);
     await page.keyboard.press('Escape');
-    await page.evaluate(()=>{mapsDemo.card.resetDraft();mapsDemo.card.render();});
 
-    // Timeout keeps the observed map, sends no retry and accepts later readback.
+    // Timeout retains the draft/map, sends no retry and accepts later readback.
     await card.locator('.map-toggle').click();await card.locator('[data-map-id="1795646759"]').click();
     await card.locator('.map-toggle.pending').waitFor();
     await page.clock.runFor(10001);await page.waitForFunction(()=>!mapsDemo.card._mapRequest);
     assert.match(await card.locator('.header-notice-copy').textContent(),/has not been confirmed/);
     assert.equal(await page.evaluate(()=>mapsDemo.calls.length),2);
+    assert.equal(await page.evaluate(()=>JSON.stringify([mapsDemo.card.selected,mapsDemo.card.settingDraft,mapsDemo.card.draftContext,mapsDemo.card.baseline])),await page.evaluate(()=>mapDraftBeforeSwitch));
     await page.evaluate(()=>{mapsDemo.applyMap('1795646759');mapsDemo.card.hass={...mapsDemo.hass};});
     assert.equal(await card.locator('.header-notice').getAttribute('hidden'),'');
+    assert.equal(await page.evaluate(()=>mapsDemo.card.dirty),false);
+    assert.deepEqual(await page.evaluate(()=>mapsDemo.card.settingDraft),{});
 
     // Backend rejection preserves the reported map and sends no retry.
     await page.evaluate(()=>{
       mapsDemo.applyMap('1784483068');mapsDemo.card.hass={...mapsDemo.hass};window.mapTransport='reject';
+      mapsDemo.card.selected=[mapsDemo.ids[0]];mapsDemo.card.settingDraft={10:{cleaning_mode:'Mop'}};mapsDemo.card.updateDirty();mapsDemo.card.render();
+      window.mapDraftBeforeSwitch=JSON.stringify([mapsDemo.card.selected,mapsDemo.card.settingDraft,mapsDemo.card.draftContext,mapsDemo.card.baseline]);
     });
     await card.locator('.map-toggle').click();await card.locator('[data-map-id="1795646759"]').click();
     await page.waitForFunction(()=>!mapsDemo.card._mapRequest);
     assert.match(await card.locator('.header-notice-copy').textContent(),/Map switch rejected/);
     assert.equal(await page.evaluate(()=>mapsDemo.calls.length),3);
     assert.equal(await page.evaluate(()=>mapsDemo.hass.states[mapsDemo.entity].attributes.map_id),'1784483068');
+    assert.equal(await page.evaluate(()=>JSON.stringify([mapsDemo.card.selected,mapsDemo.card.settingDraft,mapsDemo.card.draftContext,mapsDemo.card.baseline])),await page.evaluate(()=>mapDraftBeforeSwitch));
     await page.evaluate(()=>{mapsDemo.applyMap('1795646759');mapsDemo.card.hass={...mapsDemo.hass};});
     assert.equal(await card.locator('.header-notice').getAttribute('hidden'),'','late telemetry clears the rejected-service notice');
 

@@ -20,7 +20,7 @@
 
 **Version 1.7.1**
 
-**Choose how to switch saved maps.** Use the existing header menu or wrapping map chips above the planning tabs, and hide individual maps on each card. Both use the same confirmed switching and draft protection. Saved-map controls require the integration development branch linked below; integrations without the matching map select keep these optional controls hidden.
+**Choose how to switch saved maps.** Use the existing header menu or wrapping map chips above the planning tabs, and hide individual maps on each card. Both use the same confirmed switching and automatic reset of the old map's local draft. Saved-map controls require the integration development branch linked below; integrations without the matching map select keep these optional controls hidden.
 
 <p align="center">
   <a href="#installation">Installation</a> &middot;
@@ -142,7 +142,9 @@ Update through Marketplace (or HACS on older Home Assistant versions), or replac
 
 ### Saved maps
 
-With a supported integration and at least two known maps, the visual editor shows **Maps in this card**. Choose **Header button** (the default) or **Map chips**, then check the maps to display. Chips wrap above Rooms, Zone and Schedules and highlight the reported active map. A pending switch shows a spinner in the target chip and locks the other controls until confirmation. Discard local room drafts before changing maps.
+With a supported integration and at least two known maps, the visual editor shows **Maps in this card**. Choose **Header button** (the default) or **Map chips**, then check the maps to display. Chips wrap above Rooms, Zone and Schedules and highlight the reported active map. A pending switch shows a spinner in the target chip and locks the other controls until confirmation.
+
+You can switch directly with a local room draft. The card retains that draft while the request is pending, then resets the old map's local selection and unsaved settings after Home Assistant confirms the target map. Rejection or a timeout on the original map keeps the draft. A matching late confirmation resets an old-map draft while preserving newer edits already made on the target map. This sends no room-setting writes and does not change saved robot preferences.
 
 Visibility is saved by map ID, so renaming a map does not change its visibility. Deleted IDs are ignored and new maps appear visible by default. The editor retains the complete list so hidden maps can be enabled again. **Refresh maps** rereads the data available in Home Assistant; catalogue discovery remains the integration's responsibility. Selecting a different robot in the editor resets its map exclusions.
 
@@ -156,7 +158,7 @@ excluded_maps:
   - "1795646759"
 ```
 
-Copy the map IDs shown in the editor and quote them in YAML. Without these options, the existing header-menu behavior is preserved. Integrations without saved-map selection ignore these display preferences.
+Copy the map IDs shown in the editor and quote them in YAML. Without these options, the existing header-menu layout and unfiltered map list are preserved; automatic draft reset applies to both styles. Integrations without saved-map selection ignore these display preferences.
 
 ### Plan rooms
 

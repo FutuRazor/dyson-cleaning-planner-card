@@ -10,7 +10,8 @@
 - Add optional wrapping map chips above Rooms, Zone and Schedules through `map_selector_style: chips`; keep the header menu as the default.
 - Add `excluded_maps` using stable string IDs. Ignore deleted IDs, preserve exclusions after renames and show new maps by default. Hide unnecessary selectors while retaining a return path from an app-selected hidden map, or a notice when all maps are hidden.
 - Add visual-editor style and visibility controls using the complete map list, refresh support and map IDs. Reset exclusions when selecting another robot and translate controls, hints and validation in English, German, Dutch and French.
-- Reuse existing map confirmation, lifecycle/draft locks and error handling for both presentations. Preserve Zone/Schedules selection and verified floor-plan loading. No companion integration changes are required for these display options.
+- Allow map switching directly with a local room draft. Retain it until matching select/vacuum readback confirms the target, then automatically reset the old map's selection and unsaved settings. Rejection/timeouts on the original map preserve the draft; late confirmation preserves newer target-map edits and newer feedback. No room settings are saved automatically.
+- Reuse existing map confirmation, lifecycle/request locks and error handling for both presentations. Preserve Zone/Schedules selection and verified floor-plan loading. No companion integration changes are required for these display options.
 
 ## v1.7.0
 

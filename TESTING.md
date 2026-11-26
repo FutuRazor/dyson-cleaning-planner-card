@@ -2,7 +2,7 @@
 
 ## Current validation status - 26 November 2026
 
-Current card version is **1.7.1**. Latest full card checks: **184 unit tests**, rebuilt bundle and smoke check. The unchanged companion integration's latest full suite passed **449 tests**. Browser coverage and maintainer observations are recorded separately below.
+Current card version is **1.7.1**. Latest full card checks: **190 unit tests**, rebuilt bundle and smoke check. The unchanged companion integration's latest full suite passed **449 tests**. Browser coverage and maintainer observations are recorded separately below.
 
 | Area | Current evidence/status |
 | --- | --- |
@@ -13,6 +13,7 @@ Current card version is **1.7.1**. Latest full card checks: **184 unit tests**, 
 | Map-switch notice in the header | Unit/browser checks passed; separate live confirmation was not reported |
 | Zone tab and automatic floor-plan loading on map changes | Unit/browser checks passed; maintainer live acceptance confirmed |
 | v1.7.1 map visibility, chips and editor | Unit/browser checks passed; maintainer live acceptance pending |
+| Automatic old-map room-draft reset | Unit/browser checks passed; maintainer live acceptance pending |
 | PR #40 review corrections | Unit/browser checks passed; initial maintainer live check reported no new errors |
 | Robot fault-text localization | Integration descriptions are passed through; English texts for 2509/2510 remain a deferred follow-up |
 | Fresh-room discovery before a first clean | Integration regressions passed; live creation check pending |
@@ -20,6 +21,12 @@ Current card version is **1.7.1**. Latest full card checks: **184 unit tests**, 
 | Stationless cleaning → Pause → Home search | Known Dyson behavior also observed in MyDyson; pause and manual docking recovery confirmed |
 
 Additional integration/map checks are listed in [the map notes](docs/spot-scrub-maps.md#remaining-live-checks). Entries below are chronological records and retain their original versions/test counts; an old pending statement does not supersede a later confirmation.
+
+## Automatic room-draft reset on card map changes - 26 November 2026
+
+The maintainer requested direct map selection without first discarding local room edits. Both menu and chips now keep that draft while a request is pending, then reset only the old map's local selection/settings after matching select/vacuum readback confirms the target. The reset uses a fresh room model and runs once per request. Rejection or a timeout on the original map retains the draft. Late confirmation respects newer target-map drafts and newer feedback. Existing request locks and backend/context validation remain; no preference Save or cleaning Start is sent.
+
+Validation passed: `npm run check` with **190 unit tests**, rebuilt v1.7.1 bundle and smoke check. `map-draft.test.mjs` uses the real card model/reset methods to cover partial/unknown IDs, reused room ID 10, rejection, early readback during pending transport, immediate service-time telemetry, late/newer drafts and feedback, and obsolete lifecycles. Chromium browser suites `map-draft-browser`, `map-selection-browser`, `map-preferences-browser`, `zone-map-switching-browser` and `room-identity-browser` passed. The new flow runs menu/chips in Modern/Classic at 375/900 px with real room-control edits, both readbacks, rejection, timeout, late confirmation and new target-map drafts. Browser actions use simulated HA only. Unrelated external-map context guards remain covered; maintainer live acceptance of automatic discard is pending. Version remains **1.7.1**.
 
 ## v1.7.1 map visibility and chips - 26 November 2026
 

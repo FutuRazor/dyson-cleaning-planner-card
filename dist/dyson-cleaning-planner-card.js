@@ -353,7 +353,7 @@ const en = {
   "Switch map": "Switch map",
   "Switch map: {name}": "Switch map: {name}",
   "Saved maps": "Saved maps",
-  "Discard local room changes before switching maps.": "Discard local room changes before switching maps.",
+  "Local room changes are discarded after the map switch is confirmed.": "Local room changes are discarded after the map switch is confirmed.",
   "Map switching is unavailable. Refresh the map list and check the robot.": "Map switching is unavailable. Refresh the map list and check the robot.",
   "The map switch has not been confirmed. Check the selected map before trying again.": "The map switch has not been confirmed. Check the selected map before trying again."
 };
@@ -712,7 +712,7 @@ const de = {
   "Switch map": "Karte wechseln",
   "Switch map: {name}": "Karte wechseln: {name}",
   "Saved maps": "Gespeicherte Karten",
-  "Discard local room changes before switching maps.": "Lokale Raumänderungen vor dem Kartenwechsel verwerfen.",
+  "Local room changes are discarded after the map switch is confirmed.": "Lokale Raumänderungen werden nach dem bestätigten Kartenwechsel verworfen.",
   "Map switching is unavailable. Refresh the map list and check the robot.": "Kartenwechsel nicht verfügbar. Kartenliste aktualisieren und Roboter prüfen.",
   "The map switch has not been confirmed. Check the selected map before trying again.": "Der Kartenwechsel wurde nicht bestätigt. Vor einem erneuten Versuch die ausgewählte Karte prüfen."
 };
@@ -1071,7 +1071,7 @@ const nl = {
   "Switch map": "Kaart wisselen",
   "Switch map: {name}": "Kaart wisselen: {name}",
   "Saved maps": "Opgeslagen kaarten",
-  "Discard local room changes before switching maps.": "Verwerp lokale kamerwijzigingen voordat je van kaart wisselt.",
+  "Local room changes are discarded after the map switch is confirmed.": "Lokale kamerwijzigingen worden na bevestiging van de kaartwissel verworpen.",
   "Map switching is unavailable. Refresh the map list and check the robot.": "Kaart wisselen is niet beschikbaar. Vernieuw de kaartenlijst en controleer de robot.",
   "The map switch has not been confirmed. Check the selected map before trying again.": "De kaartwissel is niet bevestigd. Controleer de geselecteerde kaart voordat je het opnieuw probeert."
 };
@@ -1430,7 +1430,7 @@ const fr = {
   "Switch map": "Changer de carte",
   "Switch map: {name}": "Changer de carte : {name}",
   "Saved maps": "Cartes enregistrées",
-  "Discard local room changes before switching maps.": "Abandonnez les modifications locales des pièces avant de changer de carte.",
+  "Local room changes are discarded after the map switch is confirmed.": "Les modifications locales des pièces sont abandonnées après confirmation du changement de carte.",
   "Map switching is unavailable. Refresh the map list and check the robot.": "Le changement de carte est indisponible. Actualisez la liste des cartes et vérifiez le robot.",
   "The map switch has not been confirmed. Check the selected map before trying again.": "Le changement de carte n’a pas été confirmé. Vérifiez la carte sélectionnée avant de réessayer."
 };
@@ -1605,18 +1605,18 @@ const mapSelectionCardMethods = {
     const {current,displayMaps,hiddenCurrent} = presentation, pending = !!this._mapRequest;
     const locked = this.mapControlsLocked();
     const label = current ? this.t('Switch map: {name}',{name:current.option}) : this.t('Switch map');
-    const note = this.dirty ? 'Discard local room changes before switching maps.' : !state.canChange
+    const note = this.dirty ? 'Local room changes are discarded after the map switch is confirmed.' : !state.canChange
       ? 'Map switching is unavailable. Refresh the map list and check the robot.' : null;
-    return `<div class="map-picker"><button class="map-toggle ${pending ? 'pending' : ''}" data-action="maps" data-focus="maps" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}" aria-haspopup="menu" aria-controls="saved-map-menu" aria-expanded="${!!this.mapMenuOpen}" ${pending ? 'aria-busy="true"' : ''} ${locked ? 'disabled' : ''}><ha-icon icon="mdi:map-marker-path" aria-hidden="true"></ha-icon></button>${this.mapMenuOpen ? `<div class="map-menu" id="saved-map-menu" role="menu" aria-label="${this.ht('Saved maps')}"><p class="map-menu-label">${this.ht('Saved maps')}</p>${displayMaps.map(map => `<button role="menuitemradio" aria-checked="${map.map_id === current?.map_id}" data-map-id="${map.map_id}" data-focus="map-${map.map_id}" ${locked || !state.canChange || this.dirty || map.map_id === current?.map_id ? 'disabled' : ''}><span>${escapeHtml(map.option)}${map.map_id === hiddenCurrent?.map_id ? `<small class="map-hidden-label">${this.ht('Hidden in this card')}</small>` : ''}</span>${map.map_id === current?.map_id ? '<ha-icon icon="mdi:check" aria-hidden="true"></ha-icon>' : ''}</button>`).join('')}${note ? `<p class="map-menu-note">${this.ht(note)}</p>` : ''}</div>` : ''}</div>`;
+    return `<div class="map-picker"><button class="map-toggle ${pending ? 'pending' : ''}" data-action="maps" data-focus="maps" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}" aria-haspopup="menu" aria-controls="saved-map-menu" aria-expanded="${!!this.mapMenuOpen}" ${pending ? 'aria-busy="true"' : ''} ${locked ? 'disabled' : ''}><ha-icon icon="mdi:map-marker-path" aria-hidden="true"></ha-icon></button>${this.mapMenuOpen ? `<div class="map-menu" id="saved-map-menu" role="menu" aria-label="${this.ht('Saved maps')}"><p class="map-menu-label">${this.ht('Saved maps')}</p>${displayMaps.map(map => `<button role="menuitemradio" aria-checked="${map.map_id === current?.map_id}" data-map-id="${map.map_id}" data-focus="map-${map.map_id}" ${locked || !state.canChange || map.map_id === current?.map_id ? 'disabled' : ''}><span>${escapeHtml(map.option)}${map.map_id === hiddenCurrent?.map_id ? `<small class="map-hidden-label">${this.ht('Hidden in this card')}</small>` : ''}</span>${map.map_id === current?.map_id ? '<ha-icon icon="mdi:check" aria-hidden="true"></ha-icon>' : ''}</button>`).join('')}${note ? `<p class="map-menu-note">${this.ht(note)}</p>` : ''}</div>` : ''}</div>`;
   },
   mapSelectorHtml() {
     const state = this.getMapSelection(), {current,displayMaps,hiddenCurrent,showSelector} = this.getMapPresentation();
     if (this.config.map_selector_style === 'chips' && showSelector) {
-      const locked = this.mapControlsLocked() || !state.canChange || this.dirty;
+      const locked = this.mapControlsLocked() || !state.canChange;
       return `<div class="map-chips" role="group" aria-label="${this.ht('Saved maps')}">${displayMaps.map(map => {
         const active = map.map_id === current?.map_id, pending = map.map_id === this._mapRequest?.mapId;
         return `<button class="map-chip" data-map-id="${map.map_id}" data-focus="map-chip-${map.map_id}" aria-pressed="${active}" ${pending ? 'aria-busy="true"' : ''} aria-label="${this.ht(pending ? 'Switching map: {name}' : 'Switch map: {name}',{name:map.option})}${map.map_id === hiddenCurrent?.map_id ? ` · ${this.ht('Hidden in this card')}` : ''}" ${locked ? 'disabled' : ''}><span class="map-chip-icon" aria-hidden="true">${pending ? '<span class="map-chip-spinner"></span>' : active ? '<ha-icon icon="mdi:check"></ha-icon>' : ''}</span><span class="map-chip-copy">${escapeHtml(map.option)}${map.map_id === hiddenCurrent?.map_id ? `<small class="map-hidden-label">${this.ht('Hidden in this card')}</small>` : ''}</span></button>`;
-      }).join('')}</div>${this.dirty ? `<p class="map-visibility-note">${this.ht('Discard local room changes before switching maps.')}</p>` : ''}`;
+      }).join('')}</div>${this.dirty ? `<p class="map-visibility-note">${this.ht('Local room changes are discarded after the map switch is confirmed.')}</p>` : ''}`;
     }
     return hiddenCurrent ? `<p class="map-visibility-note" role="status">${this.ht('Active map: {name} (hidden in this card).',{name:hiddenCurrent.option})}</p>` : '';
   },
@@ -1659,17 +1659,31 @@ const mapSelectionCardMethods = {
     return false;
   },
   mapRequestCurrent(request) { return this.config === request.config && this.isConnected && this._detachRevision === request.detach; },
+  applyConfirmedMapSwitch(request) {
+    if (!this.mapRequestCurrent(request) || !mapSelectionConfirmed(this._hass,this.registry,this.config.entity,request)) return false;
+    if (!request.applied) {
+      request.applied = true;
+      // Only discard the old map's draft. A late reply must preserve a newer
+      // draft already created on the target map after the request timed out.
+      const oldContext = this.draftContext !== this.adapter.roomContext(this._hass,this.config.entity,this.registry);
+      if (oldContext) {
+        this.model = this.getModel(); this.resetDraft(false);
+      }
+      if (oldContext || this._mapRequest === request) this.expanded.clear();
+      if (this.zoneDraft?.calibration && String(this.zoneDraft.calibration.map_id) !== request.mapId) this.zoneDraft = null;
+    }
+    return true;
+  },
   cancelMapSwitch() {
     this._mapRequest?.complete?.('cancelled'); this._mapRequest = null; this._unconfirmedMapSwitch = null; this.mapMenuOpen = false;
   },
   reconcileMapSwitch() {
     const request = this._mapRequest;
-    if (request && this.mapRequestCurrent(request)
-        && mapSelectionConfirmed(this._hass,this.registry,this.config.entity,request)) request.complete?.('confirmed');
+    if (request && this.applyConfirmedMapSwitch(request)) request.complete?.('confirmed');
     const late = this._unconfirmedMapSwitch;
-    if (late && this.message === late.notice && this.mapRequestCurrent(late.request)
-        && mapSelectionConfirmed(this._hass,this.registry,this.config.entity,late.request)) {
-      this.message = ''; this.error = false; this._unconfirmedMapSwitch = null;
+    if (late && this.applyConfirmedMapSwitch(late.request)) {
+      if (this.message === late.notice) { this.message = ''; this.error = false; }
+      this._unconfirmedMapSwitch = null;
     }
     if (this.config.map_selector_style === 'chips' || !this.getMapPresentation().showSelector) this.mapMenuOpen = false;
   },
@@ -1682,7 +1696,6 @@ const mapSelectionCardMethods = {
   async switchSavedMap(identity) {
     if (this._previewDialog || !this.isConnected || this._mapRequest || this.busy || this.controlBusy || this.stationBusy
         || this.scheduleSending || this.scheduleDialog || this.view.active || this.shadowRoot.querySelector('dyson-planner-zone')?.sending) return;
-    if (this.dirty) { this.error = true; this.message = 'Discard local room changes before switching maps.'; this.render(); return; }
     const state = this.getMapSelection();
     if (!state.canChange || !mapSelectionPresentation(state,this.config).visibleMaps.some(item => item.map_id === identity) || state.currentId === identity) return;
     const request = {...state,mapId:identity,config:this.config,detach:this._detachRevision};
@@ -1691,7 +1704,7 @@ const mapSelectionCardMethods = {
       await this.adapter.selectMap(this._hass,this.registry,this.config.entity,identity);
       if (!this.mapRequestCurrent(request)) return;
       let result = 'confirmed';
-      if (!mapSelectionConfirmed(this._hass,this.registry,this.config.entity,request)) {
+      if (!this.applyConfirmedMapSwitch(request)) {
         result = await new Promise(resolve => {
           const timer = setTimeout(() => request.complete?.('timeout'),10000);
           request.complete = value => { clearTimeout(timer); request.complete = null; resolve(value); };
@@ -1701,10 +1714,9 @@ const mapSelectionCardMethods = {
       if (result !== 'confirmed') {
         const notice = uiMessage('The map switch has not been confirmed. Check the selected map before trying again.');
         this.message = notice; this.error = true; this._unconfirmedMapSwitch = {request,notice};
-      } else { this.zoneDraft = null; this.expanded.clear(); }
+      } else this.applyConfirmedMapSwitch(request);
     } catch (error) {
-      if (this.mapRequestCurrent(request)
-          && !mapSelectionConfirmed(this._hass,this.registry,this.config.entity,request)) {
+      if (this.mapRequestCurrent(request) && !this.applyConfirmedMapSwitch(request)) {
         this.error = true; this.message = error;
         this._unconfirmedMapSwitch = {request,notice:error};
       }

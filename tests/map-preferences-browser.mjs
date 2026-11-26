@@ -74,9 +74,8 @@ try {
     await page.evaluate(a=>mapPrefs.report(a),a);
     await card.locator('input[data-room]').first().check();
     assert.equal(await page.evaluate(()=>mapPrefs.card.dirty),true);
-    assert.equal(await card.locator('.map-chip:disabled').count(),2);
-    assert.match(await card.locator('.map-visibility-note').textContent(),/Discard local room changes/);
-    await page.evaluate(b=>mapPrefs.card.switchSavedMap(b),b);
+    assert.equal(await card.locator('.map-chip:disabled').count(),0);
+    assert.match(await card.locator('.map-visibility-note').textContent(),/discarded after.*confirmed/);
     assert.equal(await page.evaluate(()=>mapPrefs.calls.length),1);
     await card.locator('[data-action="reset"]').click();
     assert.equal(await card.locator('.map-chip:disabled').count(),0);

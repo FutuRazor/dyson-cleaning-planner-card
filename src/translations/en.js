@@ -352,7 +352,7 @@ export const en = {
   "Switch map": "Switch map",
   "Switch map: {name}": "Switch map: {name}",
   "Saved maps": "Saved maps",
-  "Discard local room changes before switching maps.": "Discard local room changes before switching maps.",
+  "Local room changes are discarded after the map switch is confirmed.": "Local room changes are discarded after the map switch is confirmed.",
   "Map switching is unavailable. Refresh the map list and check the robot.": "Map switching is unavailable. Refresh the map list and check the robot.",
   "The map switch has not been confirmed. Check the selected map before trying again.": "The map switch has not been confirmed. Check the selected map before trying again."
 };
