@@ -38,7 +38,7 @@ The [experimental hass-dyson adapter](docs/hass-dyson.md) supports rooms/setting
 
 For integration developers, the [complete integration contract](docs/integration-contract.md) documents required and optional entities, registry identities, attributes, action payloads and validation. 
 
-The [Spot+Scrub map lifecycle notes](docs/spot-scrub-maps.md) collect live findings on map creation, switching and deletion, captured commands, and the proposed map-selection interface.
+The [Spot+Scrub map lifecycle notes](docs/spot-scrub-maps.md) collect live findings and captured commands. The proposed integration/card feature displays and switches existing maps, with preferred cleanup of entities belonging to maps deleted in MyDyson; map creation, deletion and editing remain in MyDyson.
 
 In the generic HA mode, fan-capable vacuums additionally show one shared suction slider below the area tiles. Changes remain local until Start; the card sets an explicitly changed value before area cleaning and explains that it is a global robot preference which may persist. See the [optional suction behavior and live checklist](docs/home-assistant-rooms.md#optional-suction-power-and-start). This addition still needs its own live verification, including interactions with stored room profiles.
 

@@ -2,6 +2,25 @@
 
 This document collects the map-lifecycle findings from maintainer tests on 25/26 November 2026, the captured commands, and the proposed Home Assistant map-selection interface. Spot+Scrub is the priority adapter for this work. A map selector or map-switch icon has not been implemented.
 
+## Intended feature scope
+
+**Highest-priority next feature: display and switch existing maps from both the integration and the Lovelace card.** In a two-floor home, changing the selected map is a frequent everyday action; mapping and editing are occasional tasks handled in MyDyson. This priority applies to the Spot+Scrub adapter.
+
+The maintainer defines the initial scope as:
+
+- **Integration and Lovelace card:** display all existing saved maps, show the selected map, and allow switching between those maps.
+- **MyDyson only:** create/map, delete, rename and otherwise edit maps or rooms. Captured lifecycle commands below document the app's behavior; they are not a plan to expose those operations in HA or the card.
+- **On a normal map switch:** retain room entities and their identities, preserving the smooth room-list transition observed in the live tests.
+- **After a map is actually deleted in MyDyson:** preferably remove HA entities belonging exclusively to that deleted map ID, including their registry entries, and reconcile the associated cached map/room data. This is HA cleanup following an app deletion, not a request to delete a map on the robot.
+
+Cleanup must distinguish robot, map ID and room identity. In particular, deleting B/room `10` must not remove A/room `10` or shared robot entities. Reliable attribution of existing room entities to maps remains an implementation question; cleanup is a desired behavior, not a confirmed capability.
+
+Implementation order:
+
+1. Provide a current list of saved maps, the selected map and a callable map-switch interface in the integration.
+2. Expose that interface in the Lovelace card, preserving the already verified smooth room-list updates when the selected map changes.
+3. Add the preferred cleanup of entities belonging exclusively to deleted maps once their ownership is established. Resolving cleanup must not hold up the primary map-switch feature.
+
 ## Evidence and scope
 
 | Reference | Supplied export | Coverage |
@@ -37,7 +56,7 @@ During mapping, the robot temporarily reports map ID `0` and the saved-map list 
 
 ## Captured map commands
 
-These are **Dyson MQTT/JDM messages**, not registered Home Assistant action names. Topics in these RB05 captures have the form `RB05/<serial>/command/jdm` and `RB05/<serial>/status/jdm`. Legacy commands use `RB05/<serial>/command`, and robot state messages use `RB05/<serial>/status`.
+These are **Dyson MQTT/JDM messages**, not registered Home Assistant action names. Only listing and switching existing maps are in the requested HA/card feature scope; the other map-management commands remain reference material for observing MyDyson changes. Topics in these RB05 captures have the form `RB05/<serial>/command/jdm` and `RB05/<serial>/status/jdm`. Legacy commands use `RB05/<serial>/command`, and robot state messages use `RB05/<serial>/status`.
 
 JDM requests contain `msgId`, `version:"1.0.1"`, `method` and `params`; some also contain an ISO UTC `time`. Replies correlate through `msgId`. The examples below retain the observed method and parameter bodies while omitting that transport envelope, message IDs and timestamps. IDs are the actual test map/room IDs.
 
@@ -118,7 +137,9 @@ Here `room_name` is a JSON-encoded **string**, containing the observed `type` an
 {"method":"service.del_map","params":{"map_id":1795646759}}
 ```
 
-The reply has `code:0` and `data.result:0`. In L2 this deletes **selected B**, with A remaining. The automatic fallback is detailed below; deletion of an inactive map or the last map has not been tested.
+The reply has `code:0` and `data.result:0`. In L2 this deletes **selected B**, with A remaining. The automatic fallback is detailed below; deletion of the last map has not been tested.
+
+In a maintainer follow-up, the tested MyDyson UI only offers deletion of the **currently selected map**. B cannot be deleted through that UI while A is selected; B must first be selected. This is an app-interface observation. Whether a direct `service.del_map` request could target an inactive map remains untested; the captured `map_id` parameter alone does not establish that capability.
 
 ## Related room and cleaning commands
 
@@ -257,20 +278,20 @@ This is a proposal, not an implemented capability:
 
 1. Expose the current saved-map list and selected map through a device-bound HA interface, for example a `select` entity. Map IDs identify options internally; labels show names and distinguish duplicate map names if needed.
 2. Selecting an option asks the integration to send the existing map-switch command. The reported active map confirms the change. The card can expose this through a header icon and a small map menu.
-3. Refresh the list on connection, after a confirmed switch, and after observed mapping, rename or delete activity. Add a periodic reconciliation so changes to an inactive map or changes made while HA was disconnected are also discovered.
+3. Refresh the list on connection, after a confirmed switch, and after mapping, rename or delete activity observed from MyDyson. Add a periodic reconciliation so changes to an inactive map or changes made while HA was disconnected are also discovered.
 4. Replace selector options from a successful current full-list query: add new IDs, update names for retained IDs and remove absent IDs. A failed fetch must not be interpreted as an empty map list. Old observed commands must not resurrect a deleted option.
-5. Preserve the existing room-update path that passed the live switches. Removing an option from the map selector does not require deleting and recreating HA room entities.
+5. Preserve the existing room-update path and retained entity identities during normal switches. For a confirmed map deletion in MyDyson, preferably remove entities and registry entries belonging exclusively to the deleted map and reconcile its cached data. Removing a selector option and cleaning up entities are separate tasks; a switch alone must not trigger entity deletion.
+6. Expose map display/selection only. Mapping, deletion, renaming and editing remain in MyDyson, with their results reflected back into HA and the card.
 
-Both the captured JDM `get_map_list` and existing REST metadata provide a list source. Their timing and any temporary disagreement still need validation when choosing the implementation path. In particular, the active ID changes when selected B is deleted, but need not change when an inactive map is removed; the latter cannot rely on an active-map-change trigger alone.
+Both the captured JDM `get_map_list` and existing REST metadata provide a list source. Their timing and any temporary disagreement still need validation when choosing the implementation path. Deleting selected B changes the active ID in the capture. Deleting an inactive map while keeping A selected is not an available test through the observed MyDyson UI. Periodic reconciliation still covers changes missed while HA was disconnected and inventory changes that do not otherwise trigger an active-map update.
 
 ## Remaining live checks
 
-- Delete an **inactive** map while A stays selected, and verify list refresh without an active-ID change.
-- Delete the last saved map and inspect map identity, room list and selector behavior.
+- Delete the last saved map in MyDyson and inspect map identity, room list and selector behavior.
 - Use the same room name on A and B, initially with different native room IDs: A/Küche `13` and B/Küche `10`.
 - Switch maps with an unsaved local room selection/settings draft, and verify the existing stale-draft handling.
-- Observe map creation/rename/deletion while HA is disconnected and verify reconciliation after reconnect.
-- Capture HA `map_id`, `rooms`, per-room `room_id`/availability and registry entries across these transitions, including the fate of deleted-map entities.
+- Observe map creation/rename/deletion in MyDyson while HA is disconnected and verify reconciliation after reconnect.
+- Capture HA `map_id`, `rooms`, per-room `room_id`/availability and registry entries across these transitions. Establish how to remove entities exclusive to a deleted map while preserving other maps' entities, including reused room IDs and shared names.
 - Verify schedule behavior across maps separately; these map tests do not establish it.
 
 This reference is a documentation-only change. Card source, generated bundle and release version are unchanged. The chronological validation index is [TESTING.md](../TESTING.md).

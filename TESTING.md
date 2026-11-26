@@ -2,13 +2,15 @@
 
 ## Spot+Scrub active-map deletion live evidence - 26 November 2026
 
-Deleting selected B in MyDyson automatically selected A. The log confirms the deletion, a map list containing only A and the coordinator's return to A's five rooms. The maintainer confirms the corresponding entity activation and Lovelace room-list change. See the [deletion timeline and command reference](docs/spot-scrub-maps.md#deleting-active-map-b) for both captures, exact payloads, evidence boundaries and remaining deletion tests.
+Deleting selected B in MyDyson automatically selected A. The log confirms the deletion, a map list containing only A and the coordinator's return to A's five rooms. The maintainer confirms the corresponding entity activation and Lovelace room-list change. A follow-up establishes that the tested MyDyson Delete control applies only to the selected map: B must be selected before it can be deleted through the app. See the [deletion timeline and command reference](docs/spot-scrub-maps.md#deleting-active-map-b) for both captures, exact payloads, evidence boundaries and remaining deletion tests.
 
 ## Spot+Scrub multi-map live evidence - 25/26 November 2026
 
 Maintainer tests confirm repeated A/B switches with stable map IDs, smooth active-room-list updates and a successful card-originated Kitchen start after returning to A. Room ID 10 is reused across maps. The captured inactive-map Kitchen requests are rejected by the integration's legacy start path. See [Spot+Scrub maps and map switching](docs/spot-scrub-maps.md) for creation/discovery timing, names and IDs, captured commands and lifecycle messages, the source review, the proposed HA map selector and remaining checks.
 
 These evidence updates change documentation only. Application code, generated bundle and release version are unchanged; automated application suites were not rerun.
+
+The highest-priority next Spot+Scrub feature is [displaying and switching existing maps](docs/spot-scrub-maps.md#intended-feature-scope) in the integration and Lovelace card, supporting frequent floor changes. Preferred removal of HA entities belonging exclusively to map IDs deleted in MyDyson follows without delaying the primary map-switch feature. Map creation, deletion and editing remain app-only operations.
 
 ## Station and Robot switch feedback - 25 November 2026
 
