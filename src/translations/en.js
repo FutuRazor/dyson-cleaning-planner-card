@@ -223,6 +223,7 @@ export const en = {
   "A cleaning job is still active": "A cleaning job is still active",
   "Waiting for the robot to be ready": "Waiting for the robot to be ready",
   "The integration is not ready to start a new clean": "The integration is not ready to start a new clean",
+  "Wait for the map switch to finish before starting a clean.": "Wait for the map switch to finish before starting a clean.",
   "Wait for the dock cycle to finish before starting a clean": "Wait for the dock cycle to finish before starting a clean",
   "Waiting for a connection to the robot.": "Waiting for a connection to the robot.",
   "Cleaning session active": "Cleaning session active",

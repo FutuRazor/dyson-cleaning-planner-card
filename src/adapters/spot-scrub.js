@@ -159,6 +159,7 @@ function startBlockReason(hass, entity) {
       mapping_or_navigation: 'Mapping / navigation in progress',
       returning_or_finishing: 'Returning to dock / finishing cleanup',
       cleaning_job_active: 'A cleaning job is still active',
+      map_switching: 'Wait for the map switch to finish before starting a clean.',
       waiting_for_ready_state: 'Waiting for the robot to be ready'
     }[attrs.start_block_reason] ?? 'The integration is not ready to start a new clean';
   }
@@ -169,7 +170,11 @@ function startBlockReason(hass, entity) {
 function activityStatus(hass, entity, pendingStart = false) {
   const state = hass?.states?.[entity];
   const view = cleaningView(hass, entity, pendingStart);
-  const result = (text, icon = 'mdi:robot-vacuum', drying = false) => ({ text, icon, drying });
+  const notice = available(state) && hass?.connected !== false && state.state !== 'error'
+    && state.attributes?.ready_to_start === false && state.attributes?.start_block_reason === 'map_switching'
+    ? startBlockReason(hass,entity) : null;
+  const result = (text, icon = 'mdi:robot-vacuum', drying = false) => ({ text, icon, drying,
+    ...(notice ? {notice} : {}) });
   if (!available(state) || hass?.connected === false) return result('Robot unavailable', 'mdi:alert-circle-outline');
   if (state.state === 'error') return result('Robot needs attention', 'mdi:alert-circle-outline');
   if (state.state === 'paused') return result('Paused', 'mdi:pause');
@@ -183,8 +188,8 @@ function activityStatus(hass, entity, pendingStart = false) {
   }
   if (state.state === 'returning') return result('Returning / mapping', 'mdi:home-import-outline');
   const blocked = startBlockReason(hass, entity);
-  if (blocked) return result(blocked, 'mdi:timer-sand');
-  return view.active ? result(view.title) : null;
+  if (blocked && blocked !== notice) return result(blocked, 'mdi:timer-sand');
+  return view.active ? result(view.title) : notice ? {notice} : null;
 }
 
 function cleaningView(hass, entity, pendingStart = false) {

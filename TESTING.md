@@ -1,10 +1,20 @@
 # Testing v1.7.0 — Release candidate
 
+## Map-switch header notice in Schedules - 26 November 2026
+
+The maintainer reported the brief map-switch start interlock appearing in the drying/return activity row while viewing Schedules. The shared Spot+Scrub status fallback treated the new `map_switching` reason as unknown readiness text; the schedule view did not supply the room planner's header notice. This was a shared status-routing issue rather than a schedule-action message.
+
+The adapter now recognizes `map_switching` and provides an optional header `notice` separately from actual activity text. All views use the existing dismissible header overlay for it. Drying and its remaining time stay in the activity row; idle Classic does not invent an activity row for the notice. Duplicate start-block text in that row is hidden, and actual readiness/start rejection remains unchanged. The notice is localized in English, German, Dutch and French. Other readiness fallbacks (waiting for ready state, a cleaning job still active, unknown integration reasons) keep their existing activity-row behavior. Schedule action feedback already uses the header; list availability/sync/empty-state notes and editor explanations remain within their schedule content/dialog.
+
+Validation passed: `npm run check`, **174 unit tests**, rebuilt v1.7.0 bundle and standalone smoke checks. Four browser suites passed: map-scoped schedules in Modern/Classic at 375/900 px, header notices, start readiness and Modern status. The new browser assertions cover header-only map notices, simultaneous drying, dismissal across unchanged telemetry and clearing when readiness returns. This card-only change retains release-candidate version 1.7.0.
+
 ## Stationless camera bounds - 26 November 2026
 
 The maintainer supplied two screenshots showing a tiny floor in the bottom-left corner and a zone badge around 112,433 x 112,378 cm, then confirmed the issue affects only B without a station. The integration renderer admitted arbitrary dock positions into canvas bounds. A synthetic 4 x 3 m room with a dock at (10,000, 10,000) reproduced the visual failure; the raw dock value on B has not been captured, so the exact live trigger remains unconfirmed.
 
-The integration correction reuses its existing room-geometry/dock-reach check before including a dock in bounds or drawing. Invalid/remote points are omitted, valid static docks can survive invalid live reports, and valid zero/near-wall/translated-origin coordinates remain supported. The synthetic image changes from 4096 x 4096 at about 0.4 pixels/metre to 450 x 370 at 80 pixels/metre; the corrected output was visually checked. All **440 integration tests** passed, including six new synthetic bounds regressions. Live camera acceptance on B remains pending. This changes the companion integration only; card source, generated bundle and v1.7.0 version remain unchanged.
+The integration correction reuses its existing room-geometry/dock-reach check before including a dock in bounds or drawing. Invalid/remote points are omitted, valid static docks can survive invalid live reports, and valid zero/near-wall/translated-origin coordinates remain supported. The synthetic image changes from 4096 x 4096 at about 0.4 pixels/metre to 450 x 370 at 80 pixels/metre; the corrected output was visually checked. All **440 integration tests** passed, including six new synthetic bounds regressions. At that stage, live camera acceptance on B was still pending; the later maintainer confirmation is recorded below. This changes the companion integration only; card source, generated bundle and v1.7.0 version remain unchanged.
+
+The maintainer subsequently confirmed that the corrected camera looks good. This is live visual acceptance of the rendering correction; the original raw dock value remains uncaptured.
 
 ## v1.7.0 release candidate alignment - 26 November 2026
 

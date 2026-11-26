@@ -34,6 +34,29 @@ try {
     assert.equal(await card.locator('.schedule-row').count(),2);
     assert.equal(await card.locator('.schedule-count').innerText(),'1');
     assert.equal(await page.evaluate(()=>mapSchedules.card._scheduleCountdown.next.id),101);
+    // App/select map transitions use the header without replacing real activity.
+    await page.evaluate(()=>{
+      const f=mapSchedules;Object.assign(f.hass.states[f.entity].attributes,
+        {ready_to_start:false,start_block_reason:'map_switching'});f.card.hass={...f.hass};
+    });
+    assert.match(await card.locator('.header-notice-copy').innerText(),/map switch to finish/);
+    assert.equal(await card.locator('.header-notice').isVisible(),true);
+    assert.equal(await card.locator('.activity-start-block').isVisible(),false);
+    assert.equal(await card.locator('.activity-status').isVisible(),theme==='modern');
+    if(theme==='modern')assert.equal(await card.locator('.activity-text').innerText(),'Docked');
+    await page.evaluate(()=>{
+      const f=mapSchedules;f.hass.states[f.entity].attributes.dock_state='DRYING_MOP';f.card.hass={...f.hass};
+    });
+    assert.equal(await card.locator('.activity-text').innerText(),'Drying mop roller');
+    assert.match(await card.locator('.header-notice-copy').innerText(),/map switch to finish/);
+    await card.locator('[data-action="dismiss-notice"]').click();
+    await page.evaluate(()=>{mapSchedules.card.hass={...mapSchedules.hass};});
+    assert.equal(await card.locator('.header-notice').isVisible(),false,'dismissal survives unchanged telemetry');
+    await page.evaluate(()=>{
+      const f=mapSchedules;Object.assign(f.hass.states[f.entity].attributes,
+        {ready_to_start:true,start_block_reason:null,dock_state:'IDLE'});f.card.hass={...f.hass};
+    });
+    assert.equal(await card.locator('.header-notice').isVisible(),false,'the notice clears with readiness');
     await card.locator('[data-schedule-menu="101"]').click();await card.locator('[data-schedule-edit="101"]').click();
     await page.evaluate(()=>{const f=mapSchedules;f.hass.states[f.entity].attributes.map_id='456';f.card.hass={...f.hass};});
     assert.equal(await card.locator('.schedule-dialog').count(),0);

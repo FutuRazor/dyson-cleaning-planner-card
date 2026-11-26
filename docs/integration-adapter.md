@@ -4,6 +4,8 @@ Integration behavior is isolated behind internal adapters. The existing `dyson_s
 
 ## Boundaries
 
+An `activityStatus` result can include an optional `notice` independently of its activity `text`. The card routes this notice to the header and keeps genuine robot/dock activity in the status row. Spot+Scrub uses this for `map_switching`, including when drying continues during selection.
+
 - The [Dreame contract prototype](dreame-adapter-contract.md) is an isolated, unbundled source experiment. It builds offline descriptors and models unconfirmed background writes; it is not in `integrationAdapters` and is not available in the editor or Automatic selection as a specialized backend.
 - `src/integration.js` supplies the configured adapter. Automatic initial selection prefers Spot+Scrub; an explicit robot selects its own backend. It never switches robots because an entity becomes unavailable.
 - `src/adapters/spot-scrub.js` owns platform/unique-ID matching, room identity and draft validation, telemetry, backend capability checks, preference writes, session actions, zone readiness and action payloads.

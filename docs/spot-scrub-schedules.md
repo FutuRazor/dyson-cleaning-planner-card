@@ -21,6 +21,8 @@ The card filters rows, enabled badge and next-clean countdown by each schedule's
 
 An app-initiated map change closes an obsolete schedule editor and cancels its local confirmation feedback. Disappearance from the filtered list cannot confirm deletion. Card-originated map changes also lock schedule controls. Returning to A restores A's retained schedules. Other adapters keep their existing schedule behavior.
 
+The temporary map-switch start interlock is a dismissible header notice in Schedules as well as Rooms/Zone. It does not replace actual drying/return activity or appear as a second start-block line in that row. Schedule create/save/delete results and request failures already use the header. Availability, synchronization and empty-list notes remain in the schedule list, while editor-specific explanations/errors stay in the dialog. Other shared readiness fallbacks retain their existing activity-row presentation.
+
 Offline regressions cover A with five schedules / empty B, plans on both maps, equal counts with different checksums, missed changes, upgrade/restart, delayed and reordered replies, transient map ID `0`, schedule switch availability and backend action locks. `tests/map-schedules-browser.mjs` checks both themes at 375/900 px, list/count/countdown changes, empty-map text, real warnings and an in-flight deletion across a map change. On 26 November 2026, the maintainer confirmed successful live switching: schedules and availability follow the selected map cleanly in both the integration and Lovelace card. Further app edits, reconnect and actual scheduled execution remain separate checks.
 
 ## Creating a schedule from room planning

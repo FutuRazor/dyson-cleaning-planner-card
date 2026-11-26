@@ -993,7 +993,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     const overlay = root.querySelector('.header-notice');
     if (!overlay) return;
     const child = root.querySelector('dyson-planner-zone, dyson-planner-map');
-    const text = this.t(this.message) || child?.headerMessage || this._plannerNotice || '';
+    const text = this.t(this.message) || child?.headerMessage || this._activityNotice || this._plannerNotice || '';
     if (text !== this._noticeText) { this._noticeText = text; this._dismissedNotice = ''; }
     const faultOpen = root.querySelector('.header-fault')?.hidden === false;
     const open = !!text && text !== this._dismissedNotice && !faultOpen;
@@ -1011,9 +1011,9 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     let status = this.adapter.activityStatus(this._hass, this.config.entity, (this.busy && !this.saving) || this.pendingStart, this.registry);
     const modern = this.config.theme === 'modern';
     const state = this._hass?.states?.[this.config.entity]?.state;
-    if (modern && !status) {
-      if (state === 'docked') status = { text: 'Docked', icon: 'mdi:home-import-outline' };
-      else if (state === 'idle') status = { text: 'Idle', icon: 'mdi:robot-vacuum' };
+    if (modern && !status?.text) {
+      if (state === 'docked') status = { ...status, text: 'Docked', icon: 'mdi:home-import-outline' };
+      else if (state === 'idle') status = { ...status, text: 'Idle', icon: 'mdi:robot-vacuum' };
     }
     if (modern) {
       const vacuum = this.adapter.robotTelemetry(this._hass, this.config.entity, this.model.cameraEntity, this.registry);
@@ -1041,7 +1041,8 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       }
     }
     const row = this.shadowRoot.querySelector('.activity-status');
-    row.hidden = !status;
+    this._activityNotice = this.t(status?.notice);
+    row.hidden = !status?.text;
     const compact = modern;
     row.classList.toggle('compact-status', compact);
     row.classList.toggle('has-drying', !!status?.drying);
@@ -1055,7 +1056,8 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
 
     const blockNote = row.querySelector('.activity-start-block');
     const block = this.adapter.startBlockReason(this._hass, this.config.entity, this.registry);
-    blockNote.hidden = this.view.active || !block || block === status?.text || this.adapter.dockBlocksStart(this._hass, this.config.entity, this.registry);
+    blockNote.hidden = this.view.active || !block || block === status?.text || block === status?.notice
+      || this.adapter.dockBlocksStart(this._hass, this.config.entity, this.registry);
     blockNote.textContent = this.t(block);
     row.querySelector('.activity-icon').setAttribute('icon', status?.icon ?? 'mdi:robot-vacuum');
     row.querySelector('.drying-control').hidden = !status?.drying || this.adapter.supportsDryingCancellation === false;

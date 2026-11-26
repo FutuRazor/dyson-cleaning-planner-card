@@ -223,6 +223,7 @@ export const nl = {
   "A cleaning job is still active": "Er is nog een reinigingsopdracht actief",
   "Waiting for the robot to be ready": "Wachten tot de robot klaar is",
   "The integration is not ready to start a new clean": "De integratie is niet klaar om een nieuwe reiniging te starten",
+  "Wait for the map switch to finish before starting a clean.": "Wacht tot de kaartwisseling is voltooid voordat je een reiniging start.",
   "Wait for the dock cycle to finish before starting a clean": "Wacht tot de stationscyclus is voltooid voordat je een reiniging start",
   "Waiting for a connection to the robot.": "Wachten op verbinding met de robot.",
   "Cleaning session active": "Reinigingssessie actief",

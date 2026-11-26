@@ -224,6 +224,7 @@ const en = {
   "A cleaning job is still active": "A cleaning job is still active",
   "Waiting for the robot to be ready": "Waiting for the robot to be ready",
   "The integration is not ready to start a new clean": "The integration is not ready to start a new clean",
+  "Wait for the map switch to finish before starting a clean.": "Wait for the map switch to finish before starting a clean.",
   "Wait for the dock cycle to finish before starting a clean": "Wait for the dock cycle to finish before starting a clean",
   "Waiting for a connection to the robot.": "Waiting for a connection to the robot.",
   "Cleaning session active": "Cleaning session active",
@@ -570,6 +571,7 @@ const de = {
   "A cleaning job is still active": "Ein Reinigungsauftrag ist noch aktiv",
   "Waiting for the robot to be ready": "Warten auf Bereitschaft des Roboters",
   "The integration is not ready to start a new clean": "Die Integration ist noch nicht für eine neue Reinigung bereit",
+  "Wait for the map switch to finish before starting a clean.": "Warte, bis der Kartenwechsel abgeschlossen ist, bevor du eine Reinigung startest.",
   "Wait for the dock cycle to finish before starting a clean": "Vor einer neuen Reinigung das Ende des Stationsvorgangs abwarten",
   "Waiting for a connection to the robot.": "Warten auf die Verbindung zum Roboter.",
   "Cleaning session active": "Reinigung aktiv",
@@ -916,6 +918,7 @@ const nl = {
   "A cleaning job is still active": "Er is nog een reinigingsopdracht actief",
   "Waiting for the robot to be ready": "Wachten tot de robot klaar is",
   "The integration is not ready to start a new clean": "De integratie is niet klaar om een nieuwe reiniging te starten",
+  "Wait for the map switch to finish before starting a clean.": "Wacht tot de kaartwisseling is voltooid voordat je een reiniging start.",
   "Wait for the dock cycle to finish before starting a clean": "Wacht tot de stationscyclus is voltooid voordat je een reiniging start",
   "Waiting for a connection to the robot.": "Wachten op verbinding met de robot.",
   "Cleaning session active": "Reinigingssessie actief",
@@ -1262,6 +1265,7 @@ const fr = {
   "A cleaning job is still active": "Un nettoyage est toujours en cours",
   "Waiting for the robot to be ready": "En attente que le robot soit prêt",
   "The integration is not ready to start a new clean": "L’intégration n’est pas prête à démarrer un nouveau nettoyage",
+  "Wait for the map switch to finish before starting a clean.": "Attendez la fin du changement de carte avant de démarrer un nettoyage.",
   "Wait for the dock cycle to finish before starting a clean": "Attendez la fin du cycle de la station avant de démarrer un nettoyage",
   "Waiting for a connection to the robot.": "En attente de connexion au robot.",
   "Cleaning session active": "Nettoyage en cours",
@@ -1882,6 +1886,7 @@ function startBlockReason(hass, entity) {
       mapping_or_navigation: 'Mapping / navigation in progress',
       returning_or_finishing: 'Returning to dock / finishing cleanup',
       cleaning_job_active: 'A cleaning job is still active',
+      map_switching: 'Wait for the map switch to finish before starting a clean.',
       waiting_for_ready_state: 'Waiting for the robot to be ready'
     }[attrs.start_block_reason] ?? 'The integration is not ready to start a new clean';
   }
@@ -1892,7 +1897,11 @@ function startBlockReason(hass, entity) {
 function activityStatus(hass, entity, pendingStart = false) {
   const state = hass?.states?.[entity];
   const view = cleaningView(hass, entity, pendingStart);
-  const result = (text, icon = 'mdi:robot-vacuum', drying = false) => ({ text, icon, drying });
+  const notice = available(state) && hass?.connected !== false && state.state !== 'error'
+    && state.attributes?.ready_to_start === false && state.attributes?.start_block_reason === 'map_switching'
+    ? startBlockReason(hass,entity) : null;
+  const result = (text, icon = 'mdi:robot-vacuum', drying = false) => ({ text, icon, drying,
+    ...(notice ? {notice} : {}) });
   if (!available(state) || hass?.connected === false) return result('Robot unavailable', 'mdi:alert-circle-outline');
   if (state.state === 'error') return result('Robot needs attention', 'mdi:alert-circle-outline');
   if (state.state === 'paused') return result('Paused', 'mdi:pause');
@@ -1906,8 +1915,8 @@ function activityStatus(hass, entity, pendingStart = false) {
   }
   if (state.state === 'returning') return result('Returning / mapping', 'mdi:home-import-outline');
   const blocked = startBlockReason(hass, entity);
-  if (blocked) return result(blocked, 'mdi:timer-sand');
-  return view.active ? result(view.title) : null;
+  if (blocked && blocked !== notice) return result(blocked, 'mdi:timer-sand');
+  return view.active ? result(view.title) : notice ? {notice} : null;
 }
 
 function cleaningView(hass, entity, pendingStart = false) {
@@ -5146,7 +5155,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     const overlay = root.querySelector('.header-notice');
     if (!overlay) return;
     const child = root.querySelector('dyson-planner-zone, dyson-planner-map');
-    const text = this.t(this.message) || child?.headerMessage || this._plannerNotice || '';
+    const text = this.t(this.message) || child?.headerMessage || this._activityNotice || this._plannerNotice || '';
     if (text !== this._noticeText) { this._noticeText = text; this._dismissedNotice = ''; }
     const faultOpen = root.querySelector('.header-fault')?.hidden === false;
     const open = !!text && text !== this._dismissedNotice && !faultOpen;
@@ -5164,9 +5173,9 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     let status = this.adapter.activityStatus(this._hass, this.config.entity, (this.busy && !this.saving) || this.pendingStart, this.registry);
     const modern = this.config.theme === 'modern';
     const state = this._hass?.states?.[this.config.entity]?.state;
-    if (modern && !status) {
-      if (state === 'docked') status = { text: 'Docked', icon: 'mdi:home-import-outline' };
-      else if (state === 'idle') status = { text: 'Idle', icon: 'mdi:robot-vacuum' };
+    if (modern && !status?.text) {
+      if (state === 'docked') status = { ...status, text: 'Docked', icon: 'mdi:home-import-outline' };
+      else if (state === 'idle') status = { ...status, text: 'Idle', icon: 'mdi:robot-vacuum' };
     }
     if (modern) {
       const vacuum = this.adapter.robotTelemetry(this._hass, this.config.entity, this.model.cameraEntity, this.registry);
@@ -5194,7 +5203,8 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       }
     }
     const row = this.shadowRoot.querySelector('.activity-status');
-    row.hidden = !status;
+    this._activityNotice = this.t(status?.notice);
+    row.hidden = !status?.text;
     const compact = modern;
     row.classList.toggle('compact-status', compact);
     row.classList.toggle('has-drying', !!status?.drying);
@@ -5208,7 +5218,8 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
 
     const blockNote = row.querySelector('.activity-start-block');
     const block = this.adapter.startBlockReason(this._hass, this.config.entity, this.registry);
-    blockNote.hidden = this.view.active || !block || block === status?.text || this.adapter.dockBlocksStart(this._hass, this.config.entity, this.registry);
+    blockNote.hidden = this.view.active || !block || block === status?.text || block === status?.notice
+      || this.adapter.dockBlocksStart(this._hass, this.config.entity, this.registry);
     blockNote.textContent = this.t(block);
     row.querySelector('.activity-icon').setAttribute('icon', status?.icon ?? 'mdi:robot-vacuum');
     row.querySelector('.drying-control').hidden = !status?.drying || this.adapter.supportsDryingCancellation === false;

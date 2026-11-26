@@ -223,6 +223,7 @@ export const de = {
   "A cleaning job is still active": "Ein Reinigungsauftrag ist noch aktiv",
   "Waiting for the robot to be ready": "Warten auf Bereitschaft des Roboters",
   "The integration is not ready to start a new clean": "Die Integration ist noch nicht für eine neue Reinigung bereit",
+  "Wait for the map switch to finish before starting a clean.": "Warte, bis der Kartenwechsel abgeschlossen ist, bevor du eine Reinigung startest.",
   "Wait for the dock cycle to finish before starting a clean": "Vor einer neuen Reinigung das Ende des Stationsvorgangs abwarten",
   "Waiting for a connection to the robot.": "Warten auf die Verbindung zum Roboter.",
   "Cleaning session active": "Reinigung aktiv",
