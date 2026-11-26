@@ -1,4 +1,12 @@
-# Testing v1.6.1
+# Testing v1.7.0 — Release candidate
+
+## v1.7.0 release candidate alignment - 26 November 2026
+
+The maintainer assigned the current development work to **v1.7.0**, with release-candidate status. The release combines saved-map switching and schedules per map with the adapter refactor, the generic Home Assistant area-cleaning adapter, preference-switch feedback and the fixes developed under the unpublished v1.6.1 baseline. The offline Dreame prototype remains outside the bundled release and under Unreleased in the changelog.
+
+Package metadata, lockfile, README, current adapter/contract documentation and generated bundle now identify v1.7.0. Release-candidate status is documented in the README/changelog/testing header; the package version is `1.7.0`. The build derives its version banner from `package.json`; the UI intentionally has no version badge. Earlier test entries retain the version used at the time. The companion integration has its own version and remains unchanged by this card version alignment.
+
+Validation passed: `npm run check` (via `npm.cmd` on Windows), **173 unit tests**, regenerated v1.7.0 bundle and standalone smoke checks. This preparation changes release metadata/documentation and the generated version banner only; earlier browser and maintainer live results remain recorded below.
 
 ## Map-scoped schedules - 26 November 2026
 

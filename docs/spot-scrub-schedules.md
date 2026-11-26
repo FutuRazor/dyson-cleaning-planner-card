@@ -1,6 +1,6 @@
 # Spot+Scrub robot schedules
 
-Card **v1.6.1** supports the schedule interface released in [UNsync3D Dyson Spot+Scrub v2.2.0](https://github.com/UNsync3D/ha-dyson-spot-scrub/releases/tag/v2.2.0) on 24 November 2026. Schedule writes are supported for Spot+Scrub AI / RB05; R1/R2 currently expose a read-only list. The card detects entities, services and model capabilities at runtime instead of relying on the version label alone.
+Card **v1.7.0** supports the schedule interface released in [UNsync3D Dyson Spot+Scrub v2.2.0](https://github.com/UNsync3D/ha-dyson-spot-scrub/releases/tag/v2.2.0) on 24 November 2026. Schedule writes are supported for Spot+Scrub AI / RB05; R1/R2 currently expose a read-only list. The card detects entities, services and model capabilities at runtime instead of relying on the version label alone.
 
 ## Interface and capability detection
 

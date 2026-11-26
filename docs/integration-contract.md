@@ -1,10 +1,12 @@
-# Integration contract — card v1.6.1
+# Integration contract — card v1.7.0 (release candidate)
 
 This contract describes the **Spot+Scrub adapter**. The experimental `hass_dyson` adapter has a separate [entity/action contract and setup guide](hass-dyson.md). `integration: auto` selects the configured vacuum's registry platform; initial discovery prefers Spot+Scrub. Explicit adapter choices are available in the visual editor.
 
-This document describes what the **current card actually reads and sends**, based on the Spot+Scrub adapter and its card/editor/map/zone consumers. Both adapters preserve their own contracts; see [adapter architecture](integration-adapter.md). It is a frontend contract, not a specification of Dyson's MQTT protocol or a guarantee about the integration's internal implementation.
+This document describes what the **current card actually reads and sends**, based on the Spot+Scrub adapter and its card/editor/map/zone consumers. The adapters preserve their own contracts; see [adapter architecture](integration-adapter.md). It is a frontend contract, not a specification of Dyson's MQTT protocol or a guarantee about the integration's internal implementation.
 
 Both Modern and Classic use this same contract. The documented minimum integration version is **UNsync3D Dyson Spot+Scrub v2.1.0**; schedule management requires **v2.2.0 or newer** and the corresponding optional entities/actions.
+
+Optional saved-map selection and synchronization per map require the companion [map-switching development branch](https://github.com/FutuRazor/ha-dyson-spot-scrub/tree/feat/map-switching). The header discovers the same robot's `<serial>_active_map` select and uses `select.select_option`, with matching select/vacuum readback. See the [map-selection interface](spot-scrub-maps.md#implemented-map-selection-interface) and [saved-map schedule contract](spot-scrub-schedules.md#saved-map-schedule-behavior).
 
 The core interface was reviewed on **21 November 2026**; the schedule contract was updated for integration v2.2.0 and card v1.6.0 on **24 November 2026**. This describes every integration-facing feature in the current source; it does not certify another integration or replace hardware verification. For a migration assessment, see [hass-dyson compatibility](hass-dyson-compatibility.md).
 
@@ -403,7 +405,7 @@ Cleaning solution displays Ready to use / Refill required; its Enabled/Disabled 
 - No global cleaning-mode select or original Vacuum Start button; there is no legacy start adapter fallback.
 - No separate docked/fault binary sensor, raw fault-code entity or room-area sensor is read by the current card.
 - No direct Dyson login, token storage, MQTT subscription, raw preference array or robot API call.
-- No standalone calendar rendering, map switching, cross-map room selection or estimated cleaning duration. Optional robot schedule management uses the [schedule contract](spot-scrub-schedules.md).
+- No standalone calendar rendering, cross-map room selection or estimated cleaning duration. Optional saved-map switching uses the [map-selection contract](spot-scrub-maps.md#implemented-map-selection-interface). Optional robot schedule management uses the [schedule contract](spot-scrub-schedules.md).
 - No confirmed per-room progress or integration-provided active-room list consumed for badges.
 - No background automation from the editor simulation. It only changes the current preview and suppresses action calls.
 
