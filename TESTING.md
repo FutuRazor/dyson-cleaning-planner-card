@@ -1,5 +1,19 @@
 # Testing v1.7.0 — Release candidate
 
+## Stationless Pause → Home troubleshooting - 26 November 2026
+
+The maintainer clarified that the stationless **cleaning → Pause → Home** search is also present in the original MyDyson app and should be documented as a known Dyson operating edge case, not pursued as an integration/card defect. Their confirmed recovery is to pause the robot and place it manually on the charging station. Troubleshooting in both READMEs and the map notes now records that sequence. This documentation-only clarification does not change commands, application code or release versions; application tests were not repeated.
+
+## Fresh rooms and stationless placement faults - 26 November 2026
+
+The maintainer confirmed the single-map button rule live: deleting B leaves one integration option and hides the Lovelace button; creating a new map restores it. They supplied `home-assistant_dyson_spot_scrub_2026-11-26T04-19-58.659Z.log` for four stationless runs (1/4 app, 2/3 Lovelace), new-room discovery and faults 2509/2510. All four Home actions use ABORT followed by `service.start_recharge`. Only runs 3/4 were paused first; those report temporary map ID `0` and the maintainer observed localization/station searching. Runs 1/2 parked at the placement point. The command logic remains unchanged.
+
+The log captures 2510 retained as USER_CONTINUE while INACTIVE_DISCHARGING and a subsequent successful MyDyson start. The integration previously allowed retained-continue retries only on the dock; it now allows the two known placement codes while confirmed idle off-dock, keeping their warning and normal active/fault/dock vetoes. Their messages and placement instructions are added to the integration dictionary. Existing card behavior opens the planner for an error with literal `ready_to_start: true`; no card-side code or readiness bypass is added.
+
+Room discovery now refreshes preferences and metadata after map lifecycle/catalogue changes, retries missing preferences on catalogue polls, and can create room entities from that map's metadata without inventing settings. An unresolved active list is explicitly empty instead of borrowing A's cached rooms. The log includes B's Essbereich preference at 05:08:39.715 before the first START at 05:08:54.345, but not mapping itself or an entity-registry snapshot, so the reported initial entity delay needs a new live creation check.
+
+Validation passed: all **449 integration tests**, including a sanitized four-run/fault fixture and nine new regressions for retained placement warnings, start readiness, normal backend room Start, metadata-only discovery, empty-map attributes and lifecycle refresh. The corrected readiness/discovery still need live acceptance. This changes the companion integration only; card source, bundle and v1.7.0 candidate version are unchanged.
+
 ## Saved-map button visibility - 26 November 2026
 
 The header now offers map switching only when at least two validated map options are reported. A list reduced to one map closes an open menu and removes the button; adding another map restores the button without reopening that menu. The integration select and map/schedule handling remain available independently of this presentation rule. Release-candidate version 1.7.0 is unchanged.

@@ -259,6 +259,17 @@ These options belong in the individual card's code editor, not in `configuration
 - Zone selection requires **Dyson integration v2.1.0 or newer** and a calibrated camera image. If the image cannot be verified, Start stays disabled. Reload the map; if the problem persists, confirm the required integration version is installed and the selected camera belongs to the same robot.
 - If controls are unavailable, check the corresponding device and entities in Home Assistant and confirm that the required integration version is installed.
 
+### Search continues after Pause → Home on a map without a station
+
+On a saved map without a charging station, **cleaning → Pause → Home** can leave the robot repeatedly trying to locate itself or find a station. This is known Dyson behavior also observed in the original MyDyson app.
+
+To end the search:
+
+1. Pause the robot.
+2. Place it manually on the charging station.
+
+The maintainer confirmed that this ends the search. See the [stationless-map troubleshooting notes](docs/spot-scrub-maps.md#stationless-home-troubleshooting) for the tested sequence.
+
 
 
 ## License

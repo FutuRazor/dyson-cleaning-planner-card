@@ -1,6 +1,6 @@
 # Spot+Scrub maps and map switching
 
-This document collects the map-lifecycle findings from maintainer tests on 25/26 November 2026, the captured commands, and the initial Home Assistant map-selection implementation. Spot+Scrub is the priority adapter for this work. The implementation targets the maintainer's [integration development branch](https://github.com/FutuRazor/ha-dyson-spot-scrub/tree/feat/map-switching); live validation of the new HA/card controls is still required.
+This document collects the map-lifecycle findings from maintainer tests on 25/26 November 2026, the captured commands, and the Home Assistant map-selection implementation. Spot+Scrub is the priority adapter for this work. The implementation targets the maintainer's [integration development branch](https://github.com/FutuRazor/ha-dyson-spot-scrub/tree/feat/map-switching). Map selection, schedule availability and the single-map button rule passed maintainer live checks; later corrections and remaining checks are identified below.
 
 ## Intended feature scope
 
@@ -28,6 +28,7 @@ Implementation order:
 | L1 | `home-assistant_dyson_spot_scrub_2026-11-25T23-11-32.051Z.log` | Mapping B, renaming, repeated A/B switches, cleaning, rejected inactive-map Kitchen requests, and the final Kitchen start on A |
 | L2 | `home-assistant_dyson_spot_scrub_2026-11-26T00-01-47.187Z.log` | Selecting B and deleting it while selected, followed by automatic fallback to A |
 | L3 | `home-assistant_dyson_spot_scrub_2026-11-26T01-46-41.347Z.log` | Live map-select errors followed by successful switches/room starts, and Home from B without a station |
+| L4 | `home-assistant_dyson_spot_scrub_2026-11-26T04-19-58.659Z.log` | Four stationless runs with direct versus paused Home, placement faults 2509/2510 and room discovery on a newly created B |
 
 All times in this document use the logs' explicit **UTC+01:00** offset. In L1, 23:xx is 25 November and 00:xx is 26 November. L2's relevant events occur at 01:xx and L3's at 02:xx on 26 November. The filenames use UTC.
 
@@ -315,6 +316,34 @@ The initial implementation adds these interfaces without changing either release
 The implementation uses the captured JDM list for the selector and leaves the existing REST room-inventory path intact. Selecting a map waits for an acknowledgement/result and matching robot telemetry, each with a 15-second deadline. Both valid JDM map-property reports and legacy map reports complete the same confirmation path. No optimistic map state or automatic retry is used. Existing readiness and start locks prevent a new clean from racing the switch. The card also locks its planner during a pending switch and requires local room drafts to be discarded first.
 
 Deleting selected B changes the active ID in the capture. Deleting an inactive map while keeping A selected is not an available test through the observed MyDyson UI. Periodic reconciliation covers changes missed while HA was disconnected and inventory changes that do not otherwise trigger an active-map update.
+
+## Direct versus paused Home, placement faults and fresh rooms (L4)
+
+The maintainer confirmed that deleting B leaves one integration option and hides the card's map button, and creating another map restores the button. New B in L4 is ID `1795665600`, with room Essbereich (`10`). L4 already contains that room's preference at 05:08:39.715, before the first START at 05:08:54.345; mapping and registry creation are not captured, so the reported delay until a first clean cannot be timed precisely from this export.
+
+The integration now refreshes room preferences/inventory after mapping completion, rename/map-change events and changed map catalogues. Catalogue polls also retry when preferences are missing. Metadata can establish room names/entities while cleaning settings remain unavailable until actually reported. Active-map discovery does not fall back to another map's globally cached names, and the vacuum publishes `rooms: []` while unresolved so Lovelace does not retain A's list.
+
+| Run | Start origin (maintainer report) | Start | Pause | Home | Maintainer observation |
+| --- | --- | --- | --- | --- | --- |
+| 1 | MyDyson | 05:08:54 | None | 05:09:57 | Parked at placement point |
+| 2 | Lovelace | 05:10:40 | None | 05:11:18 | Parked at placement point |
+| 3 | Lovelace | 05:11:38 | 05:12:17 | 05:12:26 | Searched/localized without a station |
+| 4 | MyDyson | 05:17:15 | 05:18:19 | 05:18:29 | Searched/localized without a station |
+
+All four use ABORT followed by `service.start_recharge`. App ABORT includes additional state/mode fields; HA uses its existing minimal payload. Runs 1/2 become inactive discharging at 05:10:08 / 05:11:26 without a map-ID loss. Runs 3/4 report map ID `0` at 05:12:36.229 / 05:18:36.865 and later restore B. The different outcome correlates with a prior pause in these runs, not the start origin; it does not establish Dyson's internal navigation rule. No Home/Pause/Stop command changes are made.
+
+Fault 2510 remains USER_CONTINUE while inactive off-dock, followed by a successful app start at 05:17:15.898. Fault 2509 appears at 05:19:04.717 while inactive charging. The app meanings supplied by the maintainer are lifted / not level. The integration now supplies descriptions and permits these retained placement warnings to coexist with a new Start request in confirmed idle off-dock states. It preserves fault visibility and other state/severity checks. The card's existing `error` plus `ready_to_start: true` behavior opens the room planner. A sanitized integration fixture and all 449 offline tests pass; live acceptance of these new discovery/readiness changes remains pending.
+
+## Stationless Home troubleshooting
+
+**Known Dyson operating edge case:** cleaning on a map without a station, followed by **Pause → Home**, can leave the robot repeatedly searching for its location or a charging station. The same behavior was observed in MyDyson. The maintainer classifies this as an operating edge case to document, rather than an integration/card defect requiring different navigation commands.
+
+To end the continuing search:
+
+1. Pause the robot.
+2. Place it manually on the charging station.
+
+The maintainer confirmed that manual docking after pausing ends the search and restores normal operation. Pause/Home/Stop commands remain unchanged.
 
 ## Remaining live checks
 
