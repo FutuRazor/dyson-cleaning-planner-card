@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Replace schedule switches with vertically centered room-style checkmark circles and full-height selection targets. Open the existing Edit/Delete menu from the remaining card area, with the three-dot icon at the far right, and show pending confirmation inside the circle.
 - Add an offline Dreame v2.0.3 contract prototype, source-shaped fixtures and an executable delayed-save-rejection demonstration. Validate map-qualified room identity, exact native profile values and companion-value preservation; do not equate optimistic HA updates or service completion with robot confirmation. The prototype is not bundled or exposed as a supported adapter.
 - Correct optimistic humidity-control publication in the offline Dreame fixture and derive its self-repair veto from published detailed state/status, including water checks reported as docked in HA. These corrections do not register or bundle the prototype.
 

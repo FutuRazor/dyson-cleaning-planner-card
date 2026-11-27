@@ -38,6 +38,7 @@ try {
     assert.equal(await card.locator('.schedule-row').count(),4);
     assert.equal(await card.locator('[data-schedule-id="202"] .schedule-day.selected').count(),4);
     assert.equal(await card.locator('[data-schedule-id="201"] .schedule-day.selected').count(),1);
+    assert.deepEqual(await card.locator('.selection-circle').allTextContents(),['','✓','',''],'enabled schedules use a checkmark without adapter-specific order numbers');
     const colors=await card.evaluate(el=>{
       const root=el.shadowRoot;
       const chipColor=id=>root.querySelector(`[data-schedule-id="${id}"] .schedule-room-chip`).style.getPropertyValue('--room-color');
@@ -80,10 +81,10 @@ try {
           const range=document.createRange();range.selectNodeContents(chip);
           return range.getBoundingClientRect().width>chip.clientWidth+.5;
         });
-        const menu=row.querySelector('[data-schedule-menu]').getBoundingClientRect();
+        const menu=row.querySelector('.schedule-menu-trigger svg').getBoundingClientRect();
         return {inline:Math.abs(time.y+time.height/2-days.y-days.height/2)<1,chip:widths[0],
           uniform:Math.max(...widths)-Math.min(...widths)<1,clipped,font:getComputedStyle(chips[0]).fontSize,
-          menuInset:row.getBoundingClientRect().right-menu.right,gap:getComputedStyle(row.querySelector('.schedule-controls')).gap};
+          menuInset:row.getBoundingClientRect().right-menu.right};
       }));
     }
     const wrap=sizes.findIndex(size=>!size.inline);
@@ -94,7 +95,7 @@ try {
     assert.ok(sizes[wrap].chip>sizes.at(-1).chip+5,'side space shrinks again as the stacked layout narrows');
     assert.ok(sizes.every(size=>size.uniform && !size.clipped),'all seven equally wide chips keep readable labels');
     assert.equal(new Set(sizes.map(size=>size.font)).size,1,'resizing adjusts space rather than label font size');
-    assert.ok(sizes.every(size=>size.menuInset<=15.1 && size.menuInset>=8 && size.gap==='1px'),'controls sit farther right and closer together');
+    assert.ok(sizes.every(size=>Math.abs(size.menuInset-5)<.1),'the three-dot icon stays at the right edge');
   }
   assert.deepEqual(errors,[]);
   console.log('Schedule design: reference-shaped cards, selected weekday states, stable room colors, responsive light/dark themes and outside menu dismissal passed.');

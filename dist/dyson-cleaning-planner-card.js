@@ -3888,8 +3888,8 @@ const scheduleStyles = `
 .room-secondary-actions button{min-width:0}.schedule-create ha-icon{--mdc-icon-size:22px}
 .schedules{padding:8px var(--dp-padding,24px) 18px;container:dyson-schedules / inline-size}
 .schedule-countdown{margin:0 0 6px;font-size:12px;line-height:1.4;color:var(--dp-muted);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.schedule-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center;padding:18px 14px 18px 20px;border:1px solid var(--dp-line);border-radius:18px;background:var(--dp-modern-surface,var(--dp-soft));flex-shrink:0;min-width:0;box-sizing:border-box;container:dyson-schedule-row / inline-size}
-.schedule-copy{min-width:0;container:dyson-schedule-copy / inline-size}.schedule-main{display:flex;align-items:center;gap:16px;min-width:0}
+.schedule-row{display:grid;grid-template-columns:minmax(44px,15%) minmax(0,1fr);border:1px solid var(--dp-line);border-radius:18px;background:var(--dp-modern-surface,var(--dp-soft));flex-shrink:0;min-width:0;box-sizing:border-box}
+.schedule-copy{display:block;min-width:0;container:dyson-schedule-copy / inline-size}.schedule-main{display:flex;align-items:center;gap:16px;min-width:0}
 .schedule-time-value{font-size:30px;font-weight:700;line-height:1.2;font-variant-numeric:tabular-nums;letter-spacing:-.6px;white-space:nowrap;padding-right:16px;border-right:1px solid var(--dp-line)}
 .schedule-weekdays{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;flex:1;width:100%;max-width:316px;min-width:0}
 .schedule-day{display:flex;align-items:center;justify-content:center;min-height:32px;min-width:0;padding:2px;border:1px solid var(--dp-line);border-radius:8px;font-size:13px;white-space:nowrap;color:var(--dp-muted);box-sizing:border-box}
@@ -3899,24 +3899,23 @@ const scheduleStyles = `
 .schedule-room-chip{display:inline-flex;align-items:center;gap:7px;max-width:100%;padding:4px 9px;border:1px solid var(--dp-line);border-radius:9px;background:color-mix(in srgb,var(--dp-muted) 8%,transparent);color:var(--dp-text);box-sizing:border-box}
 .schedule-room-chip::before{content:'';width:9px;height:9px;flex:none;border-radius:50%;background:var(--room-color)}
 .schedule-room-chip span{min-width:0;overflow-wrap:anywhere}
-.schedule-controls{display:flex;align-items:center;gap:1px;flex-shrink:0}.schedule-toggle-target{position:relative;display:flex;align-items:center;justify-content:center;min-width:48px;min-height:44px;cursor:pointer}
-.schedule-row .schedule-toggle-target.pending input[type=checkbox]{opacity:0}.schedule-toggle-spinner{position:absolute;width:19px;height:19px;border:2px solid var(--dp-line);border-top-color:var(--dp-accent);border-radius:50%;animation:schedule-spin .7s linear infinite;pointer-events:none}
+.schedule-toggle-target{position:relative;display:flex;align-items:center;justify-content:center;align-self:stretch;min-width:44px;min-height:44px;cursor:pointer}
+.schedule-toggle-target input[type=checkbox]{position:absolute;width:1px;height:1px;margin:0;opacity:0}
+.schedule-toggle-target input:checked+.selection-circle{background:${ROOM_COLORS[0]};border-color:${ROOM_COLORS[0]};color:#102026}
+.schedule-toggle-target input:focus-visible+.selection-circle{outline:2px solid var(--dp-accent);outline-offset:4px}
+.schedule-toggle-target:has(input:disabled){cursor:default}.schedule-toggle-target input:disabled+.selection-circle{opacity:.5}
+.schedule-toggle-spinner{position:absolute;width:19px;height:19px;border:2px solid var(--dp-line);border-top-color:var(--dp-accent);border-radius:50%;animation:schedule-spin .7s linear infinite;pointer-events:none}
 @keyframes schedule-spin{to{transform:rotate(360deg)}}@media(prefers-reduced-motion:reduce){.schedule-toggle-spinner{animation:none;border-right-color:var(--dp-accent)}}
-.schedule-row .schedule-menu-trigger{display:flex;align-items:center;justify-content:center;width:36px;min-height:44px;padding:6px;border:0;background:transparent}
+.schedule-row .schedule-menu-trigger{display:grid;grid-template-columns:minmax(0,1fr) 24px;align-items:center;gap:12px;min-width:0;min-height:44px;padding:18px 4px 18px 0;border:0;border-radius:0;border-top-right-radius:inherit;border-bottom-right-radius:inherit;background:transparent;text-align:left;white-space:normal}
 .schedule-menu-trigger svg{display:block;width:24px;height:24px;fill:currentColor}
 .schedule-list{display:flex;flex-direction:column;gap:12px;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
 .schedule-menu-overlay{position:absolute;inset:0;z-index:12;border-radius:inherit}
 .schedule-menu-panel{position:absolute;min-width:160px;max-width:calc(100% - 16px);padding:5px;background:var(--dp-modern-surface,var(--dp-bg));border:1px solid var(--dp-line);border-radius:12px;box-shadow:0 5px 20px #0004;box-sizing:border-box}
 .schedule-menu-panel button{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;padding:8px 12px;border:0;border-radius:7px;background:transparent;text-align:left}
 .schedule-menu-panel button:hover,.schedule-menu-panel button:focus-visible{background:var(--dp-soft)}
-@container dyson-schedules (max-width:600px){.schedule-row{padding:14px 8px 14px 14px;gap:8px;border-radius:15px}.schedule-main{gap:10px}.schedule-time-value{font-size:25px;padding-right:12px}.schedule-room-selection{margin-top:10px;font-size:12px}.schedule-room-chip{padding:4px 7px}}
+@container dyson-schedules (max-width:600px){.schedule-row{border-radius:15px}.schedule-row .schedule-menu-trigger{padding-top:14px;padding-bottom:14px;gap:8px}.schedule-main{gap:10px}.schedule-time-value{font-size:25px;padding-right:12px}.schedule-room-selection{margin-top:10px;font-size:12px}.schedule-room-chip{padding:4px 7px}}
 @container dyson-schedule-copy (max-width:296px){.schedule-main{display:grid}.schedule-time-value{padding:0;border:0}.schedule-weekdays{gap:4px}}
-@container dyson-schedule-row (max-width:389px){.schedule-controls{align-self:start;margin-top:-5px}}
 .schedule-delete{color:var(--error-color,#b3261e)}.schedule-dialog .schedule-delete-confirm{background:var(--error-color,#b3261e);border-color:transparent;color:var(--text-primary-color,#fff)}
-.schedule-row input[type=checkbox]{appearance:none;width:42px;height:26px;margin:0;position:relative;border:1px solid var(--dp-line);border-radius:20px;background:var(--dp-soft);cursor:pointer}
-.schedule-row input[type=checkbox]::before{content:'';position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:50%;background:var(--dp-muted)}
-.schedule-row input[type=checkbox]:checked{background:var(--dp-accent);border-color:var(--dp-accent)}.schedule-row input[type=checkbox]:checked::before{transform:translateX(16px);background:var(--text-primary-color,#fff)}
-.schedule-row input[type=checkbox]:disabled{opacity:.45;cursor:default}
 .schedule-note{font-size:13px;line-height:1.5;overflow-wrap:anywhere}.schedule-warning{padding:10px;border:1px solid var(--warning-color,#b87900);border-radius:10px;background:var(--dp-soft)}
 .schedule-overlay{position:absolute;inset:0;z-index:20;background:#0007;padding:12px;display:flex;align-items:flex-start;justify-content:center;overflow:auto;border-radius:var(--ha-card-border-radius,12px)}
 .schedule-dialog{background:var(--dp-modern-surface,var(--dp-bg));border:1px solid var(--dp-line);border-radius:14px;padding:16px;width:100%;max-width:480px;box-sizing:border-box}
@@ -3989,19 +3988,19 @@ const scheduleCardMethods = {
   scheduleWeekdaysHtml(schedule) {
     const short = new Intl.DateTimeFormat(this.language,{weekday:'short',timeZone:'UTC'});
     const long = new Intl.DateTimeFormat(this.language,{weekday:'long',timeZone:'UTC'});
-    return `<div class="schedule-weekdays" role="img" aria-label="${escapeHtml(this.scheduleDaysText(schedule.days))}">${weekdays.map((day,index) => {
+    return `<span class="schedule-weekdays" role="img" aria-label="${escapeHtml(this.scheduleDaysText(schedule.days))}">${weekdays.map((day,index) => {
       const date = new Date(Date.UTC(2024,0,1+index));
       return `<span class="schedule-day ${schedule.days.includes(day) ? 'selected' : ''}" aria-hidden="true" title="${escapeHtml(long.format(date))}">${escapeHtml(short.format(date).replace(/\.$/,'').slice(0,2))}</span>`;
-    }).join('')}</div>`;
+    }).join('')}</span>`;
   },
   scheduleRoomChipsHtml(schedule, state) {
-    if (!state.roomSelectionKnown) return `<p class="schedule-room-selection">${this.ht('Selected rooms are not reported by this integration. Check them in MyDyson.')}</p>`;
+    if (!state.roomSelectionKnown) return `<span class="schedule-room-selection">${this.ht('Selected rooms are not reported by this integration. Check them in MyDyson.')}</span>`;
     const rooms = this.model.rooms.filter(room => !room.excluded);
-    return `<ul class="schedule-room-selection">${schedule.rooms.map((name,index) => {
+    return `<span class="schedule-room-selection" role="list">${schedule.rooms.map((name,index) => {
       const match = rooms.findIndex(room => schedule.roomIds?.[index] ? room.roomId === schedule.roomIds[index] : room.name === name);
       const rank = match >= 0 ? match : [...name].reduce((sum,char) => sum + char.codePointAt(0),0);
-      return `<li class="schedule-room-chip" style="--room-color:${ROOM_COLORS[rank % ROOM_COLORS.length]}"><span>${escapeHtml(name)}</span></li>`;
-    }).join('')}</ul>`;
+      return `<span class="schedule-room-chip" role="listitem" style="--room-color:${ROOM_COLORS[rank % ROOM_COLORS.length]}"><span>${escapeHtml(name)}</span></span>`;
+    }).join('')}</span>`;
   },
   scheduleMenuHtml(state) {
     if (this.scheduleMenu == null || this.scheduleDialog || this.consumablesOpen || !state.writable
@@ -4468,9 +4467,8 @@ const scheduleCardMethods = {
     const previousHeight = state.schedules.length > 4 ? previousList?.style.maxHeight ?? '' : '';
     const menu = this.scheduleMenuHtml(state);
     const rows = state.schedules.slice().sort((a,b) => a.time.localeCompare(b.time) || a.id-b.id).map(schedule => `<section class="schedule-row ${schedule.enabled ? 'enabled' : ''}" data-schedule-id="${schedule.id}">
-      <div class="schedule-copy"><div class="schedule-main"><time class="schedule-time-value" datetime="${escapeHtml(schedule.time)}">${escapeHtml(schedule.time)}</time>${this.scheduleWeekdaysHtml(schedule)}</div>${this.scheduleRoomChipsHtml(schedule,state)}</div>
-      <div class="schedule-controls"><label class="schedule-toggle-target ${pendingToggle === schedule.id ? 'pending' : ''}"><input type="checkbox" role="switch" data-schedule-toggle="${schedule.id}" data-focus="schedule-toggle-${schedule.id}" ${schedule.enabled ? 'checked' : ''} ${disabled ? 'disabled' : ''} aria-busy="${pendingToggle === schedule.id}" aria-label="${this.ht('Enable schedule {time} ({days})', {time:schedule.time, days:this.scheduleDaysText(schedule.days)})}">${pendingToggle === schedule.id ? `<span class="schedule-toggle-spinner" role="status" aria-label="${this.ht('Updating schedule …')}"></span>` : ''}</label>
-      <button class="schedule-menu-trigger" id="schedule-menu-${schedule.id}" data-schedule-menu="${schedule.id}" data-focus="schedule-menu-${schedule.id}" aria-haspopup="menu" aria-expanded="${this.scheduleMenu === schedule.id}" aria-controls="schedule-actions-${schedule.id}" ${disabled ? 'disabled' : ''} aria-label="${this.ht('Schedule actions {time} ({days})', {time:schedule.time, days:this.scheduleDaysText(schedule.days)})}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg></button></div></section>`).join('');
+      <label class="schedule-toggle-target ${pendingToggle === schedule.id ? 'pending' : ''}"><input type="checkbox" data-schedule-toggle="${schedule.id}" data-focus="schedule-toggle-${schedule.id}" ${schedule.enabled ? 'checked' : ''} ${disabled ? 'disabled' : ''} aria-busy="${pendingToggle === schedule.id}" aria-label="${this.ht('Enable schedule {time} ({days})', {time:schedule.time, days:this.scheduleDaysText(schedule.days)})}"><span class="selection-circle" aria-hidden="true">${pendingToggle === schedule.id ? '' : schedule.enabled ? '✓' : ''}</span>${pendingToggle === schedule.id ? `<span class="schedule-toggle-spinner" role="status" aria-label="${this.ht('Updating schedule …')}"></span>` : ''}</label>
+      <button class="schedule-menu-trigger" id="schedule-menu-${schedule.id}" data-schedule-menu="${schedule.id}" data-focus="schedule-menu-${schedule.id}" aria-haspopup="menu" aria-expanded="${this.scheduleMenu === schedule.id}" aria-controls="schedule-actions-${schedule.id}" ${disabled ? 'disabled' : ''} aria-label="${this.ht('Schedule actions {time} ({days})', {time:schedule.time, days:this.scheduleDaysText(schedule.days)})}"><span class="schedule-copy"><span class="schedule-main"><time class="schedule-time-value" datetime="${escapeHtml(schedule.time)}">${escapeHtml(schedule.time)}</time>${this.scheduleWeekdaysHtml(schedule)}</span>${this.scheduleRoomChipsHtml(schedule,state)}</span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg></button></section>`).join('');
     this.paint(`<style>${styles}</style><ha-card><div class="planner-content">${this.headerHtml()}${this.statusHtml()}${this.planningTabsHtml()}<div id="planning-panel-rooms" role="tabpanel" aria-labelledby="planning-tab-rooms" hidden></div>${this.supportsZone ? '<div id="planning-panel-zones" role="tabpanel" aria-labelledby="planning-tab-zones" hidden></div>' : ''}<section id="planning-panel-schedules" role="tabpanel" aria-labelledby="planning-tab-schedules" class="schedules">
       ${!state.available ? `<p class="schedule-note">${this.ht('Schedules are unavailable. Check the robot connection and integration.')}</p>` : ''}
       ${state.inSync === false ? `<p class="schedule-note schedule-warning">${this.ht('The schedule list may be incomplete. Turn each schedule off and on in MyDyson while the integration is connected.')}</p>` : ''}

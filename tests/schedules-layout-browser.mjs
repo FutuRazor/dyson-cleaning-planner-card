@@ -31,7 +31,9 @@ try {
     const box=node=>{const r=node.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height,right:r.right,bottom:r.bottom};};
     return {card:box(root.querySelector('ha-card')),list:box(list),scrollHeight:list.scrollHeight,clientHeight:list.clientHeight,
       scrollTop:list.scrollTop,header:box(root.querySelector('.planning-tabs')),firstFour:rows.slice(0,4).reduce((height,row)=>height+row.getBoundingClientRect().height,0)+3*parseFloat(getComputedStyle(list).rowGap),
-      controls:rows.map(row=>({menu:box(row.querySelector('[data-schedule-menu]')),toggle:box(row.querySelector('[data-schedule-toggle]'))})),
+      controls:rows.map(row=>({row:box(row),menu:box(row.querySelector('[data-schedule-menu]')),
+        target:box(row.querySelector('.schedule-toggle-target')),circle:box(row.querySelector('.selection-circle')),
+        dots:box(row.querySelector('.schedule-menu-trigger svg'))})),
       overflow:rows.some(row=>row.scrollWidth>row.clientWidth+1),days:rows.map(row=>row.querySelectorAll('.schedule-day').length)};
   });
   for(const theme of ['modern','classic']) for(const width of [375,900]) {
@@ -48,7 +50,11 @@ try {
       assert.ok(Math.abs(measured.card.h-four.card.h)<=1,JSON.stringify({theme,width,four:four.card.h,current:measured.card.h}));
       assert.ok(Math.abs(measured.list.h-measured.firstFour)<=1,'viewport fits the first four schedules');
       assert.ok(measured.scrollHeight>measured.clientHeight,'only the schedule list overflows');
-      assert.ok(measured.controls.every(({menu,toggle})=>toggle.right<=menu.x && Math.abs(toggle.y+toggle.h/2-(menu.y+menu.h/2))<1),'switch and menu are aligned');
+      assert.ok(measured.controls.every(({row,menu,target,circle,dots})=>target.right<=menu.x
+        && target.w>=44 && Math.abs(target.h-row.h+2)<1
+        && Math.abs(circle.y+circle.h/2-(row.y+row.h/2))<1
+        && Math.abs(dots.y+dots.h/2-(row.y+row.h/2))<1
+        && row.right-dots.right<=5.1),'circle and dots are centered, the toggle target fills the row height and dots sit at the right edge');
       assert.equal(measured.overflow,false,'schedule cards fit without horizontal overflow');
       assert.ok(measured.days.every(count=>count===7),'all seven weekday badges are shown');
     }
@@ -92,5 +98,5 @@ try {
   await mkdir('artifacts/schedules',{recursive:true});
   await card.screenshot({path:'artifacts/schedules/scroll-mobile.png'});
   assert.deepEqual(errors,[]);
-  console.log('Schedule layout: cards, weekday badges, switch/menu alignment, bounded menus, keyboard, four-row limit, scroll preservation and resizing passed in both themes at mobile/desktop widths.');
+  console.log('Schedule layout: centered circles/dots, full-height toggle targets, weekday badges, bounded menus, keyboard, four-row limit, scroll preservation and resizing passed in both themes at mobile/desktop widths.');
 } finally {await browser?.close();server.close();}

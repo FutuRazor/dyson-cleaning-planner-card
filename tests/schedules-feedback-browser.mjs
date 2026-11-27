@@ -37,16 +37,23 @@ try {
     const idle=()=>page.waitForFunction(()=>!demo.card.scheduleSending);
     const waiting=()=>page.waitForFunction(()=>!!demo.card._scheduleConfirmation);
     const action=async(id,mode)=>{await card.locator(`[data-schedule-menu="${id}"]`).click();await card.locator(`[data-schedule-${mode}="${id}"]`).click();};
-    const toggle=()=>card.locator('[data-schedule-id="102"] .schedule-toggle-target').click();
+    const toggle=()=>card.locator('[data-schedule-id="102"] .schedule-toggle-target').click({position:{x:4,y:4}});
     await card.locator('#planning-tab-schedules').click();
     await toggle();await waiting();
     assert.equal(await card.locator('.schedule-count').innerText(),'1','pending toggle does not change the active count');
     assert.equal(await card.locator('.schedule-toggle-spinner').isVisible(),true);
+    assert.equal(await card.locator('.schedule-menu-panel').count(),0,'blank space around the circle only toggles the schedule');
+    assert.equal(await card.locator('[data-schedule-id="102"] .selection-circle').innerText(),'','the spinner replaces the marker while awaiting HA');
+    assert.equal(await card.locator('.schedule-toggle-spinner').evaluate(spinner=>{
+      const s=spinner.getBoundingClientRect(),c=spinner.parentElement.querySelector('.selection-circle').getBoundingClientRect();
+      return s.left>=c.left && s.right<=c.right && s.top>=c.top && s.bottom<=c.bottom;
+    }),true,'the pending spinner fits inside the selection circle');
     assert.equal(await card.locator('[data-schedule-toggle="102"]').getAttribute('aria-busy'),'true');
-    assert.equal(await card.locator('[data-schedule-toggle="102"]').isChecked(),false,'switch remains at the HA-reported state');
+    assert.equal(await card.locator('[data-schedule-toggle="102"]').isChecked(),false,'checkbox remains at the HA-reported state');
     assert.equal(await header.isHidden(),true,'toggle progress has no header message');
     await page.evaluate(()=>applyPending());await idle();
     assert.equal(await card.locator('[data-schedule-toggle="102"]').isChecked(),true);
+    assert.equal(await card.locator('[data-schedule-id="102"] .selection-circle').innerText(),'✓');
     assert.equal(await card.locator('.schedule-count').innerText(),'2','confirmed state updates the tab count');
     assert.equal(await card.locator('.schedule-toggle-spinner').count(),0);
     assert.equal(await header.isHidden(),true,'toggle success finishes silently');

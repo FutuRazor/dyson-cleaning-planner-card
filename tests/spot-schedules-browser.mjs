@@ -53,7 +53,7 @@ try {
     }
     assert.equal(await card.locator('.schedule-row').count(),2);
     assert.equal(await card.locator('.schedule-room-selection').first().innerText(),'Flur');
-    assert.deepEqual(await card.locator('.schedule-room-selection').nth(1).locator('li').allTextContents(),['Wohnzimmer','Küche']);
+    assert.deepEqual(await card.locator('.schedule-room-selection').nth(1).locator('.schedule-room-chip').allTextContents(),['Wohnzimmer','Küche']);
     await scheduleAction(101,'edit');
     await card.locator('[data-schedule-room="10"][data-schedule-room-action="expand"]').click();
     assert.equal(await card.locator('[data-schedule-room="10"][data-schedule-room-setting="cleaning_mode"]').inputValue(),'Vacuum and Mop','saved mode differs from general preferences');
@@ -91,7 +91,7 @@ try {
   assert.equal(await page.evaluate(()=>demo.card.settingDraft['11'].cleaning_mode),'Mop');
   await card.locator('#planning-tab-schedules').click();
   assert.deepEqual(await card.locator('[data-schedule-id="103"] .schedule-room-chip').allTextContents(),['Küche','Wohnzimmer']);
-  await card.locator('[data-schedule-toggle="102"]').check();await page.waitForFunction(()=>!demo.card.scheduleSending);
+  await card.locator('[data-schedule-id="102"] .schedule-toggle-target').click();await page.waitForFunction(()=>!demo.card.scheduleSending);
   assert.deepEqual(await page.evaluate(()=>spot.calls.at(-1).data),{entity_id:await page.evaluate(()=>spot.entity),schedule_id:102,enabled:true});
   assert.equal(await card.locator('.header-notice').isHidden(),true,'switch updates finish silently');
   assert.equal(await card.locator('.schedules [role="status"]').count(),0,'action status uses the header');

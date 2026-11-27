@@ -1,11 +1,12 @@
 # Testing v1.7.2
 
-## Current validation status - 27 November 2026
+## Current validation status - 28 November 2026
 
-Current card version is **1.7.2** on `fix/hass-dyson-adapter`. Latest full card checks: **214 unit tests**, rebuilt bundle and smoke check. The unchanged companion integration's latest full suite passed **449 tests**. Browser coverage and maintainer observations are recorded separately below.
+Current card version is **1.7.2** on `fix/schedules_checkmark`. Latest full card checks: **214 unit tests**, rebuilt bundle and smoke check. The unchanged companion integration's latest full suite passed **449 tests**. Browser coverage and maintainer observations are recorded separately below.
 
 | Area | Current evidence/status |
 | --- | --- |
+| Schedule checkmark circles and card menu targets | Unit/browser checks passed; appearance and operation confirmed live on a laptop and iPhone 15 Pro Max |
 | Map selection in HA/Lovelace and MyDyson | Maintainer live confirmation in both directions |
 | Single-map button visibility | Deleting B hides the button; creating another map restores it, confirmed live |
 | Schedules and availability per map | Confirmed live in both integration and card |
@@ -26,6 +27,16 @@ Current card version is **1.7.2** on `fix/hass-dyson-adapter`. Latest full card 
 | Stationless cleaning → Pause → Home search | Known Dyson behavior also observed in MyDyson; pause and manual docking recovery confirmed |
 
 Additional integration/map checks are listed in [the map notes](docs/spot-scrub-maps.md#remaining-live-checks). Entries below are chronological records and retain their original versions/test counts; an old pending statement does not supersede a later confirmation.
+
+## Schedule checkmark live acceptance - 28 November 2026
+
+The maintainer confirmed that the updated schedule cards look good and work in live testing on a laptop and an iPhone 15 Pro Max. This records live acceptance of the schedule UI update. Version remains **1.7.2**; the automated validation recorded below is unchanged.
+
+## Schedule checkmark circles and card menu targets - 27 November 2026
+
+The shared schedule overview uses the room planner's circle appearance with a checkmark for enabled entries and an empty circle for disabled entries, without order numbers. The left selection target fills the row height, including blank space around its vertically centered circle. The remaining card area is one menu button containing the time, weekday badges, room chips and a vertically centered three-dot icon at the far right. Pending confirmation shows the existing spinner inside the circle and retains the HA-reported enabled state. Version remains **1.7.2**.
+
+Validation passed: `npm run check` with **214 unit tests**, rebuilt bundle and smoke check. Six Chromium browser suites passed: `schedules-layout-browser`, `schedules-design-browser`, `schedules-menu-browser`, `schedules-feedback-browser`, `schedules-browser` and `spot-schedules-browser`. Coverage includes both themes and mobile/desktop widths, light/dark appearance and continuous resizing, full-height toggle targets, clicks on content/chips/dots and blank space, mouse/touch menu navigation, centered pending indicators, authoritative confirmation, failures/timeouts, scrolling and existing create/edit/toggle/delete flows for both supported schedule adapters. Mobile/desktop screenshots were visually reviewed. These are local HA simulations; live acceptance remains pending.
 
 ## Initial hass-dyson multi-map live check - 27 November 2026
 

@@ -7,7 +7,7 @@ await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
 let browser;
 try {
   browser=await chromium.launch({headless:true,...(process.env.BROWSER_CHANNEL?{channel:process.env.BROWSER_CHANNEL}:{})});
-  for(const touch of [false,true]) {
+  for(const theme of ['modern','classic']) for(const touch of [false,true]) {
     const context=await browser.newContext({viewport:{width:touch?390:900,height:1000},hasTouch:touch,isMobile:touch});
     const page=await context.newPage(),errors=[];
     page.on('pageerror',error=>errors.push(error.message));
@@ -20,14 +20,23 @@ try {
       });
     });
     await page.goto(`http://127.0.0.1:${server.address().port}`);
-    await page.evaluate(async()=>{
+    await page.evaluate(async theme=>{
       const {spotSchedulesFixture}=await import('/tests/spot-schedules-fixture.mjs');
       window.sched=spotSchedulesFixture();
-      demo.card.setConfig({...sched.config,language:'en',show_camera:false});demo.card.hass={...sched.hass};await demo.card.loadRegistry();
-    });
+      demo.card.setConfig({...sched.config,theme,language:'en',show_camera:false});demo.card.hass={...sched.hass};await demo.card.loadRegistry();
+    },theme);
     const card=page.locator('#card');
     const activate=async locator=>touch?locator.tap():locator.click();
     await activate(card.locator('#planning-tab-schedules'));
+    for(const part of ['.schedule-time-value','.schedule-weekdays','.schedule-room-selection','svg']) {
+      await activate(card.locator(`[data-schedule-menu="101"] ${part}`));
+      assert.equal(await card.locator('.schedule-menu-panel').isVisible(),true,`${part} opens the existing menu`);
+      await page.keyboard.press('Escape');
+    }
+    const trigger=card.locator('[data-schedule-menu="101"]');
+    await (touch ? trigger.tap({position:{x:2,y:2}}) : trigger.click({position:{x:2,y:2}}));
+    assert.equal(await card.locator('.schedule-menu-panel').isVisible(),true,'blank space inside the content button opens the menu');
+    await page.keyboard.press('Escape');
     for(const id of [101,102,101]) {
       await activate(card.locator(`[data-schedule-menu="${id}"]`));
       await card.locator('.schedule-menu-panel').waitFor({state:'visible',timeout:3000});
@@ -46,5 +55,5 @@ try {
     assert.deepEqual(errors,[]);
     await context.close();
   }
-  console.log('Schedule menus open repeatedly with asynchronous HA card rendering for mouse and touch.');
+  console.log('Schedule content, room chips, blank space and three dots open the existing menu in both themes for mouse and touch, with asynchronous HA card rendering.');
 } finally {await browser?.close();server.close();}

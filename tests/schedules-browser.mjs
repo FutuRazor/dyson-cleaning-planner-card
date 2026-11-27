@@ -78,7 +78,7 @@ try {
   assert.equal(await card.locator('.schedule-row').count(),2);
   assert.match(await card.locator('.schedule-room-selection').first().innerText(),/Selected rooms are not reported/);
   assert.doesNotMatch(await card.locator('.schedule-row').first().innerText(),/Kitchen|Hall/,'unfiltered integration room names are not presented as the selected plan');
-  await card.locator('[data-schedule-toggle="102"]').check();
+  await card.locator('[data-schedule-id="102"] .schedule-toggle-target').click();
   await page.waitForFunction(()=>!demo.card.scheduleSending);
   assert.deepEqual(await page.evaluate(()=>sched.calls.at(-1).data),{device_id:'hd-device',schedule_id:102,enabled:true});
   await scheduleAction(101,'edit');
