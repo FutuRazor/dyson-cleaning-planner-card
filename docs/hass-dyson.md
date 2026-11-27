@@ -1,6 +1,6 @@
 # Experimental hass-dyson adapter
 
-Card **v1.7.0** includes an experimental adapter for **Spot+Scrub / RB05 through [cmgrayb/hass-dyson](https://github.com/cmgrayb/hass-dyson)** alongside the original Spot+Scrub adapter. Source review and offline HA fixtures cover the implemented interface. Maintainer live tests confirmed Save with entity readback, room starts, Pause/Resume/Home, battery percentage, separate vacuum/mop coverage, dock activity, drying remaining time, the washing start interlock and starting during drying. This card build is a release candidate; hass-dyson support remains experimental, particularly for other robot models and installations.
+Card **v1.7.2** includes an experimental adapter for **Spot+Scrub / RB05 through [cmgrayb/hass-dyson](https://github.com/cmgrayb/hass-dyson)** alongside the original Spot+Scrub adapter. Source review and offline HA fixtures cover the implemented interface. Maintainer live tests confirmed the existing single-map Save/Start, Pause/Resume/Home, battery percentage, separate vacuum/mop coverage, dock activity, drying remaining time, the washing start interlock and starting during drying. The new reported-map start fallback has passed simulated checks and still needs a live start test. Support remains experimental, particularly for other robot models and installations.
 
 ## Setup and integration selection
 
@@ -19,7 +19,8 @@ entity: vacuum.your_hass_dyson_robot
 | Feature | Upstream interface |
 |---|---|
 | Robot and state | `vacuum.*`, unique ID `<serial>_vacuum`, platform `hass_dyson`, device association |
-| Rooms | Per-room selects with native `room_id`; registry original names supply room labels |
+| Rooms | Single map: per-room selects; multi-map fallback: buttons identified by map ID and room ID, with button original names supplying labels |
+| Reported map | Same-device sensor `<serial>_current_map`, attributes `map_id` and `source`; read-only floor chips |
 | Cleaning mode | `<serial>_room_<id>_cleaning_mode` |
 | Vacuum power | `<serial>_room_<id>_vacuum_power` |
 | Water | `<serial>_room_<id>_hydration` |
@@ -34,7 +35,7 @@ entity: vacuum.your_hass_dyson_robot
 | Refill status | Binary sensor `<serial>_cleaning_solution`: `on` means refill required, `off` means ready |
 | Session image | Default `image.*` with unique ID `<serial>_clean_coverage`; falls back to `_floor_plan`, then `_dust_map` if not registered |
 
-Room entity IDs used for display order/exclusions are actual **select IDs**, normally the cleaning-mode select, rather than switches. The adapter never writes those selects individually. The card shows the same canonical labels as the Spot+Scrub adapter; it translates them back to upstream slugs only when sending. See the [mapping table](hass-dyson-compatibility.md#spot-scrub-settings-translation). Unknown native values are not guessed.
+Room entity IDs used for display order/exclusions are actual **select IDs** in the single-map settings flow, normally the cleaning-mode select. Multi-map fallback uses the corresponding map-qualified **button entity IDs** instead; adjust room visibility/order in the editor after first adding another map. The adapter never writes selects individually or presses room buttons. In the single-map flow, it shows the same canonical labels as Spot+Scrub and translates them back to upstream slugs when sending. See the [mapping table](hass-dyson-compatibility.md#spot-scrub-settings-translation). Unknown native values are not guessed.
 
 Room execution order is controlled by hass-dyson. Modern therefore marks selected rooms with checkmarks; Classic uses unnumbered checkboxes. Display order and exclusions continue to use the same select IDs as before.
 
@@ -64,9 +65,21 @@ The shared overview includes a compact countdown above the list for the next ena
 
 Run `node tests/schedules-browser.mjs` with Playwright for the simulated UI flow. Live acceptance: create one schedule with safe settings, verify its days/time and actual selected rooms in MyDyson, toggle it, edit its time, and confirm that general room preferences and the card's local draft remain unchanged. Repeat after reload; check the empty, disconnected and incomplete-list states. Fixtures deliberately model different selected rooms in MyDyson and unfiltered room names in the HA sensor. No real robot schedule was created during automated validation.
 
+## Multiple maps: reported-map fallback
+
+Starting with **v1.7.2**, the card discovers the current-map sensor by registry identity `<serial>_current_map` on the selected hass-dyson device. The entity ID can be renamed. The sensor's `map_id` selects the matching buttons with identities `<serial>_clean_zone_<map-id>_<room-id>`. Map/room names are display metadata, never identities; reused room IDs on different maps remain separate. Ambiguous, disabled or unavailable room buttons cannot authorize their room. Missing/unknown map identity blocks new starts.
+
+With at least two visible maps, read-only chips show the reported map above the planning tabs. They are status elements rather than disabled buttons, and send no selection action. Change maps in MyDyson. `excluded_maps`, `map_order` and `map_rotations` also work for this display; `map_selector_style` does not turn it into a menu or enable switching. A hidden reported map is still identified, as with Spot+Scrub map visibility. These preferences affect the chips, while room contents continue to follow the reported map.
+
+When multiple maps are registered, the fallback lists the reported map's rooms using their button names. Start sends **one** `hass_dyson.start_zone_clean` action with `device_id`, the explicit `map` ID and the selected native `zones` IDs. It uses the robot's saved per-room settings. Local setting controls, Save and schedule creation are unavailable in this mode because the upstream preference interface does not accept a target map. Change those preferences in MyDyson. The existing schedule list and sync warning remain provided by hass-dyson; this fallback does not repair or filter schedules per map.
+
+The maintainer observed the current-map sensor following A/B changes with a **5–10 second delay**. The card deliberately uses its own last reported map until a new ID arrives; it does not consult Spot+Scrub or add an age-based interlock. A near-simultaneous app map change and HA Start can therefore target the previously displayed map. Once the sensor changes, the room list/chip update together and old selections and local drafts are cleared. Source values such as `robot` or `restored` are not treated as freshness guarantees. The robot still has to be physically moved between disconnected floors.
+
+The contract was checked against hass-dyson **v0.40.0-beta.6**: [map-qualified buttons and labels](https://github.com/cmgrayb/hass-dyson/blob/v0.40.0-beta.6/custom_components/hass_dyson/button.py), [reported-map sensor](https://github.com/cmgrayb/hass-dyson/blob/v0.40.0-beta.6/custom_components/hass_dyson/sensor.py), [explicit-map room start and current-map preference writes](https://github.com/cmgrayb/hass-dyson/blob/v0.40.0-beta.6/custom_components/hass_dyson/services.py). Real sensor snapshots were supplied; acceptance of the new card fallback's actual starts is pending.
+
 ## Map and readiness requirements
 
-Upstream room selects expose room IDs but no map ID. The adapter currently requires **one unambiguous known persistent map** to start rooms. It matches the registry's map-qualified button identities `<serial>_clean_zone_<map-id>_<room-id>` to the room selects; it does not press these buttons. Missing map-qualified entries, unmatched room IDs, or multiple known maps disable Start. Save-only preferences still use the integration's current-map action. Multi-map selection is outside this first implementation.
+Upstream room selects expose room IDs but no map ID. Without a registered current-map sensor, the legacy settings flow still requires **one unambiguous known persistent map**, matching map-qualified button identities to its room selects. Multiple known maps without that sensor cannot authorize Start. A registered but unknown/ambiguous map sensor does not fall back to guessing. With the sensor and multiple maps, the reported-map fallback above provides starts using stored settings. Interactive map switching remains unsupported for this adapter.
 
 New room Start also requires connected HA, an available vacuum, upstream `raw_state` equal to `INACTIVE_CHARGED` or `INACTIVE_CHARGING`, and HA state `docked` or `idle`. Mapping, mid-job charging, faults and missing or inconsistent telemetry do not authorize a new job. `FULL_CLEAN_FINISHED` means the cleaning task ended; it does not confirm arrival at the dock. Both this normal-completion return and `FULL_CLEAN_ABORTED` keep the session visible while HA reports `returning`, and neither permits a new room Start. This corrects an earlier exception that treated normal completion as ready before the return trip ended. See the [upstream state mapping](https://github.com/cmgrayb/hass-dyson/blob/28e38e9f13cf0eb13593b5255bf7516dfefbd774/custom_components/hass_dyson/const.py#L714) and the [maintainer report](../TESTING.md#hass-dyson-return-start-interlock---25-november-2026).
 
@@ -87,7 +100,7 @@ This is **not an atomic transaction**. A successful Save remains applied if Star
 - Rectangular zone selection and `clean_zone`; upstream `start_zone_clean` means named rooms, not a rectangle.
 - Station buttons/preferences, voice/volume/child-lock/DND settings and drying cancellation. Their unavailable panels/controls are hidden for this adapter.
 - Decoded fault prose and confirmed room progress. Unknown dock phases and omitted attributes are not fabricated.
-- Other robot families and multi-map planning have not been validated for this first implementation.
+- Other robot families and hardware acceptance of the new multi-map start fallback remain unvalidated.
 
 ## Verification
 

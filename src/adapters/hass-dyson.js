@@ -1,5 +1,5 @@
 import { UiError } from '../localize.js';
-import { available, roomKey } from '../shared.js';
+import { available, roomKey, isSavedMapId } from '../shared.js';
 import { dysonRoomPresentation } from './dyson-planning.js';
 import { spotScrubAdapter } from './spot-scrub.js';
 
@@ -38,7 +38,7 @@ function roomEntries(registry, entity) {
   }
   return { entries, serial, deviceId, rooms };
 }
-function roomMap(registry, entity) {
+function legacyRoomMap(registry, entity) {
   const { entries, serial, rooms } = roomEntries(registry, entity), maps = new Map();
   // Registry IDs are map-qualified upstream; never infer a map from display names.
   for (const e of entries) {
@@ -55,24 +55,98 @@ function roomMap(registry, entity) {
   // active-map contract, multiple stored maps cannot safely be joined to them.
   return maps.size === 1 && candidates.length === 1 ? candidates[0][0] : null;
 }
+
+// Names are display metadata only. Map/room identity always comes from the
+// button's map-qualified unique_id, on the selected hass-dyson device.
+function buttonNames(entry) {
+  const original = entry.original_name;
+  if (typeof original !== 'string' || !original.startsWith('Clean ')) return {};
+  const label = original.slice(6);
+  if (label.endsWith(')')) {
+    let depth = 0;
+    for (let i = label.length - 1; i >= 0; i--) {
+      if (label[i] === ')') depth++;
+      if (label[i] === '(' && --depth === 0 && label[i - 1] === ' ') {
+        return {roomName:label.slice(0,i - 1),mapName:label.slice(i + 1,-1)};
+      }
+    }
+  }
+  return {roomName:label};
+}
+function mapCatalogue(hass, registry, entity) {
+  const {entries,serial,deviceId} = deviceEntries(registry,entity), byMap = new Map();
+  for (const entry of entries) {
+    const prefix = `${serial}_clean_zone_`;
+    if (entry.disabled_by || !entry.entity_id.startsWith('button.') || !entry.unique_id?.startsWith(prefix)) continue;
+    const value = entry.unique_id.slice(prefix.length), split = value.lastIndexOf('_');
+    const mapId = value.slice(0,split), roomId = value.slice(split + 1);
+    if (split < 1 || !isSavedMapId(mapId) || !/^\d+$/.test(roomId)) continue;
+    if (!byMap.has(mapId)) byMap.set(mapId,{map_id:mapId,names:new Set(),rooms:new Map()});
+    const map = byMap.get(mapId), names = buttonNames(entry), state = hass?.states?.[entry.entity_id];
+    if (names.mapName) map.names.add(names.mapName);
+    if (!map.rooms.has(roomId)) map.rooms.set(roomId,[]);
+    map.rooms.get(roomId).push({entry,roomId,name:names.roomName || `Room ${roomId}`,
+      available:!!state && state.state !== 'unavailable' && !state.attributes?.restored});
+  }
+  const sensors = entries.filter(entry => !entry.disabled_by && entry.entity_id.startsWith('sensor.') && entry.unique_id === `${serial}_current_map`);
+  const sensor = sensors.length === 1 ? sensors[0] : null, state = hass?.states?.[sensor?.entity_id];
+  const rawId = state?.attributes?.map_id, id = rawId == null ? null : String(rawId);
+  const currentId = available(state) && isSavedMapId(id) && byMap.has(id) ? id : null;
+  const maps = [...byMap.values()].map(map => ({...map,
+    name:map.map_id === currentId && typeof state.state === 'string' && state.state.trim() ? state.state
+      : map.names.size === 1 ? [...map.names][0] : map.map_id}));
+  return {maps,sensor,registered:sensors.length > 0,currentId,source:state?.attributes?.source,deviceId,
+    storedSettingsOnly:maps.length > 1,available:hass?.connected !== false && available(state) && available(hass?.states?.[entity])};
+}
+function reportedMapState(hass, registry, entity) {
+  const catalogue = mapCatalogue(hass,registry,entity);
+  return {supported:catalogue.registered,readOnly:true,canChange:false,
+    entity:catalogue.sensor?.entity_id,uniqueId:catalogue.sensor?.unique_id,deviceId:catalogue.deviceId,
+    currentId:catalogue.currentId,available:catalogue.available,source:catalogue.source,
+    maps:catalogue.maps.filter(map => map.map_id === catalogue.currentId || [...map.rooms.values()].some(rows => rows.some(row => row.available)))
+      .map(map => ({map_id:map.map_id,name:map.name,option:map.name}))};
+}
+function roomMap(hass, registry, entity) {
+  const catalogue = mapCatalogue(hass,registry,entity);
+  return catalogue.registered ? catalogue.currentId : legacyRoomMap(registry,entity);
+}
 function roomContext(hass, entity, registry = []) {
   // Include registry map topology and current-map preference membership. A change
   // during a two-step Start must not inherit the old draft's identity.
   const { entries, serial } = deviceEntries(registry, entity);
   const global = pick(entries, serial, 'select', 'cleaning_mode');
   const ids = Object.keys(hass?.states?.[global]?.attributes?.room_settings ?? {}).sort();
-  return JSON.stringify([DOMAIN, entity, roomMap(registry, entity), ids]);
+  const catalogue = mapCatalogue(hass,registry,entity);
+  return JSON.stringify([DOMAIN, entity, roomMap(hass,registry,entity), ids, catalogue.storedSettingsOnly,
+    catalogue.sensor?.unique_id, catalogue.sensor?.entity_id]);
 }
 function cameraEntries(registry, entity) {
   return deviceEntries(registry, entity).entries.filter(e => !e.disabled_by && e.entity_id.startsWith('image.'));
 }
 function discover(hass, registry, config, previousRooms = []) {
   const { entries, serial, deviceId, rooms:groups } = roomEntries(registry, config.entity);
-  const context = roomContext(hass, config.entity, registry), map = roomMap(registry, config.entity);
+  const context = roomContext(hass, config.entity, registry), map = roomMap(hass,registry,config.entity);
+  const catalogue = mapCatalogue(hass,registry,config.entity);
   const issues = [];
   if (!deviceId) issues.push('The Dyson device was not found in the entity registry.');
-  if (!groups.size) issues.push('The Dyson room list is not currently available.');
-  const rooms = [...groups].map(([id, group]) => {
+  if (!groups.size && !catalogue.registered) issues.push('The Dyson room list is not currently available.');
+  if (catalogue.registered && catalogue.storedSettingsOnly) {
+    const current = catalogue.maps.find(item => item.map_id === map);
+    const rooms = [...(current?.rooms.values() ?? [])].filter(rows => rows.length === 1).map(([row]) => ({
+      name:row.name,key:row.entry.entity_id,entity:row.entry.entity_id,roomId:row.roomId,mapId:map,context,
+      settings:{},storedSettingsOnly:true,available:catalogue.available && row.available,
+      excluded:config.excluded_rooms?.includes(row.entry.entity_id) ?? false}));
+    const rank = room => { const i = config.room_order?.indexOf(room.key) ?? -1; return i < 0 ? Number.MAX_SAFE_INTEGER : i; };
+    rooms.sort((a,b) => rank(a) - rank(b));
+    const images = cameraEntries(registry,config.entity);
+    return {rooms,issues,mapId:map,deviceId,storedSettingsOnly:true,
+      cameraEntity:config.camera_entity ? images.find(e => e.entity_id === config.camera_entity)?.entity_id
+        : ['clean_coverage','floor_plan','dust_map'].map(s => pick(entries,serial,'image',s)).find(Boolean),
+      startBlockReason:!map ? 'The room map is unavailable or ambiguous. Refresh rooms and check the integration.' : null,
+      batteryEntity:pick(entries,serial,'sensor','robot_battery'),chargingEntity:pick(entries,serial,'binary_sensor','robot_battery_charging')};
+  }
+  const activeRooms = catalogue.maps.find(item => item.map_id === map)?.rooms;
+  const rooms = [...groups].filter(([id]) => !catalogue.registered || activeRooms?.get(id)?.length === 1).map(([id, group]) => {
     const settings = {}, ids = new Set(); let name;
     for (const [key, candidates] of Object.entries(group)) {
       if (candidates.length !== 1) continue;
@@ -90,8 +164,9 @@ function discover(hass, registry, config, previousRooms = []) {
     const modeEntries = entries.filter(e => e.entity_id.startsWith('select.') && e.unique_id === `${serial}_room_${id}_cleaning_mode`);
     const entity = settings.cleaning_mode?.entity ?? (modeEntries.length === 1 ? modeEntries[0].entity_id : Object.values(settings)[0]?.entity) ?? '';
     const valid = ids.size === 1 && ids.has(id);
-    return { name:name || `Room ${id}`, key:entity, entity, roomId:valid ? id : undefined, context, mapId:map, settings,
-      available:valid && !!entity && Object.values(settings).some(f => f.available), excluded:config.excluded_rooms?.includes(entity) ?? false };
+    const button = activeRooms?.get(id)?.[0];
+    return { name:button?.name || name || `Room ${id}`, key:entity, entity, roomId:valid ? id : undefined, context, mapId:map, settings,
+      available:valid && !!entity && Object.values(settings).some(f => f.available) && (!catalogue.registered || (catalogue.available && button?.available)), excluded:config.excluded_rooms?.includes(entity) ?? false };
   });
   const rank = id => { const i = config.room_order?.indexOf(id) ?? -1; return i < 0 ? Number.MAX_SAFE_INTEGER : i; };
   rooms.sort((a,b) => rank(a.entity) - rank(b.entity));
@@ -170,6 +245,7 @@ async function sendRoomDraft({ hass, model, config, selected = [], draft = {}, s
     return latest;
   };
   const live = current();
+  if (live.storedSettingsOnly && Object.keys(draft).length) throw new UiError('Multi-map starts use the robot’s saved room settings. Change settings in MyDyson.');
   const resolve = id => {
     const matches = live.rooms.filter(r => r.roomId === id);
     if (matches.length !== 1 || !matches[0].available || matches[0].excluded) fail();
@@ -272,6 +348,7 @@ function scheduleState(hass, registry, entity) {
     && new Set(raw.map(s => s.schedule_id)).size === raw.length;
   const readable = supported && hass?.connected !== false && available(state) && valid;
   return { supported, available:readable, writable:readable && !!deviceId && available(hass?.states?.[entity]),
+    createSupported:!mapCatalogue(hass,registry,entity).storedSettingsOnly,
     deleteSupported:supported && !!hass?.services?.[DOMAIN]?.delete_robot_schedule,
     schedules:readable ? raw.map(s => ({ id:s.schedule_id, enabled:s.enabled, days:[...s.days], time:s.time, rooms:[...s.rooms], repeat:s.repeat })) : [],
     inSync:state?.attributes?.in_sync, robotTotal:state?.attributes?.robot_total,
@@ -299,6 +376,7 @@ async function setSchedule({ hass, registry, config, id, days, time, enabled, dr
     data.enabled = enabled;
   }
   if (id === undefined) {
+    if (!state.createSupported) throw new UiError('Multi-map starts use the robot’s saved room settings. Change settings in MyDyson.');
     if (context !== roomContext(hass, config.entity, registry)) throw new UiError('The room plan changed. Close the dialog and review your room settings.');
     const model = discover(hass, registry, config);
     if (!model.mapId || !model.rooms.length) throw new UiError('The room map is unavailable or ambiguous. Refresh rooms and check the integration.');
@@ -338,10 +416,11 @@ function roomPlanningState(hass, registry, config, model, draft = {}) {
   const ready = hass?.connected !== false && available(hass?.states?.[config.entity])
     && vacuumEntries(registry).some(entry => entry.entity_id === config.entity);
   const blocked = model.startBlockReason || startBlockReason(hass, config.entity, registry);
-  return { supportsSave:true, supportsStart:true, ordered:false,
-    canSave:ready && saveAvailable,
-    canStart:ready && startAvailable && !blocked && (!Object.keys(draft).length || saveAvailable),
-    notice:model.startBlockReason || (!saveAvailable || !startAvailable
+  return { supportsSave:!model.storedSettingsOnly, supportsStart:true, ordered:false,
+    canSave:!model.storedSettingsOnly && ready && saveAvailable,
+    hint:model.storedSettingsOnly ? 'Multi-map starts use the robot’s saved room settings. Change settings in MyDyson.' : undefined,
+    canStart:ready && startAvailable && !blocked && (!Object.keys(draft).length || (!model.storedSettingsOnly && saveAvailable)),
+    notice:model.startBlockReason || ((!model.storedSettingsOnly && !saveAvailable) || !startAvailable
       ? 'The updated Dyson integration actions are not available. Reload the integration and refresh this dashboard.' : null) };
 }
 
@@ -349,7 +428,9 @@ return Object.freeze({ id:DOMAIN, infoTabs:['consumables'], mapEntityLabel:'Map 
   label:'hass-dyson (experimental)', shortLabel:'hass-dyson', deviceLabel:'Dyson device',
   editorHint:'Room order is controlled by hass-dyson. Changed settings are saved before cleaning starts.',
   roomStartMessage:'Sending room settings and start request …',
-  roomPlanningState, roomPresentation:dysonRoomPresentation,
+  roomPlanningState, roomPresentation:(room,draft,config) => room.storedSettingsOnly
+    ? {summary:'Uses saved room settings',fields:[],issue:null} : dysonRoomPresentation(room,draft,config),
+  resetDraftOnContextChange:true, mapSelectionState:reportedMapState,
   scheduleState, setSchedule, deleteSchedule,
   usesDockTimer:true, supportsDryingCancellation:false,
   planningHint:'Room order is controlled by hass-dyson. Changed settings are saved before cleaning starts.',
@@ -374,7 +455,7 @@ return Object.freeze({ id:DOMAIN, infoTabs:['consumables'], mapEntityLabel:'Map 
   supportsZoneDevice:() => false, zoneReady:() => false, startZone:unsupported,
   zoneDeviceOptions:() => spotScrubAdapter.zoneDeviceOptions([]),
   trustedCamera:(registry, entity, image) => cameraEntries(registry, entity).some(e => e.entity_id === image),
-  mapId:() => undefined, mapCalibration:() => undefined,
+  mapId:(hass,entity,registry = []) => roomMap(hass,registry,entity), mapCalibration:() => undefined,
   mapPicture:(hass, entity) => hass?.states?.[entity]?.attributes?.entity_picture,
   mapPictureAllowed:picture => typeof picture === 'string' && picture.startsWith('/api/image_proxy/'),
 });

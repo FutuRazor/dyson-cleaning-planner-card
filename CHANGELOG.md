@@ -5,6 +5,13 @@
 - Add an offline Dreame v2.0.3 contract prototype, source-shaped fixtures and an executable delayed-save-rejection demonstration. Validate map-qualified room identity, exact native profile values and companion-value preservation; do not equate optimistic HA updates or service completion with robot confirmation. The prototype is not bundled or exposed as a supported adapter.
 - Correct optimistic humidity-control publication in the offline Dreame fixture and derive its self-repair veto from published detailed state/status, including water checks reported as docked in HA. These corrections do not register or bundle the prototype.
 
+## v1.7.2
+
+- Follow hass-dyson's same-device `<serial>_current_map` sensor and map-qualified room buttons for multi-map room discovery. Keep rooms with reused native IDs separate and use the button metadata for names.
+- Show read-only floor chips, with per-card map visibility/order and per-map rotation. Reset old room selections and drafts when the reported map context changes.
+- Start selected rooms with one `hass_dyson.start_zone_clean` call carrying an explicit map ID. Multi-map fallback uses stored robot settings; unqualified setting writes and schedule creation are unavailable in this mode. Existing single-map Save/Start behavior remains supported.
+- Accept the last map reported by hass-dyson, including its observed 5–10 second delay, without cross-adapter reads, artificial waiting, map-switch actions or automatic retries. Upstream schedule synchronization remains separate.
+
 ## v1.7.1
 
 - Add optional wrapping map chips above Rooms, Zone and Schedules through `map_selector_style: chips`; keep the header menu as the default.

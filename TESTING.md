@@ -1,8 +1,8 @@
-# Testing v1.7.1
+# Testing v1.7.2
 
 ## Current validation status - 27 November 2026
 
-Current card version is **1.7.1**. Latest full card checks: **195 unit tests**, rebuilt bundle and smoke check. The unchanged companion integration's latest full suite passed **449 tests**. Browser coverage and maintainer observations are recorded separately below.
+Current card version is **1.7.2** on `fix/hass-dyson-adapter`. Latest full card checks: **207 unit tests**, rebuilt bundle and smoke check. The unchanged companion integration's latest full suite passed **449 tests**. Browser coverage and maintainer observations are recorded separately below.
 
 | Area | Current evidence/status |
 | --- | --- |
@@ -15,6 +15,7 @@ Current card version is **1.7.1**. Latest full card checks: **195 unit tests**, 
 | v1.7.1 map visibility, chips and editor | Unit/browser checks passed; maintainer live acceptance pending |
 | Compact map chips without draft reminders | Maintainer confirmed appearance and operation in a live test |
 | Saved-map display order and editor arrows | Unit/browser checks passed; maintainer live acceptance pending |
+| hass-dyson reported-map room-start fallback | Unit/browser checks passed; real sensor A/B snapshots supplied, live fallback starts pending |
 | Per-map rotation in session images and Zone selection | Unit/browser checks passed; initial maintainer live checks successful, full acceptance pending |
 | Automatic old-map room-draft reset | Unit/browser checks passed; maintainer live acceptance pending |
 | PR #40 review corrections | Unit/browser checks passed; initial maintainer live check reported no new errors |
@@ -24,6 +25,16 @@ Current card version is **1.7.1**. Latest full card checks: **195 unit tests**, 
 | Stationless cleaning → Pause → Home search | Known Dyson behavior also observed in MyDyson; pause and manual docking recovery confirmed |
 
 Additional integration/map checks are listed in [the map notes](docs/spot-scrub-maps.md#remaining-live-checks). Entries below are chronological records and retain their original versions/test counts; an old pending statement does not supersede a later confirmation.
+
+## hass-dyson reported-map fallback v1.7.2 - 27 November 2026
+
+The maintainer reported stale cross-map room names and the existing ambiguous-map Start block. Their own sensor `sensor.kuche_dyson_robo_current_map` supplies A `1784483068` (Schlafzimmer, Wohnzimmer, Flur, Küche, Badezimmer) and B `1795665600` (Essbereich), both with `source: robot`, following changes with a reported 5–10 second delay. They explicitly accepted the last-reported-map timing limitation and requested no cross-adapter dependency. These snapshots establish the sensor interface, not live acceptance of the new start fallback.
+
+The adapter now resolves its own same-device current-map sensor, builds the multi-map room list from map-qualified buttons and sends one explicit-map Start using stored settings. The chip display is read-only and shares map visibility/order/rotation preferences. Reported context changes clear old selections/drafts, including reused room IDs. Unknown maps and unavailable/ambiguous targets block dispatch. The legacy one-map settings flow remains supported. Multi-map preference writes and schedule creation are unavailable; existing upstream schedule synchronization remains separate.
+
+Validation passed: `npm run check` with **207 unit tests**, rebuilt v1.7.2 bundle and standalone smoke check. Twelve new unit cases cover colliding room IDs, names, exact A/B payloads, missing setting selects, rejected writes, sensor/device/registry identity, duplicate/unavailable targets, source retention, lifecycle changes, readiness, rejection and schedule-creation limits. `hass-maps-browser` passed in Modern/Classic at 375/900 px with both stored selector-style values, checking passive chips, a simulated 10-second reporting interval, exact multi-room/A/B starts, selection reset, unknown-map recovery and editor visibility/order/rotation. Existing `hass-dyson-browser`, `map-preferences-browser` and `schedules-browser` passed. The schedule browser fixture now retains its import/setup promises to avoid Chromium's collected-promise failure. All automated actions use local HA fixtures; actual fallback room starts still need maintainer acceptance.
+
+Live checks: follow A → B → A in MyDyson, verify chip/room names after the sensor update, start one room and then multiple rooms on A, and test B after physically placing the robot there. Confirm that no setting Save or map-switch action is sent by this fallback. Version remains **1.7.2**.
 
 ## Initial per-map rotation live checks - 27 November 2026
 

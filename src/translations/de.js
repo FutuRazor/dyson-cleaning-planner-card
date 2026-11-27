@@ -1,5 +1,9 @@
 // German display text. Entity names and protocol values are never rewritten.
 export const de = {
+  "Reported map": "Gemeldete Karte",
+  "Maps are display-only. Change the active map in MyDyson.": "Karten werden nur angezeigt. Wechsle die aktive Karte in MyDyson.",
+  "Uses saved room settings": "Gespeicherte Raumeinstellungen",
+  "Multi-map starts use the robot’s saved room settings. Change settings in MyDyson.": "Bei mehreren Karten werden die im Roboter gespeicherten Raumeinstellungen verwendet. Ändere sie in MyDyson.",
   "Rotation per map": "Drehung pro Karte",
   "Per-map values override Map rotation. The preview shows the active map.": "Die Drehung pro Karte ersetzt die allgemeine Kartendrehung. Die Vorschau zeigt die aktive Karte.",
   "Map rotation: {name}": "Kartendrehung: {name}",

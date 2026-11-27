@@ -170,7 +170,7 @@ export const scheduleCardMethods = {
   },
   scheduleCreationReady() {
     const state = this.getScheduleState();
-    return state.writable && (state.creationUsesSelectedRooms ? state.createReady && this.selected.length > 0 : !!this.model?.mapId);
+    return state.createSupported !== false && state.writable && (state.creationUsesSelectedRooms ? state.createReady && this.selected.length > 0 : !!this.model?.mapId);
   },
   scheduleDaysText(days) {
     const format = new Intl.DateTimeFormat(this.language, { weekday:'short', timeZone:'UTC' });

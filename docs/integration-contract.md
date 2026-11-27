@@ -1,6 +1,8 @@
-# Integration contract — card v1.7.1
+# Integration contract — card v1.7.2
 
 This contract describes the **Spot+Scrub adapter**. The experimental `hass_dyson` adapter has a separate [entity/action contract and setup guide](hass-dyson.md). `integration: auto` selects the configured vacuum's registry platform; initial discovery prefers Spot+Scrub. Explicit adapter choices are available in the visual editor.
+
+Card v1.7.2 adds a [reported-map start fallback for hass-dyson](hass-dyson.md#multiple-maps-reported-map-fallback). Its passive map display and stored-settings starts are separate from the interactive Spot+Scrub contract below; no adapter reads another adapter's map state.
 
 This document describes what the **current card actually reads and sends**, based on the Spot+Scrub adapter and its card/editor/map/zone consumers. The adapters preserve their own contracts; see [adapter architecture](integration-adapter.md). It is a frontend contract, not a specification of Dyson's MQTT protocol or a guarantee about the integration's internal implementation.
 

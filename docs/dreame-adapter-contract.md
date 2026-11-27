@@ -1,6 +1,6 @@
 # Dreame room-planning contract prototype
 
-Status: **offline prototype, not a selectable or bundled adapter**. The experiment originated on `experiment/multi_adapter`; current card version is **v1.7.1**. This work does not establish Dreame hardware support or satisfy the separate merge/release milestone for another major manufacturer.
+Status: **offline prototype, not a selectable or bundled adapter**. The experiment originated on `experiment/multi_adapter`; current card version is **v1.7.2**. This work does not establish Dreame hardware support or satisfy the separate merge/release milestone for another major manufacturer.
 
 Further Dreame implementation is on hold pending a real-device tester. The current development priority is compatibility and regression coverage for the existing Dyson adapters.
 

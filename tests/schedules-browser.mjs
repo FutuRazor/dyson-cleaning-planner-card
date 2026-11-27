@@ -24,12 +24,16 @@ try {
     await card.locator('[data-schedule-action="time-apply"]').click();
   };
   assert.equal(await card.locator('[data-action="schedules"], [data-action="schedule-create"]').count(),0,'Spot+Scrub schedules stay hidden');
-  await page.evaluate(async()=>{
-    const {schedulesFixture}=await import('/tests/schedules-fixture.mjs');
-    window.sched=schedulesFixture();
-    demo.card.setConfig({...sched.config,language:'en',show_camera:false});demo.card.hass={...sched.hass};
-    await demo.card.loadRegistry();
+  await page.evaluate(()=>{
+    window.schedulesFixtureLoading=import('/tests/schedules-fixture.mjs').then(module=>{window.schedulesFixtureFactory=module.schedulesFixture;});
   });
+  await page.waitForFunction(()=>!!window.schedulesFixtureFactory);
+  await page.evaluate(()=>{
+    window.sched=schedulesFixtureFactory();
+    demo.card.setConfig({...sched.config,language:'en',show_camera:false});demo.card.hass={...sched.hass};
+    window.schedulesRegistryLoading=demo.card.loadRegistry();
+  });
+  await page.evaluate(()=>window.schedulesRegistryLoading);
   await card.locator('[data-action="schedule-create"]').waitFor();
   for(const theme of ['modern','classic']) for(const width of [375,900]) {
     await page.setViewportSize({width,height:1200});

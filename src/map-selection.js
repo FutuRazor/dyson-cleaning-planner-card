@@ -64,7 +64,7 @@ export const mapSelectionStyles = `
 .map-visibility-note{margin:0 var(--dp-padding,20px) 12px;font-size:12px;line-height:1.5;color:var(--dp-muted);overflow-wrap:anywhere}
 .map-chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 var(--dp-padding,20px) 14px;min-width:0}
 .map-chip{position:relative;display:flex;align-items:center;justify-content:center;min-width:0;max-width:100%;min-height:32px;padding:5px 11px;border:1px solid var(--dp-line);border-radius:18px;background:var(--dp-modern-surface,var(--dp-bg));color:var(--primary-text-color);font:inherit;font-size:13px;line-height:1.35;text-align:start;white-space:normal}
-.map-chip[aria-pressed=true]{border-color:var(--dp-accent);background:var(--dp-soft);color:var(--dp-accent)}
+.map-chip[aria-pressed=true],.map-chip[aria-current=true]{border-color:var(--dp-accent);background:var(--dp-soft);color:var(--dp-accent)}
 .map-chip-copy{min-width:0;overflow-wrap:anywhere}.map-chip[aria-busy=true] .map-chip-copy{visibility:hidden}
 .map-chip-spinner{position:absolute;inset:0;margin:auto;width:14px;height:14px;border:2px solid var(--dp-line);border-top-color:var(--dp-accent);border-radius:50%;animation:schedule-spin .7s linear infinite}.map-chip[aria-busy=true]{opacity:1}
 :host([map-switching]) :is(.rooms,.planning-settings,.planning-tabs,footer,dyson-planner-zone){opacity:.55}
@@ -84,7 +84,7 @@ export const mapSelectionCardMethods = {
   },
   mapPickerHtml() {
     const state = this.getMapSelection(), presentation = this.getMapPresentation();
-    if (this.config.map_selector_style === 'chips' || !presentation.showSelector) return '';
+    if (state.readOnly || this.config.map_selector_style === 'chips' || !presentation.showSelector) return '';
     const {current,displayMaps,hiddenCurrent} = presentation, pending = !!this._mapRequest;
     const locked = this.mapControlsLocked();
     const label = current ? this.t('Switch map: {name}',{name:current.option}) : this.t('Switch map');
@@ -94,6 +94,7 @@ export const mapSelectionCardMethods = {
   },
   mapSelectorHtml() {
     const state = this.getMapSelection(), {current,displayMaps,hiddenCurrent,showSelector} = this.getMapPresentation();
+    if (state.readOnly && showSelector) return `<div class="map-chips" role="list" aria-label="${this.ht('Reported map')}">${displayMaps.map(map => `<span class="map-chip" role="listitem" ${map.map_id === current?.map_id ? 'aria-current="true"' : ''} data-reported-map="${map.map_id}"><span class="map-chip-copy">${escapeHtml(map.option)}${map.map_id === hiddenCurrent?.map_id ? `<small class="map-hidden-label">${this.ht('Hidden in this card')}</small>` : ''}</span></span>`).join('')}</div>`;
     if (this.config.map_selector_style === 'chips' && showSelector) {
       const locked = this.mapControlsLocked() || !state.canChange;
       return `<div class="map-chips" role="group" aria-label="${this.ht('Saved maps')}">${displayMaps.map(map => {
@@ -168,7 +169,7 @@ export const mapSelectionCardMethods = {
       if (this.message === late.notice) { this.message = ''; this.error = false; }
       this._unconfirmedMapSwitch = null;
     }
-    if (this.config.map_selector_style === 'chips' || !this.getMapPresentation().showSelector) this.mapMenuOpen = false;
+    if (this.getMapSelection().readOnly || this.config.map_selector_style === 'chips' || !this.getMapPresentation().showSelector) this.mapMenuOpen = false;
   },
   applyMapLock() {
     const locked = !!this._mapRequest;
