@@ -20,7 +20,7 @@
 
 **Version 1.7.2**
 
-**hass-dyson room starts across saved maps.** The card follows hass-dyson's own current-map sensor, displays read-only floor chips and lists rooms from map-qualified cleaning buttons. Multi-map starts use the robot's saved room settings. The original Spot+Scrub adapter retains its interactive map selector and full room controls.
+**hass-dyson room starts across saved maps.** The card follows hass-dyson's own current-map sensor, displays read-only floor chips and lists rooms from map-qualified cleaning buttons. Choose individual room overrides, save them or apply them before Start; untouched settings stay as stored on the robot. The original Spot+Scrub adapter retains its interactive map selector and full room controls.
 
 <p align="center">
   <a href="#installation">Installation</a> &middot;
@@ -169,7 +169,7 @@ Copy the map IDs shown in the editor and quote them in YAML. Without these optio
 
 **Rotation per map** is available under **Cleaning map** in the editor when saved maps are known, including a single remaining map and hidden maps. Choose **Default** to use `camera_rotation`, or choose `0`, `90`, `180` or `270` degrees for that map. `map_rotations` overrides the default rather than adding to it; an explicit `0` keeps that map unrotated even if the default is `90`. The rotation follows the active map ID in both the cleaning-session image and Zone selection. Adapters without active map identity keep the general rotation. Deleted IDs have no effect, new maps use the default, and renaming a map preserves its angle. The editor preview follows the active map; editing another map's angle sends no map-switch command. These settings affect this card's display; MyDyson orientation and the integration's camera image remain separate.
 
-For **hass-dyson**, known maps appear as read-only chips when its current-map sensor is registered. They follow the sensor's `map_id`; change maps in MyDyson. Map visibility, display order and per-map rotation are supported, while selector style remains display-only chips. With multiple registered maps, room names and identities come from the active map's cleaning buttons, and Start sends one explicit map/room request using saved robot settings. The reported map can lag an app change by 5–10 seconds: until its own sensor changes, the card follows the last reported map. This path is independent of other adapters. See [hass-dyson multi-map behavior](docs/hass-dyson.md#multiple-maps-reported-map-fallback).
+For **hass-dyson**, known maps appear as read-only chips when its current-map sensor is registered. They follow the sensor's `map_id`; change maps in MyDyson. Map visibility, display order and per-map rotation are supported, while selector style remains display-only chips. With multiple registered maps, room names and identities come from the active map's cleaning buttons. Settings initially say **Keep saved setting** because their shared HA selects do not identify a map. Choose individual overrides, then Save or Start; only explicit choices are written. Start sends one explicit map/room request after any setting write completes. The reported map can lag an app change by 5–10 seconds: until its own sensor changes, the card follows the last reported map. This path is independent of other adapters. See [hass-dyson multi-map behavior](docs/hass-dyson.md#multiple-maps-reported-map-fallback).
 
 ### Plan rooms
 

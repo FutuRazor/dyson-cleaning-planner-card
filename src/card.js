@@ -152,6 +152,8 @@ header,.station-rows{--hud-red:var(--error-color,#db4437);--hud-blue:var(--blue-
 .modern-control{min-width:0}
 .field-label{display:block;font-size:13px;margin-bottom:2px;color:var(--primary-text-color)}
 /* Tick centers share the native thumb's travel area (half its width at each end). */
+.stepped-slider.unset input::-webkit-slider-thumb{opacity:0}.stepped-slider.unset input::-moz-range-thumb{opacity:0}
+.modern-control:has(.stepped-slider.unset) .badge{color:var(--dp-muted)}
 .stepped-slider{position:relative;height:24px}
 .slider-ticks{position:absolute;inset:0 10px;pointer-events:none;color:var(--dp-muted)}
 .slider-ticks::before{content:"";position:absolute;left:0;right:0;top:10.5px;height:3px;border-radius:2px;background:currentColor;opacity:.65}
@@ -589,9 +591,9 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       const room = this.model.rooms.find(r => r.roomId === el.dataset.roomId);
       const field = room?.settings?.[el.dataset.setting];
       const value = el.type === 'range' ? field?.options[Number(el.value)] : el.value;
-      if (!field?.options.includes(value)) return;
+      if (!field?.available || (!field.options.includes(value) && !(field.alwaysWrite && value === ''))) return;
       const values = this.settingDraft[room.roomId] ??= {};
-      if (value === field.value) delete values[el.dataset.setting];
+      if ((value === field.value && !field.alwaysWrite) || value === '') delete values[el.dataset.setting];
       else values[el.dataset.setting] = value;
       if (!Object.keys(values).length) delete this.settingDraft[room.roomId];
       // Release the native select before rendering to avoid restoring its picker focus.
@@ -603,6 +605,10 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
   onClick(event) {
     if (this.mapClick(event) || this._mapRequest) return;
     if (this.scheduleClick(event)) return;
+    if (event.target.matches?.('input[type=range][data-setting]')
+      && this.model.rooms.find(room => room.roomId === event.target.dataset.roomId)?.settings?.[event.target.dataset.setting]?.alwaysWrite) {
+      this.onChange(event); return;
+    }
     if (event.target.classList?.contains("consumables-overlay")) { this.toggleConsumables(false); return; }
     const el = event.target.closest('button, ha-button');
     if (el?.dataset.action === 'dismiss-notice') {
@@ -717,30 +723,40 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     if (this._mapRequest) return;
     if (this._previewDialog || this.busy || this.view.active || !this.isConnected) return;
     const config = this.config, context = this.draftContext, draft = structuredClone(this.settingDraft);
+    const detachRevision = this._detachRevision ?? 0;
     this.busy = true; this.saving = true; this.error = false;
-    this.message = 'Saving room settings …'; this.render();
+    const progress = 'Saving room settings …';
+    this.message = progress; this.render();
     try {
       const model = this.getModel(), planning = this.getRoomPlanningState(model);
       if (!planning.supportsSave || !planning.canSave) throw new UiError(planning.notice || 'This action is not available for the current robot state.');
-      await this.adapter.sendRoomDraft({ hass: this._hass, model, config, draft, context, registry:this.registry });
+      const plan = await this.adapter.sendRoomDraft({ hass: this._hass, model, config, draft, context, registry:this.registry,
+        getCurrent:() => ({hass:this._hass,registry:this.registry,config:this.config,
+          active:this.isConnected && !this._previewDialog && (this._detachRevision ?? 0) === detachRevision}) });
       const deadline = Date.now() + 6000;
       while (true) {
-        if (this.config !== config || !this.isConnected) return;
+        if (this.config !== config || !this.isConnected || (this._detachRevision ?? 0) !== detachRevision) return;
         if (context !== this.adapter.roomContext(this._hass, config.entity, this.registry)) {
-          this.message = '';
+          if (this.message === progress) this.message = '';
           return;
         }
         const model = this.getModel();
+        if (plan.settingsConfirmed) break;
         if (Object.entries(draft).every(([id, fields]) => Object.entries(fields).every(([key, value]) => model.rooms.find(r => r.roomId === id)?.settings?.[key]?.value === value))) break;
         if (Date.now() >= deadline) throw new UiError('Save was sent, but Home Assistant has not reflected all values yet. The draft was kept; check the robot before retrying.');
         await new Promise(resolve => setTimeout(resolve, 100));
       }
       this.settingDraft = {}; this.model = this.getModel(); this.updateDirty();
       this.baseline = this.liveSignature();
-      this.message = 'Settings sent. Home Assistant values updated. Room selection remains local.';
+      this.message = plan.settingsConfirmed ? 'Settings saved. Room selection remains local.'
+        : 'Settings sent. Home Assistant values updated. Room selection remains local.';
     } catch (error) {
-      if (this.config === config) { this.error = true; this.message = error; }
-    } finally { this.busy = false; this.saving = false; this.render(); }
+      if (this.config === config && this.isConnected && (this._detachRevision ?? 0) === detachRevision
+        && context === this.adapter.roomContext(this._hass,config.entity,this.registry)) { this.error = true; this.message = error; }
+    } finally {
+      if (this.message === progress) this.message = '';
+      this.busy = false; this.saving = false; this.render();
+    }
   }
   canControl(action) {
     return this.adapter.vacuumEntries(this.registry ?? [], this._hass).some(entry => entry.entity_id === this.config.entity)
@@ -1168,16 +1184,16 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       : scope === 'planning' ? `data-planning-setting="${h(key)}"` : `data-setting="${key}" data-room-id="${h(room.roomId)}"`;
     const focus = scope === 'schedule' ? `schedule-room-${room.roomId}-${key}` : `${key}-${n}`;
     const slider = scope === 'schedule' ? `schedule-slider-${key}-${room.roomId}` : `slider-${key}-${n}`;
-    const unknown = scope === 'schedule' ? value || 'Stored settings not reported' : 'Unavailable';
+    const unknown = scope === 'schedule' ? value || 'Stored settings not reported' : field.alwaysWrite ? 'Keep saved setting' : 'Unavailable';
     const name = scope === 'planning' ? label : `${label} ${room.name}`;
     const valid = options.includes(value);
-    const blocked = disabled || !valid;
+    const blocked = disabled || (!valid && !field.alwaysWrite);
     const presentation = scope === 'planning' ? null : this.adapter.roomPresentation(room, {}, this.config).fields.find(field => field.key === key);
     if (presentation?.control === 'segments') {
       return `<div class="modern-control"><span class="field-label">${label}</span><div class="segments" role="group" aria-label="${h(name)}">${options.map((option, i) => `<button ${attrs} data-option="${h(option)}" style="--stop:${options.length > 1 ? i / (options.length - 1) : 0}" data-focus="${focus}-${i}" aria-pressed="${value === option}" ${disabled ? 'disabled' : ''}>${h(presentation.optionLabels?.[option] ?? this.t(option))}</button>`).join('')}</div></div>`;
     }
     const index = options.indexOf(value);
-    return `<div class="modern-control">${scope === 'planning' ? '' : `<label class="field-label" for="${slider}">${label}</label>`}<div class="stepped-slider ${blocked ? 'disabled' : ''}"><div class="slider-ticks" aria-hidden="true">${options.map((_, i) => `<span class="slider-tick" style="--stop:${options.length > 1 ? i / (options.length - 1) : 0}"></span>`).join('')}</div><input id="${slider}" type="range" min="0" max="${options.length - 1}" step="1" value="${Math.max(0, index)}" aria-label="${h(name)}" aria-valuetext="${this.ht(valid ? value : unknown)}" ${attrs} data-focus="${focus}" ${blocked || options.length < 2 ? 'disabled' : ''}></div><div class="slider-options" style="--options:${options.length}">${options.map((option, i) => `<button ${attrs} data-option="${h(option)}" style="--stop:${options.length > 1 ? i / (options.length - 1) : 0}" data-focus="${focus}-${i}" aria-pressed="${value === option}" ${disabled ? 'disabled' : ''}>${this.ht(option)}</button>`).join('')}</div>${!valid ? `<span class="badge">${this.ht(unknown)}</span>` : ''}</div>`;
+    return `<div class="modern-control">${scope === 'planning' ? '' : `<label class="field-label" for="${slider}">${label}</label>`}<div class="stepped-slider ${blocked ? 'disabled' : ''} ${field.alwaysWrite && !valid ? 'unset' : ''}"><div class="slider-ticks" aria-hidden="true">${options.map((_, i) => `<span class="slider-tick" style="--stop:${options.length > 1 ? i / (options.length - 1) : 0}"></span>`).join('')}</div><input id="${slider}" type="range" min="0" max="${options.length - 1}" step="1" value="${Math.max(0, index)}" aria-label="${h(name)}" aria-valuetext="${this.ht(valid ? value : unknown)}" ${attrs} data-focus="${focus}" ${blocked || options.length < 2 ? 'disabled' : ''}></div><div class="slider-options" style="--options:${options.length}">${options.map((option, i) => `<button ${attrs} data-option="${h(option)}" style="--stop:${options.length > 1 ? i / (options.length - 1) : 0}" data-focus="${focus}-${i}" aria-pressed="${value === option}" ${disabled ? 'disabled' : ''}>${this.ht(option)}</button>`).join('')}</div>${!valid ? `<span class="badge">${this.ht(unknown)}</span>` : ''}</div>`;
   }
   zoneStarted(dimensions) {
     const valid = dimensions && ['widthCm','heightCm'].every(key => Number.isFinite(dimensions[key]) && dimensions[key] > 0);
@@ -1255,7 +1271,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
         const fieldDisabled = disabled || !field.available;
         const value = valueOf(key), options = field?.options ?? [];
         if (modern && control !== 'select' && options.length) return reserve(this.modernControl(key, label, room, field, value, fieldDisabled, n));
-        return reserve(`<label class="field ${wide ? 'mode' : ''}">${label}<select data-setting="${h(key)}" data-room-id="${h(room.roomId)}" data-focus="${h(key)}-${n}" aria-label="${label} ${h(room.name)}" ${fieldDisabled ? 'disabled' : ''}>${!options.includes(value) ? `<option value="">${this.ht("Unavailable")}</option>` : ''}${options.map(option => `<option value="${h(option)}" ${value === option ? 'selected' : ''}>${this.ht(option)}</option>`).join('')}</select></label>`);
+        return reserve(`<label class="field ${wide ? 'mode' : ''}">${label}<select data-setting="${h(key)}" data-room-id="${h(room.roomId)}" data-focus="${h(key)}-${n}" aria-label="${label} ${h(room.name)}" ${fieldDisabled ? 'disabled' : ''}>${field.alwaysWrite || !options.includes(value) ? `<option value="" ${!options.includes(value) ? 'selected' : ''}>${this.ht(field.alwaysWrite ? 'Keep saved setting' : 'Unavailable')}</option>` : ''}${options.map(option => `<option value="${h(option)}" ${value === option ? 'selected' : ''}>${this.ht(option)}</option>`).join('')}</select></label>`);
       }).join('');
       const summary = !room.available ? this.ht(room.error || 'Unavailable') : presentation.summary ? this.ht(presentation.summary) : '';
       const issue = presentation.issue ? `<p class="badge mode">${this.ht(presentation.issue)}</p>` : '';

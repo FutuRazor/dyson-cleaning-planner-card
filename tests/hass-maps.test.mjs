@@ -7,12 +7,12 @@ const request=f=>({hass:f.hass,registry:f.registry,config:f.config,model:discove
 
 test('reported map selects map-qualified buttons and correct names despite stale setting-select names',()=>{
   const f=hassMapsFixture(),model=discover(f),state=adapter.mapSelectionState(f.hass,f.registry,f.entity);
-  assert.equal(model.mapId,a);assert.equal(model.storedSettingsOnly,true);assert.equal(model.startBlockReason,null);
+  assert.equal(model.mapId,a);assert.equal(model.multiMap,true);assert.equal(model.startBlockReason,null);
   assert.deepEqual(model.rooms.map(room=>room.name),['Wohnzimmer','Schlafzimmer']);
-  assert.ok(model.rooms.every(room=>room.available&&room.settings&&Object.keys(room.settings).length===0));
+  assert.ok(model.rooms.every(room=>room.available&&Object.values(room.settings).every(field=>field.alwaysWrite&&field.value===undefined)));
   assert.equal(state.currentId,a);assert.equal(state.readOnly,true);assert.equal(state.canChange,false);
   assert.deepEqual(state.maps.map(map=>[map.map_id,map.name]),[[a,'Main Floor'],[b,'Upper Floor']]);
-  assert.equal(adapter.roomPlanningState(f.hass,f.registry,f.config,model).supportsSave,false);
+  assert.equal(adapter.roomPlanningState(f.hass,f.registry,f.config,model).supportsSave,true);
   assert.equal(adapter.roomPlanningState(f.hass,f.registry,f.config,model).canStart,true);
 });
 
@@ -38,11 +38,15 @@ test('fallback starts do not require current-map setting selects or the Save ser
   assert.deepEqual(f.calls.map(call=>call.service),['start_zone_clean']);
 });
 
-test('unqualified preference writes are rejected in multi-map mode',async()=>{
+test('explicit multi-map overrides are written even when the raw select already reports that value',async()=>{
   for(const start of [false,true]) {
     const f=hassMapsFixture(),r=request(f);
-    await assert.rejects(adapter.sendRoomDraft({...r,start,selected:[r.model.rooms[0].key],draft:{'12':{cleaning_mode:'Mop'}}}),/saved room settings/);
-    assert.deepEqual(f.calls,[]);
+    const plan=await adapter.sendRoomDraft({...r,start,selected:[r.model.rooms[0].key],draft:{'12':{
+      cleaning_mode:'Vacuum',cleaning_strategy:'Quick',water_level:'High',mop_repetitions:'Two Passes'}}});
+    assert.deepEqual(f.calls[0],{domain:'hass_dyson',service:'set_room_cleaning_modes',data:{device_id:'hd-device',room_modes:{'12':{
+      cleaning_mode:'vacuum_only',vacuum_power:'quick',hydration:'high',wash_repetitions:2}}}});
+    assert.equal(f.calls.length,start?2:1);assert.equal(plan.settingsConfirmed,true);
+    if(start)assert.deepEqual(f.calls[1].data,{device_id:'hd-device',zones:['12'],map:a});
   }
 });
 
@@ -122,6 +126,83 @@ test('schedule creation stays unavailable while fallback room settings have no v
   f.hass.services.hass_dyson.set_robot_schedule={};
   assert.equal(adapter.scheduleState(f.hass,f.registry,f.entity).createSupported,false);
   await assert.rejects(adapter.setSchedule({hass:f.hass,registry:f.registry,config:f.config,days:['mon'],time:'08:30',
-    context:adapter.roomContext(f.hass,f.entity,f.registry)}),/saved room settings/);
+    context:adapter.roomContext(f.hass,f.entity,f.registry)}),/Schedule creation is unavailable/);
   assert.deepEqual(f.calls,[]);
+});
+
+test('only successful backend readback supplies confirmed display values while HA selects lag',async()=>{
+  const f=hassMapsFixture(),raw=f.hass.states[f.fields['12'].cleaning_mode];
+  f.hass.callService=async(domain,service,data)=>{f.calls.push({domain,service,data});};
+  assert.equal(discover(f).rooms[0].settings.cleaning_mode.value,undefined);
+  const result=await adapter.sendRoomDraft({...request(f),draft:{'12':{cleaning_mode:'Mop'}}});
+  assert.equal(result.settingsConfirmed,true);
+  assert.equal(raw.state,'vacuum_only','no HA state is fabricated');
+  assert.equal(discover(f).rooms[0].settings.cleaning_mode.value,'Mop');
+  raw.state='mop_only';raw.last_updated='2026-11-27T01:00:00Z';
+  assert.equal(discover(f).rooms[0].settings.cleaning_mode.value,'Mop');
+  raw.state='vacuum_only';raw.last_updated='2026-11-27T01:01:00Z';
+  assert.equal(discover(f).rooms[0].settings.cleaning_mode.value,undefined,'contradictory HA publication clears the confirmed display');
+});
+
+test('confirmed values never cross maps reusing a room ID',async()=>{
+  const f=hassMapsFixture();
+  await adapter.sendRoomDraft({...request(f),draft:{'10':{cleaning_mode:'Mop'}}});
+  assert.equal(discover(f).rooms.find(room=>room.roomId==='10').settings.cleaning_mode.value,'Mop');
+  f.report(b);assert.equal(discover(f).rooms[0].settings.cleaning_mode.value,undefined);
+  await adapter.sendRoomDraft({...request(f),draft:{'10':{cleaning_mode:'Vacuum and Mop'}}});
+  assert.equal(discover(f).rooms[0].settings.cleaning_mode.value,'Vacuum and Mop');
+  f.report(a);assert.equal(discover(f).rooms.find(room=>room.roomId==='10').settings.cleaning_mode.value,undefined);
+});
+
+test('confirmed values are cleared when the registered catalogue leaves and re-enters multi-map mode',async()=>{
+  const f=hassMapsFixture();f.hass.callService=async()=>{};
+  await adapter.sendRoomDraft({...request(f),draft:{'12':{cleaning_mode:'Mop'}}});
+  const index=f.registry.findIndex(row=>row.entity_id===f.bButton),[entry]=f.registry.splice(index,1);
+  assert.equal(discover(f).multiMap,undefined);
+  f.registry.push(entry);
+  assert.equal(discover(f).rooms[0].settings.cleaning_mode.value,undefined);
+});
+
+test('missing, ambiguous or unavailable setting capabilities reject overrides without blocking stored-setting starts',async()=>{
+  for(const mutate of [f=>{delete f.hass.states[f.fields['12'].cleaning_mode];},
+    f=>{f.hass.states[f.fields['12'].cleaning_mode].attributes.room_id=99;},
+    f=>{f.hass.states[f.fields['12'].cleaning_mode].attributes.options=['vacuum_only'];},
+    f=>{f.registry.find(row=>row.entity_id===f.fields['12'].cleaning_mode).disabled_by='user';},
+    f=>f.registry.push({...f.registry.find(row=>row.entity_id===f.fields['12'].cleaning_mode),entity_id:'select.duplicate_mode'})]) {
+    const f=hassMapsFixture();mutate(f);const r=request(f),selected=[r.model.rooms[0].key];
+    await assert.rejects(adapter.sendRoomDraft({...r,start:true,selected,draft:{'12':{cleaning_mode:'Mop'}}}));
+    assert.deepEqual(f.calls,[]);
+    await adapter.sendRoomDraft({...request(f),start:true,selected});assert.equal(f.calls.length,1);
+  }
+});
+
+test('map changes, removal and configuration replacement during Save withhold Start and stale confirmations',async()=>{
+  for(const start of [false,true])for(const change of ['map','removed','config']) {
+    const f=hassMapsFixture(),r=request(f);let changed=false;
+    f.hass.callService=async(domain,service,data)=>{f.calls.push({domain,service,data});changed=true;if(change==='map')f.report(b);};
+    await assert.rejects(adapter.sendRoomDraft({...r,start,selected:[r.model.rooms[0].key],draft:{'12':{cleaning_mode:'Mop'}},
+      getCurrent:()=>({hass:f.hass,registry:f.registry,config:changed&&change==='config'?{...f.config}:f.config,active:!(changed&&change==='removed')})}));
+    assert.deepEqual(f.calls.map(call=>call.service),['set_room_cleaning_modes']);
+    assert.ok(discover(f).rooms.every(room=>Object.values(room.settings).every(field=>field.value===undefined)));
+  }
+});
+
+test('override Save failure prevents Start and a Start failure retains only confirmed settings without retry',async()=>{
+  for(const failService of ['set_room_cleaning_modes','start_zone_clean']) {
+    const f=hassMapsFixture(),r=request(f);
+    f.hass.callService=async(domain,service,data)=>{f.calls.push({domain,service,data});if(service===failService)throw new Error('Rejected');};
+    await assert.rejects(adapter.sendRoomDraft({...r,start:true,selected:[r.model.rooms[0].key],draft:{'12':{cleaning_mode:'Mop'}}}),/Rejected/);
+    assert.equal(f.calls.length,failService==='set_room_cleaning_modes'?1:2);
+    assert.equal(discover(f).rooms[0].settings.cleaning_mode.value,failService==='set_room_cleaning_modes'?undefined:'Mop');
+  }
+});
+
+test('multi-map Save honors readiness and the shared device lock',async()=>{
+  const f=hassMapsFixture();f.hass.states[f.dock].state='WASHING_MOP';
+  await assert.rejects(adapter.sendRoomDraft({...request(f),draft:{'12':{cleaning_mode:'Mop'}}}));assert.deepEqual(f.calls,[]);
+  f.hass.states[f.dock].state='IDLE';let release;
+  f.hass.callService=async()=>{await new Promise(resolve=>{release=resolve;});};
+  const action=adapter.sendRoomDraft({...request(f),draft:{'12':{cleaning_mode:'Mop'}}});
+  await assert.rejects(adapter.sendRoomDraft({...request(f),start:true,selected:[discover(f).rooms[0].key]}),/already running/);
+  release();await action;
 });

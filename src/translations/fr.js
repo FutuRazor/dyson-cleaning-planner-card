@@ -1,9 +1,11 @@
 // French UI translations. Dyson terminology is referenced in docs/translations.md.
 export const fr = {
+  "Keep saved setting": "Conserver le réglage enregistré",
+  "Settings saved. Room selection remains local.": "Réglages enregistrés. La sélection des pièces reste locale.",
+  "Schedule creation is unavailable with multiple maps. Use MyDyson.": "La création de programmes est indisponible avec plusieurs cartes. Utilisez MyDyson.",
   "Reported map": "Carte signalée",
   "Maps are display-only. Change the active map in MyDyson.": "Les cartes sont uniquement affichées. Changez la carte active dans MyDyson.",
   "Uses saved room settings": "Utilise les réglages enregistrés des pièces",
-  "Multi-map starts use the robot’s saved room settings. Change settings in MyDyson.": "Avec plusieurs cartes, les réglages des pièces enregistrés sur le robot sont utilisés. Modifiez-les dans MyDyson.",
   "Rotation per map": "Rotation par carte",
   "Per-map values override Map rotation. The preview shows the active map.": "Les valeurs par carte remplacent la rotation générale. L’aperçu montre la carte active.",
   "Map rotation: {name}": "Rotation de la carte : {name}",

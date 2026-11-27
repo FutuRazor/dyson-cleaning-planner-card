@@ -2,7 +2,7 @@
 
 ## Current validation status - 27 November 2026
 
-Current card version is **1.7.2** on `fix/hass-dyson-adapter`. Latest full card checks: **207 unit tests**, rebuilt bundle and smoke check. The unchanged companion integration's latest full suite passed **449 tests**. Browser coverage and maintainer observations are recorded separately below.
+Current card version is **1.7.2** on `fix/hass-dyson-adapter`. Latest full card checks: **214 unit tests**, rebuilt bundle and smoke check. The unchanged companion integration's latest full suite passed **449 tests**. Browser coverage and maintainer observations are recorded separately below.
 
 | Area | Current evidence/status |
 | --- | --- |
@@ -15,7 +15,8 @@ Current card version is **1.7.2** on `fix/hass-dyson-adapter`. Latest full card 
 | v1.7.1 map visibility, chips and editor | Unit/browser checks passed; maintainer live acceptance pending |
 | Compact map chips without draft reminders | Maintainer confirmed appearance and operation in a live test |
 | Saved-map display order and editor arrows | Unit/browser checks passed; maintainer live acceptance pending |
-| hass-dyson reported-map room-start fallback | Unit/browser checks passed; real sensor A/B snapshots supplied, live fallback starts pending |
+| hass-dyson reported-map room-start fallback | Unit/browser checks passed; initial maintainer live check positive, detailed acceptance pending |
+| hass-dyson multi-map room overrides and Save | Unit/browser checks passed; initial maintainer live check positive, detailed acceptance pending |
 | Per-map rotation in session images and Zone selection | Unit/browser checks passed; initial maintainer live checks successful, full acceptance pending |
 | Automatic old-map room-draft reset | Unit/browser checks passed; maintainer live acceptance pending |
 | PR #40 review corrections | Unit/browser checks passed; initial maintainer live check reported no new errors |
@@ -25,6 +26,18 @@ Current card version is **1.7.2** on `fix/hass-dyson-adapter`. Latest full card 
 | Stationless cleaning → Pause → Home search | Known Dyson behavior also observed in MyDyson; pause and manual docking recovery confirmed |
 
 Additional integration/map checks are listed in [the map notes](docs/spot-scrub-maps.md#remaining-live-checks). Entries below are chronological records and retain their original versions/test counts; an old pending statement does not supersede a later confirmation.
+
+## Initial hass-dyson multi-map live check - 27 November 2026
+
+The maintainer tested the updated v1.7.2 multi-map room-settings build and reported that the first results look good. Further adjustments are planned for the next session. This records an initial positive live check; individual Save/Start, map-transition and failure cases were not separately confirmed. Version and automated validation remain unchanged.
+
+## hass-dyson multi-map room settings - 27 November 2026
+
+The maintainer requested individual cleaning settings in the reported-map fallback. Matching setting selects now supply capabilities without providing an unverified map baseline. Controls begin with Keep saved setting; only explicit choices enter the draft and are always written, including choices matching old select values. Untouched fields keep robot preferences. Save-only retains selection, while edited Start saves first and checks the latest map/context, lifecycle and readiness before dispatch. Backend-verified readback confirms multi-map Save even when HA select publication lags. Confirmed display values are scoped to connection/device/context and are cleared on map changes or contradictory publications; HA states are not rewritten. Schedule creation remains outside multi-map scope. Version stays **1.7.2**.
+
+Validation passed: `npm run check` with **214 unit tests**, rebuilt bundle and smoke check. Seven additional unit cases cover delayed publication and confirmed values, map reuse and catalogue changes, unavailable/ambiguous field capabilities, map/lifecycle changes during Save, rejection/partial failure and locking/readiness. Updated cases verify the exact four-field native payload and explicit writes matching old HA values. `hass-maps-browser` covers unknown initial values, an initial slider choice, Keep/discard, Save-only without fabricated HA updates, four custom fields saved before Start, late Save crossing a map change, newer feedback, failure retention and existing A/B map behavior in Modern/Classic at 375/900 px. The chips-style cases also exercise dark appearance. Existing `hass-dyson-browser` and `batch-browser` passed for legacy hass-dyson and Spot+Scrub Save/Start/confirmation behavior. These are local HA simulations; actual multi-map overrides and Save/Start still need live acceptance.
+
+Live checks: on each map choose an override, Save without starting and verify it in MyDyson; then start with different per-room choices. Confirm that only chosen fields change, an unedited start sends no Save, and a reported map change clears the previous draft. Verify both a rejected Save and a Start failure after successful Save without automatic retries. The accepted 5–10 second sensor delay and current-map setting-write limitation remain.
 
 ## hass-dyson reported-map fallback v1.7.2 - 27 November 2026
 

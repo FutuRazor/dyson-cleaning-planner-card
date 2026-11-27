@@ -9,7 +9,8 @@
 
 - Follow hass-dyson's same-device `<serial>_current_map` sensor and map-qualified room buttons for multi-map room discovery. Keep rooms with reused native IDs separate and use the button metadata for names.
 - Show read-only floor chips, with per-card map visibility/order and per-map rotation. Reset old room selections and drafts when the reported map context changes.
-- Start selected rooms with one `hass_dyson.start_zone_clean` call carrying an explicit map ID. Multi-map fallback uses stored robot settings; unqualified setting writes and schedule creation are unavailable in this mode. Existing single-map Save/Start behavior remains supported.
+- Allow individual multi-map room overrides for cleaning mode, vacuum power, water and repetitions. Default to Keep saved setting, always write explicit choices and use the backend's verified readback for Save confirmation while HA selects lag. Clear local confirmed values with the reported map context.
+- Start selected rooms with one `hass_dyson.start_zone_clean` call carrying an explicit map ID, after any override Save and a fresh map/lifecycle/readiness check. Unedited settings stay on the robot. Schedule creation remains unavailable with multiple maps; existing single-map Save/Start behavior remains supported.
 - Accept the last map reported by hass-dyson, including its observed 5–10 second delay, without cross-adapter reads, artificial waiting, map-switch actions or automatic retries. Upstream schedule synchronization remains separate.
 
 ## v1.7.1

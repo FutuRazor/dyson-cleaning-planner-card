@@ -1,9 +1,11 @@
 // Dutch UI text. Protocol values and entity names remain unchanged.
 export const nl = {
+  "Keep saved setting": "Opgeslagen instelling behouden",
+  "Settings saved. Room selection remains local.": "Instellingen opgeslagen. De kamerselectie blijft lokaal.",
+  "Schedule creation is unavailable with multiple maps. Use MyDyson.": "Bij meerdere kaarten kunnen geen schema’s worden gemaakt. Gebruik MyDyson.",
   "Reported map": "Gemelde kaart",
   "Maps are display-only. Change the active map in MyDyson.": "Kaarten worden alleen weergegeven. Wissel de actieve kaart in MyDyson.",
   "Uses saved room settings": "Gebruikt opgeslagen kamerinstellingen",
-  "Multi-map starts use the robot’s saved room settings. Change settings in MyDyson.": "Bij meerdere kaarten worden de kamerinstellingen van de robot gebruikt. Wijzig deze in MyDyson.",
   "Rotation per map": "Rotatie per kaart",
   "Per-map values override Map rotation. The preview shows the active map.": "Waarden per kaart vervangen de algemene kaartrotatie. Het voorbeeld toont de actieve kaart.",
   "Map rotation: {name}": "Kaartrotatie: {name}",

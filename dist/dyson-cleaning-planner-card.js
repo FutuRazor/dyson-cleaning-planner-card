@@ -1,10 +1,12 @@
 /* Dyson Cleaning Planner Card v1.7.2 | MIT */
 // English messages are also stable translation keys. Never use translated labels in action payloads.
 const en = {
+  "Keep saved setting": "Keep saved setting",
+  "Settings saved. Room selection remains local.": "Settings saved. Room selection remains local.",
+  "Schedule creation is unavailable with multiple maps. Use MyDyson.": "Schedule creation is unavailable with multiple maps. Use MyDyson.",
   "Reported map": "Reported map",
   "Maps are display-only. Change the active map in MyDyson.": "Maps are display-only. Change the active map in MyDyson.",
   "Uses saved room settings": "Uses saved room settings",
-  "Multi-map starts use the robot’s saved room settings. Change settings in MyDyson.": "Multi-map starts use the robot’s saved room settings. Change settings in MyDyson.",
   "Rotation per map": "Rotation per map",
   "Per-map values override Map rotation. The preview shows the active map.": "Per-map values override Map rotation. The preview shows the active map.",
   "Map rotation: {name}": "Map rotation: {name}",
@@ -370,10 +372,12 @@ const en = {
 
 // German display text. Entity names and protocol values are never rewritten.
 const de = {
+  "Keep saved setting": "Gespeicherte Einstellung beibehalten",
+  "Settings saved. Room selection remains local.": "Einstellungen gespeichert. Die Raumauswahl bleibt lokal.",
+  "Schedule creation is unavailable with multiple maps. Use MyDyson.": "Bei mehreren Karten können keine Zeitpläne erstellt werden. Verwende MyDyson.",
   "Reported map": "Gemeldete Karte",
   "Maps are display-only. Change the active map in MyDyson.": "Karten werden nur angezeigt. Wechsle die aktive Karte in MyDyson.",
   "Uses saved room settings": "Gespeicherte Raumeinstellungen",
-  "Multi-map starts use the robot’s saved room settings. Change settings in MyDyson.": "Bei mehreren Karten werden die im Roboter gespeicherten Raumeinstellungen verwendet. Ändere sie in MyDyson.",
   "Rotation per map": "Drehung pro Karte",
   "Per-map values override Map rotation. The preview shows the active map.": "Die Drehung pro Karte ersetzt die allgemeine Kartendrehung. Die Vorschau zeigt die aktive Karte.",
   "Map rotation: {name}": "Kartendrehung: {name}",
@@ -739,10 +743,12 @@ const de = {
 
 // Dutch UI text. Protocol values and entity names remain unchanged.
 const nl = {
+  "Keep saved setting": "Opgeslagen instelling behouden",
+  "Settings saved. Room selection remains local.": "Instellingen opgeslagen. De kamerselectie blijft lokaal.",
+  "Schedule creation is unavailable with multiple maps. Use MyDyson.": "Bij meerdere kaarten kunnen geen schema’s worden gemaakt. Gebruik MyDyson.",
   "Reported map": "Gemelde kaart",
   "Maps are display-only. Change the active map in MyDyson.": "Kaarten worden alleen weergegeven. Wissel de actieve kaart in MyDyson.",
   "Uses saved room settings": "Gebruikt opgeslagen kamerinstellingen",
-  "Multi-map starts use the robot’s saved room settings. Change settings in MyDyson.": "Bij meerdere kaarten worden de kamerinstellingen van de robot gebruikt. Wijzig deze in MyDyson.",
   "Rotation per map": "Rotatie per kaart",
   "Per-map values override Map rotation. The preview shows the active map.": "Waarden per kaart vervangen de algemene kaartrotatie. Het voorbeeld toont de actieve kaart.",
   "Map rotation: {name}": "Kaartrotatie: {name}",
@@ -1108,10 +1114,12 @@ const nl = {
 
 // French UI translations. Dyson terminology is referenced in docs/translations.md.
 const fr = {
+  "Keep saved setting": "Conserver le réglage enregistré",
+  "Settings saved. Room selection remains local.": "Réglages enregistrés. La sélection des pièces reste locale.",
+  "Schedule creation is unavailable with multiple maps. Use MyDyson.": "La création de programmes est indisponible avec plusieurs cartes. Utilisez MyDyson.",
   "Reported map": "Carte signalée",
   "Maps are display-only. Change the active map in MyDyson.": "Les cartes sont uniquement affichées. Changez la carte active dans MyDyson.",
   "Uses saved room settings": "Utilise les réglages enregistrés des pièces",
-  "Multi-map starts use the robot’s saved room settings. Change settings in MyDyson.": "Avec plusieurs cartes, les réglages des pièces enregistrés sur le robot sont utilisés. Modifiez-les dans MyDyson.",
   "Rotation per map": "Rotation par carte",
   "Per-map values override Map rotation. The preview shows the active map.": "Les valeurs par carte remplacent la rotation générale. L’aperçu montre la carte active.",
   "Map rotation: {name}": "Rotation de la carte : {name}",
@@ -2527,6 +2535,33 @@ const fields = {
   mop_repetitions: ['wash_repetitions', 'wash repetitions', { '1x':'One Pass', '2x':'Two Passes' }],
 };
 const pending = new Set();
+// Only successful backend readback can seed these values. Unqualified select
+// states supply capabilities, never a multi-map preference baseline.
+const confirmedPreferences = new WeakMap();
+function confirmedFields(hass, deviceId, context) {
+  const connection = hass.connection && typeof hass.connection === 'object' ? hass.connection : hass;
+  let devices = confirmedPreferences.get(connection);
+  if (!devices) { devices = new Map(); confirmedPreferences.set(connection,devices); }
+  let saved = devices.get(deviceId);
+  if (saved?.context !== context) { saved = {context,fields:new Map()}; devices.set(deviceId,saved); }
+  return saved.fields;
+}
+const settingSignature = state => JSON.stringify([state?.state,state?.last_updated,state?.last_changed,state?.attributes?.room_id]);
+function multiMapSettings(hass, group = {}, id, confirmed) {
+  const settings = {};
+  for (const [key,candidates] of Object.entries(group)) {
+    if (candidates.length !== 1) continue;
+    const entry = candidates[0], state = hass.states[entry.entity_id], values = fields[key][2];
+    const signature = settingSignature(state), savedKey = `${id}:${key}`, saved = confirmed.get(savedKey);
+    if (saved && (saved.entity !== entry.entity_id || (signature !== saved.signature && values[state?.state] !== saved.value))) confirmed.delete(savedKey);
+    const verified = confirmed.get(savedKey);
+    if (verified) verified.signature = signature;
+    settings[key] = {entity:entry.entity_id,value:verified?.value,alwaysWrite:true,
+      options:Array.isArray(state?.attributes?.options) ? state.attributes.options.filter(value => Object.hasOwn(values,value)).map(value => values[value]) : [],
+      available:hass.connected !== false && available(state) && String(state.attributes?.room_id) === id};
+  }
+  return settings;
+}
 function vacuumEntries(registry) { return registry.filter(e => e.platform === DOMAIN && !e.disabled_by && e.entity_id.startsWith('vacuum.')); }
 function deviceEntries(registry, entity) {
   const vacuum = vacuumEntries(registry).find(e => e.entity_id === entity);
@@ -2610,7 +2645,7 @@ function mapCatalogue(hass, registry, entity) {
     name:map.map_id === currentId && typeof state.state === 'string' && state.state.trim() ? state.state
       : map.names.size === 1 ? [...map.names][0] : map.map_id}));
   return {maps,sensor,registered:sensors.length > 0,currentId,source:state?.attributes?.source,deviceId,
-    storedSettingsOnly:maps.length > 1,available:hass?.connected !== false && available(state) && available(hass?.states?.[entity])};
+    multiMap:maps.length > 1,available:hass?.connected !== false && available(state) && available(hass?.states?.[entity])};
 }
 function reportedMapState(hass, registry, entity) {
   const catalogue = mapCatalogue(hass,registry,entity);
@@ -2631,7 +2666,7 @@ function roomContext(hass, entity, registry = []) {
   const global = pick(entries, serial, 'select', 'cleaning_mode');
   const ids = Object.keys(hass?.states?.[global]?.attributes?.room_settings ?? {}).sort();
   const catalogue = mapCatalogue(hass,registry,entity);
-  return JSON.stringify([DOMAIN, entity, roomMap(hass,registry,entity), ids, catalogue.storedSettingsOnly,
+  return JSON.stringify([DOMAIN, entity, roomMap(hass,registry,entity), ids, catalogue.multiMap,
     catalogue.sensor?.unique_id, catalogue.sensor?.entity_id]);
 }
 function cameraEntries(registry, entity) {
@@ -2641,19 +2676,20 @@ function discover(hass, registry, config, previousRooms = []) {
   const { entries, serial, deviceId, rooms:groups } = roomEntries(registry, config.entity);
   const context = roomContext(hass, config.entity, registry), map = roomMap(hass,registry,config.entity);
   const catalogue = mapCatalogue(hass,registry,config.entity);
+  const confirmed = confirmedFields(hass,deviceId,context);
   const issues = [];
   if (!deviceId) issues.push('The Dyson device was not found in the entity registry.');
   if (!groups.size && !catalogue.registered) issues.push('The Dyson room list is not currently available.');
-  if (catalogue.registered && catalogue.storedSettingsOnly) {
+  if (catalogue.registered && catalogue.multiMap) {
     const current = catalogue.maps.find(item => item.map_id === map);
     const rooms = [...(current?.rooms.values() ?? [])].filter(rows => rows.length === 1).map(([row]) => ({
       name:row.name,key:row.entry.entity_id,entity:row.entry.entity_id,roomId:row.roomId,mapId:map,context,
-      settings:{},storedSettingsOnly:true,available:catalogue.available && row.available,
+      settings:multiMapSettings(hass,groups.get(row.roomId),row.roomId,confirmed),multiMap:true,available:catalogue.available && row.available,
       excluded:config.excluded_rooms?.includes(row.entry.entity_id) ?? false}));
     const rank = room => { const i = config.room_order?.indexOf(room.key) ?? -1; return i < 0 ? Number.MAX_SAFE_INTEGER : i; };
     rooms.sort((a,b) => rank(a) - rank(b));
     const images = cameraEntries(registry,config.entity);
-    return {rooms,issues,mapId:map,deviceId,storedSettingsOnly:true,
+    return {rooms,issues,mapId:map,deviceId,multiMap:true,
       cameraEntity:config.camera_entity ? images.find(e => e.entity_id === config.camera_entity)?.entity_id
         : ['clean_coverage','floor_plan','dust_map'].map(s => pick(entries,serial,'image',s)).find(Boolean),
       startBlockReason:!map ? 'The room map is unavailable or ambiguous. Refresh rooms and check the integration.' : null,
@@ -2759,7 +2795,6 @@ async function sendRoomDraft({ hass, model, config, selected = [], draft = {}, s
     return latest;
   };
   const live = current();
-  if (live.storedSettingsOnly && Object.keys(draft).length) throw new UiError('Multi-map starts use the robot’s saved room settings. Change settings in MyDyson.');
   const resolve = id => {
     const matches = live.rooms.filter(r => r.roomId === id);
     if (matches.length !== 1 || !matches[0].available || matches[0].excluded) fail();
@@ -2771,7 +2806,7 @@ async function sendRoomDraft({ hass, model, config, selected = [], draft = {}, s
     for (const [key, value] of Object.entries(values)) {
       const field = room.settings[key], mapping = fields[key];
       if (!field?.available || !field.options.includes(value) || !mapping) fail();
-      if (field.value === value) continue;
+      if (field.value === value && !field.alwaysWrite) continue;
       const option = Object.keys(mapping[2]).find(v => mapping[2][v] === value);
       if (option === undefined) fail();
       (settings[id] ??= {})[key] = value;
@@ -2785,6 +2820,7 @@ async function sendRoomDraft({ hass, model, config, selected = [], draft = {}, s
   }) : [];
   if (start && (!rooms.length || new Set(rooms.map(r => r.roomId)).size !== rooms.length)) throw new UiError('Select at least one room without duplicates.');
   if (start && !live.mapId) throw new UiError('The room map is unavailable or ambiguous. Refresh rooms and check the integration.');
+  if (live.multiMap && Object.keys(native).length && startBlockReason(hass, config.entity, registry)) throw new UiError(startBlockReason(hass, config.entity, registry));
   if (start && startBlockReason(hass, config.entity, registry)) throw new UiError(startBlockReason(hass, config.entity, registry));
   const hasSettings = Object.keys(native).length > 0;
   const requireAction = service => { if (!hass.services?.[DOMAIN]?.[service]) throw new UiError('Update the Dyson integration: {action} is unavailable.', { action:`${DOMAIN}.${service}` }); };
@@ -2799,6 +2835,13 @@ async function sendRoomDraft({ hass, model, config, selected = [], draft = {}, s
     if (hasSettings) {
       await hass.callService(DOMAIN, 'set_room_cleaning_modes', { device_id:live.deviceId, room_modes:native });
       saved = true;
+      if (live.multiMap) {
+        const fresh = current(), confirmed = confirmedFields(hass,live.deviceId,context);
+        for (const [id,values] of Object.entries(settings)) for (const [key,value] of Object.entries(values)) {
+          const field = fresh.rooms.find(room => room.roomId === id)?.settings?.[key];
+          if (field?.entity) confirmed.set(`${id}:${key}`,{entity:field.entity,value,signature:settingSignature(hass.states[field.entity])});
+        }
+      }
     }
     if (start) {
       // Backend Save performs robot readback. HA select publication may lag, so
@@ -2814,7 +2857,8 @@ async function sendRoomDraft({ hass, model, config, selected = [], draft = {}, s
     if (start && saved) throw new UiError('Settings were saved, but cleaning did not start. Review the robot status before retrying. {error}', { error });
     throw error;
   } finally { pending.delete(lockKey); }
-  return { rooms:rooms.map(r => ({ entity_id:r.entity, room_id:r.roomId, name:r.name })), settings, sent:true };
+  return { rooms:rooms.map(r => ({ entity_id:r.entity, room_id:r.roomId, name:r.name })), settings, sent:true,
+    settingsConfirmed:!!(live.multiMap && saved) };
 }
 function canControl(hass, entity, action, registry = []) {
   if (!vacuumEntries(registry).some(entry => entry.entity_id === entity)) return false;
@@ -2862,7 +2906,7 @@ function scheduleState(hass, registry, entity) {
     && new Set(raw.map(s => s.schedule_id)).size === raw.length;
   const readable = supported && hass?.connected !== false && available(state) && valid;
   return { supported, available:readable, writable:readable && !!deviceId && available(hass?.states?.[entity]),
-    createSupported:!mapCatalogue(hass,registry,entity).storedSettingsOnly,
+    createSupported:!mapCatalogue(hass,registry,entity).multiMap,
     deleteSupported:supported && !!hass?.services?.[DOMAIN]?.delete_robot_schedule,
     schedules:readable ? raw.map(s => ({ id:s.schedule_id, enabled:s.enabled, days:[...s.days], time:s.time, rooms:[...s.rooms], repeat:s.repeat })) : [],
     inSync:state?.attributes?.in_sync, robotTotal:state?.attributes?.robot_total,
@@ -2890,7 +2934,7 @@ async function setSchedule({ hass, registry, config, id, days, time, enabled, dr
     data.enabled = enabled;
   }
   if (id === undefined) {
-    if (!state.createSupported) throw new UiError('Multi-map starts use the robot’s saved room settings. Change settings in MyDyson.');
+    if (!state.createSupported) throw new UiError('Schedule creation is unavailable with multiple maps. Use MyDyson.');
     if (context !== roomContext(hass, config.entity, registry)) throw new UiError('The room plan changed. Close the dialog and review your room settings.');
     const model = discover(hass, registry, config);
     if (!model.mapId || !model.rooms.length) throw new UiError('The room map is unavailable or ambiguous. Refresh rooms and check the integration.');
@@ -2930,11 +2974,10 @@ function roomPlanningState(hass, registry, config, model, draft = {}) {
   const ready = hass?.connected !== false && available(hass?.states?.[config.entity])
     && vacuumEntries(registry).some(entry => entry.entity_id === config.entity);
   const blocked = model.startBlockReason || startBlockReason(hass, config.entity, registry);
-  return { supportsSave:!model.storedSettingsOnly, supportsStart:true, ordered:false,
-    canSave:!model.storedSettingsOnly && ready && saveAvailable,
-    hint:model.storedSettingsOnly ? 'Multi-map starts use the robot’s saved room settings. Change settings in MyDyson.' : undefined,
-    canStart:ready && startAvailable && !blocked && (!Object.keys(draft).length || (!model.storedSettingsOnly && saveAvailable)),
-    notice:model.startBlockReason || ((!model.storedSettingsOnly && !saveAvailable) || !startAvailable
+  return { supportsSave:true, supportsStart:true, ordered:false,
+    canSave:ready && saveAvailable && (!model.multiMap || !blocked),
+    canStart:ready && startAvailable && !blocked && (!Object.keys(draft).length || saveAvailable),
+    notice:model.startBlockReason || (((!model.multiMap || Object.keys(draft).length > 0) && !saveAvailable) || !startAvailable
       ? 'The updated Dyson integration actions are not available. Reload the integration and refresh this dashboard.' : null) };
 }
 
@@ -2942,8 +2985,11 @@ return Object.freeze({ id:DOMAIN, infoTabs:['consumables'], mapEntityLabel:'Map 
   label:'hass-dyson (experimental)', shortLabel:'hass-dyson', deviceLabel:'Dyson device',
   editorHint:'Room order is controlled by hass-dyson. Changed settings are saved before cleaning starts.',
   roomStartMessage:'Sending room settings and start request …',
-  roomPlanningState, roomPresentation:(room,draft,config) => room.storedSettingsOnly
-    ? {summary:'Uses saved room settings',fields:[],issue:null} : dysonRoomPresentation(room,draft,config),
+  roomPlanningState, roomPresentation:(room,draft,config) => {
+    const presentation = dysonRoomPresentation(room,draft,config);
+    if (room.multiMap && !(draft?.cleaning_mode ?? room.settings?.cleaning_mode?.value)) presentation.summary = 'Uses saved room settings';
+    return presentation;
+  },
   resetDraftOnContextChange:true, mapSelectionState:reportedMapState,
   scheduleState, setSchedule, deleteSchedule,
   usesDockTimer:true, supportsDryingCancellation:false,
@@ -4588,6 +4634,8 @@ header,.station-rows{--hud-red:var(--error-color,#db4437);--hud-blue:var(--blue-
 .modern-control{min-width:0}
 .field-label{display:block;font-size:13px;margin-bottom:2px;color:var(--primary-text-color)}
 /* Tick centers share the native thumb's travel area (half its width at each end). */
+.stepped-slider.unset input::-webkit-slider-thumb{opacity:0}.stepped-slider.unset input::-moz-range-thumb{opacity:0}
+.modern-control:has(.stepped-slider.unset) .badge{color:var(--dp-muted)}
 .stepped-slider{position:relative;height:24px}
 .slider-ticks{position:absolute;inset:0 10px;pointer-events:none;color:var(--dp-muted)}
 .slider-ticks::before{content:"";position:absolute;left:0;right:0;top:10.5px;height:3px;border-radius:2px;background:currentColor;opacity:.65}
@@ -5025,9 +5073,9 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       const room = this.model.rooms.find(r => r.roomId === el.dataset.roomId);
       const field = room?.settings?.[el.dataset.setting];
       const value = el.type === 'range' ? field?.options[Number(el.value)] : el.value;
-      if (!field?.options.includes(value)) return;
+      if (!field?.available || (!field.options.includes(value) && !(field.alwaysWrite && value === ''))) return;
       const values = this.settingDraft[room.roomId] ??= {};
-      if (value === field.value) delete values[el.dataset.setting];
+      if ((value === field.value && !field.alwaysWrite) || value === '') delete values[el.dataset.setting];
       else values[el.dataset.setting] = value;
       if (!Object.keys(values).length) delete this.settingDraft[room.roomId];
       // Release the native select before rendering to avoid restoring its picker focus.
@@ -5039,6 +5087,10 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
   onClick(event) {
     if (this.mapClick(event) || this._mapRequest) return;
     if (this.scheduleClick(event)) return;
+    if (event.target.matches?.('input[type=range][data-setting]')
+      && this.model.rooms.find(room => room.roomId === event.target.dataset.roomId)?.settings?.[event.target.dataset.setting]?.alwaysWrite) {
+      this.onChange(event); return;
+    }
     if (event.target.classList?.contains("consumables-overlay")) { this.toggleConsumables(false); return; }
     const el = event.target.closest('button, ha-button');
     if (el?.dataset.action === 'dismiss-notice') {
@@ -5153,30 +5205,40 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
     if (this._mapRequest) return;
     if (this._previewDialog || this.busy || this.view.active || !this.isConnected) return;
     const config = this.config, context = this.draftContext, draft = structuredClone(this.settingDraft);
+    const detachRevision = this._detachRevision ?? 0;
     this.busy = true; this.saving = true; this.error = false;
-    this.message = 'Saving room settings …'; this.render();
+    const progress = 'Saving room settings …';
+    this.message = progress; this.render();
     try {
       const model = this.getModel(), planning = this.getRoomPlanningState(model);
       if (!planning.supportsSave || !planning.canSave) throw new UiError(planning.notice || 'This action is not available for the current robot state.');
-      await this.adapter.sendRoomDraft({ hass: this._hass, model, config, draft, context, registry:this.registry });
+      const plan = await this.adapter.sendRoomDraft({ hass: this._hass, model, config, draft, context, registry:this.registry,
+        getCurrent:() => ({hass:this._hass,registry:this.registry,config:this.config,
+          active:this.isConnected && !this._previewDialog && (this._detachRevision ?? 0) === detachRevision}) });
       const deadline = Date.now() + 6000;
       while (true) {
-        if (this.config !== config || !this.isConnected) return;
+        if (this.config !== config || !this.isConnected || (this._detachRevision ?? 0) !== detachRevision) return;
         if (context !== this.adapter.roomContext(this._hass, config.entity, this.registry)) {
-          this.message = '';
+          if (this.message === progress) this.message = '';
           return;
         }
         const model = this.getModel();
+        if (plan.settingsConfirmed) break;
         if (Object.entries(draft).every(([id, fields]) => Object.entries(fields).every(([key, value]) => model.rooms.find(r => r.roomId === id)?.settings?.[key]?.value === value))) break;
         if (Date.now() >= deadline) throw new UiError('Save was sent, but Home Assistant has not reflected all values yet. The draft was kept; check the robot before retrying.');
         await new Promise(resolve => setTimeout(resolve, 100));
       }
       this.settingDraft = {}; this.model = this.getModel(); this.updateDirty();
       this.baseline = this.liveSignature();
-      this.message = 'Settings sent. Home Assistant values updated. Room selection remains local.';
+      this.message = plan.settingsConfirmed ? 'Settings saved. Room selection remains local.'
+        : 'Settings sent. Home Assistant values updated. Room selection remains local.';
     } catch (error) {
-      if (this.config === config) { this.error = true; this.message = error; }
-    } finally { this.busy = false; this.saving = false; this.render(); }
+      if (this.config === config && this.isConnected && (this._detachRevision ?? 0) === detachRevision
+        && context === this.adapter.roomContext(this._hass,config.entity,this.registry)) { this.error = true; this.message = error; }
+    } finally {
+      if (this.message === progress) this.message = '';
+      this.busy = false; this.saving = false; this.render();
+    }
   }
   canControl(action) {
     return this.adapter.vacuumEntries(this.registry ?? [], this._hass).some(entry => entry.entity_id === this.config.entity)
@@ -5604,16 +5666,16 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
       : scope === 'planning' ? `data-planning-setting="${h(key)}"` : `data-setting="${key}" data-room-id="${h(room.roomId)}"`;
     const focus = scope === 'schedule' ? `schedule-room-${room.roomId}-${key}` : `${key}-${n}`;
     const slider = scope === 'schedule' ? `schedule-slider-${key}-${room.roomId}` : `slider-${key}-${n}`;
-    const unknown = scope === 'schedule' ? value || 'Stored settings not reported' : 'Unavailable';
+    const unknown = scope === 'schedule' ? value || 'Stored settings not reported' : field.alwaysWrite ? 'Keep saved setting' : 'Unavailable';
     const name = scope === 'planning' ? label : `${label} ${room.name}`;
     const valid = options.includes(value);
-    const blocked = disabled || !valid;
+    const blocked = disabled || (!valid && !field.alwaysWrite);
     const presentation = scope === 'planning' ? null : this.adapter.roomPresentation(room, {}, this.config).fields.find(field => field.key === key);
     if (presentation?.control === 'segments') {
       return `<div class="modern-control"><span class="field-label">${label}</span><div class="segments" role="group" aria-label="${h(name)}">${options.map((option, i) => `<button ${attrs} data-option="${h(option)}" style="--stop:${options.length > 1 ? i / (options.length - 1) : 0}" data-focus="${focus}-${i}" aria-pressed="${value === option}" ${disabled ? 'disabled' : ''}>${h(presentation.optionLabels?.[option] ?? this.t(option))}</button>`).join('')}</div></div>`;
     }
     const index = options.indexOf(value);
-    return `<div class="modern-control">${scope === 'planning' ? '' : `<label class="field-label" for="${slider}">${label}</label>`}<div class="stepped-slider ${blocked ? 'disabled' : ''}"><div class="slider-ticks" aria-hidden="true">${options.map((_, i) => `<span class="slider-tick" style="--stop:${options.length > 1 ? i / (options.length - 1) : 0}"></span>`).join('')}</div><input id="${slider}" type="range" min="0" max="${options.length - 1}" step="1" value="${Math.max(0, index)}" aria-label="${h(name)}" aria-valuetext="${this.ht(valid ? value : unknown)}" ${attrs} data-focus="${focus}" ${blocked || options.length < 2 ? 'disabled' : ''}></div><div class="slider-options" style="--options:${options.length}">${options.map((option, i) => `<button ${attrs} data-option="${h(option)}" style="--stop:${options.length > 1 ? i / (options.length - 1) : 0}" data-focus="${focus}-${i}" aria-pressed="${value === option}" ${disabled ? 'disabled' : ''}>${this.ht(option)}</button>`).join('')}</div>${!valid ? `<span class="badge">${this.ht(unknown)}</span>` : ''}</div>`;
+    return `<div class="modern-control">${scope === 'planning' ? '' : `<label class="field-label" for="${slider}">${label}</label>`}<div class="stepped-slider ${blocked ? 'disabled' : ''} ${field.alwaysWrite && !valid ? 'unset' : ''}"><div class="slider-ticks" aria-hidden="true">${options.map((_, i) => `<span class="slider-tick" style="--stop:${options.length > 1 ? i / (options.length - 1) : 0}"></span>`).join('')}</div><input id="${slider}" type="range" min="0" max="${options.length - 1}" step="1" value="${Math.max(0, index)}" aria-label="${h(name)}" aria-valuetext="${this.ht(valid ? value : unknown)}" ${attrs} data-focus="${focus}" ${blocked || options.length < 2 ? 'disabled' : ''}></div><div class="slider-options" style="--options:${options.length}">${options.map((option, i) => `<button ${attrs} data-option="${h(option)}" style="--stop:${options.length > 1 ? i / (options.length - 1) : 0}" data-focus="${focus}-${i}" aria-pressed="${value === option}" ${disabled ? 'disabled' : ''}>${this.ht(option)}</button>`).join('')}</div>${!valid ? `<span class="badge">${this.ht(unknown)}</span>` : ''}</div>`;
   }
   zoneStarted(dimensions) {
     const valid = dimensions && ['widthCm','heightCm'].every(key => Number.isFinite(dimensions[key]) && dimensions[key] > 0);
@@ -5691,7 +5753,7 @@ class DysonCleaningPlannerCard extends DysonRegistryElement {
         const fieldDisabled = disabled || !field.available;
         const value = valueOf(key), options = field?.options ?? [];
         if (modern && control !== 'select' && options.length) return reserve(this.modernControl(key, label, room, field, value, fieldDisabled, n));
-        return reserve(`<label class="field ${wide ? 'mode' : ''}">${label}<select data-setting="${h(key)}" data-room-id="${h(room.roomId)}" data-focus="${h(key)}-${n}" aria-label="${label} ${h(room.name)}" ${fieldDisabled ? 'disabled' : ''}>${!options.includes(value) ? `<option value="">${this.ht("Unavailable")}</option>` : ''}${options.map(option => `<option value="${h(option)}" ${value === option ? 'selected' : ''}>${this.ht(option)}</option>`).join('')}</select></label>`);
+        return reserve(`<label class="field ${wide ? 'mode' : ''}">${label}<select data-setting="${h(key)}" data-room-id="${h(room.roomId)}" data-focus="${h(key)}-${n}" aria-label="${label} ${h(room.name)}" ${fieldDisabled ? 'disabled' : ''}>${field.alwaysWrite || !options.includes(value) ? `<option value="" ${!options.includes(value) ? 'selected' : ''}>${this.ht(field.alwaysWrite ? 'Keep saved setting' : 'Unavailable')}</option>` : ''}${options.map(option => `<option value="${h(option)}" ${value === option ? 'selected' : ''}>${this.ht(option)}</option>`).join('')}</select></label>`);
       }).join('');
       const summary = !room.available ? this.ht(room.error || 'Unavailable') : presentation.summary ? this.ht(presentation.summary) : '';
       const issue = presentation.issue ? `<p class="badge mode">${this.ht(presentation.issue)}</p>` : '';
@@ -5846,7 +5908,7 @@ class DysonCleaningPlannerEditor extends DysonRegistryElement {
       <label>${this.ht("Theme")}<select data-key="theme" data-focus="theme"><option value="classic" ${config.theme === 'classic' ? 'selected' : ''}>${this.ht("Classic")}</option><option value="modern" ${config.theme !== 'classic' ? 'selected' : ''}>${this.ht("Modern")}</option></select></label>
       ${this.adapter.supportsIntegrationIcon !== false ? `<label>${this.ht("Header icon style")}<select data-key="header_icon_style" data-focus="header-icon-style"><option value="home_assistant" ${config.header_icon_style === 'home_assistant' ? 'selected' : ''}>Home Assistant</option><option value="integration" ${(config.header_icon_style ?? 'integration') === 'integration' ? 'selected' : ''}>${this.ht("Integration")}</option></select></label>` : ''}
       ${this.adapter.supportsRoomSettings !== false ? `<div class="entry"><label><input type="checkbox" data-key="always_show_all_settings" data-focus="all-settings" ${config.always_show_all_settings === true ? 'checked' : ''}>${this.ht("Always show all settings")}</label></div>` : ''}
-      <p>${this.ht(this.model.storedSettingsOnly ? 'Multi-map starts use the robot’s saved room settings. Change settings in MyDyson.' : this.adapter.editorHint)}</p>
+      <p>${this.ht(this.adapter.editorHint)}</p>
       <h3>${this.ht("Status bar")}</h3>
       <div class="entry"><label><input type="checkbox" data-key="show_status_bar" data-focus="show-status-bar" ${config.show_status_bar !== false ? 'checked' : ''}>${this.ht("Show status bar")}</label></div>
       <fieldset class="status-options" aria-label="${this.ht("Visible status indicators")}" ${config.show_status_bar === false ? 'disabled' : ''}>

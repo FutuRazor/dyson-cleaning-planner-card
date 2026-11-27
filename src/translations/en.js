@@ -1,9 +1,11 @@
 // English messages are also stable translation keys. Never use translated labels in action payloads.
 export const en = {
+  "Keep saved setting": "Keep saved setting",
+  "Settings saved. Room selection remains local.": "Settings saved. Room selection remains local.",
+  "Schedule creation is unavailable with multiple maps. Use MyDyson.": "Schedule creation is unavailable with multiple maps. Use MyDyson.",
   "Reported map": "Reported map",
   "Maps are display-only. Change the active map in MyDyson.": "Maps are display-only. Change the active map in MyDyson.",
   "Uses saved room settings": "Uses saved room settings",
-  "Multi-map starts use the robot’s saved room settings. Change settings in MyDyson.": "Multi-map starts use the robot’s saved room settings. Change settings in MyDyson.",
   "Rotation per map": "Rotation per map",
   "Per-map values override Map rotation. The preview shows the active map.": "Per-map values override Map rotation. The preview shows the active map.",
   "Map rotation: {name}": "Map rotation: {name}",
